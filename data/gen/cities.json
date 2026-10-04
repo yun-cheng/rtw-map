@@ -1,0 +1,1622 @@
+{
+ "_meta": {
+  "source": "GeoNames cities500 (CC-BY 4.0) + hand-curated profile",
+  "updatedAt": "2026-10-04"
+ },
+ "cities": [
+  {
+   "id": "tirana",
+   "name": "Tirana",
+   "iso2": "AL",
+   "lat": 41.32744,
+   "lon": 19.81866,
+   "population": 418495,
+   "timezone": "Europe/Tirane",
+   "geonameId": 3183875,
+   "tags": [
+    "city",
+    "food",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Colourful, chaotic capital with great cafés and the Bunk'Art museums"
+  },
+  {
+   "id": "shkoder",
+   "name": "Shkodër",
+   "iso2": "AL",
+   "lat": 42.06828,
+   "lon": 19.51258,
+   "population": 95553,
+   "timezone": "Europe/Tirane",
+   "geonameId": 3184081,
+   "tags": [
+    "culture",
+    "nature"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Lakeside town and the gateway to the Albanian Alps"
+  },
+  {
+   "id": "theth",
+   "name": "Theth",
+   "iso2": "AL",
+   "lat": 42.395,
+   "lon": 19.775,
+   "population": null,
+   "timezone": null,
+   "geonameId": null,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Remote mountain village; start of the Theth–Valbona hike"
+  },
+  {
+   "id": "berat",
+   "name": "Berat",
+   "iso2": "AL",
+   "lat": 40.70583,
+   "lon": 19.95222,
+   "population": 62232,
+   "timezone": "Europe/Tirane",
+   "geonameId": 3186084,
+   "tags": [
+    "culture",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "'City of a thousand windows', a UNESCO Ottoman town"
+  },
+  {
+   "id": "gjirokaster",
+   "name": "Gjirokastër",
+   "iso2": "AL",
+   "lat": 40.07583,
+   "lon": 20.13889,
+   "population": 23437,
+   "timezone": "Europe/Tirane",
+   "geonameId": 783148,
+   "tags": [
+    "culture",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Stone-roofed UNESCO town with a hilltop castle"
+  },
+  {
+   "id": "sarande",
+   "name": "Sarandë",
+   "iso2": "AL",
+   "lat": 39.87534,
+   "lon": 20.00477,
+   "population": 22613,
+   "timezone": "Europe/Tirane",
+   "geonameId": 363243,
+   "tags": [
+    "beach"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Albanian Riviera base near Ksamil beaches and Butrint"
+  },
+  {
+   "id": "kotor",
+   "name": "Kotor",
+   "iso2": "ME",
+   "lat": 42.42067,
+   "lon": 18.76825,
+   "population": 5345,
+   "timezone": "Europe/Podgorica",
+   "geonameId": 3197538,
+   "tags": [
+    "history",
+    "nature",
+    "hiking",
+    "beach"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.3,
+   "longStay": false,
+   "blurb": "Walled town at the end of a dramatic fjord-like bay"
+  },
+  {
+   "id": "budva",
+   "name": "Budva",
+   "iso2": "ME",
+   "lat": 42.28721,
+   "lon": 18.83922,
+   "population": 18000,
+   "timezone": "Europe/Podgorica",
+   "geonameId": 3203106,
+   "tags": [
+    "beach",
+    "nightlife"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1.2,
+   "longStay": false,
+   "blurb": "Montenegro's party and beach town"
+  },
+  {
+   "id": "podgorica",
+   "name": "Podgorica",
+   "iso2": "ME",
+   "lat": 42.44124,
+   "lon": 19.26309,
+   "population": 236852,
+   "timezone": "Europe/Podgorica",
+   "geonameId": 3193044,
+   "tags": [
+    "city"
+   ],
+   "popularity": 2,
+   "days": {
+    "min": 0.5,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Low-key capital and transport hub"
+  },
+  {
+   "id": "zabljak",
+   "name": "Žabljak",
+   "iso2": "ME",
+   "lat": 43.15423,
+   "lon": 19.12325,
+   "population": 1937,
+   "timezone": "Europe/Podgorica",
+   "geonameId": 3186999,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Base for Durmitor National Park and the Tara canyon"
+  },
+  {
+   "id": "sarajevo",
+   "name": "Sarajevo",
+   "iso2": "BA",
+   "lat": 43.84864,
+   "lon": 18.35644,
+   "population": 696731,
+   "timezone": "Europe/Sarajevo",
+   "geonameId": 3191281,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Where East meets West: Ottoman bazaar, Austro-Hungarian streets, recent history"
+  },
+  {
+   "id": "mostar",
+   "name": "Mostar",
+   "iso2": "BA",
+   "lat": 43.34333,
+   "lon": 17.80806,
+   "population": 104518,
+   "timezone": "Europe/Sarajevo",
+   "geonameId": 3194828,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Famous Old Bridge over the emerald Neretva"
+  },
+  {
+   "id": "belgrade",
+   "name": "Belgrade",
+   "iso2": "RS",
+   "lat": 44.80401,
+   "lon": 20.46513,
+   "population": 1273651,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 792680,
+   "tags": [
+    "city",
+    "nightlife",
+    "food",
+    "history"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Big, energetic capital with legendary nightlife"
+  },
+  {
+   "id": "novisad",
+   "name": "Novi Sad",
+   "iso2": "RS",
+   "lat": 45.25167,
+   "lon": 19.83694,
+   "population": 215400,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 3194360,
+   "tags": [
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Relaxed Danube city with the Petrovaradin fortress"
+  },
+  {
+   "id": "nis",
+   "name": "Niš",
+   "iso2": "RS",
+   "lat": 43.32472,
+   "lon": 21.90333,
+   "population": 250000,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 787657,
+   "tags": [
+    "history"
+   ],
+   "popularity": 2,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 0.8,
+   "longStay": false,
+   "blurb": "Southern Serbian city, useful stop towards Sofia or Skopje"
+  },
+  {
+   "id": "pristina",
+   "name": "Pristina",
+   "iso2": "XK",
+   "lat": 42.67272,
+   "lon": 21.16688,
+   "population": 550000,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 786714,
+   "tags": [
+    "city",
+    "culture"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Young, café-filled capital"
+  },
+  {
+   "id": "prizren",
+   "name": "Prizren",
+   "iso2": "XK",
+   "lat": 42.21389,
+   "lon": 20.73972,
+   "population": 171464,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 786712,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Kosovo's prettiest town, Ottoman mosques and a riverside old town"
+  },
+  {
+   "id": "peja",
+   "name": "Peja",
+   "iso2": "XK",
+   "lat": 42.65913,
+   "lon": 20.28828,
+   "population": 48962,
+   "timezone": "Europe/Belgrade",
+   "geonameId": 787157,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Base for the Rugova Gorge and Accursed Mountains"
+  },
+  {
+   "id": "skopje",
+   "name": "Skopje",
+   "iso2": "MK",
+   "lat": 41.99646,
+   "lon": 21.43141,
+   "population": 474889,
+   "timezone": "Europe/Skopje",
+   "geonameId": 785842,
+   "tags": [
+    "city",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Statue-filled capital with a big Ottoman bazaar"
+  },
+  {
+   "id": "ohrid",
+   "name": "Ohrid",
+   "iso2": "MK",
+   "lat": 41.11701,
+   "lon": 20.80175,
+   "population": 42033,
+   "timezone": "Europe/Skopje",
+   "geonameId": 787487,
+   "tags": [
+    "history",
+    "nature",
+    "beach"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Lakeside UNESCO town with Byzantine churches"
+  },
+  {
+   "id": "dubrovnik",
+   "name": "Dubrovnik",
+   "iso2": "HR",
+   "lat": 42.64125,
+   "lon": 18.10909,
+   "population": 26922,
+   "timezone": "Europe/Zagreb",
+   "geonameId": 3201047,
+   "tags": [
+    "history",
+    "beach"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 1.7,
+   "longStay": false,
+   "blurb": "Iconic walled city on the Adriatic; expensive and crowded in summer"
+  },
+  {
+   "id": "split",
+   "name": "Split",
+   "iso2": "HR",
+   "lat": 43.50891,
+   "lon": 16.43915,
+   "population": 149830,
+   "timezone": "Europe/Zagreb",
+   "geonameId": 3190261,
+   "tags": [
+    "beach",
+    "history",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.4,
+   "longStay": false,
+   "blurb": "Lively city built into Diocletian's Palace; ferries to the islands"
+  },
+  {
+   "id": "zadar",
+   "name": "Zadar",
+   "iso2": "HR",
+   "lat": 44.11578,
+   "lon": 15.22514,
+   "population": 67309,
+   "timezone": "Europe/Zagreb",
+   "geonameId": 3186952,
+   "tags": [
+    "beach",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1.2,
+   "longStay": false,
+   "blurb": "Sea organ, sunsets and access to Plitvice and Krka"
+  },
+  {
+   "id": "zagreb",
+   "name": "Zagreb",
+   "iso2": "HR",
+   "lat": 45.81444,
+   "lon": 15.97798,
+   "population": 663592,
+   "timezone": "Europe/Zagreb",
+   "geonameId": 3186886,
+   "tags": [
+    "city",
+    "culture",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Easy-going capital with cafés and quirky museums"
+  },
+  {
+   "id": "ljubljana",
+   "name": "Ljubljana",
+   "iso2": "SI",
+   "lat": 46.05108,
+   "lon": 14.50513,
+   "population": 272220,
+   "timezone": "Europe/Ljubljana",
+   "geonameId": 3196359,
+   "tags": [
+    "city",
+    "culture",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Small, green, car-free riverside capital"
+  },
+  {
+   "id": "bled",
+   "name": "Bled",
+   "iso2": "SI",
+   "lat": 46.36859,
+   "lon": 14.11652,
+   "population": 5181,
+   "timezone": "Europe/Ljubljana",
+   "geonameId": 3203925,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1.3,
+   "longStay": false,
+   "blurb": "Lake with an island church, gateway to the Julian Alps"
+  },
+  {
+   "id": "thessaloniki",
+   "name": "Thessaloniki",
+   "iso2": "GR",
+   "lat": 40.64072,
+   "lon": 22.93493,
+   "population": 317778,
+   "timezone": "Europe/Athens",
+   "geonameId": 734077,
+   "tags": [
+    "food",
+    "history",
+    "city",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Greece's food capital with Byzantine and Ottoman layers"
+  },
+  {
+   "id": "athens",
+   "name": "Athens",
+   "iso2": "GR",
+   "lat": 37.98376,
+   "lon": 23.72784,
+   "population": 664046,
+   "timezone": "Europe/Athens",
+   "geonameId": 264371,
+   "tags": [
+    "history",
+    "culture",
+    "food",
+    "city"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.15,
+   "longStay": true,
+   "blurb": "The Acropolis and a buzzing, gritty modern city"
+  },
+  {
+   "id": "sofia",
+   "name": "Sofia",
+   "iso2": "BG",
+   "lat": 42.69751,
+   "lon": 23.32415,
+   "population": 1152556,
+   "timezone": "Europe/Sofia",
+   "geonameId": 727011,
+   "tags": [
+    "city",
+    "history",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Affordable capital at the foot of Vitosha mountain"
+  },
+  {
+   "id": "plovdiv",
+   "name": "Plovdiv",
+   "iso2": "BG",
+   "lat": 42.15387,
+   "lon": 24.75001,
+   "population": 329489,
+   "timezone": "Europe/Sofia",
+   "geonameId": 728193,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "One of Europe's oldest cities, with a Roman theatre and an arty quarter"
+  },
+  {
+   "id": "velikotarnovo",
+   "name": "Veliko Tarnovo",
+   "iso2": "BG",
+   "lat": 43.08124,
+   "lon": 25.62904,
+   "population": 59166,
+   "timezone": "Europe/Sofia",
+   "geonameId": 725993,
+   "tags": [
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Medieval capital draped over a river gorge"
+  },
+  {
+   "id": "varna",
+   "name": "Varna",
+   "iso2": "BG",
+   "lat": 43.21912,
+   "lon": 27.91024,
+   "population": 318737,
+   "timezone": "Europe/Sofia",
+   "geonameId": 726050,
+   "tags": [
+    "beach",
+    "nightlife"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Black Sea beach city"
+  },
+  {
+   "id": "bucharest",
+   "name": "Bucharest",
+   "iso2": "RO",
+   "lat": 44.43225,
+   "lon": 26.10626,
+   "population": 1877155,
+   "timezone": "Europe/Bucharest",
+   "geonameId": 683506,
+   "tags": [
+    "city",
+    "nightlife",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Big, lively capital with communist-era monuments"
+  },
+  {
+   "id": "brasov",
+   "name": "Brașov",
+   "iso2": "RO",
+   "lat": 45.64861,
+   "lon": 25.60613,
+   "population": 253200,
+   "timezone": "Europe/Bucharest",
+   "geonameId": 683844,
+   "tags": [
+    "history",
+    "nature",
+    "hiking"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Transylvanian base for castles and the Carpathians"
+  },
+  {
+   "id": "sighisoara",
+   "name": "Sighișoara",
+   "iso2": "RO",
+   "lat": 46.22141,
+   "lon": 24.79279,
+   "population": 34537,
+   "timezone": "Europe/Bucharest",
+   "geonameId": 8436351,
+   "tags": [
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Fairy-tale medieval citadel"
+  },
+  {
+   "id": "sibiu",
+   "name": "Sibiu",
+   "iso2": "RO",
+   "lat": 45.8,
+   "lon": 24.15,
+   "population": 134309,
+   "timezone": "Europe/Bucharest",
+   "geonameId": 667268,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Saxon town with 'eyes' on its rooftops"
+  },
+  {
+   "id": "cluj",
+   "name": "Cluj-Napoca",
+   "iso2": "RO",
+   "lat": 46.76667,
+   "lon": 23.6,
+   "population": 286598,
+   "timezone": "Europe/Bucharest",
+   "geonameId": 681290,
+   "tags": [
+    "city",
+    "nightlife",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Student city and Transylvania's tech hub"
+  },
+  {
+   "id": "chisinau",
+   "name": "Chișinău",
+   "iso2": "MD",
+   "lat": 47.00902,
+   "lon": 28.85938,
+   "population": 635994,
+   "timezone": "Europe/Chisinau",
+   "geonameId": 618426,
+   "tags": [
+    "city",
+    "food"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Leafy capital and gateway to Moldova's wineries"
+  },
+  {
+   "id": "budapest",
+   "name": "Budapest",
+   "iso2": "HU",
+   "lat": 47.49835,
+   "lon": 19.04045,
+   "population": 1741041,
+   "timezone": "Europe/Budapest",
+   "geonameId": 3054643,
+   "tags": [
+    "city",
+    "history",
+    "nightlife",
+    "food",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.1,
+   "longStay": true,
+   "blurb": "Thermal baths, ruin bars and the Danube"
+  },
+  {
+   "id": "eger",
+   "name": "Eger",
+   "iso2": "HU",
+   "lat": 47.90265,
+   "lon": 20.37329,
+   "population": 53876,
+   "timezone": "Europe/Budapest",
+   "geonameId": 721239,
+   "tags": [
+    "history",
+    "food"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Baroque town famous for wine and its castle"
+  },
+  {
+   "id": "bratislava",
+   "name": "Bratislava",
+   "iso2": "SK",
+   "lat": 48.14816,
+   "lon": 17.10674,
+   "population": 423737,
+   "timezone": "Europe/Bratislava",
+   "geonameId": 3060972,
+   "tags": [
+    "city",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Compact old town on the Danube"
+  },
+  {
+   "id": "kosice",
+   "name": "Košice",
+   "iso2": "SK",
+   "lat": 48.71441,
+   "lon": 21.25802,
+   "population": 225044,
+   "timezone": "Europe/Bratislava",
+   "geonameId": 724443,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Eastern Slovakia's handsome second city"
+  },
+  {
+   "id": "poprad",
+   "name": "Poprad",
+   "iso2": "SK",
+   "lat": 49.06144,
+   "lon": 20.29798,
+   "population": 49091,
+   "timezone": "Europe/Bratislava",
+   "geonameId": 723846,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Base for the High Tatras"
+  },
+  {
+   "id": "prague",
+   "name": "Prague",
+   "iso2": "CZ",
+   "lat": 50.08804,
+   "lon": 14.42076,
+   "population": 1165581,
+   "timezone": "Europe/Prague",
+   "geonameId": 3067696,
+   "tags": [
+    "city",
+    "history",
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 6
+   },
+   "costFactor": 1.2,
+   "longStay": true,
+   "blurb": "Gothic spires, cheap beer and big crowds"
+  },
+  {
+   "id": "ceskykrumlov",
+   "name": "Český Krumlov",
+   "iso2": "CZ",
+   "lat": 48.81091,
+   "lon": 14.31521,
+   "population": 12658,
+   "timezone": "Europe/Prague",
+   "geonameId": 3077889,
+   "tags": [
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Postcard-perfect town on a river bend"
+  },
+  {
+   "id": "brno",
+   "name": "Brno",
+   "iso2": "CZ",
+   "lat": 49.19522,
+   "lon": 16.60796,
+   "population": 404296,
+   "timezone": "Europe/Prague",
+   "geonameId": 3078610,
+   "tags": [
+    "city",
+    "nightlife",
+    "food"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Student city with great bars and few tourists"
+  },
+  {
+   "id": "krakow",
+   "name": "Kraków",
+   "iso2": "PL",
+   "lat": 50.06143,
+   "lon": 19.93658,
+   "population": 816614,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3094802,
+   "tags": [
+    "history",
+    "culture",
+    "food",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 5,
+    "max": 10
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Poland's cultural capital; day trips to Auschwitz and the salt mine"
+  },
+  {
+   "id": "warsaw",
+   "name": "Warsaw",
+   "iso2": "PL",
+   "lat": 52.22977,
+   "lon": 21.01178,
+   "population": 1702139,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 756135,
+   "tags": [
+    "city",
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.05,
+   "longStay": true,
+   "blurb": "Rebuilt old town, great museums and a modern skyline"
+  },
+  {
+   "id": "gdansk",
+   "name": "Gdańsk",
+   "iso2": "PL",
+   "lat": 54.35227,
+   "lon": 18.64912,
+   "population": 487371,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3099434,
+   "tags": [
+    "history",
+    "beach",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.05,
+   "longStay": true,
+   "blurb": "Hanseatic port on the Baltic"
+  },
+  {
+   "id": "wroclaw",
+   "name": "Wrocław",
+   "iso2": "PL",
+   "lat": 51.10286,
+   "lon": 17.03006,
+   "population": 672545,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3081368,
+   "tags": [
+    "city",
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Islands, bridges and hundreds of tiny dwarf statues"
+  },
+  {
+   "id": "zakopane",
+   "name": "Zakopane",
+   "iso2": "PL",
+   "lat": 49.29899,
+   "lon": 19.94885,
+   "population": 27266,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3080866,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Mountain resort in the Polish Tatras"
+  },
+  {
+   "id": "poznan",
+   "name": "Poznań",
+   "iso2": "PL",
+   "lat": 52.40692,
+   "lon": 16.92993,
+   "population": 536151,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3088171,
+   "tags": [
+    "city",
+    "culture"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Colourful market square and a big student scene"
+  },
+  {
+   "id": "torun",
+   "name": "Toruń",
+   "iso2": "PL",
+   "lat": 53.01375,
+   "lon": 18.59814,
+   "population": 196935,
+   "timezone": "Europe/Warsaw",
+   "geonameId": 3083271,
+   "tags": [
+    "history"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Gothic old town and gingerbread"
+  },
+  {
+   "id": "vilnius",
+   "name": "Vilnius",
+   "iso2": "LT",
+   "lat": 54.68916,
+   "lon": 25.2798,
+   "population": 542366,
+   "timezone": "Europe/Vilnius",
+   "geonameId": 593116,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Baroque old town and the self-declared Republic of Užupis"
+  },
+  {
+   "id": "kaunas",
+   "name": "Kaunas",
+   "iso2": "LT",
+   "lat": 54.90156,
+   "lon": 23.90909,
+   "population": 289380,
+   "timezone": "Europe/Vilnius",
+   "geonameId": 598316,
+   "tags": [
+    "culture",
+    "history"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Interwar modernist architecture and street art"
+  },
+  {
+   "id": "klaipeda",
+   "name": "Klaipėda",
+   "iso2": "LT",
+   "lat": 55.7068,
+   "lon": 21.13912,
+   "population": 172292,
+   "timezone": "Europe/Vilnius",
+   "geonameId": 598098,
+   "tags": [
+    "beach",
+    "nature"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Gateway to the Curonian Spit dunes"
+  },
+  {
+   "id": "riga",
+   "name": "Riga",
+   "iso2": "LV",
+   "lat": 56.946,
+   "lon": 24.10589,
+   "population": 742572,
+   "timezone": "Europe/Riga",
+   "geonameId": 456172,
+   "tags": [
+    "history",
+    "city",
+    "nightlife",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.05,
+   "longStay": true,
+   "blurb": "Art Nouveau capital with a huge central market"
+  },
+  {
+   "id": "sigulda",
+   "name": "Sigulda",
+   "iso2": "LV",
+   "lat": 57.15375,
+   "lon": 24.85953,
+   "population": 14757,
+   "timezone": "Europe/Riga",
+   "geonameId": 455718,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 3
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Gauja valley castles and forest trails"
+  },
+  {
+   "id": "tallinn",
+   "name": "Tallinn",
+   "iso2": "EE",
+   "lat": 59.43696,
+   "lon": 24.75353,
+   "population": 394024,
+   "timezone": "Europe/Tallinn",
+   "geonameId": 588409,
+   "tags": [
+    "history",
+    "city",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.15,
+   "longStay": true,
+   "blurb": "Medieval old town and a digital-first modern city"
+  },
+  {
+   "id": "tartu",
+   "name": "Tartu",
+   "iso2": "EE",
+   "lat": 58.38062,
+   "lon": 26.72509,
+   "population": 91407,
+   "timezone": "Europe/Tallinn",
+   "geonameId": 588335,
+   "tags": [
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "University town with a young crowd"
+  },
+  {
+   "id": "parnu",
+   "name": "Pärnu",
+   "iso2": "EE",
+   "lat": 58.38588,
+   "lon": 24.49711,
+   "population": 40228,
+   "timezone": "Europe/Tallinn",
+   "geonameId": 589580,
+   "tags": [
+    "beach"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Estonia's summer beach capital"
+  },
+  {
+   "id": "stpetersburg",
+   "name": "Saint Petersburg",
+   "iso2": "RU",
+   "lat": 59.93863,
+   "lon": 30.31413,
+   "population": 5351935,
+   "timezone": "Europe/Moscow",
+   "geonameId": 498817,
+   "tags": [
+    "history",
+    "culture",
+    "city"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 5,
+    "max": 8
+   },
+   "costFactor": 1.2,
+   "longStay": true,
+   "blurb": "Imperial palaces, the Hermitage and White Nights in early summer"
+  },
+  {
+   "id": "moscow",
+   "name": "Moscow",
+   "iso2": "RU",
+   "lat": 55.75204,
+   "lon": 37.61781,
+   "population": 10381222,
+   "timezone": "Europe/Moscow",
+   "geonameId": 524901,
+   "tags": [
+    "city",
+    "history",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.3,
+   "longStay": true,
+   "blurb": "Red Square, grand metro stations and a huge city"
+  },
+  {
+   "id": "pskov",
+   "name": "Pskov",
+   "iso2": "RU",
+   "lat": 57.81922,
+   "lon": 28.33181,
+   "population": 210501,
+   "timezone": "Europe/Moscow",
+   "geonameId": 504341,
+   "tags": [
+    "history"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Ancient kremlin town near the Estonian border"
+  },
+  {
+   "id": "velikynovgorod",
+   "name": "Veliky Novgorod",
+   "iso2": "RU",
+   "lat": 58.52131,
+   "lon": 31.27104,
+   "population": 222868,
+   "timezone": "Europe/Moscow",
+   "geonameId": 519336,
+   "tags": [
+    "history"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "One of Russia's oldest cities"
+  },
+  {
+   "id": "kazan",
+   "name": "Kazan",
+   "iso2": "RU",
+   "lat": 55.78874,
+   "lon": 49.12214,
+   "population": 1243500,
+   "timezone": "Europe/Moscow",
+   "geonameId": 551487,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Tatar capital where mosques and churches share a kremlin"
+  },
+  {
+   "id": "lviv",
+   "name": "Lviv",
+   "iso2": "UA",
+   "lat": 49.83826,
+   "lon": 24.02324,
+   "population": 717273,
+   "timezone": "Europe/Kyiv",
+   "geonameId": 702550,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Coffee houses and a well-preserved old town"
+  },
+  {
+   "id": "kyiv",
+   "name": "Kyiv",
+   "iso2": "UA",
+   "lat": 50.45466,
+   "lon": 30.5238,
+   "population": 2952301,
+   "timezone": "Europe/Kyiv",
+   "geonameId": 703448,
+   "tags": [
+    "city",
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Golden-domed capital"
+  },
+  {
+   "id": "minsk",
+   "name": "Minsk",
+   "iso2": "BY",
+   "lat": 53.90019,
+   "lon": 27.56653,
+   "population": 1742124,
+   "timezone": "Europe/Minsk",
+   "geonameId": 625144,
+   "tags": [
+    "city"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Soviet-era showcase capital"
+  }
+ ]
+}

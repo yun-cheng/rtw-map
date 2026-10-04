@@ -1,0 +1,4412 @@
+{
+ "_meta": {
+  "source": "OSRM (project-osrm.org) on OpenStreetMap data (ODbL); car driving times",
+  "updatedAt": "2026-10-04"
+ },
+ "roads": [
+  {
+   "a": "tirana",
+   "b": "shkoder",
+   "driveMin": 119,
+   "km": 98
+  },
+  {
+   "a": "tirana",
+   "b": "theth",
+   "driveMin": 250,
+   "km": 172
+  },
+  {
+   "a": "tirana",
+   "b": "berat",
+   "driveMin": 121,
+   "km": 124
+  },
+  {
+   "a": "tirana",
+   "b": "gjirokaster",
+   "driveMin": 210,
+   "km": 219
+  },
+  {
+   "a": "tirana",
+   "b": "sarande",
+   "driveMin": 249,
+   "km": 253
+  },
+  {
+   "a": "tirana",
+   "b": "kotor",
+   "driveMin": 263,
+   "km": 198
+  },
+  {
+   "a": "tirana",
+   "b": "budva",
+   "driveMin": 236,
+   "km": 177
+  },
+  {
+   "a": "tirana",
+   "b": "podgorica",
+   "driveMin": 204,
+   "km": 159
+  },
+  {
+   "a": "tirana",
+   "b": "zabljak",
+   "driveMin": 348,
+   "km": 278
+  },
+  {
+   "a": "tirana",
+   "b": "sarajevo",
+   "driveMin": 525,
+   "km": 430
+  },
+  {
+   "a": "tirana",
+   "b": "mostar",
+   "driveMin": 432,
+   "km": 371
+  },
+  {
+   "a": "tirana",
+   "b": "belgrade",
+   "driveMin": 465,
+   "km": 581
+  },
+  {
+   "a": "tirana",
+   "b": "novisad",
+   "driveMin": 523,
+   "km": 677
+  },
+  {
+   "a": "tirana",
+   "b": "nis",
+   "driveMin": 338,
+   "km": 379
+  },
+  {
+   "a": "tirana",
+   "b": "pristina",
+   "driveMin": 208,
+   "km": 255
+  },
+  {
+   "a": "tirana",
+   "b": "prizren",
+   "driveMin": 153,
+   "km": 179
+  },
+  {
+   "a": "tirana",
+   "b": "peja",
+   "driveMin": 224,
+   "km": 270
+  },
+  {
+   "a": "tirana",
+   "b": "skopje",
+   "driveMin": 258,
+   "km": 287
+  },
+  {
+   "a": "tirana",
+   "b": "ohrid",
+   "driveMin": 135,
+   "km": 130
+  },
+  {
+   "a": "tirana",
+   "b": "dubrovnik",
+   "driveMin": 358,
+   "km": 267
+  },
+  {
+   "a": "tirana",
+   "b": "split",
+   "driveMin": 533,
+   "km": 493
+  },
+  {
+   "a": "tirana",
+   "b": "zadar",
+   "driveMin": 609,
+   "km": 613
+  },
+  {
+   "a": "tirana",
+   "b": "thessaloniki",
+   "driveMin": 340,
+   "km": 389
+  },
+  {
+   "a": "tirana",
+   "b": "athens",
+   "driveMin": 533,
+   "km": 664
+  },
+  {
+   "a": "tirana",
+   "b": "sofia",
+   "driveMin": 444,
+   "km": 528
+  },
+  {
+   "a": "tirana",
+   "b": "plovdiv",
+   "driveMin": 527,
+   "km": 688
+  },
+  {
+   "a": "tirana",
+   "b": "velikotarnovo",
+   "driveMin": 609,
+   "km": 759
+  },
+  {
+   "a": "shkoder",
+   "b": "theth",
+   "driveMin": 133,
+   "km": 73
+  },
+  {
+   "a": "shkoder",
+   "b": "berat",
+   "driveMin": 205,
+   "km": 199
+  },
+  {
+   "a": "shkoder",
+   "b": "gjirokaster",
+   "driveMin": 293,
+   "km": 294
+  },
+  {
+   "a": "shkoder",
+   "b": "sarande",
+   "driveMin": 332,
+   "km": 328
+  },
+  {
+   "a": "shkoder",
+   "b": "kotor",
+   "driveMin": 161,
+   "km": 107
+  },
+  {
+   "a": "shkoder",
+   "b": "budva",
+   "driveMin": 133,
+   "km": 86
+  },
+  {
+   "a": "shkoder",
+   "b": "podgorica",
+   "driveMin": 87,
+   "km": 60
+  },
+  {
+   "a": "shkoder",
+   "b": "zabljak",
+   "driveMin": 231,
+   "km": 179
+  },
+  {
+   "a": "shkoder",
+   "b": "sarajevo",
+   "driveMin": 407,
+   "km": 331
+  },
+  {
+   "a": "shkoder",
+   "b": "mostar",
+   "driveMin": 315,
+   "km": 272
+  },
+  {
+   "a": "shkoder",
+   "b": "belgrade",
+   "driveMin": 498,
+   "km": 586
+  },
+  {
+   "a": "shkoder",
+   "b": "novisad",
+   "driveMin": 557,
+   "km": 682
+  },
+  {
+   "a": "shkoder",
+   "b": "nis",
+   "driveMin": 371,
+   "km": 384
+  },
+  {
+   "a": "shkoder",
+   "b": "pristina",
+   "driveMin": 241,
+   "km": 260
+  },
+  {
+   "a": "shkoder",
+   "b": "prizren",
+   "driveMin": 187,
+   "km": 183
+  },
+  {
+   "a": "shkoder",
+   "b": "peja",
+   "driveMin": 257,
+   "km": 275
+  },
+  {
+   "a": "shkoder",
+   "b": "skopje",
+   "driveMin": 292,
+   "km": 291
+  },
+  {
+   "a": "shkoder",
+   "b": "ohrid",
+   "driveMin": 243,
+   "km": 229
+  },
+  {
+   "a": "shkoder",
+   "b": "dubrovnik",
+   "driveMin": 255,
+   "km": 177
+  },
+  {
+   "a": "shkoder",
+   "b": "split",
+   "driveMin": 416,
+   "km": 394
+  },
+  {
+   "a": "shkoder",
+   "b": "zadar",
+   "driveMin": 492,
+   "km": 514
+  },
+  {
+   "a": "shkoder",
+   "b": "zagreb",
+   "driveMin": 648,
+   "km": 766
+  },
+  {
+   "a": "shkoder",
+   "b": "thessaloniki",
+   "driveMin": 447,
+   "km": 489
+  },
+  {
+   "a": "shkoder",
+   "b": "athens",
+   "driveMin": 640,
+   "km": 763
+  },
+  {
+   "a": "shkoder",
+   "b": "sofia",
+   "driveMin": 478,
+   "km": 533
+  },
+  {
+   "a": "shkoder",
+   "b": "plovdiv",
+   "driveMin": 561,
+   "km": 693
+  },
+  {
+   "a": "shkoder",
+   "b": "velikotarnovo",
+   "driveMin": 643,
+   "km": 764
+  },
+  {
+   "a": "theth",
+   "b": "berat",
+   "driveMin": 333,
+   "km": 271
+  },
+  {
+   "a": "theth",
+   "b": "gjirokaster",
+   "driveMin": 422,
+   "km": 366
+  },
+  {
+   "a": "theth",
+   "b": "sarande",
+   "driveMin": 461,
+   "km": 399
+  },
+  {
+   "a": "theth",
+   "b": "kotor",
+   "driveMin": 254,
+   "km": 168
+  },
+  {
+   "a": "theth",
+   "b": "budva",
+   "driveMin": 242,
+   "km": 154
+  },
+  {
+   "a": "theth",
+   "b": "podgorica",
+   "driveMin": 166,
+   "km": 98
+  },
+  {
+   "a": "theth",
+   "b": "zabljak",
+   "driveMin": 310,
+   "km": 217
+  },
+  {
+   "a": "theth",
+   "b": "sarajevo",
+   "driveMin": 486,
+   "km": 369
+  },
+  {
+   "a": "theth",
+   "b": "mostar",
+   "driveMin": 394,
+   "km": 310
+  },
+  {
+   "a": "theth",
+   "b": "belgrade",
+   "driveMin": 607,
+   "km": 526
+  },
+  {
+   "a": "theth",
+   "b": "novisad",
+   "driveMin": 641,
+   "km": 592
+  },
+  {
+   "a": "theth",
+   "b": "nis",
+   "driveMin": 500,
+   "km": 456
+  },
+  {
+   "a": "theth",
+   "b": "pristina",
+   "driveMin": 370,
+   "km": 332
+  },
+  {
+   "a": "theth",
+   "b": "prizren",
+   "driveMin": 315,
+   "km": 255
+  },
+  {
+   "a": "theth",
+   "b": "peja",
+   "driveMin": 381,
+   "km": 267
+  },
+  {
+   "a": "theth",
+   "b": "skopje",
+   "driveMin": 420,
+   "km": 363
+  },
+  {
+   "a": "theth",
+   "b": "ohrid",
+   "driveMin": 371,
+   "km": 301
+  },
+  {
+   "a": "theth",
+   "b": "dubrovnik",
+   "driveMin": 344,
+   "km": 244
+  },
+  {
+   "a": "theth",
+   "b": "split",
+   "driveMin": 495,
+   "km": 432
+  },
+  {
+   "a": "theth",
+   "b": "zadar",
+   "driveMin": 571,
+   "km": 552
+  },
+  {
+   "a": "theth",
+   "b": "thessaloniki",
+   "driveMin": 576,
+   "km": 560
+  },
+  {
+   "a": "theth",
+   "b": "sofia",
+   "driveMin": 606,
+   "km": 605
+  },
+  {
+   "a": "theth",
+   "b": "plovdiv",
+   "driveMin": 689,
+   "km": 764
+  },
+  {
+   "a": "berat",
+   "b": "gjirokaster",
+   "driveMin": 162,
+   "km": 147
+  },
+  {
+   "a": "berat",
+   "b": "sarande",
+   "driveMin": 201,
+   "km": 181
+  },
+  {
+   "a": "berat",
+   "b": "kotor",
+   "driveMin": 351,
+   "km": 297
+  },
+  {
+   "a": "berat",
+   "b": "budva",
+   "driveMin": 323,
+   "km": 275
+  },
+  {
+   "a": "berat",
+   "b": "podgorica",
+   "driveMin": 292,
+   "km": 258
+  },
+  {
+   "a": "berat",
+   "b": "zabljak",
+   "driveMin": 436,
+   "km": 376
+  },
+  {
+   "a": "berat",
+   "b": "sarajevo",
+   "driveMin": 612,
+   "km": 529
+  },
+  {
+   "a": "berat",
+   "b": "mostar",
+   "driveMin": 520,
+   "km": 470
+  },
+  {
+   "a": "berat",
+   "b": "belgrade",
+   "driveMin": 552,
+   "km": 680
+  },
+  {
+   "a": "berat",
+   "b": "novisad",
+   "driveMin": 611,
+   "km": 776
+  },
+  {
+   "a": "berat",
+   "b": "nis",
+   "driveMin": 425,
+   "km": 478
+  },
+  {
+   "a": "berat",
+   "b": "pristina",
+   "driveMin": 295,
+   "km": 354
+  },
+  {
+   "a": "berat",
+   "b": "prizren",
+   "driveMin": 241,
+   "km": 278
+  },
+  {
+   "a": "berat",
+   "b": "peja",
+   "driveMin": 311,
+   "km": 369
+  },
+  {
+   "a": "berat",
+   "b": "skopje",
+   "driveMin": 346,
+   "km": 385
+  },
+  {
+   "a": "berat",
+   "b": "ohrid",
+   "driveMin": 188,
+   "km": 153
+  },
+  {
+   "a": "berat",
+   "b": "dubrovnik",
+   "driveMin": 445,
+   "km": 366
+  },
+  {
+   "a": "berat",
+   "b": "split",
+   "driveMin": 620,
+   "km": 591
+  },
+  {
+   "a": "berat",
+   "b": "zadar",
+   "driveMin": 696,
+   "km": 712
+  },
+  {
+   "a": "berat",
+   "b": "thessaloniki",
+   "driveMin": 369,
+   "km": 393
+  },
+  {
+   "a": "berat",
+   "b": "athens",
+   "driveMin": 549,
+   "km": 645
+  },
+  {
+   "a": "berat",
+   "b": "sofia",
+   "driveMin": 532,
+   "km": 627
+  },
+  {
+   "a": "berat",
+   "b": "plovdiv",
+   "driveMin": 615,
+   "km": 787
+  },
+  {
+   "a": "gjirokaster",
+   "b": "sarande",
+   "driveMin": 63,
+   "km": 53
+  },
+  {
+   "a": "gjirokaster",
+   "b": "kotor",
+   "driveMin": 438,
+   "km": 391
+  },
+  {
+   "a": "gjirokaster",
+   "b": "budva",
+   "driveMin": 410,
+   "km": 370
+  },
+  {
+   "a": "gjirokaster",
+   "b": "podgorica",
+   "driveMin": 378,
+   "km": 353
+  },
+  {
+   "a": "gjirokaster",
+   "b": "zabljak",
+   "driveMin": 522,
+   "km": 471
+  },
+  {
+   "a": "gjirokaster",
+   "b": "sarajevo",
+   "driveMin": 699,
+   "km": 623
+  },
+  {
+   "a": "gjirokaster",
+   "b": "mostar",
+   "driveMin": 606,
+   "km": 564
+  },
+  {
+   "a": "gjirokaster",
+   "b": "belgrade",
+   "driveMin": 639,
+   "km": 775
+  },
+  {
+   "a": "gjirokaster",
+   "b": "nis",
+   "driveMin": 512,
+   "km": 573
+  },
+  {
+   "a": "gjirokaster",
+   "b": "pristina",
+   "driveMin": 382,
+   "km": 449
+  },
+  {
+   "a": "gjirokaster",
+   "b": "prizren",
+   "driveMin": 327,
+   "km": 372
+  },
+  {
+   "a": "gjirokaster",
+   "b": "peja",
+   "driveMin": 398,
+   "km": 464
+  },
+  {
+   "a": "gjirokaster",
+   "b": "skopje",
+   "driveMin": 430,
+   "km": 534
+  },
+  {
+   "a": "gjirokaster",
+   "b": "ohrid",
+   "driveMin": 291,
+   "km": 279
+  },
+  {
+   "a": "gjirokaster",
+   "b": "dubrovnik",
+   "driveMin": 532,
+   "km": 461
+  },
+  {
+   "a": "gjirokaster",
+   "b": "split",
+   "driveMin": 707,
+   "km": 686
+  },
+  {
+   "a": "gjirokaster",
+   "b": "thessaloniki",
+   "driveMin": 287,
+   "km": 340
+  },
+  {
+   "a": "gjirokaster",
+   "b": "athens",
+   "driveMin": 392,
+   "km": 500
+  },
+  {
+   "a": "gjirokaster",
+   "b": "sofia",
+   "driveMin": 500,
+   "km": 631
+  },
+  {
+   "a": "gjirokaster",
+   "b": "plovdiv",
+   "driveMin": 587,
+   "km": 784
+  },
+  {
+   "a": "sarande",
+   "b": "kotor",
+   "driveMin": 478,
+   "km": 425
+  },
+  {
+   "a": "sarande",
+   "b": "budva",
+   "driveMin": 450,
+   "km": 404
+  },
+  {
+   "a": "sarande",
+   "b": "podgorica",
+   "driveMin": 419,
+   "km": 387
+  },
+  {
+   "a": "sarande",
+   "b": "zabljak",
+   "driveMin": 562,
+   "km": 505
+  },
+  {
+   "a": "sarande",
+   "b": "sarajevo",
+   "driveMin": 739,
+   "km": 657
+  },
+  {
+   "a": "sarande",
+   "b": "mostar",
+   "driveMin": 647,
+   "km": 598
+  },
+  {
+   "a": "sarande",
+   "b": "nis",
+   "driveMin": 552,
+   "km": 607
+  },
+  {
+   "a": "sarande",
+   "b": "pristina",
+   "driveMin": 422,
+   "km": 483
+  },
+  {
+   "a": "sarande",
+   "b": "prizren",
+   "driveMin": 368,
+   "km": 406
+  },
+  {
+   "a": "sarande",
+   "b": "peja",
+   "driveMin": 438,
+   "km": 498
+  },
+  {
+   "a": "sarande",
+   "b": "skopje",
+   "driveMin": 461,
+   "km": 583
+  },
+  {
+   "a": "sarande",
+   "b": "ohrid",
+   "driveMin": 331,
+   "km": 313
+  },
+  {
+   "a": "sarande",
+   "b": "dubrovnik",
+   "driveMin": 572,
+   "km": 495
+  },
+  {
+   "a": "sarande",
+   "b": "split",
+   "driveMin": 747,
+   "km": 720
+  },
+  {
+   "a": "sarande",
+   "b": "thessaloniki",
+   "driveMin": 319,
+   "km": 388
+  },
+  {
+   "a": "sarande",
+   "b": "athens",
+   "driveMin": 409,
+   "km": 496
+  },
+  {
+   "a": "sarande",
+   "b": "sofia",
+   "driveMin": 532,
+   "km": 680
+  },
+  {
+   "a": "kotor",
+   "b": "budva",
+   "driveMin": 29,
+   "km": 22
+  },
+  {
+   "a": "kotor",
+   "b": "podgorica",
+   "driveMin": 90,
+   "km": 72
+  },
+  {
+   "a": "kotor",
+   "b": "zabljak",
+   "driveMin": 192,
+   "km": 153
+  },
+  {
+   "a": "kotor",
+   "b": "sarajevo",
+   "driveMin": 346,
+   "km": 303
+  },
+  {
+   "a": "kotor",
+   "b": "mostar",
+   "driveMin": 225,
+   "km": 184
+  },
+  {
+   "a": "kotor",
+   "b": "belgrade",
+   "driveMin": 534,
+   "km": 501
+  },
+  {
+   "a": "kotor",
+   "b": "novisad",
+   "driveMin": 568,
+   "km": 568
+  },
+  {
+   "a": "kotor",
+   "b": "nis",
+   "driveMin": 485,
+   "km": 424
+  },
+  {
+   "a": "kotor",
+   "b": "pristina",
+   "driveMin": 367,
+   "km": 317
+  },
+  {
+   "a": "kotor",
+   "b": "prizren",
+   "driveMin": 329,
+   "km": 281
+  },
+  {
+   "a": "kotor",
+   "b": "peja",
+   "driveMin": 307,
+   "km": 242
+  },
+  {
+   "a": "kotor",
+   "b": "skopje",
+   "driveMin": 434,
+   "km": 389
+  },
+  {
+   "a": "kotor",
+   "b": "ohrid",
+   "driveMin": 386,
+   "km": 327
+  },
+  {
+   "a": "kotor",
+   "b": "dubrovnik",
+   "driveMin": 109,
+   "km": 79
+  },
+  {
+   "a": "kotor",
+   "b": "split",
+   "driveMin": 301,
+   "km": 309
+  },
+  {
+   "a": "kotor",
+   "b": "zadar",
+   "driveMin": 377,
+   "km": 430
+  },
+  {
+   "a": "kotor",
+   "b": "zagreb",
+   "driveMin": 534,
+   "km": 682
+  },
+  {
+   "a": "kotor",
+   "b": "ljubljana",
+   "driveMin": 584,
+   "km": 738
+  },
+  {
+   "a": "kotor",
+   "b": "bled",
+   "driveMin": 617,
+   "km": 794
+  },
+  {
+   "a": "kotor",
+   "b": "thessaloniki",
+   "driveMin": 590,
+   "km": 587
+  },
+  {
+   "a": "kotor",
+   "b": "sofia",
+   "driveMin": 595,
+   "km": 590
+  },
+  {
+   "a": "kotor",
+   "b": "plovdiv",
+   "driveMin": 675,
+   "km": 733
+  },
+  {
+   "a": "budva",
+   "b": "podgorica",
+   "driveMin": 79,
+   "km": 60
+  },
+  {
+   "a": "budva",
+   "b": "zabljak",
+   "driveMin": 198,
+   "km": 160
+  },
+  {
+   "a": "budva",
+   "b": "sarajevo",
+   "driveMin": 359,
+   "km": 315
+  },
+  {
+   "a": "budva",
+   "b": "mostar",
+   "driveMin": 238,
+   "km": 196
+  },
+  {
+   "a": "budva",
+   "b": "belgrade",
+   "driveMin": 522,
+   "km": 490
+  },
+  {
+   "a": "budva",
+   "b": "novisad",
+   "driveMin": 556,
+   "km": 556
+  },
+  {
+   "a": "budva",
+   "b": "nis",
+   "driveMin": 474,
+   "km": 413
+  },
+  {
+   "a": "budva",
+   "b": "pristina",
+   "driveMin": 355,
+   "km": 306
+  },
+  {
+   "a": "budva",
+   "b": "prizren",
+   "driveMin": 301,
+   "km": 260
+  },
+  {
+   "a": "budva",
+   "b": "peja",
+   "driveMin": 296,
+   "km": 231
+  },
+  {
+   "a": "budva",
+   "b": "skopje",
+   "driveMin": 406,
+   "km": 368
+  },
+  {
+   "a": "budva",
+   "b": "ohrid",
+   "driveMin": 357,
+   "km": 305
+  },
+  {
+   "a": "budva",
+   "b": "dubrovnik",
+   "driveMin": 122,
+   "km": 91
+  },
+  {
+   "a": "budva",
+   "b": "split",
+   "driveMin": 315,
+   "km": 321
+  },
+  {
+   "a": "budva",
+   "b": "zadar",
+   "driveMin": 390,
+   "km": 441
+  },
+  {
+   "a": "budva",
+   "b": "zagreb",
+   "driveMin": 547,
+   "km": 694
+  },
+  {
+   "a": "budva",
+   "b": "ljubljana",
+   "driveMin": 597,
+   "km": 750
+  },
+  {
+   "a": "budva",
+   "b": "thessaloniki",
+   "driveMin": 561,
+   "km": 565
+  },
+  {
+   "a": "budva",
+   "b": "sofia",
+   "driveMin": 583,
+   "km": 578
+  },
+  {
+   "a": "budva",
+   "b": "plovdiv",
+   "driveMin": 663,
+   "km": 721
+  },
+  {
+   "a": "budva",
+   "b": "velikotarnovo",
+   "driveMin": 745,
+   "km": 792
+  },
+  {
+   "a": "podgorica",
+   "b": "zabljak",
+   "driveMin": 147,
+   "km": 120
+  },
+  {
+   "a": "podgorica",
+   "b": "sarajevo",
+   "driveMin": 323,
+   "km": 271
+  },
+  {
+   "a": "podgorica",
+   "b": "mostar",
+   "driveMin": 230,
+   "km": 212
+  },
+  {
+   "a": "podgorica",
+   "b": "belgrade",
+   "driveMin": 444,
+   "km": 429
+  },
+  {
+   "a": "podgorica",
+   "b": "novisad",
+   "driveMin": 478,
+   "km": 496
+  },
+  {
+   "a": "podgorica",
+   "b": "nis",
+   "driveMin": 396,
+   "km": 352
+  },
+  {
+   "a": "podgorica",
+   "b": "pristina",
+   "driveMin": 277,
+   "km": 245
+  },
+  {
+   "a": "podgorica",
+   "b": "prizren",
+   "driveMin": 269,
+   "km": 243
+  },
+  {
+   "a": "podgorica",
+   "b": "peja",
+   "driveMin": 218,
+   "km": 170
+  },
+  {
+   "a": "podgorica",
+   "b": "skopje",
+   "driveMin": 344,
+   "km": 330
+  },
+  {
+   "a": "podgorica",
+   "b": "ohrid",
+   "driveMin": 326,
+   "km": 288
+  },
+  {
+   "a": "podgorica",
+   "b": "dubrovnik",
+   "driveMin": 180,
+   "km": 147
+  },
+  {
+   "a": "podgorica",
+   "b": "split",
+   "driveMin": 331,
+   "km": 334
+  },
+  {
+   "a": "podgorica",
+   "b": "zadar",
+   "driveMin": 407,
+   "km": 455
+  },
+  {
+   "a": "podgorica",
+   "b": "zagreb",
+   "driveMin": 563,
+   "km": 707
+  },
+  {
+   "a": "podgorica",
+   "b": "ljubljana",
+   "driveMin": 613,
+   "km": 763
+  },
+  {
+   "a": "podgorica",
+   "b": "thessaloniki",
+   "driveMin": 506,
+   "km": 560
+  },
+  {
+   "a": "podgorica",
+   "b": "sofia",
+   "driveMin": 506,
+   "km": 518
+  },
+  {
+   "a": "podgorica",
+   "b": "plovdiv",
+   "driveMin": 585,
+   "km": 661
+  },
+  {
+   "a": "podgorica",
+   "b": "velikotarnovo",
+   "driveMin": 667,
+   "km": 732
+  },
+  {
+   "a": "podgorica",
+   "b": "budapest",
+   "driveMin": 652,
+   "km": 779
+  },
+  {
+   "a": "zabljak",
+   "b": "sarajevo",
+   "driveMin": 255,
+   "km": 212
+  },
+  {
+   "a": "zabljak",
+   "b": "mostar",
+   "driveMin": 242,
+   "km": 214
+  },
+  {
+   "a": "zabljak",
+   "b": "belgrade",
+   "driveMin": 392,
+   "km": 390
+  },
+  {
+   "a": "zabljak",
+   "b": "novisad",
+   "driveMin": 426,
+   "km": 456
+  },
+  {
+   "a": "zabljak",
+   "b": "nis",
+   "driveMin": 420,
+   "km": 436
+  },
+  {
+   "a": "zabljak",
+   "b": "pristina",
+   "driveMin": 322,
+   "km": 274
+  },
+  {
+   "a": "zabljak",
+   "b": "prizren",
+   "driveMin": 335,
+   "km": 291
+  },
+  {
+   "a": "zabljak",
+   "b": "peja",
+   "driveMin": 263,
+   "km": 199
+  },
+  {
+   "a": "zabljak",
+   "b": "skopje",
+   "driveMin": 389,
+   "km": 359
+  },
+  {
+   "a": "zabljak",
+   "b": "ohrid",
+   "driveMin": 467,
+   "km": 407
+  },
+  {
+   "a": "zabljak",
+   "b": "dubrovnik",
+   "driveMin": 213,
+   "km": 166
+  },
+  {
+   "a": "zabljak",
+   "b": "split",
+   "driveMin": 359,
+   "km": 372
+  },
+  {
+   "a": "zabljak",
+   "b": "zadar",
+   "driveMin": 435,
+   "km": 493
+  },
+  {
+   "a": "zabljak",
+   "b": "zagreb",
+   "driveMin": 555,
+   "km": 609
+  },
+  {
+   "a": "zabljak",
+   "b": "ljubljana",
+   "driveMin": 634,
+   "km": 747
+  },
+  {
+   "a": "zabljak",
+   "b": "thessaloniki",
+   "driveMin": 551,
+   "km": 589
+  },
+  {
+   "a": "zabljak",
+   "b": "sofia",
+   "driveMin": 529,
+   "km": 594
+  },
+  {
+   "a": "zabljak",
+   "b": "plovdiv",
+   "driveMin": 609,
+   "km": 737
+  },
+  {
+   "a": "zabljak",
+   "b": "budapest",
+   "driveMin": 599,
+   "km": 739
+  },
+  {
+   "a": "sarajevo",
+   "b": "mostar",
+   "driveMin": 125,
+   "km": 121
+  },
+  {
+   "a": "sarajevo",
+   "b": "belgrade",
+   "driveMin": 266,
+   "km": 302
+  },
+  {
+   "a": "sarajevo",
+   "b": "novisad",
+   "driveMin": 271,
+   "km": 283
+  },
+  {
+   "a": "sarajevo",
+   "b": "nis",
+   "driveMin": 388,
+   "km": 432
+  },
+  {
+   "a": "sarajevo",
+   "b": "pristina",
+   "driveMin": 432,
+   "km": 385
+  },
+  {
+   "a": "sarajevo",
+   "b": "prizren",
+   "driveMin": 479,
+   "km": 433
+  },
+  {
+   "a": "sarajevo",
+   "b": "peja",
+   "driveMin": 424,
+   "km": 332
+  },
+  {
+   "a": "sarajevo",
+   "b": "skopje",
+   "driveMin": 499,
+   "km": 470
+  },
+  {
+   "a": "sarajevo",
+   "b": "ohrid",
+   "driveMin": 654,
+   "km": 611
+  },
+  {
+   "a": "sarajevo",
+   "b": "dubrovnik",
+   "driveMin": 271,
+   "km": 265
+  },
+  {
+   "a": "sarajevo",
+   "b": "split",
+   "driveMin": 228,
+   "km": 235
+  },
+  {
+   "a": "sarajevo",
+   "b": "zadar",
+   "driveMin": 304,
+   "km": 355
+  },
+  {
+   "a": "sarajevo",
+   "b": "zagreb",
+   "driveMin": 303,
+   "km": 398
+  },
+  {
+   "a": "sarajevo",
+   "b": "ljubljana",
+   "driveMin": 382,
+   "km": 536
+  },
+  {
+   "a": "sarajevo",
+   "b": "bled",
+   "driveMin": 415,
+   "km": 591
+  },
+  {
+   "a": "sarajevo",
+   "b": "sofia",
+   "driveMin": 497,
+   "km": 591
+  },
+  {
+   "a": "sarajevo",
+   "b": "plovdiv",
+   "driveMin": 577,
+   "km": 734
+  },
+  {
+   "a": "sarajevo",
+   "b": "sighisoara",
+   "driveMin": 688,
+   "km": 771
+  },
+  {
+   "a": "sarajevo",
+   "b": "sibiu",
+   "driveMin": 601,
+   "km": 701
+  },
+  {
+   "a": "sarajevo",
+   "b": "cluj",
+   "driveMin": 636,
+   "km": 742
+  },
+  {
+   "a": "sarajevo",
+   "b": "budapest",
+   "driveMin": 393,
+   "km": 516
+  },
+  {
+   "a": "sarajevo",
+   "b": "eger",
+   "driveMin": 476,
+   "km": 658
+  },
+  {
+   "a": "sarajevo",
+   "b": "bratislava",
+   "driveMin": 493,
+   "km": 696
+  },
+  {
+   "a": "sarajevo",
+   "b": "kosice",
+   "driveMin": 553,
+   "km": 788
+  },
+  {
+   "a": "mostar",
+   "b": "belgrade",
+   "driveMin": 383,
+   "km": 404
+  },
+  {
+   "a": "mostar",
+   "b": "novisad",
+   "driveMin": 387,
+   "km": 385
+  },
+  {
+   "a": "mostar",
+   "b": "nis",
+   "driveMin": 510,
+   "km": 552
+  },
+  {
+   "a": "mostar",
+   "b": "pristina",
+   "driveMin": 504,
+   "km": 458
+  },
+  {
+   "a": "mostar",
+   "b": "prizren",
+   "driveMin": 495,
+   "km": 455
+  },
+  {
+   "a": "mostar",
+   "b": "peja",
+   "driveMin": 445,
+   "km": 384
+  },
+  {
+   "a": "mostar",
+   "b": "skopje",
+   "driveMin": 571,
+   "km": 543
+  },
+  {
+   "a": "mostar",
+   "b": "ohrid",
+   "driveMin": 552,
+   "km": 501
+  },
+  {
+   "a": "mostar",
+   "b": "dubrovnik",
+   "driveMin": 151,
+   "km": 146
+  },
+  {
+   "a": "mostar",
+   "b": "split",
+   "driveMin": 132,
+   "km": 175
+  },
+  {
+   "a": "mostar",
+   "b": "zadar",
+   "driveMin": 208,
+   "km": 295
+  },
+  {
+   "a": "mostar",
+   "b": "zagreb",
+   "driveMin": 364,
+   "km": 548
+  },
+  {
+   "a": "mostar",
+   "b": "ljubljana",
+   "driveMin": 415,
+   "km": 604
+  },
+  {
+   "a": "mostar",
+   "b": "bled",
+   "driveMin": 448,
+   "km": 660
+  },
+  {
+   "a": "mostar",
+   "b": "thessaloniki",
+   "driveMin": 733,
+   "km": 774
+  },
+  {
+   "a": "mostar",
+   "b": "sofia",
+   "driveMin": 619,
+   "km": 710
+  },
+  {
+   "a": "mostar",
+   "b": "budapest",
+   "driveMin": 503,
+   "km": 623
+  },
+  {
+   "a": "mostar",
+   "b": "eger",
+   "driveMin": 586,
+   "km": 764
+  },
+  {
+   "a": "belgrade",
+   "b": "novisad",
+   "driveMin": 69,
+   "km": 95
+  },
+  {
+   "a": "belgrade",
+   "b": "nis",
+   "driveMin": 150,
+   "km": 236
+  },
+  {
+   "a": "belgrade",
+   "b": "pristina",
+   "driveMin": 286,
+   "km": 371
+  },
+  {
+   "a": "belgrade",
+   "b": "prizren",
+   "driveMin": 357,
+   "km": 452
+  },
+  {
+   "a": "belgrade",
+   "b": "peja",
+   "driveMin": 370,
+   "km": 454
+  },
+  {
+   "a": "belgrade",
+   "b": "skopje",
+   "driveMin": 274,
+   "km": 430
+  },
+  {
+   "a": "belgrade",
+   "b": "ohrid",
+   "driveMin": 443,
+   "km": 608
+  },
+  {
+   "a": "belgrade",
+   "b": "dubrovnik",
+   "driveMin": 527,
+   "km": 548
+  },
+  {
+   "a": "belgrade",
+   "b": "split",
+   "driveMin": 485,
+   "km": 517
+  },
+  {
+   "a": "belgrade",
+   "b": "zadar",
+   "driveMin": 436,
+   "km": 677
+  },
+  {
+   "a": "belgrade",
+   "b": "zagreb",
+   "driveMin": 251,
+   "km": 394
+  },
+  {
+   "a": "belgrade",
+   "b": "ljubljana",
+   "driveMin": 330,
+   "km": 532
+  },
+  {
+   "a": "belgrade",
+   "b": "bled",
+   "driveMin": 363,
+   "km": 588
+  },
+  {
+   "a": "belgrade",
+   "b": "thessaloniki",
+   "driveMin": 415,
+   "km": 627
+  },
+  {
+   "a": "belgrade",
+   "b": "sofia",
+   "driveMin": 260,
+   "km": 394
+  },
+  {
+   "a": "belgrade",
+   "b": "plovdiv",
+   "driveMin": 339,
+   "km": 537
+  },
+  {
+   "a": "belgrade",
+   "b": "velikotarnovo",
+   "driveMin": 421,
+   "km": 609
+  },
+  {
+   "a": "belgrade",
+   "b": "bucharest",
+   "driveMin": 505,
+   "km": 622
+  },
+  {
+   "a": "belgrade",
+   "b": "brasov",
+   "driveMin": 489,
+   "km": 563
+  },
+  {
+   "a": "belgrade",
+   "b": "sighisoara",
+   "driveMin": 431,
+   "km": 493
+  },
+  {
+   "a": "belgrade",
+   "b": "sibiu",
+   "driveMin": 344,
+   "km": 422
+  },
+  {
+   "a": "belgrade",
+   "b": "cluj",
+   "driveMin": 379,
+   "km": 463
+  },
+  {
+   "a": "belgrade",
+   "b": "budapest",
+   "driveMin": 242,
+   "km": 378
+  },
+  {
+   "a": "belgrade",
+   "b": "eger",
+   "driveMin": 311,
+   "km": 495
+  },
+  {
+   "a": "belgrade",
+   "b": "bratislava",
+   "driveMin": 353,
+   "km": 572
+  },
+  {
+   "a": "belgrade",
+   "b": "kosice",
+   "driveMin": 387,
+   "km": 625
+  },
+  {
+   "a": "belgrade",
+   "b": "poprad",
+   "driveMin": 453,
+   "km": 739
+  },
+  {
+   "a": "belgrade",
+   "b": "brno",
+   "driveMin": 431,
+   "km": 698
+  },
+  {
+   "a": "novisad",
+   "b": "nis",
+   "driveMin": 209,
+   "km": 332
+  },
+  {
+   "a": "novisad",
+   "b": "pristina",
+   "driveMin": 345,
+   "km": 467
+  },
+  {
+   "a": "novisad",
+   "b": "prizren",
+   "driveMin": 415,
+   "km": 548
+  },
+  {
+   "a": "novisad",
+   "b": "peja",
+   "driveMin": 408,
+   "km": 448
+  },
+  {
+   "a": "novisad",
+   "b": "skopje",
+   "driveMin": 332,
+   "km": 526
+  },
+  {
+   "a": "novisad",
+   "b": "ohrid",
+   "driveMin": 501,
+   "km": 704
+  },
+  {
+   "a": "novisad",
+   "b": "dubrovnik",
+   "driveMin": 537,
+   "km": 530
+  },
+  {
+   "a": "novisad",
+   "b": "split",
+   "driveMin": 494,
+   "km": 500
+  },
+  {
+   "a": "novisad",
+   "b": "zadar",
+   "driveMin": 448,
+   "km": 660
+  },
+  {
+   "a": "novisad",
+   "b": "zagreb",
+   "driveMin": 262,
+   "km": 377
+  },
+  {
+   "a": "novisad",
+   "b": "ljubljana",
+   "driveMin": 341,
+   "km": 515
+  },
+  {
+   "a": "novisad",
+   "b": "bled",
+   "driveMin": 375,
+   "km": 571
+  },
+  {
+   "a": "novisad",
+   "b": "thessaloniki",
+   "driveMin": 473,
+   "km": 723
+  },
+  {
+   "a": "novisad",
+   "b": "sofia",
+   "driveMin": 318,
+   "km": 491
+  },
+  {
+   "a": "novisad",
+   "b": "plovdiv",
+   "driveMin": 398,
+   "km": 634
+  },
+  {
+   "a": "novisad",
+   "b": "velikotarnovo",
+   "driveMin": 479,
+   "km": 705
+  },
+  {
+   "a": "novisad",
+   "b": "bucharest",
+   "driveMin": 563,
+   "km": 718
+  },
+  {
+   "a": "novisad",
+   "b": "brasov",
+   "driveMin": 477,
+   "km": 560
+  },
+  {
+   "a": "novisad",
+   "b": "sighisoara",
+   "driveMin": 419,
+   "km": 489
+  },
+  {
+   "a": "novisad",
+   "b": "sibiu",
+   "driveMin": 332,
+   "km": 419
+  },
+  {
+   "a": "novisad",
+   "b": "cluj",
+   "driveMin": 367,
+   "km": 459
+  },
+  {
+   "a": "novisad",
+   "b": "budapest",
+   "driveMin": 196,
+   "km": 296
+  },
+  {
+   "a": "novisad",
+   "b": "eger",
+   "driveMin": 265,
+   "km": 413
+  },
+  {
+   "a": "novisad",
+   "b": "bratislava",
+   "driveMin": 308,
+   "km": 490
+  },
+  {
+   "a": "novisad",
+   "b": "kosice",
+   "driveMin": 341,
+   "km": 543
+  },
+  {
+   "a": "novisad",
+   "b": "poprad",
+   "driveMin": 408,
+   "km": 657
+  },
+  {
+   "a": "novisad",
+   "b": "ceskykrumlov",
+   "driveMin": 507,
+   "km": 735
+  },
+  {
+   "a": "novisad",
+   "b": "brno",
+   "driveMin": 385,
+   "km": 616
+  },
+  {
+   "a": "novisad",
+   "b": "zakopane",
+   "driveMin": 477,
+   "km": 719
+  },
+  {
+   "a": "nis",
+   "b": "pristina",
+   "driveMin": 157,
+   "km": 151
+  },
+  {
+   "a": "nis",
+   "b": "prizren",
+   "driveMin": 228,
+   "km": 233
+  },
+  {
+   "a": "nis",
+   "b": "peja",
+   "driveMin": 241,
+   "km": 235
+  },
+  {
+   "a": "nis",
+   "b": "skopje",
+   "driveMin": 145,
+   "km": 211
+  },
+  {
+   "a": "nis",
+   "b": "ohrid",
+   "driveMin": 314,
+   "km": 389
+  },
+  {
+   "a": "nis",
+   "b": "dubrovnik",
+   "driveMin": 575,
+   "km": 493
+  },
+  {
+   "a": "nis",
+   "b": "split",
+   "driveMin": 608,
+   "km": 668
+  },
+  {
+   "a": "nis",
+   "b": "zagreb",
+   "driveMin": 392,
+   "km": 631
+  },
+  {
+   "a": "nis",
+   "b": "ljubljana",
+   "driveMin": 471,
+   "km": 769
+  },
+  {
+   "a": "nis",
+   "b": "thessaloniki",
+   "driveMin": 285,
+   "km": 408
+  },
+  {
+   "a": "nis",
+   "b": "sofia",
+   "driveMin": 123,
+   "km": 162
+  },
+  {
+   "a": "nis",
+   "b": "plovdiv",
+   "driveMin": 202,
+   "km": 305
+  },
+  {
+   "a": "nis",
+   "b": "velikotarnovo",
+   "driveMin": 284,
+   "km": 376
+  },
+  {
+   "a": "nis",
+   "b": "varna",
+   "driveMin": 450,
+   "km": 686
+  },
+  {
+   "a": "nis",
+   "b": "bucharest",
+   "driveMin": 436,
+   "km": 480
+  },
+  {
+   "a": "nis",
+   "b": "brasov",
+   "driveMin": 546,
+   "km": 523
+  },
+  {
+   "a": "nis",
+   "b": "sighisoara",
+   "driveMin": 566,
+   "km": 690
+  },
+  {
+   "a": "nis",
+   "b": "sibiu",
+   "driveMin": 479,
+   "km": 620
+  },
+  {
+   "a": "nis",
+   "b": "cluj",
+   "driveMin": 515,
+   "km": 661
+  },
+  {
+   "a": "nis",
+   "b": "budapest",
+   "driveMin": 383,
+   "km": 614
+  },
+  {
+   "a": "nis",
+   "b": "eger",
+   "driveMin": 452,
+   "km": 731
+  },
+  {
+   "a": "pristina",
+   "b": "prizren",
+   "driveMin": 72,
+   "km": 82
+  },
+  {
+   "a": "pristina",
+   "b": "peja",
+   "driveMin": 85,
+   "km": 84
+  },
+  {
+   "a": "pristina",
+   "b": "skopje",
+   "driveMin": 86,
+   "km": 94
+  },
+  {
+   "a": "pristina",
+   "b": "ohrid",
+   "driveMin": 241,
+   "km": 235
+  },
+  {
+   "a": "pristina",
+   "b": "dubrovnik",
+   "driveMin": 455,
+   "km": 392
+  },
+  {
+   "a": "pristina",
+   "b": "split",
+   "driveMin": 605,
+   "km": 579
+  },
+  {
+   "a": "pristina",
+   "b": "zadar",
+   "driveMin": 681,
+   "km": 699
+  },
+  {
+   "a": "pristina",
+   "b": "zagreb",
+   "driveMin": 506,
+   "km": 720
+  },
+  {
+   "a": "pristina",
+   "b": "thessaloniki",
+   "driveMin": 248,
+   "km": 325
+  },
+  {
+   "a": "pristina",
+   "b": "athens",
+   "driveMin": 560,
+   "km": 789
+  },
+  {
+   "a": "pristina",
+   "b": "sofia",
+   "driveMin": 249,
+   "km": 289
+  },
+  {
+   "a": "pristina",
+   "b": "plovdiv",
+   "driveMin": 329,
+   "km": 432
+  },
+  {
+   "a": "pristina",
+   "b": "velikotarnovo",
+   "driveMin": 410,
+   "km": 503
+  },
+  {
+   "a": "pristina",
+   "b": "bucharest",
+   "driveMin": 562,
+   "km": 606
+  },
+  {
+   "a": "pristina",
+   "b": "brasov",
+   "driveMin": 672,
+   "km": 650
+  },
+  {
+   "a": "pristina",
+   "b": "sighisoara",
+   "driveMin": 681,
+   "km": 780
+  },
+  {
+   "a": "pristina",
+   "b": "sibiu",
+   "driveMin": 594,
+   "km": 710
+  },
+  {
+   "a": "pristina",
+   "b": "cluj",
+   "driveMin": 629,
+   "km": 750
+  },
+  {
+   "a": "pristina",
+   "b": "budapest",
+   "driveMin": 498,
+   "km": 704
+  },
+  {
+   "a": "prizren",
+   "b": "peja",
+   "driveMin": 89,
+   "km": 98
+  },
+  {
+   "a": "prizren",
+   "b": "skopje",
+   "driveMin": 116,
+   "km": 103
+  },
+  {
+   "a": "prizren",
+   "b": "ohrid",
+   "driveMin": 220,
+   "km": 196
+  },
+  {
+   "a": "prizren",
+   "b": "dubrovnik",
+   "driveMin": 423,
+   "km": 351
+  },
+  {
+   "a": "prizren",
+   "b": "split",
+   "driveMin": 598,
+   "km": 577
+  },
+  {
+   "a": "prizren",
+   "b": "zadar",
+   "driveMin": 674,
+   "km": 697
+  },
+  {
+   "a": "prizren",
+   "b": "thessaloniki",
+   "driveMin": 278,
+   "km": 333
+  },
+  {
+   "a": "prizren",
+   "b": "athens",
+   "driveMin": 590,
+   "km": 798
+  },
+  {
+   "a": "prizren",
+   "b": "sofia",
+   "driveMin": 302,
+   "km": 344
+  },
+  {
+   "a": "prizren",
+   "b": "plovdiv",
+   "driveMin": 388,
+   "km": 498
+  },
+  {
+   "a": "prizren",
+   "b": "velikotarnovo",
+   "driveMin": 470,
+   "km": 569
+  },
+  {
+   "a": "prizren",
+   "b": "bucharest",
+   "driveMin": 625,
+   "km": 690
+  },
+  {
+   "a": "prizren",
+   "b": "brasov",
+   "driveMin": 736,
+   "km": 733
+  },
+  {
+   "a": "prizren",
+   "b": "sibiu",
+   "driveMin": 657,
+   "km": 794
+  },
+  {
+   "a": "prizren",
+   "b": "budapest",
+   "driveMin": 561,
+   "km": 788
+  },
+  {
+   "a": "peja",
+   "b": "skopje",
+   "driveMin": 145,
+   "km": 161
+  },
+  {
+   "a": "peja",
+   "b": "ohrid",
+   "driveMin": 289,
+   "km": 286
+  },
+  {
+   "a": "peja",
+   "b": "dubrovnik",
+   "driveMin": 396,
+   "km": 318
+  },
+  {
+   "a": "peja",
+   "b": "split",
+   "driveMin": 547,
+   "km": 505
+  },
+  {
+   "a": "peja",
+   "b": "zadar",
+   "driveMin": 623,
+   "km": 625
+  },
+  {
+   "a": "peja",
+   "b": "thessaloniki",
+   "driveMin": 307,
+   "km": 392
+  },
+  {
+   "a": "peja",
+   "b": "sofia",
+   "driveMin": 326,
+   "km": 375
+  },
+  {
+   "a": "peja",
+   "b": "plovdiv",
+   "driveMin": 406,
+   "km": 518
+  },
+  {
+   "a": "peja",
+   "b": "velikotarnovo",
+   "driveMin": 488,
+   "km": 589
+  },
+  {
+   "a": "peja",
+   "b": "bucharest",
+   "driveMin": 639,
+   "km": 693
+  },
+  {
+   "a": "peja",
+   "b": "brasov",
+   "driveMin": 750,
+   "km": 736
+  },
+  {
+   "a": "peja",
+   "b": "sibiu",
+   "driveMin": 671,
+   "km": 796
+  },
+  {
+   "a": "peja",
+   "b": "budapest",
+   "driveMin": 575,
+   "km": 790
+  },
+  {
+   "a": "skopje",
+   "b": "ohrid",
+   "driveMin": 181,
+   "km": 172
+  },
+  {
+   "a": "skopje",
+   "b": "dubrovnik",
+   "driveMin": 525,
+   "km": 457
+  },
+  {
+   "a": "skopje",
+   "b": "split",
+   "driveMin": 673,
+   "km": 663
+  },
+  {
+   "a": "skopje",
+   "b": "thessaloniki",
+   "driveMin": 178,
+   "km": 231
+  },
+  {
+   "a": "skopje",
+   "b": "athens",
+   "driveMin": 491,
+   "km": 696
+  },
+  {
+   "a": "skopje",
+   "b": "sofia",
+   "driveMin": 202,
+   "km": 242
+  },
+  {
+   "a": "skopje",
+   "b": "plovdiv",
+   "driveMin": 288,
+   "km": 396
+  },
+  {
+   "a": "skopje",
+   "b": "velikotarnovo",
+   "driveMin": 370,
+   "km": 467
+  },
+  {
+   "a": "skopje",
+   "b": "varna",
+   "driveMin": 536,
+   "km": 777
+  },
+  {
+   "a": "skopje",
+   "b": "bucharest",
+   "driveMin": 536,
+   "km": 603
+  },
+  {
+   "a": "skopje",
+   "b": "brasov",
+   "driveMin": 679,
+   "km": 728
+  },
+  {
+   "a": "ohrid",
+   "b": "dubrovnik",
+   "driveMin": 493,
+   "km": 395
+  },
+  {
+   "a": "ohrid",
+   "b": "split",
+   "driveMin": 668,
+   "km": 621
+  },
+  {
+   "a": "ohrid",
+   "b": "zadar",
+   "driveMin": 744,
+   "km": 741
+  },
+  {
+   "a": "ohrid",
+   "b": "thessaloniki",
+   "driveMin": 247,
+   "km": 287
+  },
+  {
+   "a": "ohrid",
+   "b": "athens",
+   "driveMin": 467,
+   "km": 597
+  },
+  {
+   "a": "ohrid",
+   "b": "sofia",
+   "driveMin": 370,
+   "km": 421
+  },
+  {
+   "a": "ohrid",
+   "b": "plovdiv",
+   "driveMin": 457,
+   "km": 575
+  },
+  {
+   "a": "ohrid",
+   "b": "velikotarnovo",
+   "driveMin": 539,
+   "km": 646
+  },
+  {
+   "a": "ohrid",
+   "b": "bucharest",
+   "driveMin": 704,
+   "km": 782
+  },
+  {
+   "a": "dubrovnik",
+   "b": "split",
+   "driveMin": 201,
+   "km": 236
+  },
+  {
+   "a": "dubrovnik",
+   "b": "zadar",
+   "driveMin": 277,
+   "km": 356
+  },
+  {
+   "a": "dubrovnik",
+   "b": "zagreb",
+   "driveMin": 433,
+   "km": 608
+  },
+  {
+   "a": "dubrovnik",
+   "b": "ljubljana",
+   "driveMin": 484,
+   "km": 665
+  },
+  {
+   "a": "dubrovnik",
+   "b": "bled",
+   "driveMin": 517,
+   "km": 720
+  },
+  {
+   "a": "dubrovnik",
+   "b": "thessaloniki",
+   "driveMin": 685,
+   "km": 654
+  },
+  {
+   "a": "dubrovnik",
+   "b": "sofia",
+   "driveMin": 682,
+   "km": 666
+  },
+  {
+   "a": "split",
+   "b": "zadar",
+   "driveMin": 118,
+   "km": 158
+  },
+  {
+   "a": "split",
+   "b": "zagreb",
+   "driveMin": 274,
+   "km": 411
+  },
+  {
+   "a": "split",
+   "b": "ljubljana",
+   "driveMin": 324,
+   "km": 467
+  },
+  {
+   "a": "split",
+   "b": "bled",
+   "driveMin": 358,
+   "km": 523
+  },
+  {
+   "a": "split",
+   "b": "budapest",
+   "driveMin": 476,
+   "km": 751
+  },
+  {
+   "a": "zadar",
+   "b": "zagreb",
+   "driveMin": 208,
+   "km": 288
+  },
+  {
+   "a": "zadar",
+   "b": "ljubljana",
+   "driveMin": 259,
+   "km": 345
+  },
+  {
+   "a": "zadar",
+   "b": "bled",
+   "driveMin": 292,
+   "km": 400
+  },
+  {
+   "a": "zadar",
+   "b": "budapest",
+   "driveMin": 411,
+   "km": 628
+  },
+  {
+   "a": "zadar",
+   "b": "eger",
+   "driveMin": 503,
+   "km": 759
+  },
+  {
+   "a": "zadar",
+   "b": "bratislava",
+   "driveMin": 464,
+   "km": 687
+  },
+  {
+   "a": "zadar",
+   "b": "ceskykrumlov",
+   "driveMin": 522,
+   "km": 740
+  },
+  {
+   "a": "zadar",
+   "b": "brno",
+   "driveMin": 522,
+   "km": 768
+  },
+  {
+   "a": "zagreb",
+   "b": "ljubljana",
+   "driveMin": 102,
+   "km": 140
+  },
+  {
+   "a": "zagreb",
+   "b": "bled",
+   "driveMin": 135,
+   "km": 195
+  },
+  {
+   "a": "zagreb",
+   "b": "sofia",
+   "driveMin": 499,
+   "km": 789
+  },
+  {
+   "a": "zagreb",
+   "b": "budapest",
+   "driveMin": 226,
+   "km": 346
+  },
+  {
+   "a": "zagreb",
+   "b": "eger",
+   "driveMin": 318,
+   "km": 477
+  },
+  {
+   "a": "zagreb",
+   "b": "bratislava",
+   "driveMin": 289,
+   "km": 419
+  },
+  {
+   "a": "zagreb",
+   "b": "kosice",
+   "driveMin": 394,
+   "km": 607
+  },
+  {
+   "a": "zagreb",
+   "b": "poprad",
+   "driveMin": 461,
+   "km": 721
+  },
+  {
+   "a": "zagreb",
+   "b": "prague",
+   "driveMin": 455,
+   "km": 645
+  },
+  {
+   "a": "zagreb",
+   "b": "ceskykrumlov",
+   "driveMin": 347,
+   "km": 472
+  },
+  {
+   "a": "zagreb",
+   "b": "brno",
+   "driveMin": 348,
+   "km": 500
+  },
+  {
+   "a": "zagreb",
+   "b": "zakopane",
+   "driveMin": 526,
+   "km": 739
+  },
+  {
+   "a": "ljubljana",
+   "b": "bled",
+   "driveMin": 41,
+   "km": 55
+  },
+  {
+   "a": "ljubljana",
+   "b": "budapest",
+   "driveMin": 293,
+   "km": 463
+  },
+  {
+   "a": "ljubljana",
+   "b": "eger",
+   "driveMin": 385,
+   "km": 594
+  },
+  {
+   "a": "ljubljana",
+   "b": "bratislava",
+   "driveMin": 286,
+   "km": 429
+  },
+  {
+   "a": "ljubljana",
+   "b": "kosice",
+   "driveMin": 461,
+   "km": 724
+  },
+  {
+   "a": "ljubljana",
+   "b": "poprad",
+   "driveMin": 498,
+   "km": 756
+  },
+  {
+   "a": "ljubljana",
+   "b": "prague",
+   "driveMin": 447,
+   "km": 657
+  },
+  {
+   "a": "ljubljana",
+   "b": "ceskykrumlov",
+   "driveMin": 339,
+   "km": 484
+  },
+  {
+   "a": "ljubljana",
+   "b": "brno",
+   "driveMin": 345,
+   "km": 510
+  },
+  {
+   "a": "ljubljana",
+   "b": "zakopane",
+   "driveMin": 523,
+   "km": 749
+  },
+  {
+   "a": "bled",
+   "b": "budapest",
+   "driveMin": 320,
+   "km": 500
+  },
+  {
+   "a": "bled",
+   "b": "eger",
+   "driveMin": 412,
+   "km": 632
+  },
+  {
+   "a": "bled",
+   "b": "bratislava",
+   "driveMin": 304,
+   "km": 424
+  },
+  {
+   "a": "bled",
+   "b": "kosice",
+   "driveMin": 489,
+   "km": 762
+  },
+  {
+   "a": "bled",
+   "b": "poprad",
+   "driveMin": 515,
+   "km": 751
+  },
+  {
+   "a": "bled",
+   "b": "prague",
+   "driveMin": 416,
+   "km": 611
+  },
+  {
+   "a": "bled",
+   "b": "ceskykrumlov",
+   "driveMin": 308,
+   "km": 438
+  },
+  {
+   "a": "bled",
+   "b": "brno",
+   "driveMin": 362,
+   "km": 504
+  },
+  {
+   "a": "bled",
+   "b": "zakopane",
+   "driveMin": 540,
+   "km": 744
+  },
+  {
+   "a": "thessaloniki",
+   "b": "athens",
+   "driveMin": 340,
+   "km": 498
+  },
+  {
+   "a": "thessaloniki",
+   "b": "sofia",
+   "driveMin": 220,
+   "km": 292
+  },
+  {
+   "a": "thessaloniki",
+   "b": "plovdiv",
+   "driveMin": 306,
+   "km": 446
+  },
+  {
+   "a": "thessaloniki",
+   "b": "velikotarnovo",
+   "driveMin": 388,
+   "km": 517
+  },
+  {
+   "a": "thessaloniki",
+   "b": "varna",
+   "driveMin": 550,
+   "km": 755
+  },
+  {
+   "a": "thessaloniki",
+   "b": "bucharest",
+   "driveMin": 554,
+   "km": 653
+  },
+  {
+   "a": "thessaloniki",
+   "b": "sibiu",
+   "driveMin": 711,
+   "km": 764
+  },
+  {
+   "a": "athens",
+   "b": "sofia",
+   "driveMin": 556,
+   "km": 789
+  },
+  {
+   "a": "sofia",
+   "b": "plovdiv",
+   "driveMin": 91,
+   "km": 143
+  },
+  {
+   "a": "sofia",
+   "b": "velikotarnovo",
+   "driveMin": 180,
+   "km": 220
+  },
+  {
+   "a": "sofia",
+   "b": "varna",
+   "driveMin": 339,
+   "km": 524
+  },
+  {
+   "a": "sofia",
+   "b": "bucharest",
+   "driveMin": 345,
+   "km": 356
+  },
+  {
+   "a": "sofia",
+   "b": "brasov",
+   "driveMin": 506,
+   "km": 546
+  },
+  {
+   "a": "sofia",
+   "b": "sighisoara",
+   "driveMin": 589,
+   "km": 554
+  },
+  {
+   "a": "sofia",
+   "b": "sibiu",
+   "driveMin": 503,
+   "km": 468
+  },
+  {
+   "a": "sofia",
+   "b": "budapest",
+   "driveMin": 495,
+   "km": 773
+  },
+  {
+   "a": "plovdiv",
+   "b": "velikotarnovo",
+   "driveMin": 176,
+   "km": 206
+  },
+  {
+   "a": "plovdiv",
+   "b": "varna",
+   "driveMin": 262,
+   "km": 392
+  },
+  {
+   "a": "plovdiv",
+   "b": "bucharest",
+   "driveMin": 361,
+   "km": 385
+  },
+  {
+   "a": "plovdiv",
+   "b": "brasov",
+   "driveMin": 522,
+   "km": 581
+  },
+  {
+   "a": "plovdiv",
+   "b": "sighisoara",
+   "driveMin": 639,
+   "km": 702
+  },
+  {
+   "a": "plovdiv",
+   "b": "sibiu",
+   "driveMin": 572,
+   "km": 595
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "varna",
+   "driveMin": 176,
+   "km": 223
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "bucharest",
+   "driveMin": 191,
+   "km": 182
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "brasov",
+   "driveMin": 353,
+   "km": 378
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "sighisoara",
+   "driveMin": 469,
+   "km": 499
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "sibiu",
+   "driveMin": 410,
+   "km": 444
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "cluj",
+   "driveMin": 544,
+   "km": 613
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "chisinau",
+   "driveMin": 574,
+   "km": 648
+  },
+  {
+   "a": "varna",
+   "b": "bucharest",
+   "driveMin": 231,
+   "km": 266
+  },
+  {
+   "a": "varna",
+   "b": "brasov",
+   "driveMin": 392,
+   "km": 462
+  },
+  {
+   "a": "varna",
+   "b": "sighisoara",
+   "driveMin": 509,
+   "km": 583
+  },
+  {
+   "a": "varna",
+   "b": "sibiu",
+   "driveMin": 450,
+   "km": 528
+  },
+  {
+   "a": "varna",
+   "b": "cluj",
+   "driveMin": 584,
+   "km": 697
+  },
+  {
+   "a": "varna",
+   "b": "chisinau",
+   "driveMin": 507,
+   "km": 548
+  },
+  {
+   "a": "bucharest",
+   "b": "brasov",
+   "driveMin": 165,
+   "km": 182
+  },
+  {
+   "a": "bucharest",
+   "b": "sighisoara",
+   "driveMin": 282,
+   "km": 303
+  },
+  {
+   "a": "bucharest",
+   "b": "sibiu",
+   "driveMin": 244,
+   "km": 268
+  },
+  {
+   "a": "bucharest",
+   "b": "cluj",
+   "driveMin": 378,
+   "km": 438
+  },
+  {
+   "a": "bucharest",
+   "b": "chisinau",
+   "driveMin": 386,
+   "km": 452
+  },
+  {
+   "a": "bucharest",
+   "b": "eger",
+   "driveMin": 662,
+   "km": 793
+  },
+  {
+   "a": "brasov",
+   "b": "sighisoara",
+   "driveMin": 123,
+   "km": 118
+  },
+  {
+   "a": "brasov",
+   "b": "sibiu",
+   "driveMin": 157,
+   "km": 144
+  },
+  {
+   "a": "brasov",
+   "b": "cluj",
+   "driveMin": 250,
+   "km": 267
+  },
+  {
+   "a": "brasov",
+   "b": "chisinau",
+   "driveMin": 436,
+   "km": 390
+  },
+  {
+   "a": "brasov",
+   "b": "budapest",
+   "driveMin": 519,
+   "km": 703
+  },
+  {
+   "a": "brasov",
+   "b": "eger",
+   "driveMin": 534,
+   "km": 623
+  },
+  {
+   "a": "brasov",
+   "b": "kosice",
+   "driveMin": 567,
+   "km": 683
+  },
+  {
+   "a": "brasov",
+   "b": "poprad",
+   "driveMin": 633,
+   "km": 797
+  },
+  {
+   "a": "brasov",
+   "b": "lviv",
+   "driveMin": 756,
+   "km": 708
+  },
+  {
+   "a": "sighisoara",
+   "b": "sibiu",
+   "driveMin": 103,
+   "km": 97
+  },
+  {
+   "a": "sighisoara",
+   "b": "cluj",
+   "driveMin": 131,
+   "km": 150
+  },
+  {
+   "a": "sighisoara",
+   "b": "chisinau",
+   "driveMin": 527,
+   "km": 465
+  },
+  {
+   "a": "sighisoara",
+   "b": "budapest",
+   "driveMin": 444,
+   "km": 630
+  },
+  {
+   "a": "sighisoara",
+   "b": "eger",
+   "driveMin": 415,
+   "km": 506
+  },
+  {
+   "a": "sighisoara",
+   "b": "kosice",
+   "driveMin": 447,
+   "km": 566
+  },
+  {
+   "a": "sighisoara",
+   "b": "poprad",
+   "driveMin": 514,
+   "km": 680
+  },
+  {
+   "a": "sighisoara",
+   "b": "zakopane",
+   "driveMin": 583,
+   "km": 742
+  },
+  {
+   "a": "sighisoara",
+   "b": "lviv",
+   "driveMin": 645,
+   "km": 643
+  },
+  {
+   "a": "sibiu",
+   "b": "cluj",
+   "driveMin": 147,
+   "km": 175
+  },
+  {
+   "a": "sibiu",
+   "b": "chisinau",
+   "driveMin": 581,
+   "km": 530
+  },
+  {
+   "a": "sibiu",
+   "b": "budapest",
+   "driveMin": 374,
+   "km": 562
+  },
+  {
+   "a": "sibiu",
+   "b": "eger",
+   "driveMin": 431,
+   "km": 530
+  },
+  {
+   "a": "sibiu",
+   "b": "bratislava",
+   "driveMin": 486,
+   "km": 756
+  },
+  {
+   "a": "sibiu",
+   "b": "kosice",
+   "driveMin": 464,
+   "km": 591
+  },
+  {
+   "a": "sibiu",
+   "b": "poprad",
+   "driveMin": 530,
+   "km": 705
+  },
+  {
+   "a": "sibiu",
+   "b": "zakopane",
+   "driveMin": 599,
+   "km": 767
+  },
+  {
+   "a": "sibiu",
+   "b": "lviv",
+   "driveMin": 661,
+   "km": 667
+  },
+  {
+   "a": "cluj",
+   "b": "chisinau",
+   "driveMin": 610,
+   "km": 565
+  },
+  {
+   "a": "cluj",
+   "b": "budapest",
+   "driveMin": 373,
+   "km": 466
+  },
+  {
+   "a": "cluj",
+   "b": "eger",
+   "driveMin": 312,
+   "km": 363
+  },
+  {
+   "a": "cluj",
+   "b": "bratislava",
+   "driveMin": 496,
+   "km": 665
+  },
+  {
+   "a": "cluj",
+   "b": "kosice",
+   "driveMin": 345,
+   "km": 423
+  },
+  {
+   "a": "cluj",
+   "b": "poprad",
+   "driveMin": 411,
+   "km": 537
+  },
+  {
+   "a": "cluj",
+   "b": "brno",
+   "driveMin": 573,
+   "km": 791
+  },
+  {
+   "a": "cluj",
+   "b": "krakow",
+   "driveMin": 550,
+   "km": 684
+  },
+  {
+   "a": "cluj",
+   "b": "zakopane",
+   "driveMin": 480,
+   "km": 599
+  },
+  {
+   "a": "cluj",
+   "b": "lviv",
+   "driveMin": 535,
+   "km": 491
+  },
+  {
+   "a": "chisinau",
+   "b": "lviv",
+   "driveMin": 598,
+   "km": 566
+  },
+  {
+   "a": "chisinau",
+   "b": "kyiv",
+   "driveMin": 527,
+   "km": 520
+  },
+  {
+   "a": "budapest",
+   "b": "eger",
+   "driveMin": 95,
+   "km": 133
+  },
+  {
+   "a": "budapest",
+   "b": "bratislava",
+   "driveMin": 127,
+   "km": 201
+  },
+  {
+   "a": "budapest",
+   "b": "kosice",
+   "driveMin": 172,
+   "km": 263
+  },
+  {
+   "a": "budapest",
+   "b": "poprad",
+   "driveMin": 238,
+   "km": 377
+  },
+  {
+   "a": "budapest",
+   "b": "prague",
+   "driveMin": 326,
+   "km": 529
+  },
+  {
+   "a": "budapest",
+   "b": "ceskykrumlov",
+   "driveMin": 326,
+   "km": 446
+  },
+  {
+   "a": "budapest",
+   "b": "brno",
+   "driveMin": 204,
+   "km": 327
+  },
+  {
+   "a": "budapest",
+   "b": "krakow",
+   "driveMin": 376,
+   "km": 523
+  },
+  {
+   "a": "budapest",
+   "b": "wroclaw",
+   "driveMin": 432,
+   "km": 721
+  },
+  {
+   "a": "budapest",
+   "b": "zakopane",
+   "driveMin": 307,
+   "km": 439
+  },
+  {
+   "a": "budapest",
+   "b": "lviv",
+   "driveMin": 491,
+   "km": 576
+  },
+  {
+   "a": "eger",
+   "b": "bratislava",
+   "driveMin": 219,
+   "km": 331
+  },
+  {
+   "a": "eger",
+   "b": "kosice",
+   "driveMin": 114,
+   "km": 161
+  },
+  {
+   "a": "eger",
+   "b": "poprad",
+   "driveMin": 180,
+   "km": 274
+  },
+  {
+   "a": "eger",
+   "b": "prague",
+   "driveMin": 418,
+   "km": 659
+  },
+  {
+   "a": "eger",
+   "b": "ceskykrumlov",
+   "driveMin": 418,
+   "km": 576
+  },
+  {
+   "a": "eger",
+   "b": "brno",
+   "driveMin": 296,
+   "km": 457
+  },
+  {
+   "a": "eger",
+   "b": "krakow",
+   "driveMin": 319,
+   "km": 421
+  },
+  {
+   "a": "eger",
+   "b": "warsaw",
+   "driveMin": 513,
+   "km": 730
+  },
+  {
+   "a": "eger",
+   "b": "wroclaw",
+   "driveMin": 465,
+   "km": 683
+  },
+  {
+   "a": "eger",
+   "b": "zakopane",
+   "driveMin": 249,
+   "km": 337
+  },
+  {
+   "a": "eger",
+   "b": "lviv",
+   "driveMin": 433,
+   "km": 474
+  },
+  {
+   "a": "bratislava",
+   "b": "kosice",
+   "driveMin": 291,
+   "km": 444
+  },
+  {
+   "a": "bratislava",
+   "b": "poprad",
+   "driveMin": 223,
+   "km": 333
+  },
+  {
+   "a": "bratislava",
+   "b": "prague",
+   "driveMin": 211,
+   "km": 333
+  },
+  {
+   "a": "bratislava",
+   "b": "ceskykrumlov",
+   "driveMin": 228,
+   "km": 282
+  },
+  {
+   "a": "bratislava",
+   "b": "brno",
+   "driveMin": 90,
+   "km": 131
+  },
+  {
+   "a": "bratislava",
+   "b": "krakow",
+   "driveMin": 282,
+   "km": 453
+  },
+  {
+   "a": "bratislava",
+   "b": "warsaw",
+   "driveMin": 405,
+   "km": 661
+  },
+  {
+   "a": "bratislava",
+   "b": "wroclaw",
+   "driveMin": 317,
+   "km": 525
+  },
+  {
+   "a": "bratislava",
+   "b": "zakopane",
+   "driveMin": 248,
+   "km": 326
+  },
+  {
+   "a": "bratislava",
+   "b": "poznan",
+   "driveMin": 438,
+   "km": 714
+  },
+  {
+   "a": "bratislava",
+   "b": "torun",
+   "driveMin": 436,
+   "km": 730
+  },
+  {
+   "a": "bratislava",
+   "b": "lviv",
+   "driveMin": 487,
+   "km": 780
+  },
+  {
+   "a": "kosice",
+   "b": "poprad",
+   "driveMin": 78,
+   "km": 113
+  },
+  {
+   "a": "kosice",
+   "b": "prague",
+   "driveMin": 462,
+   "km": 656
+  },
+  {
+   "a": "kosice",
+   "b": "ceskykrumlov",
+   "driveMin": 492,
+   "km": 688
+  },
+  {
+   "a": "kosice",
+   "b": "brno",
+   "driveMin": 339,
+   "km": 451
+  },
+  {
+   "a": "kosice",
+   "b": "krakow",
+   "driveMin": 217,
+   "km": 259
+  },
+  {
+   "a": "kosice",
+   "b": "warsaw",
+   "driveMin": 411,
+   "km": 568
+  },
+  {
+   "a": "kosice",
+   "b": "wroclaw",
+   "driveMin": 363,
+   "km": 521
+  },
+  {
+   "a": "kosice",
+   "b": "zakopane",
+   "driveMin": 147,
+   "km": 175
+  },
+  {
+   "a": "kosice",
+   "b": "poznan",
+   "driveMin": 484,
+   "km": 710
+  },
+  {
+   "a": "kosice",
+   "b": "torun",
+   "driveMin": 460,
+   "km": 689
+  },
+  {
+   "a": "kosice",
+   "b": "lviv",
+   "driveMin": 346,
+   "km": 321
+  },
+  {
+   "a": "poprad",
+   "b": "prague",
+   "driveMin": 393,
+   "km": 545
+  },
+  {
+   "a": "poprad",
+   "b": "ceskykrumlov",
+   "driveMin": 423,
+   "km": 577
+  },
+  {
+   "a": "poprad",
+   "b": "brno",
+   "driveMin": 269,
+   "km": 340
+  },
+  {
+   "a": "poprad",
+   "b": "krakow",
+   "driveMin": 148,
+   "km": 152
+  },
+  {
+   "a": "poprad",
+   "b": "warsaw",
+   "driveMin": 342,
+   "km": 462
+  },
+  {
+   "a": "poprad",
+   "b": "gdansk",
+   "driveMin": 475,
+   "km": 741
+  },
+  {
+   "a": "poprad",
+   "b": "wroclaw",
+   "driveMin": 294,
+   "km": 415
+  },
+  {
+   "a": "poprad",
+   "b": "zakopane",
+   "driveMin": 79,
+   "km": 68
+  },
+  {
+   "a": "poprad",
+   "b": "poznan",
+   "driveMin": 415,
+   "km": 603
+  },
+  {
+   "a": "poprad",
+   "b": "torun",
+   "driveMin": 392,
+   "km": 583
+  },
+  {
+   "a": "poprad",
+   "b": "lviv",
+   "driveMin": 349,
+   "km": 467
+  },
+  {
+   "a": "prague",
+   "b": "ceskykrumlov",
+   "driveMin": 128,
+   "km": 175
+  },
+  {
+   "a": "prague",
+   "b": "brno",
+   "driveMin": 136,
+   "km": 208
+  },
+  {
+   "a": "prague",
+   "b": "krakow",
+   "driveMin": 331,
+   "km": 534
+  },
+  {
+   "a": "prague",
+   "b": "warsaw",
+   "driveMin": 447,
+   "km": 640
+  },
+  {
+   "a": "prague",
+   "b": "gdansk",
+   "driveMin": 518,
+   "km": 733
+  },
+  {
+   "a": "prague",
+   "b": "wroclaw",
+   "driveMin": 233,
+   "km": 286
+  },
+  {
+   "a": "prague",
+   "b": "zakopane",
+   "driveMin": 409,
+   "km": 634
+  },
+  {
+   "a": "prague",
+   "b": "poznan",
+   "driveMin": 332,
+   "km": 433
+  },
+  {
+   "a": "prague",
+   "b": "torun",
+   "driveMin": 453,
+   "km": 609
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "brno",
+   "driveMin": 169,
+   "km": 241
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "krakow",
+   "driveMin": 365,
+   "km": 567
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "warsaw",
+   "driveMin": 489,
+   "km": 776
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "wroclaw",
+   "driveMin": 343,
+   "km": 450
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "zakopane",
+   "driveMin": 443,
+   "km": 666
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "poznan",
+   "driveMin": 444,
+   "km": 597
+  },
+  {
+   "a": "brno",
+   "b": "krakow",
+   "driveMin": 208,
+   "km": 330
+  },
+  {
+   "a": "brno",
+   "b": "warsaw",
+   "driveMin": 332,
+   "km": 538
+  },
+  {
+   "a": "brno",
+   "b": "gdansk",
+   "driveMin": 446,
+   "km": 764
+  },
+  {
+   "a": "brno",
+   "b": "wroclaw",
+   "driveMin": 244,
+   "km": 402
+  },
+  {
+   "a": "brno",
+   "b": "zakopane",
+   "driveMin": 286,
+   "km": 429
+  },
+  {
+   "a": "brno",
+   "b": "poznan",
+   "driveMin": 365,
+   "km": 591
+  },
+  {
+   "a": "brno",
+   "b": "torun",
+   "driveMin": 363,
+   "km": 606
+  },
+  {
+   "a": "brno",
+   "b": "lviv",
+   "driveMin": 414,
+   "km": 656
+  },
+  {
+   "a": "krakow",
+   "b": "warsaw",
+   "driveMin": 201,
+   "km": 296
+  },
+  {
+   "a": "krakow",
+   "b": "gdansk",
+   "driveMin": 351,
+   "km": 595
+  },
+  {
+   "a": "krakow",
+   "b": "wroclaw",
+   "driveMin": 170,
+   "km": 269
+  },
+  {
+   "a": "krakow",
+   "b": "zakopane",
+   "driveMin": 100,
+   "km": 106
+  },
+  {
+   "a": "krakow",
+   "b": "poznan",
+   "driveMin": 291,
+   "km": 458
+  },
+  {
+   "a": "krakow",
+   "b": "torun",
+   "driveMin": 268,
+   "km": 437
+  },
+  {
+   "a": "krakow",
+   "b": "kaunas",
+   "driveMin": 466,
+   "km": 711
+  },
+  {
+   "a": "krakow",
+   "b": "lviv",
+   "driveMin": 224,
+   "km": 325
+  },
+  {
+   "a": "warsaw",
+   "b": "gdansk",
+   "driveMin": 233,
+   "km": 339
+  },
+  {
+   "a": "warsaw",
+   "b": "wroclaw",
+   "driveMin": 231,
+   "km": 356
+  },
+  {
+   "a": "warsaw",
+   "b": "zakopane",
+   "driveMin": 295,
+   "km": 401
+  },
+  {
+   "a": "warsaw",
+   "b": "poznan",
+   "driveMin": 185,
+   "km": 310
+  },
+  {
+   "a": "warsaw",
+   "b": "torun",
+   "driveMin": 163,
+   "km": 259
+  },
+  {
+   "a": "warsaw",
+   "b": "vilnius",
+   "driveMin": 336,
+   "km": 511
+  },
+  {
+   "a": "warsaw",
+   "b": "kaunas",
+   "driveMin": 270,
+   "km": 407
+  },
+  {
+   "a": "warsaw",
+   "b": "klaipeda",
+   "driveMin": 391,
+   "km": 618
+  },
+  {
+   "a": "warsaw",
+   "b": "riga",
+   "driveMin": 490,
+   "km": 668
+  },
+  {
+   "a": "warsaw",
+   "b": "sigulda",
+   "driveMin": 540,
+   "km": 718
+  },
+  {
+   "a": "warsaw",
+   "b": "lviv",
+   "driveMin": 340,
+   "km": 395
+  },
+  {
+   "a": "warsaw",
+   "b": "kyiv",
+   "driveMin": 667,
+   "km": 778
+  },
+  {
+   "a": "warsaw",
+   "b": "minsk",
+   "driveMin": 385,
+   "km": 556
+  },
+  {
+   "a": "gdansk",
+   "b": "wroclaw",
+   "driveMin": 316,
+   "km": 484
+  },
+  {
+   "a": "gdansk",
+   "b": "zakopane",
+   "driveMin": 428,
+   "km": 695
+  },
+  {
+   "a": "gdansk",
+   "b": "poznan",
+   "driveMin": 203,
+   "km": 310
+  },
+  {
+   "a": "gdansk",
+   "b": "torun",
+   "driveMin": 112,
+   "km": 170
+  },
+  {
+   "a": "gdansk",
+   "b": "vilnius",
+   "driveMin": 425,
+   "km": 514
+  },
+  {
+   "a": "gdansk",
+   "b": "kaunas",
+   "driveMin": 360,
+   "km": 410
+  },
+  {
+   "a": "gdansk",
+   "b": "klaipeda",
+   "driveMin": 455,
+   "km": 533
+  },
+  {
+   "a": "gdansk",
+   "b": "riga",
+   "driveMin": 572,
+   "km": 628
+  },
+  {
+   "a": "gdansk",
+   "b": "sigulda",
+   "driveMin": 627,
+   "km": 681
+  },
+  {
+   "a": "gdansk",
+   "b": "minsk",
+   "driveMin": 579,
+   "km": 693
+  },
+  {
+   "a": "wroclaw",
+   "b": "zakopane",
+   "driveMin": 246,
+   "km": 368
+  },
+  {
+   "a": "wroclaw",
+   "b": "poznan",
+   "driveMin": 131,
+   "km": 183
+  },
+  {
+   "a": "wroclaw",
+   "b": "torun",
+   "driveMin": 253,
+   "km": 360
+  },
+  {
+   "a": "wroclaw",
+   "b": "kaunas",
+   "driveMin": 483,
+   "km": 753
+  },
+  {
+   "a": "wroclaw",
+   "b": "lviv",
+   "driveMin": 374,
+   "km": 596
+  },
+  {
+   "a": "zakopane",
+   "b": "poznan",
+   "driveMin": 368,
+   "km": 557
+  },
+  {
+   "a": "zakopane",
+   "b": "torun",
+   "driveMin": 345,
+   "km": 536
+  },
+  {
+   "a": "zakopane",
+   "b": "lviv",
+   "driveMin": 302,
+   "km": 421
+  },
+  {
+   "a": "poznan",
+   "b": "torun",
+   "driveMin": 142,
+   "km": 179
+  },
+  {
+   "a": "poznan",
+   "b": "kaunas",
+   "driveMin": 441,
+   "km": 710
+  },
+  {
+   "a": "poznan",
+   "b": "lviv",
+   "driveMin": 499,
+   "km": 785
+  },
+  {
+   "a": "torun",
+   "b": "vilnius",
+   "driveMin": 482,
+   "km": 762
+  },
+  {
+   "a": "torun",
+   "b": "kaunas",
+   "driveMin": 416,
+   "km": 658
+  },
+  {
+   "a": "torun",
+   "b": "lviv",
+   "driveMin": 472,
+   "km": 764
+  },
+  {
+   "a": "vilnius",
+   "b": "kaunas",
+   "driveMin": 74,
+   "km": 101
+  },
+  {
+   "a": "vilnius",
+   "b": "klaipeda",
+   "driveMin": 194,
+   "km": 308
+  },
+  {
+   "a": "vilnius",
+   "b": "riga",
+   "driveMin": 229,
+   "km": 292
+  },
+  {
+   "a": "vilnius",
+   "b": "sigulda",
+   "driveMin": 278,
+   "km": 343
+  },
+  {
+   "a": "vilnius",
+   "b": "tallinn",
+   "driveMin": 505,
+   "km": 602
+  },
+  {
+   "a": "vilnius",
+   "b": "tartu",
+   "driveMin": 456,
+   "km": 535
+  },
+  {
+   "a": "vilnius",
+   "b": "parnu",
+   "driveMin": 392,
+   "km": 472
+  },
+  {
+   "a": "vilnius",
+   "b": "stpetersburg",
+   "driveMin": 659,
+   "km": 724
+  },
+  {
+   "a": "vilnius",
+   "b": "pskov",
+   "driveMin": 403,
+   "km": 439
+  },
+  {
+   "a": "vilnius",
+   "b": "velikynovgorod",
+   "driveMin": 568,
+   "km": 624
+  },
+  {
+   "a": "vilnius",
+   "b": "minsk",
+   "driveMin": 167,
+   "km": 185
+  },
+  {
+   "a": "kaunas",
+   "b": "klaipeda",
+   "driveMin": 135,
+   "km": 214
+  },
+  {
+   "a": "kaunas",
+   "b": "riga",
+   "driveMin": 234,
+   "km": 264
+  },
+  {
+   "a": "kaunas",
+   "b": "sigulda",
+   "driveMin": 283,
+   "km": 314
+  },
+  {
+   "a": "kaunas",
+   "b": "tallinn",
+   "driveMin": 510,
+   "km": 573
+  },
+  {
+   "a": "kaunas",
+   "b": "tartu",
+   "driveMin": 461,
+   "km": 507
+  },
+  {
+   "a": "kaunas",
+   "b": "parnu",
+   "driveMin": 397,
+   "km": 443
+  },
+  {
+   "a": "kaunas",
+   "b": "stpetersburg",
+   "driveMin": 700,
+   "km": 760
+  },
+  {
+   "a": "kaunas",
+   "b": "pskov",
+   "driveMin": 444,
+   "km": 475
+  },
+  {
+   "a": "kaunas",
+   "b": "velikynovgorod",
+   "driveMin": 609,
+   "km": 660
+  },
+  {
+   "a": "kaunas",
+   "b": "lviv",
+   "driveMin": 590,
+   "km": 784
+  },
+  {
+   "a": "kaunas",
+   "b": "minsk",
+   "driveMin": 227,
+   "km": 279
+  },
+  {
+   "a": "klaipeda",
+   "b": "riga",
+   "driveMin": 249,
+   "km": 306
+  },
+  {
+   "a": "klaipeda",
+   "b": "sigulda",
+   "driveMin": 303,
+   "km": 358
+  },
+  {
+   "a": "klaipeda",
+   "b": "tallinn",
+   "driveMin": 530,
+   "km": 617
+  },
+  {
+   "a": "klaipeda",
+   "b": "tartu",
+   "driveMin": 480,
+   "km": 551
+  },
+  {
+   "a": "klaipeda",
+   "b": "parnu",
+   "driveMin": 417,
+   "km": 487
+  },
+  {
+   "a": "klaipeda",
+   "b": "pskov",
+   "driveMin": 506,
+   "km": 584
+  },
+  {
+   "a": "klaipeda",
+   "b": "velikynovgorod",
+   "driveMin": 721,
+   "km": 800
+  },
+  {
+   "a": "klaipeda",
+   "b": "minsk",
+   "driveMin": 348,
+   "km": 488
+  },
+  {
+   "a": "riga",
+   "b": "sigulda",
+   "driveMin": 58,
+   "km": 54
+  },
+  {
+   "a": "riga",
+   "b": "tallinn",
+   "driveMin": 285,
+   "km": 313
+  },
+  {
+   "a": "riga",
+   "b": "tartu",
+   "driveMin": 235,
+   "km": 246
+  },
+  {
+   "a": "riga",
+   "b": "parnu",
+   "driveMin": 172,
+   "km": 183
+  },
+  {
+   "a": "riga",
+   "b": "stpetersburg",
+   "driveMin": 531,
+   "km": 577
+  },
+  {
+   "a": "riga",
+   "b": "pskov",
+   "driveMin": 261,
+   "km": 280
+  },
+  {
+   "a": "riga",
+   "b": "velikynovgorod",
+   "driveMin": 476,
+   "km": 495
+  },
+  {
+   "a": "riga",
+   "b": "minsk",
+   "driveMin": 390,
+   "km": 479
+  },
+  {
+   "a": "sigulda",
+   "b": "tallinn",
+   "driveMin": 273,
+   "km": 305
+  },
+  {
+   "a": "sigulda",
+   "b": "tartu",
+   "driveMin": 189,
+   "km": 199
+  },
+  {
+   "a": "sigulda",
+   "b": "parnu",
+   "driveMin": 160,
+   "km": 175
+  },
+  {
+   "a": "sigulda",
+   "b": "stpetersburg",
+   "driveMin": 475,
+   "km": 524
+  },
+  {
+   "a": "sigulda",
+   "b": "pskov",
+   "driveMin": 206,
+   "km": 227
+  },
+  {
+   "a": "sigulda",
+   "b": "velikynovgorod",
+   "driveMin": 421,
+   "km": 442
+  },
+  {
+   "a": "sigulda",
+   "b": "minsk",
+   "driveMin": 439,
+   "km": 530
+  },
+  {
+   "a": "tallinn",
+   "b": "tartu",
+   "driveMin": 143,
+   "km": 179
+  },
+  {
+   "a": "tallinn",
+   "b": "parnu",
+   "driveMin": 117,
+   "km": 128
+  },
+  {
+   "a": "tallinn",
+   "b": "stpetersburg",
+   "driveMin": 560,
+   "km": 643
+  },
+  {
+   "a": "tallinn",
+   "b": "pskov",
+   "driveMin": 291,
+   "km": 346
+  },
+  {
+   "a": "tallinn",
+   "b": "velikynovgorod",
+   "driveMin": 506,
+   "km": 561
+  },
+  {
+   "a": "tallinn",
+   "b": "minsk",
+   "driveMin": 665,
+   "km": 785
+  },
+  {
+   "a": "tartu",
+   "b": "parnu",
+   "driveMin": 159,
+   "km": 172
+  },
+  {
+   "a": "tartu",
+   "b": "stpetersburg",
+   "driveMin": 427,
+   "km": 466
+  },
+  {
+   "a": "tartu",
+   "b": "pskov",
+   "driveMin": 157,
+   "km": 169
+  },
+  {
+   "a": "tartu",
+   "b": "velikynovgorod",
+   "driveMin": 372,
+   "km": 384
+  },
+  {
+   "a": "tartu",
+   "b": "minsk",
+   "driveMin": 609,
+   "km": 652
+  },
+  {
+   "a": "parnu",
+   "b": "stpetersburg",
+   "driveMin": 545,
+   "km": 586
+  },
+  {
+   "a": "parnu",
+   "b": "pskov",
+   "driveMin": 275,
+   "km": 289
+  },
+  {
+   "a": "parnu",
+   "b": "velikynovgorod",
+   "driveMin": 490,
+   "km": 504
+  },
+  {
+   "a": "parnu",
+   "b": "minsk",
+   "driveMin": 551,
+   "km": 658
+  },
+  {
+   "a": "stpetersburg",
+   "b": "moscow",
+   "driveMin": 509,
+   "km": 711
+  },
+  {
+   "a": "stpetersburg",
+   "b": "pskov",
+   "driveMin": 271,
+   "km": 296
+  },
+  {
+   "a": "stpetersburg",
+   "b": "velikynovgorod",
+   "driveMin": 160,
+   "km": 194
+  },
+  {
+   "a": "stpetersburg",
+   "b": "minsk",
+   "driveMin": 731,
+   "km": 799
+  },
+  {
+   "a": "moscow",
+   "b": "pskov",
+   "driveMin": 617,
+   "km": 732
+  },
+  {
+   "a": "moscow",
+   "b": "velikynovgorod",
+   "driveMin": 429,
+   "km": 579
+  },
+  {
+   "a": "moscow",
+   "b": "minsk",
+   "driveMin": 589,
+   "km": 717
+  },
+  {
+   "a": "pskov",
+   "b": "velikynovgorod",
+   "driveMin": 216,
+   "km": 211
+  },
+  {
+   "a": "pskov",
+   "b": "minsk",
+   "driveMin": 473,
+   "km": 512
+  },
+  {
+   "a": "velikynovgorod",
+   "b": "minsk",
+   "driveMin": 639,
+   "km": 698
+  },
+  {
+   "a": "lviv",
+   "b": "kyiv",
+   "driveMin": 475,
+   "km": 541
+  },
+  {
+   "a": "lviv",
+   "b": "minsk",
+   "driveMin": 575,
+   "km": 651
+  }
+ ]
+}

@@ -1,0 +1,844 @@
+{
+ "_meta": {
+  "source": "Passport Index dataset (github.com/imorte/passport-index-data, MIT). EU group uses Germany as a proxy outside the EU.",
+  "updatedAt": "2026-10-04"
+ },
+ "passports": [
+  {
+   "code": "EU",
+   "name": "EU / EEA / Swiss"
+  },
+  {
+   "code": "GB",
+   "name": "United Kingdom"
+  },
+  {
+   "code": "US",
+   "name": "United States"
+  },
+  {
+   "code": "CA",
+   "name": "Canada"
+  },
+  {
+   "code": "AU",
+   "name": "Australia"
+  },
+  {
+   "code": "NZ",
+   "name": "New Zealand"
+  },
+  {
+   "code": "JP",
+   "name": "Japan"
+  },
+  {
+   "code": "KR",
+   "name": "South Korea"
+  },
+  {
+   "code": "TW",
+   "name": "Taiwan"
+  }
+ ],
+ "rules": {
+  "EU": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "free_movement"
+   },
+   "SI": {
+    "req": "free_movement"
+   },
+   "GR": {
+    "req": "free_movement"
+   },
+   "BG": {
+    "req": "free_movement"
+   },
+   "RO": {
+    "req": "free_movement"
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "free_movement"
+   },
+   "SK": {
+    "req": "free_movement"
+   },
+   "CZ": {
+    "req": "free_movement"
+   },
+   "PL": {
+    "req": "free_movement"
+   },
+   "LT": {
+    "req": "free_movement"
+   },
+   "LV": {
+    "req": "free_movement"
+   },
+   "EE": {
+    "req": "free_movement"
+   },
+   "RU": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "GB": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "US": {
+   "AL": {
+    "req": "visa_free",
+    "days": 360
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   }
+  },
+  "CA": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "AU": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "NZ": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "JP": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "KR": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "UA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BY": {
+    "req": "visa_free",
+    "days": 30
+   }
+  },
+  "TW": {
+   "AL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "ME": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BA": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RS": {
+    "req": "visa_required",
+    "raw": "visa required"
+   },
+   "XK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "HR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SI": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "GR": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "BG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RO": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "MD": {
+    "req": "no_admission",
+    "raw": "no admission"
+   },
+   "HU": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SK": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "PL": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LT": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "LV": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "EE": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "RU": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "UA": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "BY": {
+    "req": "visa_required",
+    "raw": "visa required"
+   }
+  }
+ }
+}

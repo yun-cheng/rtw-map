@@ -1,0 +1,1101 @@
+{
+ "_meta": {
+  "source": "Seed estimates (Wikivoyage, operator sites); verify before booking",
+  "updatedAt": "2026-10-04",
+  "confidence": "low"
+ },
+ "connections": [
+  {
+   "from": "tirana",
+   "to": "shkoder",
+   "mode": "bus",
+   "durationMin": 120,
+   "priceMin": 3,
+   "priceMax": 4,
+   "frequency": "hourly",
+   "overnight": false
+  },
+  {
+   "from": "tirana",
+   "to": "berat",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 4,
+   "priceMax": 5,
+   "frequency": "hourly",
+   "overnight": false
+  },
+  {
+   "from": "tirana",
+   "to": "gjirokaster",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 8,
+   "priceMax": 10,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "tirana",
+   "to": "sarande",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 10,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "gjirokaster",
+   "to": "sarande",
+   "mode": "bus",
+   "durationMin": 75,
+   "priceMin": 3,
+   "priceMax": 4,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "berat",
+   "to": "gjirokaster",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 7,
+   "priceMax": 9,
+   "frequency": "1–2 daily",
+   "overnight": false
+  },
+  {
+   "from": "shkoder",
+   "to": "theth",
+   "mode": "minibus",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "daily (summer)",
+   "overnight": false,
+   "note": "Furgons run mainly June–September"
+  },
+  {
+   "from": "shkoder",
+   "to": "podgorica",
+   "mode": "bus",
+   "durationMin": 90,
+   "priceMin": 6,
+   "priceMax": 8,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "shkoder",
+   "to": "kotor",
+   "mode": "minibus",
+   "durationMin": 180,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "daily (summer)",
+   "overnight": false
+  },
+  {
+   "from": "tirana",
+   "to": "pristina",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "tirana",
+   "to": "skopje",
+   "mode": "bus",
+   "durationMin": 420,
+   "priceMin": 18,
+   "priceMax": 22,
+   "frequency": "daily",
+   "overnight": true,
+   "note": "Night buses available"
+  },
+  {
+   "from": "tirana",
+   "to": "ohrid",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Often via Struga"
+  },
+  {
+   "from": "tirana",
+   "to": "podgorica",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "prizren",
+   "to": "tirana",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "kotor",
+   "to": "budva",
+   "mode": "bus",
+   "durationMin": 30,
+   "priceMin": 2,
+   "priceMax": 3,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "kotor",
+   "to": "podgorica",
+   "mode": "bus",
+   "durationMin": 120,
+   "priceMin": 7,
+   "priceMax": 9,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "podgorica",
+   "to": "zabljak",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 8,
+   "priceMax": 10,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "kotor",
+   "to": "dubrovnik",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 20,
+   "priceMax": 25,
+   "frequency": "several daily",
+   "overnight": false,
+   "note": "Expect long border queues in July–August"
+  },
+  {
+   "from": "kotor",
+   "to": "sarajevo",
+   "mode": "bus",
+   "durationMin": 420,
+   "priceMin": 25,
+   "priceMax": 30,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "podgorica",
+   "to": "belgrade",
+   "mode": "train",
+   "durationMin": 660,
+   "priceMin": 25,
+   "priceMax": 30,
+   "frequency": "daily",
+   "overnight": true,
+   "note": "Scenic Bar–Belgrade railway; night train in summer"
+  },
+  {
+   "from": "peja",
+   "to": "podgorica",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "sarajevo",
+   "to": "mostar",
+   "mode": "train",
+   "durationMin": 120,
+   "priceMin": 10,
+   "priceMax": 12,
+   "frequency": "2 daily",
+   "overnight": false,
+   "note": "Very scenic Neretva valley line"
+  },
+  {
+   "from": "mostar",
+   "to": "dubrovnik",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "mostar",
+   "to": "split",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 18,
+   "priceMax": 22,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "sarajevo",
+   "to": "belgrade",
+   "mode": "bus",
+   "durationMin": 420,
+   "priceMin": 20,
+   "priceMax": 25,
+   "frequency": "several daily",
+   "overnight": true
+  },
+  {
+   "from": "sarajevo",
+   "to": "zagreb",
+   "mode": "bus",
+   "durationMin": 480,
+   "priceMin": 25,
+   "priceMax": 35,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "belgrade",
+   "to": "novisad",
+   "mode": "train",
+   "durationMin": 40,
+   "priceMin": 5,
+   "priceMax": 7,
+   "frequency": "frequent",
+   "overnight": false,
+   "note": "High-speed Soko trains"
+  },
+  {
+   "from": "belgrade",
+   "to": "nis",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 15,
+   "priceMax": 18,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "nis",
+   "to": "sofia",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "nis",
+   "to": "skopje",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "belgrade",
+   "to": "budapest",
+   "mode": "bus",
+   "durationMin": 360,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "several daily",
+   "overnight": false,
+   "note": "The Belgrade–Budapest railway is being upgraded in stages; check for a fast train"
+  },
+  {
+   "from": "novisad",
+   "to": "budapest",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 18,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "belgrade",
+   "to": "zagreb",
+   "mode": "bus",
+   "durationMin": 360,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "belgrade",
+   "to": "pristina",
+   "mode": "bus",
+   "durationMin": 360,
+   "priceMin": 20,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Serbia–Kosovo crossing: if you first entered Kosovo from another country, Serbia may refuse entry here"
+  },
+  {
+   "from": "pristina",
+   "to": "prizren",
+   "mode": "bus",
+   "durationMin": 75,
+   "priceMin": 4,
+   "priceMax": 5,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "pristina",
+   "to": "peja",
+   "mode": "bus",
+   "durationMin": 90,
+   "priceMin": 4,
+   "priceMax": 5,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "pristina",
+   "to": "skopje",
+   "mode": "bus",
+   "durationMin": 90,
+   "priceMin": 5,
+   "priceMax": 7,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "skopje",
+   "to": "ohrid",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 10,
+   "priceMax": 12,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "skopje",
+   "to": "sofia",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "skopje",
+   "to": "thessaloniki",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 20,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "thessaloniki",
+   "to": "athens",
+   "mode": "train",
+   "durationMin": 270,
+   "priceMin": 20,
+   "priceMax": 45,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "thessaloniki",
+   "to": "sofia",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "dubrovnik",
+   "to": "split",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "split",
+   "to": "zadar",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 12,
+   "priceMax": 18,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "zadar",
+   "to": "zagreb",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 15,
+   "priceMax": 22,
+   "frequency": "frequent",
+   "overnight": false,
+   "note": "Some buses stop at Plitvice Lakes"
+  },
+  {
+   "from": "split",
+   "to": "zagreb",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "zagreb",
+   "to": "ljubljana",
+   "mode": "train",
+   "durationMin": 140,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "zagreb",
+   "to": "budapest",
+   "mode": "bus",
+   "durationMin": 330,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "ljubljana",
+   "to": "bled",
+   "mode": "bus",
+   "durationMin": 70,
+   "priceMin": 7,
+   "priceMax": 8,
+   "frequency": "hourly",
+   "overnight": false
+  },
+  {
+   "from": "sofia",
+   "to": "plovdiv",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 8,
+   "priceMax": 10,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "plovdiv",
+   "to": "velikotarnovo",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 12,
+   "priceMax": 15,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "sofia",
+   "to": "velikotarnovo",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 12,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "velikotarnovo",
+   "to": "varna",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 12,
+   "priceMax": 15,
+   "frequency": "few daily",
+   "overnight": false
+  },
+  {
+   "from": "velikotarnovo",
+   "to": "bucharest",
+   "mode": "bus",
+   "durationMin": 270,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Via Ruse; minibus transfers common"
+  },
+  {
+   "from": "sofia",
+   "to": "bucharest",
+   "mode": "bus",
+   "durationMin": 420,
+   "priceMin": 25,
+   "priceMax": 35,
+   "frequency": "daily",
+   "overnight": true
+  },
+  {
+   "from": "varna",
+   "to": "bucharest",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 20,
+   "priceMax": 30,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "bucharest",
+   "to": "brasov",
+   "mode": "train",
+   "durationMin": 165,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "brasov",
+   "to": "sighisoara",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 7,
+   "priceMax": 10,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "brasov",
+   "to": "sibiu",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 13,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "sighisoara",
+   "to": "sibiu",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "sibiu",
+   "to": "cluj",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "cluj",
+   "to": "budapest",
+   "mode": "train",
+   "durationMin": 450,
+   "priceMin": 25,
+   "priceMax": 40,
+   "frequency": "daily",
+   "overnight": true,
+   "note": "Night train option"
+  },
+  {
+   "from": "bucharest",
+   "to": "chisinau",
+   "mode": "bus",
+   "durationMin": 540,
+   "priceMin": 25,
+   "priceMax": 35,
+   "frequency": "nightly",
+   "overnight": true
+  },
+  {
+   "from": "budapest",
+   "to": "eger",
+   "mode": "train",
+   "durationMin": 120,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "budapest",
+   "to": "bratislava",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 20,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "budapest",
+   "to": "kosice",
+   "mode": "train",
+   "durationMin": 220,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "budapest",
+   "to": "prague",
+   "mode": "train",
+   "durationMin": 420,
+   "priceMin": 20,
+   "priceMax": 40,
+   "frequency": "several daily",
+   "overnight": true,
+   "note": "Night train option"
+  },
+  {
+   "from": "budapest",
+   "to": "krakow",
+   "mode": "train",
+   "durationMin": 630,
+   "priceMin": 30,
+   "priceMax": 70,
+   "frequency": "nightly",
+   "overnight": true,
+   "note": "Night train; daytime buses take ~7h"
+  },
+  {
+   "from": "bratislava",
+   "to": "kosice",
+   "mode": "train",
+   "durationMin": 330,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "kosice",
+   "to": "poprad",
+   "mode": "train",
+   "durationMin": 75,
+   "priceMin": 5,
+   "priceMax": 7,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "poprad",
+   "to": "zakopane",
+   "mode": "bus",
+   "durationMin": 120,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "daily (summer)",
+   "overnight": false,
+   "note": "Seasonal cross-border bus"
+  },
+  {
+   "from": "bratislava",
+   "to": "prague",
+   "mode": "train",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 30,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "bratislava",
+   "to": "brno",
+   "mode": "train",
+   "durationMin": 90,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "kosice",
+   "to": "krakow",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "prague",
+   "to": "ceskykrumlov",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "prague",
+   "to": "brno",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 8,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "prague",
+   "to": "wroclaw",
+   "mode": "bus",
+   "durationMin": 270,
+   "priceMin": 12,
+   "priceMax": 20,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "prague",
+   "to": "krakow",
+   "mode": "train",
+   "durationMin": 450,
+   "priceMin": 20,
+   "priceMax": 45,
+   "frequency": "daily",
+   "overnight": true,
+   "note": "Night train option"
+  },
+  {
+   "from": "krakow",
+   "to": "zakopane",
+   "mode": "bus",
+   "durationMin": 120,
+   "priceMin": 5,
+   "priceMax": 8,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "krakow",
+   "to": "warsaw",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 15,
+   "priceMax": 35,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "krakow",
+   "to": "wroclaw",
+   "mode": "train",
+   "durationMin": 200,
+   "priceMin": 10,
+   "priceMax": 25,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "wroclaw",
+   "to": "poznan",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 20,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "poznan",
+   "to": "warsaw",
+   "mode": "train",
+   "durationMin": 165,
+   "priceMin": 12,
+   "priceMax": 30,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "warsaw",
+   "to": "gdansk",
+   "mode": "train",
+   "durationMin": 170,
+   "priceMin": 15,
+   "priceMax": 35,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "gdansk",
+   "to": "torun",
+   "mode": "train",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "torun",
+   "to": "warsaw",
+   "mode": "train",
+   "durationMin": 165,
+   "priceMin": 10,
+   "priceMax": 20,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "poznan",
+   "to": "torun",
+   "mode": "train",
+   "durationMin": 90,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "warsaw",
+   "to": "vilnius",
+   "mode": "bus",
+   "durationMin": 480,
+   "priceMin": 20,
+   "priceMax": 35,
+   "frequency": "daily",
+   "overnight": true,
+   "note": "Trains via Kaunas also run"
+  },
+  {
+   "from": "vilnius",
+   "to": "kaunas",
+   "mode": "train",
+   "durationMin": 75,
+   "priceMin": 5,
+   "priceMax": 8,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "kaunas",
+   "to": "klaipeda",
+   "mode": "train",
+   "durationMin": 180,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "vilnius",
+   "to": "riga",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "riga",
+   "to": "sigulda",
+   "mode": "train",
+   "durationMin": 75,
+   "priceMin": 3,
+   "priceMax": 4,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "riga",
+   "to": "tallinn",
+   "mode": "bus",
+   "durationMin": 270,
+   "priceMin": 15,
+   "priceMax": 30,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "riga",
+   "to": "tartu",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 20,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "riga",
+   "to": "parnu",
+   "mode": "bus",
+   "durationMin": 150,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "tallinn",
+   "to": "tartu",
+   "mode": "train",
+   "durationMin": 130,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "tallinn",
+   "to": "parnu",
+   "mode": "bus",
+   "durationMin": 120,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "tallinn",
+   "to": "stpetersburg",
+   "mode": "bus",
+   "durationMin": 480,
+   "priceMin": 30,
+   "priceMax": 50,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Bus to Narva, cross the Narva–Ivangorod border on foot, continue on the Russian side. Operators and border rules change often: verify close to departure"
+  },
+  {
+   "from": "stpetersburg",
+   "to": "moscow",
+   "mode": "train",
+   "durationMin": 240,
+   "priceMin": 40,
+   "priceMax": 90,
+   "frequency": "frequent",
+   "overnight": false,
+   "note": "Sapsan high-speed trains; night trains also run"
+  },
+  {
+   "from": "stpetersburg",
+   "to": "velikynovgorod",
+   "mode": "bus",
+   "durationMin": 180,
+   "priceMin": 8,
+   "priceMax": 12,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "stpetersburg",
+   "to": "pskov",
+   "mode": "train",
+   "durationMin": 210,
+   "priceMin": 10,
+   "priceMax": 20,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "pskov",
+   "to": "velikynovgorod",
+   "mode": "bus",
+   "durationMin": 240,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "moscow",
+   "to": "kazan",
+   "mode": "train",
+   "durationMin": 720,
+   "priceMin": 30,
+   "priceMax": 80,
+   "frequency": "several daily",
+   "overnight": true,
+   "note": "Overnight trains"
+  },
+  {
+   "from": "krakow",
+   "to": "lviv",
+   "mode": "train",
+   "durationMin": 420,
+   "priceMin": 25,
+   "priceMax": 40,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Via Przemyśl"
+  },
+  {
+   "from": "lviv",
+   "to": "kyiv",
+   "mode": "train",
+   "durationMin": 300,
+   "priceMin": 15,
+   "priceMax": 30,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "vilnius",
+   "to": "minsk",
+   "mode": "bus",
+   "durationMin": 300,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Expect long border waits"
+  },
+  {
+   "from": "minsk",
+   "to": "moscow",
+   "mode": "train",
+   "durationMin": 480,
+   "priceMin": 30,
+   "priceMax": 60,
+   "frequency": "daily",
+   "overnight": true
+  }
+ ]
+}

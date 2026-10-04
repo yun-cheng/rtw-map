@@ -1,0 +1,108 @@
+from,to,mode,durationMin,priceMin,priceMax,frequency,overnight,note
+tirana,shkoder,bus,120,3,4,hourly,0,
+tirana,berat,bus,150,4,5,hourly,0,
+tirana,gjirokaster,bus,240,8,10,several daily,0,
+tirana,sarande,bus,300,10,12,several daily,0,
+gjirokaster,sarande,bus,75,3,4,several daily,0,
+berat,gjirokaster,bus,210,7,9,1–2 daily,0,
+shkoder,theth,minibus,150,10,15,daily (summer),0,Furgons run mainly June–September
+shkoder,podgorica,bus,90,6,8,few daily,0,
+shkoder,kotor,minibus,180,15,20,daily (summer),0,
+tirana,pristina,bus,240,10,15,several daily,0,
+tirana,skopje,bus,420,18,22,daily,1,Night buses available
+tirana,ohrid,bus,210,10,15,daily,0,Often via Struga
+tirana,podgorica,bus,240,15,20,daily,0,
+prizren,tirana,bus,180,10,15,several daily,0,
+kotor,budva,bus,30,2,3,frequent,0,
+kotor,podgorica,bus,120,7,9,frequent,0,
+podgorica,zabljak,bus,150,8,10,few daily,0,
+kotor,dubrovnik,bus,150,20,25,several daily,0,Expect long border queues in July–August
+kotor,sarajevo,bus,420,25,30,daily,0,
+podgorica,belgrade,train,660,25,30,daily,1,Scenic Bar–Belgrade railway; night train in summer
+peja,podgorica,bus,300,15,20,daily,0,
+sarajevo,mostar,train,120,10,12,2 daily,0,Very scenic Neretva valley line
+mostar,dubrovnik,bus,180,15,20,several daily,0,
+mostar,split,bus,240,18,22,several daily,0,
+sarajevo,belgrade,bus,420,20,25,several daily,1,
+sarajevo,zagreb,bus,480,25,35,daily,0,
+belgrade,novisad,train,40,5,7,frequent,0,High-speed Soko trains
+belgrade,nis,bus,180,15,18,frequent,0,
+nis,sofia,bus,240,15,20,daily,0,
+nis,skopje,bus,240,15,20,few daily,0,
+belgrade,budapest,bus,360,20,30,several daily,0,The Belgrade–Budapest railway is being upgraded in stages; check for a fast train
+novisad,budapest,bus,300,18,25,daily,0,
+belgrade,zagreb,bus,360,20,30,several daily,0,
+belgrade,pristina,bus,360,20,25,daily,0,"Serbia–Kosovo crossing: if you first entered Kosovo from another country, Serbia may refuse entry here"
+pristina,prizren,bus,75,4,5,frequent,0,
+pristina,peja,bus,90,4,5,frequent,0,
+pristina,skopje,bus,90,5,7,frequent,0,
+skopje,ohrid,bus,180,10,12,frequent,0,
+skopje,sofia,bus,300,15,20,few daily,0,
+skopje,thessaloniki,bus,240,20,25,daily,0,
+thessaloniki,athens,train,270,20,45,several daily,0,
+thessaloniki,sofia,bus,300,20,30,several daily,0,
+dubrovnik,split,bus,240,20,30,frequent,0,
+split,zadar,bus,150,12,18,frequent,0,
+zadar,zagreb,bus,210,15,22,frequent,0,Some buses stop at Plitvice Lakes
+split,zagreb,bus,300,20,30,frequent,0,
+zagreb,ljubljana,train,140,10,15,several daily,0,
+zagreb,budapest,bus,330,20,30,daily,0,
+ljubljana,bled,bus,70,7,8,hourly,0,
+sofia,plovdiv,bus,150,8,10,frequent,0,
+plovdiv,velikotarnovo,bus,240,12,15,few daily,0,
+sofia,velikotarnovo,bus,210,12,15,frequent,0,
+velikotarnovo,varna,bus,240,12,15,few daily,0,
+velikotarnovo,bucharest,bus,270,20,30,daily,0,Via Ruse; minibus transfers common
+sofia,bucharest,bus,420,25,35,daily,1,
+varna,bucharest,bus,300,20,30,daily,0,
+bucharest,brasov,train,165,10,15,frequent,0,
+brasov,sighisoara,train,150,7,10,several daily,0,
+brasov,sibiu,bus,150,10,13,several daily,0,
+sighisoara,sibiu,bus,150,8,12,several daily,0,
+sibiu,cluj,bus,210,10,15,several daily,0,
+cluj,budapest,train,450,25,40,daily,1,Night train option
+bucharest,chisinau,bus,540,25,35,nightly,1,
+budapest,eger,train,120,8,12,frequent,0,
+budapest,bratislava,train,150,10,20,frequent,0,
+budapest,kosice,train,220,15,25,several daily,0,
+budapest,prague,train,420,20,40,several daily,1,Night train option
+budapest,krakow,train,630,30,70,nightly,1,Night train; daytime buses take ~7h
+bratislava,kosice,train,330,15,25,frequent,0,
+kosice,poprad,train,75,5,7,frequent,0,
+poprad,zakopane,bus,120,8,12,daily (summer),0,Seasonal cross-border bus
+bratislava,prague,train,240,15,30,frequent,0,
+bratislava,brno,train,90,8,12,frequent,0,
+kosice,krakow,bus,300,15,25,daily,0,
+prague,ceskykrumlov,bus,180,8,12,several daily,0,
+prague,brno,train,150,8,15,frequent,0,
+prague,wroclaw,bus,270,12,20,several daily,0,
+prague,krakow,train,450,20,45,daily,1,Night train option
+krakow,zakopane,bus,120,5,8,frequent,0,
+krakow,warsaw,train,150,15,35,frequent,0,
+krakow,wroclaw,train,200,10,25,frequent,0,
+wroclaw,poznan,train,150,10,20,frequent,0,
+poznan,warsaw,train,165,12,30,frequent,0,
+warsaw,gdansk,train,170,15,35,frequent,0,
+gdansk,torun,train,150,10,15,several daily,0,
+torun,warsaw,train,165,10,20,several daily,0,
+poznan,torun,train,90,8,12,several daily,0,
+warsaw,vilnius,bus,480,20,35,daily,1,Trains via Kaunas also run
+vilnius,kaunas,train,75,5,8,frequent,0,
+kaunas,klaipeda,train,180,8,12,several daily,0,
+vilnius,riga,bus,240,15,25,frequent,0,
+riga,sigulda,train,75,3,4,frequent,0,
+riga,tallinn,bus,270,15,30,frequent,0,
+riga,tartu,bus,240,15,20,several daily,0,
+riga,parnu,bus,150,10,15,frequent,0,
+tallinn,tartu,train,130,10,15,frequent,0,
+tallinn,parnu,bus,120,8,12,frequent,0,
+tallinn,stpetersburg,bus,480,30,50,daily,0,"Bus to Narva, cross the Narva–Ivangorod border on foot, continue on the Russian side. Operators and border rules change often: verify close to departure"
+stpetersburg,moscow,train,240,40,90,frequent,0,Sapsan high-speed trains; night trains also run
+stpetersburg,velikynovgorod,bus,180,8,12,several daily,0,
+stpetersburg,pskov,train,210,10,20,daily,0,
+pskov,velikynovgorod,bus,240,10,15,daily,0,
+moscow,kazan,train,720,30,80,several daily,1,Overnight trains
+krakow,lviv,train,420,25,40,daily,0,Via Przemyśl
+lviv,kyiv,train,300,15,30,several daily,0,
+vilnius,minsk,bus,300,15,25,daily,0,Expect long border waits
+minsk,moscow,train,480,30,60,daily,1,

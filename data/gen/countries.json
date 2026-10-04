@@ -1,0 +1,633 @@
+{
+ "_meta": {
+  "source": "Hand-curated. Religion is a short summary of the latest national census or survey and is approximate. Verify before relying on it. English levels are our own estimates (1 = hard, 5 = easy almost everywhere); compare with the EF English Proficiency Index and the EU Eurobarometer language survey.",
+  "updatedAt": "2026-10-04"
+ },
+ "countries": [
+  {
+   "iso2": "AL",
+   "name": "Albania",
+   "block": "Western Balkans",
+   "fcdoSlug": "albania",
+   "schengen": false,
+   "eu": false,
+   "currency": "ALL",
+   "languages": [
+    "Albanian"
+   ],
+   "religion": "Mostly Muslim (about half); Catholic and Orthodox minorities; many non-religious or undeclared",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112 (police 129, ambulance 127)",
+   "notes": [
+    "Cash is still king outside Tirana and the coast.",
+    "Furgons (minibuses) often leave when full rather than on a timetable."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Italian (widely understood)",
+     "Greek (in the south)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "ME",
+   "name": "Montenegro",
+   "block": "Western Balkans",
+   "fcdoSlug": "montenegro",
+   "schengen": false,
+   "eu": false,
+   "currency": "EUR",
+   "languages": [
+    "Montenegrin",
+    "Serbian"
+   ],
+   "religion": "Mostly Orthodox Christian (~70%); Muslim (~20%) and Catholic minorities",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Uses the euro without being in the EU.",
+    "Coast is busy and pricier in July–August."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Serbian/Croatian/Bosnian (same language family)",
+     "Russian (some tourism workers)"
+    ],
+    "script": "Latin (Cyrillic also official)"
+   }
+  },
+  {
+   "iso2": "BA",
+   "name": "Bosnia and Herzegovina",
+   "block": "Western Balkans",
+   "fcdoSlug": "bosnia-and-herzegovina",
+   "schengen": false,
+   "eu": false,
+   "currency": "BAM",
+   "languages": [
+    "Bosnian",
+    "Croatian",
+    "Serbian"
+   ],
+   "religion": "Muslim (~50%), Orthodox (~30%), Catholic (~15%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112 (police 122, ambulance 124)",
+   "notes": [
+    "Landmines remain in some rural areas: stay on marked paths when hiking."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Serbian/Croatian (mutually intelligible)",
+     "German (returnees)"
+    ],
+    "script": "Latin and Cyrillic"
+   }
+  },
+  {
+   "iso2": "RS",
+   "name": "Serbia",
+   "block": "Western Balkans",
+   "fcdoSlug": "serbia",
+   "schengen": false,
+   "eu": false,
+   "currency": "RSD",
+   "languages": [
+    "Serbian"
+   ],
+   "religion": "Mostly Orthodox Christian (~80%); small Catholic and Muslim minorities",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "192 police, 194 ambulance",
+   "notes": [
+    "Serbia does not recognise Kosovo's borders. If you enter Kosovo from Albania, Montenegro or North Macedonia, you may be refused entry when crossing directly from Kosovo into Serbia. Route via North Macedonia or Montenegro instead."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Croatian/Bosnian/Montenegrin (mutually intelligible)",
+     "Russian (some older people)"
+    ],
+    "script": "Cyrillic and Latin (both used on signs)"
+   }
+  },
+  {
+   "iso2": "XK",
+   "name": "Kosovo",
+   "block": "Western Balkans",
+   "fcdoSlug": "kosovo",
+   "schengen": false,
+   "eu": false,
+   "currency": "EUR",
+   "languages": [
+    "Albanian",
+    "Serbian"
+   ],
+   "religion": "Mostly Muslim (~90%); small Catholic and Orthodox minorities",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "See the Serbia note about crossing between Kosovo and Serbia."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "German (large diaspora)",
+     "Serbian (in the north)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "MK",
+   "name": "North Macedonia",
+   "block": "Western Balkans",
+   "fcdoSlug": "north-macedonia",
+   "schengen": false,
+   "eu": false,
+   "currency": "MKD",
+   "languages": [
+    "Macedonian",
+    "Albanian"
+   ],
+   "religion": "Orthodox Christian (~45%), Muslim (~30%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Serbian (widely understood)",
+     "Albanian (in the west)"
+    ],
+    "script": "Cyrillic"
+   }
+  },
+  {
+   "iso2": "HR",
+   "name": "Croatia",
+   "block": "Balkans (EU)",
+   "fcdoSlug": "croatia",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Croatian"
+   ],
+   "religion": "Mostly Catholic (~80%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "In Schengen since 2023: days here count toward the 90/180 limit.",
+    "Dalmatian coast prices peak in July–August."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "German (older people, tourism)",
+     "Italian (on the coast)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "SI",
+   "name": "Slovenia",
+   "block": "Balkans (EU)",
+   "fcdoSlug": "slovenia",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Slovene"
+   ],
+   "religion": "Mostly Catholic; large non-religious share",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "German",
+     "Italian",
+     "Croatian"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "GR",
+   "name": "Greece",
+   "block": "Balkans (EU)",
+   "fcdoSlug": "greece",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Greek"
+   ],
+   "religion": "Mostly Greek Orthodox (~90%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Heatwaves above 40°C are common in July–August."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [],
+    "script": "Greek alphabet (signs in tourist areas also in Latin script)"
+   }
+  },
+  {
+   "iso2": "BG",
+   "name": "Bulgaria",
+   "block": "Eastern Europe",
+   "fcdoSlug": "bulgaria",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Bulgarian"
+   ],
+   "religion": "Mostly Orthodox Christian (~65%); Muslim minority (~10%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Full Schengen member since 2025: days count toward 90/180.",
+    "Adopted the euro on 1 January 2026.",
+    "Shaking your head can mean 'yes' and nodding 'no'."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Russian (older people)"
+    ],
+    "script": "Cyrillic"
+   }
+  },
+  {
+   "iso2": "RO",
+   "name": "Romania",
+   "block": "Eastern Europe",
+   "fcdoSlug": "romania",
+   "schengen": true,
+   "eu": true,
+   "currency": "RON",
+   "languages": [
+    "Romanian"
+   ],
+   "religion": "Mostly Orthodox Christian (~75%); Catholic and Protestant minorities",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Full Schengen member since 2025: days count toward 90/180."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "French and Italian (similar Romance language)",
+     "Hungarian (parts of Transylvania)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "MD",
+   "name": "Moldova",
+   "block": "Eastern Europe",
+   "fcdoSlug": "moldova",
+   "schengen": false,
+   "eu": false,
+   "currency": "MDL",
+   "languages": [
+    "Romanian",
+    "Russian"
+   ],
+   "religion": "Mostly Orthodox Christian (~90%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Transnistria is a breakaway region outside government control; check advisories before going."
+   ],
+   "english": {
+    "level": 2,
+    "otherLanguages": [
+     "Russian (spoken by almost everyone)"
+    ],
+    "script": "Latin (Cyrillic in Transnistria)"
+   }
+  },
+  {
+   "iso2": "HU",
+   "name": "Hungary",
+   "block": "Eastern Europe",
+   "fcdoSlug": "hungary",
+   "schengen": true,
+   "eu": true,
+   "currency": "HUF",
+   "languages": [
+    "Hungarian"
+   ],
+   "religion": "Catholic and Reformed Christian; large non-religious and undeclared shares",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "German (older people)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "SK",
+   "name": "Slovakia",
+   "block": "Eastern Europe",
+   "fcdoSlug": "slovakia",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Slovak"
+   ],
+   "religion": "Mostly Catholic (~55%); ~25% non-religious",
+   "plugs": [
+    "C",
+    "E"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Czech (mutually intelligible)",
+     "German (older people)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "CZ",
+   "name": "Czechia",
+   "block": "Eastern Europe",
+   "fcdoSlug": "czech-republic",
+   "schengen": true,
+   "eu": true,
+   "currency": "CZK",
+   "languages": [
+    "Czech"
+   ],
+   "religion": "Mostly non-religious; small Catholic minority",
+   "plugs": [
+    "C",
+    "E"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Slovak (mutually intelligible)",
+     "German (older people)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "PL",
+   "name": "Poland",
+   "block": "Poland",
+   "fcdoSlug": "poland",
+   "schengen": true,
+   "eu": true,
+   "currency": "PLN",
+   "languages": [
+    "Polish"
+   ],
+   "religion": "Mostly Catholic (~70%)",
+   "plugs": [
+    "C",
+    "E"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Most shops are closed on Sundays."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "German",
+     "Russian (older people)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "LT",
+   "name": "Lithuania",
+   "block": "Baltic States",
+   "fcdoSlug": "lithuania",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Lithuanian"
+   ],
+   "religion": "Mostly Catholic (~75%)",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Russian (older people)",
+     "Polish (around Vilnius)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "LV",
+   "name": "Latvia",
+   "block": "Baltic States",
+   "fcdoSlug": "latvia",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Latvian",
+    "Russian"
+   ],
+   "religion": "Mixed Lutheran, Catholic and Orthodox; large non-religious share",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Russian (widely spoken, especially in Riga)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "EE",
+   "name": "Estonia",
+   "block": "Baltic States",
+   "fcdoSlug": "estonia",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "Estonian",
+    "Russian"
+   ],
+   "religion": "Mostly non-religious; Orthodox and Lutheran minorities",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Narva is the main land crossing point into Russia (Narva–Ivangorod)."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Russian (widely spoken in Tallinn and Narva)",
+     "Finnish (Tallinn tourism)"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "RU",
+   "name": "Russia",
+   "block": "Russia",
+   "fcdoSlug": "russia",
+   "schengen": false,
+   "eu": false,
+   "currency": "RUB",
+   "languages": [
+    "Russian"
+   ],
+   "religion": "Mostly Orthodox Christian; Muslim minority; many non-religious",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [
+    "Visa/Mastercard cards issued abroad do not work: bring enough cash (EUR/USD).",
+    "No direct flights between the EU and Russia; land crossings from the Baltics are limited and change often.",
+    "Travel insurance may not cover Russia."
+   ],
+   "english": {
+    "level": 2,
+    "otherLanguages": [],
+    "script": "Cyrillic (Moscow and St Petersburg metro also signed in English)"
+   }
+  },
+  {
+   "iso2": "UA",
+   "name": "Ukraine",
+   "block": "Eastern Europe",
+   "fcdoSlug": "ukraine",
+   "schengen": false,
+   "eu": false,
+   "currency": "UAH",
+   "languages": [
+    "Ukrainian"
+   ],
+   "religion": "Mostly Orthodox Christian; Greek Catholic minority",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Russian (widely understood)"
+    ],
+    "script": "Cyrillic"
+   }
+  },
+  {
+   "iso2": "BY",
+   "name": "Belarus",
+   "block": "Eastern Europe",
+   "fcdoSlug": "belarus",
+   "schengen": false,
+   "eu": false,
+   "currency": "BYN",
+   "languages": [
+    "Belarusian",
+    "Russian"
+   ],
+   "religion": "Mostly Orthodox Christian; Catholic minority",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "102 police, 103 ambulance",
+   "notes": [],
+   "english": {
+    "level": 2,
+    "otherLanguages": [
+     "Russian (main everyday language)"
+    ],
+    "script": "Cyrillic"
+   }
+  }
+ ]
+}
