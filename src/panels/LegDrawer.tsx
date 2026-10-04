@@ -1,4 +1,5 @@
 import { dataset as ds } from '../data/dataset'
+import { AIRPORT_MIN } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, cityName, duration, shortDate } from '../ui/format'
 import { Badge, Section, Source } from '../ui/kit'
@@ -23,11 +24,16 @@ export function LegDrawer({ index }: { index: number }) {
           <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         {leg.reachable ? (
+          <>
           <div className="mt-2 flex flex-wrap items-center gap-2 text-[13px]">
             <b>{duration(leg.durationMin)}</b>
             <span>· {fmt(leg.priceMin)}–{fmt(leg.priceMax)}</span>
             {leg.estimated && <Badge tone="warn">partly estimated</Badge>}
           </div>
+          {leg.hops.some((h) => h.mode === 'flight') && (
+            <p className="mt-1 text-[12px] text-muted">Door to door: includes about {AIRPORT_MIN / 60} hours at the airport per flight.</p>
+          )}
+          </>
         ) : (
           <p className="mt-2 text-[13px] text-danger">No known route between these cities. Add a stop in between or reorder the trip.</p>
         )}

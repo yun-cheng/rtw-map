@@ -17,6 +17,7 @@ export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
 export { TAP_WATER_LABELS, airBand, tapWater } from './health'
 export { CARD_LABELS, cardLevel } from './payments'
 export { addDays, daysBetween, monthOf } from './dates'
+export { AIRPORT_MIN } from './graph'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }
 const LONG_LEG_MIN: Record<Pace, number> = { chill: 240, balanced: 300, fast: 420 }
@@ -308,6 +309,14 @@ export function generatePlan(ds: Dataset, input: TripInput): Plan {
     )
     const stops = ordered.map((x) => ({ cityId: x.cityId, nights: 1, locked: false, groupId: groupIdFor(ctx, x.cityId) }))
     result = fit(ctx, stops, scores, true)
+    // Fitting may add or drop cities; re-order the final set, then re-fit nights without changing it.
+    const reordered = orderRoute(
+      ctx.graph,
+      result.stops.map((s) => ({ cityId: s.cityId, group: groupOf(ctx, s.cityId) })),
+      input.startCityId,
+      input.endCityId,
+    ).map((x) => result.stops.find((s) => s.cityId === x.cityId)!)
+    result = { stops: fit(ctx, reordered, scores, false).stops, dropped: result.dropped }
 
     // Second pass: score cities by the month we now expect to be there.
     const sched = schedule(ctx, result.stops, legsFor(ctx, result.stops))

@@ -230,7 +230,7 @@ A pure TypeScript module (`src/planner`) with unit tests, running in the browser
 
 ### 6.2 Algorithm
 1. **Candidate set**: expand the selected countries/regions into cities and score each one as `interest_match × popularity × climate_fit(month)`. *Must* cities are always included.
-2. **Order the route**: geographic nearest-neighbour, then improve with 2-opt / simulated annealing. Cost = travel time + price + weather penalty in the arrival month + anchor violations. N < 50, so this takes milliseconds.
+2. **Order the route** (regions in the user's order; free order inside each region): nearest-neighbour from several starting cities, then local search (2-opt, moving 1–3 cities, swapping two cities) and a seeded shake-and-reoptimize loop. Leg cost = door-to-door time (incl. ~2½ h airport time per flight) + 1.5 min per € of fare. Weather enters through which cities are picked for each month. The route is re-ordered once more after cities are added or dropped. About 0.5 s for a 40-stop trip.
 3. **Transit days**: daytime legs over ~5h use a day (Fast: ~7h). Overnight buses, trains or ferries cost ~0.5 day and save a night of accommodation. Flights cost ~0.5 day.
 4. **Allocate days**:
    - `available = total_days − transit_days − rest_buffer`. Chill adds 1 rest day per ~10 days.
@@ -407,6 +407,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Price level & Big Mac, done:** price level with a plain-language comparison (user picks the country) and a "how to read" explainer; costs estimated from the price level for countries without hand-entered prices; a warning when our hand-entered costs differ a lot from the level (currently Croatia ~36% higher, Albania ~21% lower); Big Mac reference price.
 - **City panel tabs, done:** Overview (suggested days per pace + one line per topic, problems first) and tabs ordered by use: Transport, Weather, Money, Daily life, Safety, Entry. Red dots on tabs with a problem; the chosen tab stays when switching cities.
 - **Weather colours, done:** temperature-style colours on the map layer, the timeline and the Overview: blue = cold, green = pleasant, orange/red = hot, grey = wet (same thresholds as the weather checks).
+- **Routing, improved:** leg costs count ~2½ h airport time per flight and the fare, so routes stop zig-zagging by plane; the search adds swap moves, a seeded shake-and-reoptimize loop, and re-orders the route after cities are added or dropped.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

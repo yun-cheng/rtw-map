@@ -4,12 +4,19 @@ import type { Dataset, Leg, LegHop } from './types'
 const HARD_BORDER = new Set(['RU', 'BY', 'UA'])
 const MAX_ESTIMATED_DRIVE_MIN = 420
 const TRANSFER_MIN = 30
+/** Time at airports per flight (getting there, check-in, security, boarding, bags). */
+export const AIRPORT_MIN = 150
+/** How much a euro of fare "costs" in minutes when choosing routes: backpackers trade some time for money. */
+const MINUTES_PER_EUR = 1.5
+
+/** Door-to-door time of one hop: flights include airport time. */
+const hopMinutes = (h: LegHop) => h.durationMin + (h.mode === 'flight' ? AIRPORT_MIN : 0)
 export const UNREACHABLE = 1e7
 
 export type Graph = {
   ids: string[]
   index: Map<string, number>
-  dist: Float64Array // travel weight in minutes, n×n
+  dist: Float64Array // route weight, n×n: door-to-door minutes plus a fare term
   next: Int32Array // path reconstruction, n×n
   hop: Map<string, LegHop> // "a>b" → direct hop
 }
@@ -29,7 +36,7 @@ export function buildGraph(ds: Dataset, allowed: Set<string>): Graph {
     const i = index.get(h.from)
     const j = index.get(h.to)
     if (i === undefined || j === undefined) return
-    const w = h.durationMin + TRANSFER_MIN
+    const w = hopMinutes(h) + TRANSFER_MIN + MINUTES_PER_EUR * ((h.priceMin + h.priceMax) / 2)
     if (w < dist[i * n + j]) {
       dist[i * n + j] = w
       next[i * n + j] = j
@@ -99,7 +106,7 @@ export function legBetween(g: Graph, a: string, b: string): Leg {
     hops.push(g.hop.get(key(g.ids[cur], g.ids[nxt]))!)
     cur = nxt
   }
-  const durationMin = hops.reduce((s, h) => s + h.durationMin, 0) + TRANSFER_MIN * (hops.length - 1)
+  const durationMin = hops.reduce((s, h) => s + hopMinutes(h), 0) + TRANSFER_MIN * (hops.length - 1)
   return {
     from: a,
     to: b,
