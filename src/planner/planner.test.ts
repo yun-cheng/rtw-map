@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { englishLevel, evaluatePlan, generatePlan, rebalance, taxiEstimate, type TripInput } from './index'
+import { airBand, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -154,5 +154,36 @@ describe('weather checks', () => {
     const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-20' }
     const plan = evaluatePlan(ds, input, [{ cityId: 'athens', nights: 10, locked: false, groupId: '' }])
     expect(plan.warnings.some((w) => w.kind === 'weather' && w.title.includes('hot'))).toBe(true)
+  })
+})
+
+describe('health checks', () => {
+  const stop = (cityId: string, nights = 4) => ({ cityId, nights, locked: false, groupId: '' })
+
+  it('uses city-specific tap water notes over the country default', () => {
+    expect(tapWater(ds, 'stpetersburg')?.note).toMatch(/giardia/)
+    expect(tapWater(ds, 'tirana')?.level).toBe('bottled')
+    expect(tapWater(ds, 'prague')?.level).toBe('safe')
+  })
+
+  it('notes countries where you should not drink the tap water', () => {
+    const plan = evaluatePlan(ds, testTrip('US'), [stop('tirana'), stop('prague')])
+    const health = plan.warnings.filter((w) => w.kind === 'health')
+    expect(health.some((w) => w.iso2 === 'AL')).toBe(true)
+    expect(health.some((w) => w.iso2 === 'CZ')).toBe(false)
+  })
+
+  it('warns about polluted air during the stay', () => {
+    const smoggy = { month: 1, pm25: 40, daysOverWho: 25 }
+    const data = { ...ds, air: { whoDaily: 15, byCity: { sarajevo: Array.from({ length: 12 }, (_, m) => ({ ...smoggy, month: m + 1 })) } } }
+    const input = { ...testTrip('US'), startDate: '2027-01-10', endDate: '2027-01-14' }
+    const plan = evaluatePlan(data, input, [stop('sarajevo')])
+    expect(plan.warnings.find((w) => w.kind === 'health' && w.cityId === 'sarajevo')?.title).toMatch(/very poor air/)
+  })
+
+  it('bands PM2.5 against the WHO daily guideline', () => {
+    expect(airBand(8).short).toBe('Good')
+    expect(airBand(15).short).toBe('OK')
+    expect(airBand(30).short).toBe('Poor')
   })
 })

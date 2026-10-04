@@ -1,10 +1,11 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, RENTAL_INFO, TRANSIT_LABELS, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
+import { ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { AirChart } from './AirChart'
 import { ClimateChart } from './ClimateChart'
 
 const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' | 'info' }> = {
@@ -19,10 +20,10 @@ const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' 
   unknown: { label: 'Unknown: check official sources', tone: 'info' },
 }
 
-type SectionKey = 'around' | 'weather' | 'costs' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
+type SectionKey = 'around' | 'weather' | 'costs' | 'health' | 'services' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
 
 /** Default order of the city panel sections, most useful first. */
-const SECTION_ORDER: SectionKey[] = ['around', 'weather', 'costs', 'gettingThere', 'safety', 'language', 'visa', 'people']
+const SECTION_ORDER: SectionKey[] = ['around', 'weather', 'costs', 'health', 'services', 'gettingThere', 'safety', 'language', 'visa', 'people']
 
 const BUDGETS: { value: Budget; label: string }[] = [
   { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' },
@@ -50,6 +51,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const taxi = ds.localTransport.countries[city.iso2]?.taxi
   const taxiRide = taxiEstimate(ds, cityId)
   const rentals = ds.localTransport.countries[city.iso2]?.rentals
+  const health = ds.health.countries[city.iso2]
+  const water = tapWater(ds, cityId)
+  const air = ds.air.byCity[cityId]
+  const services = ds.amenities.byCity[cityId]
+  const shopping = ds.shopping[city.iso2]
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
@@ -179,6 +185,87 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ))}
         <Row label="Groceries for a day of cooking">{fmt(groceryDay(cost), true)}</Row>
         <Source>{ds.meta.costs.source} ({ds.meta.costs.updatedAt}). City price level ×{city.costFactor}.</Source>
+      </Section>
+    ),
+    health: health && (
+      <Section title="Health & water">
+        {water && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] text-muted">Tap water</span>
+              <Badge tone={TAP_WATER_LABELS[water.level].tone}>{TAP_WATER_LABELS[water.level].short}</Badge>
+            </div>
+            <p className="mt-1 text-[13px]">{water.note}</p>
+          </>
+        )}
+
+        <div className="mt-3 mb-1 flex items-baseline justify-between">
+          <span className="text-[12px] font-semibold">Air pollution (PM2.5) by month</span>
+          <span className="text-[11px] text-muted">µg/m³</span>
+        </div>
+        {air ? (
+          <>
+            <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} />
+            <div className="mt-1 flex gap-3 text-[11px] text-muted">
+              <span>┄ WHO daily guideline ({ds.air.whoDaily} µg/m³)</span>
+              <span className="text-accent">▯ {stop ? 'Your stay' : 'Selected month'}</span>
+            </div>
+            {[...stayMonths].map((m) => {
+              const a = air[m - 1]
+              return (
+                <p key={m} className="mt-1 text-[13px]">
+                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b> {airBand(a.pm25).short} (avg {a.pm25} µg/m³, ~{Math.round(a.daysOverWho)} days above the WHO daily guideline)
+                </p>
+              )
+            })}
+          </>
+        ) : (
+          <p className="text-[13px] text-muted">Air quality data not loaded yet.</p>
+        )}
+
+        <div className="mt-3 mb-1 text-[12px] font-semibold">Vaccines to discuss with a travel clinic</div>
+        <ul className="list-disc pl-4 text-[13px]">{health.vaccines.map((v) => <li key={v}>{v}</li>)}</ul>
+        <div className="mt-2 mb-1 text-[12px] font-semibold">Health risks</div>
+        <ul className="list-disc pl-4 text-[13px]">{health.risks.map((r) => <li key={r}>{r}</li>)}</ul>
+        <div className="mt-2 mb-1 text-[12px] font-semibold">Healthcare</div>
+        <p className="text-[13px]">{health.healthcare}</p>
+        <Source>
+          {ds.meta.health.source}{' '}
+          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
+          <br />
+          {ds.meta.air.source}
+        </Source>
+      </Section>
+    ),
+    services: (
+      <Section title="Shops & services">
+        {services ? (
+          <>
+            <p className="mb-1 text-[12px] text-muted">Within {ds.amenities.radiusKm} km of the centre:</p>
+            <div className="grid grid-cols-3 gap-1 text-center">
+              {([['supermarket', '🛒', 'Supermarkets'], ['convenience', '🏪', 'Convenience'], ['pharmacy', '💊', 'Pharmacies'], ['clinic', '🩺', 'Clinics & doctors'], ['atm', '🏧', 'ATMs']] as const).map(([k, icon, label]) => (
+                <div key={k} className="rounded-md border border-line px-1 py-1.5">
+                  <div className="text-[15px] font-semibold">{icon} {services[k]}</div>
+                  <div className="text-[10px] text-muted">{label}</div>
+                </div>
+              ))}
+              <div className="rounded-md border border-line px-1 py-1.5">
+                <div className="text-[15px] font-semibold">🏥 {services.nearestHospitalKm == null ? '>40' : services.nearestHospitalKm < 1 ? '<1' : Math.round(services.nearestHospitalKm)} km</div>
+                <div className="text-[10px] text-muted">Nearest hospital</div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-[13px] text-muted">Service counts not loaded yet.</p>
+        )}
+        {shopping && (
+          <div className="mt-2">
+            <Row label="Supermarket chains">{shopping.chains.join(', ')}</Row>
+            {shopping.sunday && <p className="mt-1 text-[13px]">🗓 {shopping.sunday}</p>}
+            {shopping.lateNight && <p className="mt-1 text-[13px]">🌙 {shopping.lateNight}</p>}
+          </div>
+        )}
+        <Source>{ds.meta.amenities.source} {ds.meta.shopping.source.split('.')[0]}.</Source>
       </Section>
     ),
     gettingThere: (

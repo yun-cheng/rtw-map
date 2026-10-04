@@ -1,0 +1,413 @@
+{
+  "_meta": {
+    "source": "Hand-curated from CDC Travelers' Health, UK FCDO/NaTHNaC health advice and local water utilities. Not medical advice: see a travel clinic 6–8 weeks before you go.",
+    "updatedAt": "2026-10-05"
+  },
+  "countries": {
+    "AL": {
+      "tapWater": {
+        "level": "bottled",
+        "note": "Not recommended to drink; bottled water is cheap everywhere."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Stray dogs",
+        "Summer heat on the coast and inland",
+        "Dangerous roads"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "albania"
+    },
+    "ME": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Generally safe; some coastal towns taste of chlorine, so many people drink bottled."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Summer heat",
+        "Mountain weather changes fast in Durmitor"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "montenegro"
+    },
+    "BA": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Generally safe; Sarajevo's water and public fountains are good."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Landmines in some rural areas: stay on marked paths",
+        "Stray dogs",
+        "Winter air pollution in Sarajevo"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "bosnia-and-herzegovina"
+    },
+    "RS": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Generally safe in cities."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Mosquitoes (West Nile virus) in late summer",
+        "Summer heat",
+        "Winter air pollution in Belgrade"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "serbia"
+    },
+    "XK": {
+      "tapWater": {
+        "level": "safe_bottled",
+        "note": "Treated in cities, but most people drink bottled water."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Winter air pollution in Pristina",
+        "Stray dogs"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "kosovo"
+    },
+    "MK": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Generally safe in Skopje and Ohrid."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Winter air pollution in Skopje",
+        "Summer heat"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "north-macedonia"
+    },
+    "HR": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe everywhere."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks in inland forests",
+        "Summer heat and sunburn on the coast"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "croatia"
+    },
+    "SI": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe and very good."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks in forests (tick-borne encephalitis)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "slovenia"
+    },
+    "GR": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe on the mainland; on many islands it is not drinkable."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)"
+      ],
+      "risks": [
+        "Heatwaves above 40°C",
+        "Wildfires in summer",
+        "Mosquitoes (West Nile virus)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "greece"
+    },
+    "BG": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Generally safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Ticks in forests",
+        "Stray dogs"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "bulgaria"
+    },
+    "RO": {
+      "tapWater": {
+        "level": "safe_bottled",
+        "note": "Safe in cities, but many locals prefer bottled."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Brown bears in the Carpathians (e.g. around Brașov)",
+        "Ticks",
+        "Mosquitoes (West Nile virus) in summer"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "romania"
+    },
+    "MD": {
+      "tapWater": {
+        "level": "bottled",
+        "note": "Not recommended to drink; use bottled or filtered water."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)"
+      ],
+      "risks": [
+        "Summer heat"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "moldova"
+    },
+    "HU": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks",
+        "Mosquitoes near lakes and rivers"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "hungary"
+    },
+    "SK": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (tick-borne encephalitis)",
+        "Mountain weather in the High Tatras"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "slovakia"
+    },
+    "CZ": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (tick-borne encephalitis, Lyme disease)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "czechia"
+    },
+    "PL": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe, though many Poles boil it out of habit."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (tick-borne encephalitis, Lyme disease)",
+        "Winter smog in Kraków and the south"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "poland"
+    },
+    "LT": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (high tick-borne encephalitis risk)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "lithuania"
+    },
+    "LV": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (high tick-borne encephalitis risk)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "latvia"
+    },
+    "EE": {
+      "tapWater": {
+        "level": "safe",
+        "note": "Safe."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (high tick-borne encephalitis risk)"
+      ],
+      "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+      "cdcSlug": "estonia"
+    },
+    "RU": {
+      "tapWater": {
+        "level": "boil",
+        "note": "Boil or filter before drinking (old pipes); bottled water is widely used."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (tick-borne encephalitis) in forests",
+        "Mosquitoes in summer"
+      ],
+      "healthcare": "Good private clinics in Moscow and St Petersburg; elsewhere basic. Pay in cash (foreign cards don't work) and check whether your insurance covers Russia.",
+      "cdcSlug": "russia"
+    },
+    "UA": {
+      "tapWater": {
+        "level": "boil",
+        "note": "Boil or filter before drinking; bottled water is widely used."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks",
+        "Conflict-related risks: see the travel advisory"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "ukraine"
+    },
+    "BY": {
+      "tapWater": {
+        "level": "boil",
+        "note": "Boil or filter before drinking; bottled water is widely used."
+      },
+      "vaccines": [
+        "Routine vaccines (incl. measles)",
+        "Hepatitis A",
+        "Hepatitis B (for some travellers)",
+        "Rabies (if you will be around animals or far from medical care)",
+        "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+      ],
+      "risks": [
+        "Ticks (tick-borne encephalitis)"
+      ],
+      "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
+      "cdcSlug": "belarus"
+    }
+  },
+  "cities": {
+    "stpetersburg": {
+      "tapWater": {
+        "level": "boil",
+        "note": "Do not drink unboiled tap water (old pipes; giardia has been an issue in the past)."
+      }
+    }
+  }
+}

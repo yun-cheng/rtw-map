@@ -27,9 +27,9 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 - **Setup**: dates, regions in visiting order (each country *must* / *optional* / *excluded*; "do not travel" countries start excluded), "longer stay" per region, start/end city, pace, budget, interests, passport, Schengen days already used.
 - **Generated plan**: picks cities, orders the route, assigns nights, keeps Schengen days ≤ 90 in any 180-day window, estimates cost as a range.
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
-- **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, pace, limited English, unreachable or estimated legs.
-- **Map layers**: route, weather (by month), cost, English, Schengen, safety.
-- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares, bike/e-scooter/car/scooter rentals), weather chart, costs by budget style incl. supermarket prices, connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa or safety jumps to the top when there's a problem (visa needed in advance, do-not-travel advice). Every fact shows its source and date.
+- **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, air pollution, tap water, pace, limited English, unreachable or estimated legs.
+- **Map layers**: route, weather and air quality (by month), cost, English, Schengen, safety.
+- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares, bike/e-scooter/car/scooter rentals), weather chart, costs by budget style incl. supermarket prices, health & water (tap water, air pollution by month, vaccines, risks, healthcare), shops & services (supermarkets, pharmacies, clinics, nearest hospital, chains, Sunday closures), connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa or safety jumps to the top when there's a problem (visa needed in advance, do-not-travel advice). Every fact shows its source and date.
 - **Display currency**: pick EUR, USD, TWD, JPY, …; all prices convert (data is stored in EUR).
 - **Saving**: automatic (localStorage) plus JSON export/import. Esc closes the side panel.
 
@@ -57,10 +57,12 @@ All data lives in the repo. Hand-curated files are in `data/seed/`; scripts enri
 |---|---|---|
 | `build-cities.ts` | GeoNames cities500 (CC-BY) | `cities.json`: coordinates, population, timezone |
 | `build-boundaries.ts` | Natural Earth 1:50m (public domain) | `boundaries.json` |
-| `build-seed.ts` | `data/seed/*` | `countries`, `costs`, `connections`, `notices`, `local-transport` (validated: every city/country needs an entry) |
+| `build-seed.ts` | `data/seed/*` | `countries`, `costs`, `connections`, `notices`, `local-transport`, `health`, `shopping` (validated: every city/country needs an entry) |
 | `build-roads.ts` | OSRM demo server (OpenStreetMap, ODbL) | `roads.json`: driving times for estimated legs |
 | `build-visa.ts` | Passport Index dataset (MIT) | `visa.json` |
 | `build-climate.ts` | Open-Meteo archive, ERA5 (CC-BY) | `climate.json`: monthly averages 2016–2025 |
+| `build-air.ts` | Open-Meteo Air Quality, CAMS model (CC-BY) | `air.json`: monthly PM2.5 2023–2024 |
+| `fetch-amenities.ts` | OpenStreetMap via Overpass (ODbL) | `amenities.json`: shops, pharmacies, clinics near the centre; nearest hospital |
 | `fetch-advisories.ts` | UK FCDO (OGL) + US State Dept | `advisories.json` |
 | `fetch-fx.ts` | ExchangeRate-API open endpoint | `fx.json` |
 | `fetch-population.ts` | World Bank (CC-BY) | `population.json` |
@@ -72,4 +74,4 @@ npm run data:refresh   # fast-changing data only; also runs daily via .github/wo
 
 To add a city: add a row to `data/seed/cities.csv` (and connections to `data/seed/connections.csv`), then run `npm run data:build`.
 
-**Estimates:** costs, connections, English levels, local transport, taxi and rental data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.
+**Estimates:** costs, connections, English levels, local transport, taxi, rental, health and shopping data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.

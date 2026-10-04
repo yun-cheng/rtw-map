@@ -67,7 +67,7 @@ A map-based trip planner for long, multi-country trips, covering the region of m
 - Phase 2: AI copilot ("make Poland longer", "add Moldova", "swap the flight for an overland route").
 
 ### ④ Explore
-- Click a **city** for, in order: getting around, weather, costs, connections, safety, language, visa, people & practical. Visa or safety moves to the top when there's a problem for this passport or a do-not-travel advisory.
+- Click a **city** for, in order: getting around, weather, costs, health & water, shops & services, connections, safety, language, visa, people & practical. Visa or safety moves to the top when there's a problem for this passport or a do-not-travel advisory.
 - Click a **leg** for transport options with duration, price range, frequency and booking tips. When driving is an option, public transport and car are compared side by side (time, cost, difficulty).
 - City drawer gets a **Driving** section: how hard it is to drive and park there, old-town restrictions, whether a car is useful for the area.
 - **Month slider + map layers**: climate quality, Schengen vs. non-Schengen, cost level, safety advisory level, **driving** (road safety per country, driving difficulty per city).
@@ -171,7 +171,9 @@ At this scale, **data lives in the repo as hand-curated files**, enriched by scr
 | **Transport** | Between cities: mode, duration, price range, frequency, overnight option, booking tip | **Own `connections` file**, seeded from Wikivoyage + region references (§3.4) using AI extraction + my review; OSRM for road times | Manual |
 | **Visa** | Requirement per passport, max stay, Schengen zone, e-visa link, ETIAS/EES notes | Passport Index open dataset + Wikipedia, always linked to the official government site | Monthly check |
 | **Safety** | Advisory level + summary, scams, emergency numbers | UK FCDO (gov.uk content API), US State Dept | Daily (automated) |
-| **Health** | Vaccines, tap water safety | CDC Travelers' Health | Yearly |
+| **Health & water** | **Tap water** (safe / safe but locals drink bottled / boil or filter / drink bottled), vaccines to discuss with a travel clinic (routine, hepatitis A/B, rabies, tick-borne encephalitis where relevant), health risks (ticks, stray dogs, West Nile mosquitoes, heat, bears, landmines), what healthcare is like and how you pay | Hand-curated from CDC Travelers' Health (linked per country), UK FCDO/NaTHNaC and water utilities; city overrides where they differ (e.g. St Petersburg) | Yearly |
+| **Air quality by month** | Monthly average PM2.5 and days above the WHO daily guideline (15 µg/m³); map layer with month picker; warning when the stay month is polluted (e.g. winter smog in Sarajevo, Skopje, Kraków) | Open-Meteo Air Quality API (Copernicus CAMS European **model** data, CC-BY), 2023–2024 | Yearly |
+| **Shops & services** | Supermarkets, convenience stores, pharmacies, clinics/doctors and ATMs within 1.5 km of the centre; distance to the nearest hospital; common supermarket chains; Sunday closures and late-night options | OpenStreetMap via Overpass (counts depend on how well an area is mapped); chains and opening rules hand-curated | Yearly |
 | **People & culture** | Population, languages, religion breakdown, etiquette, tipping | Wikidata, Pew Research, Wikivoyage "Respect" sections | Yearly |
 | **Language** | **How easy it is to get by in English** per city (1 hard → 5 easy): a country estimate, one step easier in big/very touristy cities, one step harder in small towns. Plus other useful languages (e.g. Russian in the Baltics, German in Kosovo, Italian in Albania) and the alphabet on signs (Cyrillic, Greek). Map layer + a trip check for stops where English is limited | Our own estimate, labelled as such; compared against the EF English Proficiency Index and the EU Eurobarometer language survey (references only, not copied) | Yearly |
 | **Welcomeness** | LGBTQ+ legal status, women-traveler notes, notes for travelers of different ethnicities | Equaldex, FCDO's dedicated advisory sections | Monthly |
@@ -312,6 +314,11 @@ Connection { from, to, mode, durationMin, priceMin, priceMax, frequency, overnig
 VisaRule   { passport, dest, requirement, maxStayDays, zone, evisaUrl, notes, source, updatedAt }
 Advisory   { iso2, issuer, level, summary, sections{}, url, updatedAt }
 Welcome    { iso2, lgbtqLegal{}, womenNotes, ethnicityNotes, sources[] }
+CountryHealth    { iso2, tapWater: { level: 'safe' | 'safe_bottled' | 'boil' | 'bottled', note },
+                   vaccines[], risks[], healthcare, cdcSlug }       // + city tapWater overrides
+AirMonth         { cityId, month, pm25, daysOverWho }
+Amenities        { cityId, supermarket, convenience, pharmacy, clinic, atm, nearestHospitalKm }
+Shopping         { iso2, chains[], lateNight?, sunday? }
 CityTransport    { cityId, ease: 1..5, modes[], walkable, pay?, note?,
                    rentals: ('bikeShare' | 'eScooter' | 'bike' | 'car' | 'moto')[], rentalNote? }
 CountryTransport { iso2, taxi: { apps[], flagFall, perKm, tip },
@@ -353,6 +360,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Display currency, done:** currency picker in the header; every price (header total, legs, city costs, map cost layer) is converted; supermarket prices also show the local-currency amount.
 - **English & language, done:** Language section in the city panel, an English map layer (route stops are coloured by the active layer), and a trip check naming stops where English is limited.
 - **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips, and rentals (bike share, e-scooters, bikes, cars, scooters/motorbikes) with apps, daily prices and what you need to rent. The data build fails if any city or country is missing.
+- **Health, air & services, done:** "Health & water" section (tap water, monthly air pollution chart, vaccines, risks, healthcare + CDC link) and "Shops & services" section (OSM counts near the centre, nearest hospital, chains, Sunday/late-night). The OSM counts are still downloading (the shared Overpass server is slow), so the section shows "not loaded yet" for now. Air map layer by month; checks for undrinkable tap water and polluted months.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
 

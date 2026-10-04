@@ -4,6 +4,7 @@ import { MONTHS } from '../ui/format'
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
   { value: 'climate', label: 'Weather' },
+  { value: 'air', label: 'Air' },
   { value: 'cost', label: 'Cost' },
   { value: 'english', label: 'English' },
   { value: 'schengen', label: 'Schengen' },
@@ -12,6 +13,7 @@ const LAYERS: { value: MapLayer; label: string }[] = [
 
 const LEGENDS: Partial<Record<MapLayer, { color: string; label: string }[]>> = {
   climate: [{ color: '#16a34a', label: 'Pleasant' }, { color: '#eab308', label: 'OK' }, { color: '#dc2626', label: 'Too hot / cold / wet' }],
+  air: [{ color: '#16a34a', label: 'Clean' }, { color: '#eab308', label: 'Moderate' }, { color: '#dc2626', label: 'Polluted' }],
   cost: [{ color: '#16a34a', label: 'Cheap' }, { color: '#eab308', label: 'Medium' }, { color: '#dc2626', label: 'Expensive' }],
   english: [{ color: '#16a34a', label: 'Easy' }, { color: '#eab308', label: 'Mixed' }, { color: '#dc2626', label: 'Hard' }],
   schengen: [{ color: '#2563eb', label: 'Schengen area' }, { color: '#d97706', label: 'Outside Schengen' }],
@@ -34,7 +36,7 @@ export function MapControls() {
           </button>
         ))}
       </div>
-      {layer === 'climate' && (
+      {(layer === 'climate' || layer === 'air') && (
         <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
           {MONTHS.map((m, i) => (
             <button

@@ -5,7 +5,7 @@ import type { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Map as
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, dailyCost, englishLevel } from '../planner'
+import { ENGLISH_LABELS, airBand, dailyCost, englishLevel } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, MONTHS, money, ramp } from '../ui/format'
 
@@ -154,6 +154,12 @@ export function MapView() {
         const m = ds.climate[cityId]?.[layerMonth - 1]
         if (!m) return {}
         return { color: ramp(m.comfort), label: `${MONTHS[layerMonth - 1]}: ${m.tHigh}°C, ${m.rainDays} rain days` }
+      }
+      if (layer === 'air') {
+        const a = ds.air.byCity[cityId]?.[layerMonth - 1]
+        if (!a) return {}
+        const band = airBand(a.pm25)
+        return { color: ramp((band.level - 1) / 4), label: `${MONTHS[layerMonth - 1]} air: ${band.short.toLowerCase()} (PM2.5 ${a.pm25})` }
       }
       if (layer === 'cost') {
         const d = dailyCost(ds, cityId, input.budget)

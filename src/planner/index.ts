@@ -2,6 +2,7 @@ import { allocate, type AllocItem } from './allocate'
 import { dailyCost } from './cost'
 import { addDays, daysBetween, monthOf } from './dates'
 import { buildGraph, legBetween, travelWeight, type Graph } from './graph'
+import { TAP_WATER_LABELS, airBand, tapWater } from './health'
 import { ENGLISH_LABELS, englishLevel } from './language'
 import { orderRoute } from './route'
 import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
@@ -12,6 +13,7 @@ export { dailyCost, groceryDay } from './cost'
 export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
+export { TAP_WATER_LABELS, airBand, tapWater } from './health'
 export { addDays, daysBetween, monthOf } from './dates'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }
@@ -422,6 +424,25 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
         kind: 'language', severity: 'info', iso2, cityId: hard[0].cityId,
         title: `English is ${ENGLISH_LABELS[worst].short.toLowerCase()} in ${hard.map((s) => ds.cities[s.cityId].name).join(', ')}`,
         detail: `Get an offline translator app (${country.languages[0]}).${also} Script: ${country.english.script}.`,
+      })
+    }
+  }
+  // Health: tap water you shouldn't drink, and polluted air during the stay
+  for (const iso2 of countries) {
+    const water = sched.map((s) => s.cityId).filter((id) => ds.cities[id].iso2 === iso2).map((id) => tapWater(ds, id))
+    const worst = water.find((w) => w?.level === 'bottled') ?? water.find((w) => w?.level === 'boil')
+    if (worst) {
+      warnings.push({ kind: 'health', severity: 'info', iso2, title: `${ds.countries[iso2].name}: ${TAP_WATER_LABELS[worst.level].short.toLowerCase()}`, detail: worst.note })
+    }
+  }
+  for (const s of sched) {
+    const month = monthOf(addDays(s.arrive, Math.floor(s.nights / 2)))
+    const air = ds.air.byCity[s.cityId]?.[month - 1]
+    if (air && air.pm25 > 25) {
+      warnings.push({
+        kind: 'health', severity: 'warn', cityId: s.cityId,
+        title: `${ds.cities[s.cityId].name}: ${airBand(air.pm25).short.toLowerCase()} air quality (PM2.5 ~${Math.round(air.pm25)} µg/m³)`,
+        detail: `About ${Math.round(air.daysOverWho)} days that month above the WHO daily guideline. Consider a mask if you have asthma or heart/lung conditions.`,
       })
     }
   }

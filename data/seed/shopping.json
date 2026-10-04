@@ -1,0 +1,194 @@
+{
+  "_meta": {
+    "source": "Hand-curated: common supermarket chains and opening-hour rules. Shops near each city centre are counted from OpenStreetMap (amenities.json).",
+    "updatedAt": "2026-10-05"
+  },
+  "countries": {
+    "AL": {
+      "chains": [
+        "Conad",
+        "Big Market"
+      ],
+      "lateNight": "Small minimarkets everywhere stay open late."
+    },
+    "ME": {
+      "chains": [
+        "Voli",
+        "Idea"
+      ]
+    },
+    "BA": {
+      "chains": [
+        "Konzum",
+        "Bingo"
+      ]
+    },
+    "RS": {
+      "chains": [
+        "Maxi",
+        "Idea",
+        "Lidl",
+        "Univerexport"
+      ],
+      "lateNight": "24-hour kiosks and minimarkets in Belgrade."
+    },
+    "XK": {
+      "chains": [
+        "Viva Fresh",
+        "ETC"
+      ]
+    },
+    "MK": {
+      "chains": [
+        "Vero",
+        "Tinex",
+        "Ramstore"
+      ]
+    },
+    "HR": {
+      "chains": [
+        "Konzum",
+        "Lidl",
+        "Kaufland",
+        "Spar",
+        "Plodine",
+        "Studenac"
+      ],
+      "sunday": "Sunday opening is restricted by law: most shops close on most Sundays (more open in tourist areas in summer)."
+    },
+    "SI": {
+      "chains": [
+        "Mercator",
+        "Spar",
+        "Lidl",
+        "Hofer",
+        "Tuš"
+      ],
+      "sunday": "Many shops close on Sundays."
+    },
+    "GR": {
+      "chains": [
+        "Sklavenitis",
+        "AB Vassilopoulos",
+        "Lidl",
+        "My Market",
+        "Masoutis"
+      ],
+      "lateNight": "Periptero kiosks sell drinks and snacks late into the night.",
+      "sunday": "Most supermarkets close on Sundays outside tourist areas."
+    },
+    "BG": {
+      "chains": [
+        "Lidl",
+        "Kaufland",
+        "Billa",
+        "Fantastico"
+      ],
+      "lateNight": "Many small shops are open 24 hours."
+    },
+    "RO": {
+      "chains": [
+        "Kaufland",
+        "Lidl",
+        "Mega Image",
+        "Carrefour",
+        "Profi"
+      ],
+      "lateNight": "Some Mega Image and Profi shops are open 24 hours."
+    },
+    "MD": {
+      "chains": [
+        "Linella",
+        "Nr. 1"
+      ]
+    },
+    "HU": {
+      "chains": [
+        "Spar",
+        "Lidl",
+        "Aldi",
+        "Tesco",
+        "CBA"
+      ],
+      "lateNight": "\"Non-stop\" shops in Budapest are open 24 hours."
+    },
+    "SK": {
+      "chains": [
+        "Tesco",
+        "Lidl",
+        "Billa",
+        "Kaufland"
+      ]
+    },
+    "CZ": {
+      "chains": [
+        "Albert",
+        "Billa",
+        "Lidl",
+        "Kaufland"
+      ],
+      "lateNight": "Small corner shops (\"večerka\") open late."
+    },
+    "PL": {
+      "chains": [
+        "Biedronka",
+        "Lidl",
+        "Żabka",
+        "Carrefour"
+      ],
+      "lateNight": "Żabka convenience stores are everywhere and open late.",
+      "sunday": "Most shops are closed on Sundays (Żabka and petrol stations stay open)."
+    },
+    "LT": {
+      "chains": [
+        "Maxima",
+        "Iki",
+        "Rimi",
+        "Lidl",
+        "Norfa"
+      ],
+      "lateNight": "Some Maxima stores are open 24 hours."
+    },
+    "LV": {
+      "chains": [
+        "Rimi",
+        "Maxima",
+        "Lidl",
+        "Mego"
+      ]
+    },
+    "EE": {
+      "chains": [
+        "Rimi",
+        "Selver",
+        "Prisma",
+        "Maxima",
+        "Coop"
+      ]
+    },
+    "RU": {
+      "chains": [
+        "Pyaterochka",
+        "Magnit",
+        "Perekrestok",
+        "VkusVill",
+        "Lenta"
+      ],
+      "lateNight": "24-hour shops are common in big cities."
+    },
+    "UA": {
+      "chains": [
+        "Silpo",
+        "ATB",
+        "Novus"
+      ]
+    },
+    "BY": {
+      "chains": [
+        "Euroopt",
+        "Santa",
+        "Korona"
+      ]
+    }
+  }
+}

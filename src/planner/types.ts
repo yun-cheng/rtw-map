@@ -110,6 +110,31 @@ export type CountryTransport = {
   rentals: { apps: string[]; carDay: [number, number]; motoDay?: [number, number] }
 }
 
+export type TapWater = 'safe' | 'safe_bottled' | 'boil' | 'bottled'
+
+export type CountryHealth = {
+  tapWater: { level: TapWater; note: string }
+  vaccines: string[]
+  risks: string[]
+  healthcare: string
+  cdcSlug: string
+}
+
+/** Monthly fine-particle pollution: average PM2.5 (µg/m³) and days per month above the WHO 24-hour guideline. */
+export type AirMonth = { month: number; pm25: number; daysOverWho: number }
+
+/** Services within ~1.5 km of the city centre (OpenStreetMap), and the nearest hospital. */
+export type Amenities = {
+  supermarket: number
+  convenience: number
+  pharmacy: number
+  clinic: number
+  atm: number
+  nearestHospitalKm: number | null
+}
+
+export type Shopping = { chains: string[]; lateNight?: string; sunday?: string }
+
 export type Notice = { id: string; appliesTo: string; title: string; text: string; url: string }
 
 export type Dataset = {
@@ -125,6 +150,10 @@ export type Dataset = {
   notices: Notice[]
   population: Record<string, { value: number; year: number }>
   localTransport: { cities: Record<string, CityTransport>; countries: Record<string, CountryTransport> }
+  health: { countries: Record<string, CountryHealth>; cities: Record<string, { tapWater?: CountryHealth['tapWater'] }> }
+  air: { whoDaily: number; byCity: Record<string, AirMonth[]> }
+  amenities: { radiusKm: number; byCity: Record<string, Amenities> }
+  shopping: Record<string, Shopping>
   meta: Record<string, Meta>
 }
 
@@ -194,7 +223,7 @@ export type Leg = {
 export type ScheduledStop = Stop & { arrive: string; depart: string }
 
 export type WarningKind =
-  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language'
+  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health'
 
 export type PlanWarning = {
   kind: WarningKind

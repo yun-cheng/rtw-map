@@ -8,7 +8,7 @@ import {
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type MapLayer = 'none' | 'climate' | 'cost' | 'english' | 'schengen' | 'advisory'
+export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'english' | 'schengen' | 'advisory'
 
 type State = {
   input: TripInput
