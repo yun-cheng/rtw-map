@@ -1,6 +1,6 @@
-# RTW Map — Product & Technical Plan (draft v0.3)
+# RTW Map — Product & Technical Plan (draft v0.4)
 
-A map-based trip planner for long, multi-country trips, covering the region of my RTW plan: the Balkans, Eastern Europe, Poland, the Baltic States and Russia. A trip can use the whole region or just part of it. The user says roughly **where**, **how long**, and **how they like to travel**. We suggest a route and how many days to spend in each city. Every stop and every leg comes with practical information: weather, costs, how to get there, visas, safety, and local context.
+A map-based trip planner for long, multi-country trips anywhere in the world: round-the-world, one region, or a few countries. Data is filled in region by region, starting with the region of my RTW plan (the Balkans, Eastern Europe, Poland, the Baltic States and Russia). The user says roughly **where**, **how long**, and **how they like to travel**. We suggest a route and how many days to spend in each city. Every stop and every leg comes with practical information: weather, costs, how to get there, visas, safety, and local context.
 
 ---
 
@@ -9,7 +9,7 @@ A map-based trip planner for long, multi-country trips, covering the region of m
 | Topic | Decision |
 |---|---|
 | First user | Me (personal use). **Test case:** my RTW trip, May–Sept 2027: Balkans → Eastern Europe → Poland (longer) → Baltics → Russia. The website plans it; we use it to find bugs (§3.3) |
-| Coverage | Balkans, Eastern Europe, Poland, Baltic States, Russia (§3). **This is the full scope; no other regions are planned** |
+| Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). First region: Balkans, Eastern Europe, Poland, Baltic States, Russia (the test case). Order of later regions: decided after the field test |
 | Language | English only |
 | Passports | A few: EU/EEA/Swiss (one group), UK, US, Canada, Australia, New Zealand, Japan, South Korea, **Taiwan** |
 | Platform | Desktop-first web app; a simple read-only phone view for use on the road |
@@ -81,8 +81,20 @@ A map-based trip planner for long, multi-country trips, covering the region of m
 
 ## 3. Coverage & test case
 
-### 3.1 Data coverage (~20 countries, ~80–100 cities; start with ~50 core cities)
-Coverage is exactly the region of my RTW plan, and the website must have complete data for all of it.
+### 3.0 Global coverage, filled region by region
+The website works for any city in the world. Data comes in two tiers:
+
+| Tier | What | How it's made | Coverage |
+|---|---|---|---|
+| **Automatic** | Location, population, timezone, weather by month, air quality by month, shops/pharmacies/clinics and nearest hospital, visa per passport, travel advisories, exchange rates, country population, estimated road travel times | Scripts from global open sources (§5); no hand work | Every city above a population threshold, plus listed tourist places |
+| **Curated** | Suggested days and tags, costs, connections, English level, public transport, taxis, rentals, tap water, supermarket chains, health risks, driving | Country defaults with city overrides; AI-assisted extraction from Wikivoyage and operator sites, then my review (§7) | One region at a time |
+
+- A city with only automatic data shows a **"basic info"** label. The planner still works there: it uses country defaults and road-distance estimates, and says so.
+- A region counts as **done** when every city in it has curated data and its test trip passes, like §3.3 for the first region.
+- The engine and UI must never assume a specific region: no hard-coded country lists outside the data files.
+
+### 3.1 First region: data coverage (~20 countries, ~80–100 cities; start with ~50 core cities)
+The first region is the one my RTW plan covers, and it gets complete curated data.
 
 | Block | Countries | Schengen? |
 |---|---|---|
@@ -160,7 +172,7 @@ Phone (Phase 3): a read-only itinerary + today's stop + offline city info.
 
 ## 5. Information we provide (and where it comes from)
 
-At this scale, **data lives in the repo as hand-curated files**, enriched by scripts from open sources. Git is the database: changes are reviewable diffs and everything is versioned.
+**Data lives in the repo as files**: hand-curated seed files, enriched by scripts from open sources. Git is the database: changes are reviewable diffs and everything is versioned. For global coverage the generated data is split per country and loaded on demand (§8).
 
 | Category | What we show | Sources | Refresh |
 |---|---|---|---|
@@ -186,6 +198,19 @@ At this scale, **data lives in the repo as hand-curated files**, enriched by scr
 | **Car rental** | Typical daily price (manual/automatic), one-way and cross-border fees, which countries a car rented in country X may enter, green-card insurance, young-driver age limits | Curated from major rental companies' published terms (manual research, no scraping) | Yearly |
 
 **Sensitive topics:** we show facts, official advisory text, and sourced notes. We never invent country-level "scores".
+
+### Scaling the data to global cities
+
+| Data | Works globally today? | What changes at global scale |
+|---|---|---|
+| Cities, population, timezone (GeoNames) | Yes | Pick cities by population threshold + a curated list of tourist places |
+| Weather (Open-Meteo ERA5) | Yes, but slow: free tier allows ~38 cities/hour | Bulk download from the Copernicus Climate Data Store (free) or a paid Open-Meteo plan |
+| Air quality (CAMS via Open-Meteo) | Yes (global model; more detailed in Europe) | Use station measurements from OpenAQ where available; model only as fallback (models read high in some big cities) |
+| Shops, pharmacies, clinics, hospitals (OpenStreetMap) | Yes, but Overpass is slow and rate-limited | Process regional OSM extracts (Geofabrik) locally instead of one query per city |
+| Road travel times (OSRM demo server) | Small batches only | Self-hosted OSRM or OpenRouteService (free key) |
+| Visa (Passport Index) | Yes: 199 passports | Add more passports to the picker |
+| Advisories (FCDO + US), exchange rates, World Bank | Yes | Nothing |
+| Curated data (costs, transport, English, taxis, rentals, water, shops, health, driving) | No: hand-made per region | Country defaults first, then city overrides; AI-assisted extraction + review; Open Prices and World Bank price levels as cost fallbacks; "report outdated" button for corrections |
 
 ---
 
@@ -279,6 +304,16 @@ The API key lives in a small serverless proxy, never in the browser. The proxy i
 - MapLibre is a fork of Mapbox v1 with a nearly identical API, so switching later either way is days of work, not a rewrite.
 - What we give up: Mapbox Studio's style editor, some polish, and Mapbox's search/directions APIs.
 
+**Global-ready data layout** (needed before adding a second region):
+- Split generated data per country (`data/gen/countries/XX.json`) and fetch only the countries in the trip; keep a small global city index for search and the map.
+- The map shows cities by zoom level, so thousands of dots don't load at once.
+- The planner already builds its travel graph only for the countries in the trip, so it scales with the trip, not with the world.
+- Move the region-specific rules that are still in code into data files:
+  - closed or restricted borders (Russia/Belarus/Ukraine in `graph.ts`)
+  - the Kosovo → Serbia entry rule (`planner/index.ts`)
+  - Schengen detection, which currently checks the passport's rule for Poland (`schengen.ts`, `planner/index.ts`)
+  - the region presets (`data/presets.ts`)
+
 Repo layout (single app, no monorepo):
 ```
 src/
@@ -350,6 +385,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 | **2. Refine, road trips + AI** | Jan–Feb 2027 | Advisories/FX auto-refresh; better cost estimates; print view; **road-trip mode** (driving data for all countries/cities, rental segments, car vs public comparison, driving layer); AI copilot (NL setup, tool-use edits, grounded Q&A) | All MVP acceptance checks pass, including the driving variant |
 | **3. Mobile & offline** | Mar–Apr 2027 | Phone read-only view + offline (PWA); "today" screen | Phone view works offline with the test trip loaded |
 | **Field test** | May–Sep 2027 | Use the site on the real trip; log bugs and data errors | Real-world bug list; data corrections |
+| **Global rollout** | After Sep 2027 | Global-ready data layout (per-country files, lazy loading); automatic tier for every city above the threshold; then curated data region by region (order decided after the field test) | Any city can be planned with basic info; each new region passes its own test trip |
 
 **If time runs short, cut in this order:** AI copilot → road-trip mode → cost layer → print view. Never cut the Schengen calculator or the visa warnings.
 
@@ -362,6 +398,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips, and rentals (bike share, e-scooters, bikes, cars, scooters/motorbikes) with apps, daily prices and what you need to rent. The data build fails if any city or country is missing.
 - **Health, air & services, done:** "Health & water" section (tap water, monthly air pollution chart, vaccines, risks, healthcare + CDC link) and "Shops & services" section (OSM counts near the centre, nearest hospital, chains, Sunday/late-night). The OSM counts are still downloading (the shared Overpass server is slow), so the section shows "not loaded yet" for now. Air map layer by month; checks for undrinkable tap water and polluted months.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
+- **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
 
 ---
@@ -374,6 +411,8 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 | Fast-changing situations (e.g. Russia borders, payments, advisories) | Automated advisory refresh; "last checked" dates; easy manual overrides in the data files |
 | Not ready for the field test (solo, part-time) | Milestones above; cut list |
 | Data licensing | Own curated files; only open-licensed sources; credit Wikivoyage (CC-BY-SA) where text is reused |
+| Curated data doesn't scale to the whole world (solo) | Two tiers: automatic data everywhere, curated data region by region; country defaults before city details; AI-assisted extraction with review |
+| Free APIs (Open-Meteo, Overpass, OSRM) are too slow or rate-limited for thousands of cities | Bulk sources instead (Copernicus CDS, Geofabrik OSM extracts, self-hosted OSRM); cache everything; refresh rarely |
 | AI hallucination | AI answers only from our data; the engine owns the itinerary; citations required |
 | Sensitive topics | Facts + sourced advisories only; no invented scores |
 | Driving advice wrong (IDP rules, cross-border rental bans) → fines, invalid insurance, refused at a border | Source + date on every rule; link to official sites and the rental company's terms; "check with your rental company" on every rental segment |
@@ -456,4 +495,5 @@ No single product combines **route + days planning**, **real overland transport 
 
 ## 13. Open questions
 
-None right now.
+1. **Which cities get automatic data?** Suggestion: population ≥ 50,000 plus a curated list of smaller tourist places (like Theth or Bled).
+2. **Which region comes after the first one?** To decide after the field test.

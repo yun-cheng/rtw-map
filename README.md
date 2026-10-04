@@ -1,6 +1,6 @@
 # rtw-map
 
-A map-based planner for long trips through the Balkans, Eastern Europe, Poland, the Baltic States and Russia.
+A map-based planner for long, multi-country trips. It's built for cities worldwide; detailed data currently covers the Balkans, Eastern Europe, Poland, the Baltic States and Russia (more regions to follow).
 You choose regions, dates, pace and budget. It suggests a route with nights per city, enforces the Schengen 90/180 rule,
 checks visas and travel advisories, and shows weather, costs, English level and transport for every stop.
 
