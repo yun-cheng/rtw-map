@@ -1,1 +1,8426 @@
-{"_meta":{"source":"placeholder until build-climate finishes","updatedAt":"2026-10-04"},"climate":{}}
+{
+ "_meta": {
+  "source": "Open-Meteo historical archive (ERA5, CC-BY 4.0), daily 2016-01-01…2025-12-31, monthly averages",
+  "updatedAt": "2026-10-04"
+ },
+ "climate": {
+  "tirana": [
+   {
+    "month": 1,
+    "tHigh": 11.3,
+    "tLow": 2.7,
+    "rainMm": 185,
+    "rainDays": 12.3,
+    "sunHours": 6.8,
+    "humidity": 70,
+    "comfort": 0.24
+   },
+   {
+    "month": 2,
+    "tHigh": 13.7,
+    "tLow": 4.3,
+    "rainMm": 102,
+    "rainDays": 9.5,
+    "sunHours": 8,
+    "humidity": 68,
+    "comfort": 0.42
+   },
+   {
+    "month": 3,
+    "tHigh": 15.9,
+    "tLow": 6.1,
+    "rainMm": 149,
+    "rainDays": 11.9,
+    "sunHours": 9.1,
+    "humidity": 66,
+    "comfort": 0.44
+   },
+   {
+    "month": 4,
+    "tHigh": 19.3,
+    "tLow": 9.1,
+    "rainMm": 116,
+    "rainDays": 11.5,
+    "sunHours": 10.5,
+    "humidity": 67,
+    "comfort": 0.59
+   },
+   {
+    "month": 5,
+    "tHigh": 22.9,
+    "tLow": 13.1,
+    "rainMm": 127,
+    "rainDays": 14.3,
+    "sunHours": 11.6,
+    "humidity": 70,
+    "comfort": 0.49
+   },
+   {
+    "month": 6,
+    "tHigh": 28.5,
+    "tLow": 18,
+    "rainMm": 63,
+    "rainDays": 6.6,
+    "sunHours": 13.4,
+    "humidity": 65,
+    "comfort": 0.75
+   },
+   {
+    "month": 7,
+    "tHigh": 31.8,
+    "tLow": 20.6,
+    "rainMm": 33,
+    "rainDays": 4,
+    "sunHours": 13.8,
+    "humidity": 58,
+    "comfort": 0.56
+   },
+   {
+    "month": 8,
+    "tHigh": 32,
+    "tLow": 20.5,
+    "rainMm": 32,
+    "rainDays": 5,
+    "sunHours": 12.8,
+    "humidity": 57,
+    "comfort": 0.52
+   },
+   {
+    "month": 9,
+    "tHigh": 26.9,
+    "tLow": 16.7,
+    "rainMm": 105,
+    "rainDays": 8.4,
+    "sunHours": 10.7,
+    "humidity": 65,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 22.2,
+    "tLow": 12.5,
+    "rainMm": 126,
+    "rainDays": 8.6,
+    "sunHours": 9.4,
+    "humidity": 68,
+    "comfort": 0.77
+   },
+   {
+    "month": 11,
+    "tHigh": 17.3,
+    "tLow": 9.1,
+    "rainMm": 215,
+    "rainDays": 11.9,
+    "sunHours": 7,
+    "humidity": 72,
+    "comfort": 0.5
+   },
+   {
+    "month": 12,
+    "tHigh": 13.1,
+    "tLow": 4.7,
+    "rainMm": 139,
+    "rainDays": 10.7,
+    "sunHours": 6.8,
+    "humidity": 73,
+    "comfort": 0.36
+   }
+  ],
+  "shkoder": [
+   {
+    "month": 1,
+    "tHigh": 9.9,
+    "tLow": 2.8,
+    "rainMm": 225,
+    "rainDays": 12.7,
+    "sunHours": 6.2,
+    "humidity": 71,
+    "comfort": 0.18
+   },
+   {
+    "month": 2,
+    "tHigh": 12.8,
+    "tLow": 4.6,
+    "rainMm": 152,
+    "rainDays": 10.3,
+    "sunHours": 7.4,
+    "humidity": 70,
+    "comfort": 0.36
+   },
+   {
+    "month": 3,
+    "tHigh": 15.4,
+    "tLow": 6.8,
+    "rainMm": 182,
+    "rainDays": 12.3,
+    "sunHours": 8.6,
+    "humidity": 69,
+    "comfort": 0.41
+   },
+   {
+    "month": 4,
+    "tHigh": 19.5,
+    "tLow": 10.2,
+    "rainMm": 122,
+    "rainDays": 9.6,
+    "sunHours": 10.5,
+    "humidity": 67,
+    "comfort": 0.69
+   },
+   {
+    "month": 5,
+    "tHigh": 23.3,
+    "tLow": 14.5,
+    "rainMm": 146,
+    "rainDays": 12.1,
+    "sunHours": 11.4,
+    "humidity": 70,
+    "comfort": 0.6
+   },
+   {
+    "month": 6,
+    "tHigh": 29.3,
+    "tLow": 19.5,
+    "rainMm": 53,
+    "rainDays": 5.5,
+    "sunHours": 13.3,
+    "humidity": 65,
+    "comfort": 0.73
+   },
+   {
+    "month": 7,
+    "tHigh": 32.8,
+    "tLow": 22,
+    "rainMm": 30,
+    "rainDays": 3.2,
+    "sunHours": 13.7,
+    "humidity": 56,
+    "comfort": 0.47
+   },
+   {
+    "month": 8,
+    "tHigh": 33.2,
+    "tLow": 22.3,
+    "rainMm": 52,
+    "rainDays": 4.1,
+    "sunHours": 12.8,
+    "humidity": 53,
+    "comfort": 0.43
+   },
+   {
+    "month": 9,
+    "tHigh": 27.3,
+    "tLow": 17.9,
+    "rainMm": 169,
+    "rainDays": 7.2,
+    "sunHours": 10.5,
+    "humidity": 63,
+    "comfort": 0.82
+   },
+   {
+    "month": 10,
+    "tHigh": 21.7,
+    "tLow": 13,
+    "rainMm": 181,
+    "rainDays": 9.4,
+    "sunHours": 9,
+    "humidity": 69,
+    "comfort": 0.73
+   },
+   {
+    "month": 11,
+    "tHigh": 16.2,
+    "tLow": 9.3,
+    "rainMm": 311,
+    "rainDays": 13.7,
+    "sunHours": 6.4,
+    "humidity": 74,
+    "comfort": 0.38
+   },
+   {
+    "month": 12,
+    "tHigh": 11.9,
+    "tLow": 4.9,
+    "rainMm": 209,
+    "rainDays": 12,
+    "sunHours": 6.1,
+    "humidity": 74,
+    "comfort": 0.28
+   }
+  ],
+  "theth": [
+   {
+    "month": 1,
+    "tHigh": 4.2,
+    "tLow": -3.1,
+    "rainMm": 319,
+    "rainDays": 14,
+    "sunHours": 5.8,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.6,
+    "tLow": -1,
+    "rainMm": 227,
+    "rainDays": 12,
+    "sunHours": 7,
+    "humidity": 82,
+    "comfort": 0.07
+   },
+   {
+    "month": 3,
+    "tHigh": 9,
+    "tLow": 0.8,
+    "rainMm": 251,
+    "rainDays": 14,
+    "sunHours": 8.3,
+    "humidity": 79,
+    "comfort": 0.13
+   },
+   {
+    "month": 4,
+    "tHigh": 13.7,
+    "tLow": 4.1,
+    "rainMm": 146,
+    "rainDays": 13.1,
+    "sunHours": 10.2,
+    "humidity": 76,
+    "comfort": 0.32
+   },
+   {
+    "month": 5,
+    "tHigh": 17.7,
+    "tLow": 8.7,
+    "rainMm": 166,
+    "rainDays": 18.5,
+    "sunHours": 11.3,
+    "humidity": 78,
+    "comfort": 0.34
+   },
+   {
+    "month": 6,
+    "tHigh": 23.5,
+    "tLow": 13.5,
+    "rainMm": 88,
+    "rainDays": 15,
+    "sunHours": 13.3,
+    "humidity": 74,
+    "comfort": 0.45
+   },
+   {
+    "month": 7,
+    "tHigh": 26.1,
+    "tLow": 15.6,
+    "rainMm": 65,
+    "rainDays": 10.3,
+    "sunHours": 13.8,
+    "humidity": 67,
+    "comfort": 0.69
+   },
+   {
+    "month": 8,
+    "tHigh": 26.4,
+    "tLow": 15.7,
+    "rainMm": 50,
+    "rainDays": 8.5,
+    "sunHours": 12.8,
+    "humidity": 65,
+    "comfort": 0.78
+   },
+   {
+    "month": 9,
+    "tHigh": 21.4,
+    "tLow": 11.8,
+    "rainMm": 153,
+    "rainDays": 11.4,
+    "sunHours": 10.4,
+    "humidity": 74,
+    "comfort": 0.63
+   },
+   {
+    "month": 10,
+    "tHigh": 16.8,
+    "tLow": 7.6,
+    "rainMm": 206,
+    "rainDays": 10.5,
+    "sunHours": 8.8,
+    "humidity": 79,
+    "comfort": 0.53
+   },
+   {
+    "month": 11,
+    "tHigh": 11.5,
+    "tLow": 4.1,
+    "rainMm": 414,
+    "rainDays": 14.5,
+    "sunHours": 6,
+    "humidity": 85,
+    "comfort": 0.2
+   },
+   {
+    "month": 12,
+    "tHigh": 6.7,
+    "tLow": -0.5,
+    "rainMm": 345,
+    "rainDays": 13.3,
+    "sunHours": 5.7,
+    "humidity": 84,
+    "comfort": 0.06
+   }
+  ],
+  "berat": [
+   {
+    "month": 1,
+    "tHigh": 12.5,
+    "tLow": 3.6,
+    "rainMm": 116,
+    "rainDays": 12.2,
+    "sunHours": 7,
+    "humidity": 72,
+    "comfort": 0.29
+   },
+   {
+    "month": 2,
+    "tHigh": 14.8,
+    "tLow": 5.3,
+    "rainMm": 78,
+    "rainDays": 8.5,
+    "sunHours": 8.2,
+    "humidity": 70,
+    "comfort": 0.51
+   },
+   {
+    "month": 3,
+    "tHigh": 16.9,
+    "tLow": 7.1,
+    "rainMm": 118,
+    "rainDays": 11.8,
+    "sunHours": 9.3,
+    "humidity": 67,
+    "comfort": 0.49
+   },
+   {
+    "month": 4,
+    "tHigh": 20.7,
+    "tLow": 10.1,
+    "rainMm": 91,
+    "rainDays": 12.1,
+    "sunHours": 10.7,
+    "humidity": 67,
+    "comfort": 0.6
+   },
+   {
+    "month": 5,
+    "tHigh": 24.3,
+    "tLow": 14.2,
+    "rainMm": 114,
+    "rainDays": 14.4,
+    "sunHours": 11.6,
+    "humidity": 69,
+    "comfort": 0.48
+   },
+   {
+    "month": 6,
+    "tHigh": 29.9,
+    "tLow": 19.2,
+    "rainMm": 72,
+    "rainDays": 9.2,
+    "sunHours": 13.3,
+    "humidity": 65,
+    "comfort": 0.55
+   },
+   {
+    "month": 7,
+    "tHigh": 33.2,
+    "tLow": 21.6,
+    "rainMm": 29,
+    "rainDays": 4.4,
+    "sunHours": 13.8,
+    "humidity": 58,
+    "comfort": 0.42
+   },
+   {
+    "month": 8,
+    "tHigh": 33.3,
+    "tLow": 21.6,
+    "rainMm": 31,
+    "rainDays": 5.7,
+    "sunHours": 12.8,
+    "humidity": 58,
+    "comfort": 0.39
+   },
+   {
+    "month": 9,
+    "tHigh": 28.2,
+    "tLow": 17.9,
+    "rainMm": 71,
+    "rainDays": 9.3,
+    "sunHours": 10.7,
+    "humidity": 65,
+    "comfort": 0.66
+   },
+   {
+    "month": 10,
+    "tHigh": 23.4,
+    "tLow": 13.6,
+    "rainMm": 88,
+    "rainDays": 8.1,
+    "sunHours": 9.5,
+    "humidity": 69,
+    "comfort": 0.8
+   },
+   {
+    "month": 11,
+    "tHigh": 18.5,
+    "tLow": 10,
+    "rainMm": 142,
+    "rainDays": 12.4,
+    "sunHours": 7.1,
+    "humidity": 74,
+    "comfort": 0.52
+   },
+   {
+    "month": 12,
+    "tHigh": 14.2,
+    "tLow": 5.9,
+    "rainMm": 103,
+    "rainDays": 9.6,
+    "sunHours": 7.2,
+    "humidity": 74,
+    "comfort": 0.44
+   }
+  ],
+  "gjirokaster": [
+   {
+    "month": 1,
+    "tHigh": 11,
+    "tLow": 1.7,
+    "rainMm": 281,
+    "rainDays": 14,
+    "sunHours": 6.5,
+    "humidity": 78,
+    "comfort": 0.2
+   },
+   {
+    "month": 2,
+    "tHigh": 13.2,
+    "tLow": 3,
+    "rainMm": 178,
+    "rainDays": 10.7,
+    "sunHours": 7.7,
+    "humidity": 77,
+    "comfort": 0.36
+   },
+   {
+    "month": 3,
+    "tHigh": 15.2,
+    "tLow": 4.6,
+    "rainMm": 193,
+    "rainDays": 13.5,
+    "sunHours": 9,
+    "humidity": 75,
+    "comfort": 0.36
+   },
+   {
+    "month": 4,
+    "tHigh": 18.9,
+    "tLow": 8,
+    "rainMm": 117,
+    "rainDays": 12.8,
+    "sunHours": 10.7,
+    "humidity": 72,
+    "comfort": 0.52
+   },
+   {
+    "month": 5,
+    "tHigh": 22.5,
+    "tLow": 11.7,
+    "rainMm": 125,
+    "rainDays": 14.8,
+    "sunHours": 11.5,
+    "humidity": 73,
+    "comfort": 0.46
+   },
+   {
+    "month": 6,
+    "tHigh": 28.3,
+    "tLow": 16.4,
+    "rainMm": 58,
+    "rainDays": 8.9,
+    "sunHours": 13.5,
+    "humidity": 68,
+    "comfort": 0.67
+   },
+   {
+    "month": 7,
+    "tHigh": 31.8,
+    "tLow": 18.9,
+    "rainMm": 20,
+    "rainDays": 3.8,
+    "sunHours": 13.9,
+    "humidity": 60,
+    "comfort": 0.56
+   },
+   {
+    "month": 8,
+    "tHigh": 31.4,
+    "tLow": 18.7,
+    "rainMm": 39,
+    "rainDays": 4.9,
+    "sunHours": 12.9,
+    "humidity": 61,
+    "comfort": 0.57
+   },
+   {
+    "month": 9,
+    "tHigh": 26.5,
+    "tLow": 14.9,
+    "rainMm": 117,
+    "rainDays": 9,
+    "sunHours": 10.7,
+    "humidity": 70,
+    "comfort": 0.75
+   },
+   {
+    "month": 10,
+    "tHigh": 21.9,
+    "tLow": 10.8,
+    "rainMm": 159,
+    "rainDays": 10.2,
+    "sunHours": 9.3,
+    "humidity": 77,
+    "comfort": 0.69
+   },
+   {
+    "month": 11,
+    "tHigh": 16.7,
+    "tLow": 7.4,
+    "rainMm": 375,
+    "rainDays": 15.1,
+    "sunHours": 6.6,
+    "humidity": 82,
+    "comfort": 0.35
+   },
+   {
+    "month": 12,
+    "tHigh": 12.7,
+    "tLow": 3.7,
+    "rainMm": 272,
+    "rainDays": 11.9,
+    "sunHours": 6.6,
+    "humidity": 81,
+    "comfort": 0.31
+   }
+  ],
+  "sarande": [
+   {
+    "month": 1,
+    "tHigh": 12.8,
+    "tLow": 4.7,
+    "rainMm": 189,
+    "rainDays": 13.4,
+    "sunHours": 7,
+    "humidity": 76,
+    "comfort": 0.27
+   },
+   {
+    "month": 2,
+    "tHigh": 14.4,
+    "tLow": 5.7,
+    "rainMm": 128,
+    "rainDays": 9.3,
+    "sunHours": 8,
+    "humidity": 75,
+    "comfort": 0.46
+   },
+   {
+    "month": 3,
+    "tHigh": 16,
+    "tLow": 7.1,
+    "rainMm": 132,
+    "rainDays": 11.6,
+    "sunHours": 9.4,
+    "humidity": 75,
+    "comfort": 0.45
+   },
+   {
+    "month": 4,
+    "tHigh": 19.2,
+    "tLow": 10,
+    "rainMm": 81,
+    "rainDays": 9.1,
+    "sunHours": 11,
+    "humidity": 74,
+    "comfort": 0.71
+   },
+   {
+    "month": 5,
+    "tHigh": 22.9,
+    "tLow": 14,
+    "rainMm": 76,
+    "rainDays": 10.9,
+    "sunHours": 11.8,
+    "humidity": 75,
+    "comfort": 0.66
+   },
+   {
+    "month": 6,
+    "tHigh": 28.4,
+    "tLow": 19,
+    "rainMm": 34,
+    "rainDays": 4.3,
+    "sunHours": 13.5,
+    "humidity": 71,
+    "comfort": 0.86
+   },
+   {
+    "month": 7,
+    "tHigh": 31.5,
+    "tLow": 21.6,
+    "rainMm": 11,
+    "rainDays": 2.2,
+    "sunHours": 13.8,
+    "humidity": 63,
+    "comfort": 0.59
+   },
+   {
+    "month": 8,
+    "tHigh": 31.7,
+    "tLow": 21.6,
+    "rainMm": 26,
+    "rainDays": 3.2,
+    "sunHours": 12.8,
+    "humidity": 63,
+    "comfort": 0.58
+   },
+   {
+    "month": 9,
+    "tHigh": 27.1,
+    "tLow": 18.1,
+    "rainMm": 78,
+    "rainDays": 8.3,
+    "sunHours": 10.8,
+    "humidity": 71,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 22.7,
+    "tLow": 13.8,
+    "rainMm": 143,
+    "rainDays": 9,
+    "sunHours": 9.4,
+    "humidity": 76,
+    "comfort": 0.75
+   },
+   {
+    "month": 11,
+    "tHigh": 18.2,
+    "tLow": 10.5,
+    "rainMm": 319,
+    "rainDays": 14.5,
+    "sunHours": 6.9,
+    "humidity": 78,
+    "comfort": 0.42
+   },
+   {
+    "month": 12,
+    "tHigh": 14.5,
+    "tLow": 6.5,
+    "rainMm": 199,
+    "rainDays": 11,
+    "sunHours": 6.9,
+    "humidity": 77,
+    "comfort": 0.41
+   }
+  ],
+  "kotor": [
+   {
+    "month": 1,
+    "tHigh": 11.4,
+    "tLow": 5.5,
+    "rainMm": 243,
+    "rainDays": 13.3,
+    "sunHours": 6.4,
+    "humidity": 73,
+    "comfort": 0.23
+   },
+   {
+    "month": 2,
+    "tHigh": 13,
+    "tLow": 6.8,
+    "rainMm": 221,
+    "rainDays": 11,
+    "sunHours": 7.4,
+    "humidity": 72,
+    "comfort": 0.35
+   },
+   {
+    "month": 3,
+    "tHigh": 14.7,
+    "tLow": 8.2,
+    "rainMm": 245,
+    "rainDays": 13.6,
+    "sunHours": 8.7,
+    "humidity": 71,
+    "comfort": 0.33
+   },
+   {
+    "month": 4,
+    "tHigh": 17.9,
+    "tLow": 11.1,
+    "rainMm": 149,
+    "rainDays": 11.8,
+    "sunHours": 10.5,
+    "humidity": 70,
+    "comfort": 0.52
+   },
+   {
+    "month": 5,
+    "tHigh": 21.6,
+    "tLow": 15.1,
+    "rainMm": 190,
+    "rainDays": 14.7,
+    "sunHours": 11.4,
+    "humidity": 75,
+    "comfort": 0.47
+   },
+   {
+    "month": 6,
+    "tHigh": 26.7,
+    "tLow": 20.3,
+    "rainMm": 78,
+    "rainDays": 8.1,
+    "sunHours": 13.2,
+    "humidity": 73,
+    "comfort": 0.8
+   },
+   {
+    "month": 7,
+    "tHigh": 29.7,
+    "tLow": 22.7,
+    "rainMm": 46,
+    "rainDays": 4.9,
+    "sunHours": 13.7,
+    "humidity": 65,
+    "comfort": 0.72
+   },
+   {
+    "month": 8,
+    "tHigh": 29.9,
+    "tLow": 23,
+    "rainMm": 78,
+    "rainDays": 6,
+    "sunHours": 12.9,
+    "humidity": 65,
+    "comfort": 0.66
+   },
+   {
+    "month": 9,
+    "tHigh": 25.4,
+    "tLow": 19,
+    "rainMm": 161,
+    "rainDays": 9.2,
+    "sunHours": 10.6,
+    "humidity": 71,
+    "comfort": 0.74
+   },
+   {
+    "month": 10,
+    "tHigh": 21,
+    "tLow": 15,
+    "rainMm": 190,
+    "rainDays": 10.5,
+    "sunHours": 9.1,
+    "humidity": 74,
+    "comfort": 0.68
+   },
+   {
+    "month": 11,
+    "tHigh": 17,
+    "tLow": 11.3,
+    "rainMm": 389,
+    "rainDays": 14.4,
+    "sunHours": 6.3,
+    "humidity": 76,
+    "comfort": 0.38
+   },
+   {
+    "month": 12,
+    "tHigh": 13.3,
+    "tLow": 7.6,
+    "rainMm": 287,
+    "rainDays": 12.4,
+    "sunHours": 6.2,
+    "humidity": 75,
+    "comfort": 0.32
+   }
+  ],
+  "budva": [
+   {
+    "month": 1,
+    "tHigh": 11.4,
+    "tLow": 5.3,
+    "rainMm": 246,
+    "rainDays": 13.7,
+    "sunHours": 6.5,
+    "humidity": 71,
+    "comfort": 0.22
+   },
+   {
+    "month": 2,
+    "tHigh": 13.2,
+    "tLow": 6.9,
+    "rainMm": 219,
+    "rainDays": 11.7,
+    "sunHours": 7.4,
+    "humidity": 71,
+    "comfort": 0.33
+   },
+   {
+    "month": 3,
+    "tHigh": 14.9,
+    "tLow": 8.5,
+    "rainMm": 262,
+    "rainDays": 14.3,
+    "sunHours": 8.7,
+    "humidity": 69,
+    "comfort": 0.32
+   },
+   {
+    "month": 4,
+    "tHigh": 18.2,
+    "tLow": 11.5,
+    "rainMm": 142,
+    "rainDays": 12.8,
+    "sunHours": 10.6,
+    "humidity": 68,
+    "comfort": 0.49
+   },
+   {
+    "month": 5,
+    "tHigh": 22,
+    "tLow": 15.6,
+    "rainMm": 191,
+    "rainDays": 15.8,
+    "sunHours": 11.6,
+    "humidity": 73,
+    "comfort": 0.41
+   },
+   {
+    "month": 6,
+    "tHigh": 27.4,
+    "tLow": 20.8,
+    "rainMm": 79,
+    "rainDays": 8.6,
+    "sunHours": 13.3,
+    "humidity": 69,
+    "comfort": 0.74
+   },
+   {
+    "month": 7,
+    "tHigh": 30.3,
+    "tLow": 23.3,
+    "rainMm": 53,
+    "rainDays": 5.6,
+    "sunHours": 13.7,
+    "humidity": 60,
+    "comfort": 0.64
+   },
+   {
+    "month": 8,
+    "tHigh": 30.5,
+    "tLow": 23.5,
+    "rainMm": 88,
+    "rainDays": 7.8,
+    "sunHours": 12.9,
+    "humidity": 60,
+    "comfort": 0.55
+   },
+   {
+    "month": 9,
+    "tHigh": 25.7,
+    "tLow": 19.3,
+    "rainMm": 181,
+    "rainDays": 11.2,
+    "sunHours": 10.6,
+    "humidity": 69,
+    "comfort": 0.64
+   },
+   {
+    "month": 10,
+    "tHigh": 21.3,
+    "tLow": 15.2,
+    "rainMm": 220,
+    "rainDays": 10.7,
+    "sunHours": 9.1,
+    "humidity": 72,
+    "comfort": 0.67
+   },
+   {
+    "month": 11,
+    "tHigh": 17,
+    "tLow": 11.5,
+    "rainMm": 406,
+    "rainDays": 14.8,
+    "sunHours": 6.4,
+    "humidity": 75,
+    "comfort": 0.37
+   },
+   {
+    "month": 12,
+    "tHigh": 13.2,
+    "tLow": 7.3,
+    "rainMm": 285,
+    "rainDays": 13.3,
+    "sunHours": 6.3,
+    "humidity": 74,
+    "comfort": 0.29
+   }
+  ],
+  "podgorica": [
+   {
+    "month": 1,
+    "tHigh": 9.7,
+    "tLow": 1.7,
+    "rainMm": 219,
+    "rainDays": 13,
+    "sunHours": 6,
+    "humidity": 69,
+    "comfort": 0.17
+   },
+   {
+    "month": 2,
+    "tHigh": 12.4,
+    "tLow": 3.6,
+    "rainMm": 194,
+    "rainDays": 10.4,
+    "sunHours": 6.8,
+    "humidity": 68,
+    "comfort": 0.34
+   },
+   {
+    "month": 3,
+    "tHigh": 15.2,
+    "tLow": 5.6,
+    "rainMm": 200,
+    "rainDays": 12.8,
+    "sunHours": 8.1,
+    "humidity": 66,
+    "comfort": 0.38
+   },
+   {
+    "month": 4,
+    "tHigh": 19.2,
+    "tLow": 8.8,
+    "rainMm": 109,
+    "rainDays": 10.1,
+    "sunHours": 10.2,
+    "humidity": 64,
+    "comfort": 0.66
+   },
+   {
+    "month": 5,
+    "tHigh": 23.1,
+    "tLow": 12.9,
+    "rainMm": 144,
+    "rainDays": 11.6,
+    "sunHours": 11.1,
+    "humidity": 67,
+    "comfort": 0.62
+   },
+   {
+    "month": 6,
+    "tHigh": 29.5,
+    "tLow": 18,
+    "rainMm": 55,
+    "rainDays": 6.3,
+    "sunHours": 13.1,
+    "humidity": 59,
+    "comfort": 0.68
+   },
+   {
+    "month": 7,
+    "tHigh": 33.1,
+    "tLow": 20.6,
+    "rainMm": 36,
+    "rainDays": 3.2,
+    "sunHours": 13.7,
+    "humidity": 49,
+    "comfort": 0.45
+   },
+   {
+    "month": 8,
+    "tHigh": 33.2,
+    "tLow": 20.8,
+    "rainMm": 34,
+    "rainDays": 3.7,
+    "sunHours": 12.8,
+    "humidity": 48,
+    "comfort": 0.43
+   },
+   {
+    "month": 9,
+    "tHigh": 27,
+    "tLow": 16.4,
+    "rainMm": 143,
+    "rainDays": 7.5,
+    "sunHours": 10.3,
+    "humidity": 60,
+    "comfort": 0.82
+   },
+   {
+    "month": 10,
+    "tHigh": 21,
+    "tLow": 11.3,
+    "rainMm": 172,
+    "rainDays": 8.9,
+    "sunHours": 8.7,
+    "humidity": 68,
+    "comfort": 0.76
+   },
+   {
+    "month": 11,
+    "tHigh": 15.6,
+    "tLow": 7.7,
+    "rainMm": 337,
+    "rainDays": 13,
+    "sunHours": 6,
+    "humidity": 74,
+    "comfort": 0.39
+   },
+   {
+    "month": 12,
+    "tHigh": 11.5,
+    "tLow": 3.6,
+    "rainMm": 237,
+    "rainDays": 11.4,
+    "sunHours": 5.7,
+    "humidity": 72,
+    "comfort": 0.27
+   }
+  ],
+  "zabljak": [
+   {
+    "month": 1,
+    "tHigh": -0.7,
+    "tLow": -7.3,
+    "rainMm": 132,
+    "rainDays": 15.8,
+    "sunHours": 5.1,
+    "humidity": 83,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 2,
+    "tLow": -5.1,
+    "rainMm": 123,
+    "rainDays": 12.5,
+    "sunHours": 6.4,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 4.2,
+    "tLow": -3.5,
+    "rainMm": 135,
+    "rainDays": 14.7,
+    "sunHours": 7.8,
+    "humidity": 80,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 8.9,
+    "tLow": -0.5,
+    "rainMm": 86,
+    "rainDays": 13.2,
+    "sunHours": 9.7,
+    "humidity": 76,
+    "comfort": 0.14
+   },
+   {
+    "month": 5,
+    "tHigh": 13.1,
+    "tLow": 4.1,
+    "rainMm": 110,
+    "rainDays": 18.7,
+    "sunHours": 10.9,
+    "humidity": 79,
+    "comfort": 0.22
+   },
+   {
+    "month": 6,
+    "tHigh": 18.6,
+    "tLow": 9,
+    "rainMm": 89,
+    "rainDays": 15,
+    "sunHours": 12.7,
+    "humidity": 77,
+    "comfort": 0.41
+   },
+   {
+    "month": 7,
+    "tHigh": 20.9,
+    "tLow": 10.8,
+    "rainMm": 73,
+    "rainDays": 12.8,
+    "sunHours": 13.2,
+    "humidity": 71,
+    "comfort": 0.56
+   },
+   {
+    "month": 8,
+    "tHigh": 21.1,
+    "tLow": 11.1,
+    "rainMm": 62,
+    "rainDays": 11.1,
+    "sunHours": 12.2,
+    "humidity": 71,
+    "comfort": 0.65
+   },
+   {
+    "month": 9,
+    "tHigh": 16.3,
+    "tLow": 7.1,
+    "rainMm": 71,
+    "rainDays": 10,
+    "sunHours": 10.2,
+    "humidity": 77,
+    "comfort": 0.53
+   },
+   {
+    "month": 10,
+    "tHigh": 11.8,
+    "tLow": 3.2,
+    "rainMm": 82,
+    "rainDays": 10.3,
+    "sunHours": 8.2,
+    "humidity": 79,
+    "comfort": 0.31
+   },
+   {
+    "month": 11,
+    "tHigh": 6.5,
+    "tLow": -0.8,
+    "rainMm": 163,
+    "rainDays": 13.6,
+    "sunHours": 5.5,
+    "humidity": 85,
+    "comfort": 0.05
+   },
+   {
+    "month": 12,
+    "tHigh": 2,
+    "tLow": -4.3,
+    "rainMm": 147,
+    "rainDays": 14,
+    "sunHours": 4.8,
+    "humidity": 84,
+    "comfort": 0
+   }
+  ],
+  "sarajevo": [
+   {
+    "month": 1,
+    "tHigh": 5.7,
+    "tLow": -3.4,
+    "rainMm": 79,
+    "rainDays": 12.6,
+    "sunHours": 5.4,
+    "humidity": 77,
+    "comfort": 0.03
+   },
+   {
+    "month": 2,
+    "tHigh": 9.4,
+    "tLow": -0.8,
+    "rainMm": 76,
+    "rainDays": 9.5,
+    "sunHours": 6.6,
+    "humidity": 73,
+    "comfort": 0.21
+   },
+   {
+    "month": 3,
+    "tHigh": 12.1,
+    "tLow": 1.1,
+    "rainMm": 82,
+    "rainDays": 12.4,
+    "sunHours": 8,
+    "humidity": 70,
+    "comfort": 0.27
+   },
+   {
+    "month": 4,
+    "tHigh": 16.5,
+    "tLow": 4.3,
+    "rainMm": 75,
+    "rainDays": 10,
+    "sunHours": 9.8,
+    "humidity": 68,
+    "comfort": 0.54
+   },
+   {
+    "month": 5,
+    "tHigh": 20,
+    "tLow": 8.9,
+    "rainMm": 93,
+    "rainDays": 15.5,
+    "sunHours": 10.9,
+    "humidity": 73,
+    "comfort": 0.42
+   },
+   {
+    "month": 6,
+    "tHigh": 25.2,
+    "tLow": 13.7,
+    "rainMm": 92,
+    "rainDays": 11.7,
+    "sunHours": 12.4,
+    "humidity": 72,
+    "comfort": 0.62
+   },
+   {
+    "month": 7,
+    "tHigh": 27.5,
+    "tLow": 15.3,
+    "rainMm": 85,
+    "rainDays": 10.5,
+    "sunHours": 12.8,
+    "humidity": 69,
+    "comfort": 0.65
+   },
+   {
+    "month": 8,
+    "tHigh": 27.6,
+    "tLow": 15.2,
+    "rainMm": 59,
+    "rainDays": 9.2,
+    "sunHours": 12,
+    "humidity": 70,
+    "comfort": 0.7
+   },
+   {
+    "month": 9,
+    "tHigh": 22.8,
+    "tLow": 11.4,
+    "rainMm": 53,
+    "rainDays": 8.6,
+    "sunHours": 9.9,
+    "humidity": 73,
+    "comfort": 0.77
+   },
+   {
+    "month": 10,
+    "tHigh": 18,
+    "tLow": 7,
+    "rainMm": 61,
+    "rainDays": 7.4,
+    "sunHours": 8.3,
+    "humidity": 75,
+    "comfort": 0.72
+   },
+   {
+    "month": 11,
+    "tHigh": 11.9,
+    "tLow": 2.7,
+    "rainMm": 120,
+    "rainDays": 11.6,
+    "sunHours": 5.8,
+    "humidity": 80,
+    "comfort": 0.29
+   },
+   {
+    "month": 12,
+    "tHigh": 7.7,
+    "tLow": -0.3,
+    "rainMm": 91,
+    "rainDays": 10.6,
+    "sunHours": 5.2,
+    "humidity": 79,
+    "comfort": 0.12
+   }
+  ],
+  "mostar": [
+   {
+    "month": 1,
+    "tHigh": 9.6,
+    "tLow": 1.6,
+    "rainMm": 186,
+    "rainDays": 12.4,
+    "sunHours": 5.8,
+    "humidity": 72,
+    "comfort": 0.18
+   },
+   {
+    "month": 2,
+    "tHigh": 12.4,
+    "tLow": 3.3,
+    "rainMm": 181,
+    "rainDays": 11.5,
+    "sunHours": 6.9,
+    "humidity": 72,
+    "comfort": 0.31
+   },
+   {
+    "month": 3,
+    "tHigh": 15,
+    "tLow": 5.1,
+    "rainMm": 218,
+    "rainDays": 11.6,
+    "sunHours": 8.4,
+    "humidity": 69,
+    "comfort": 0.41
+   },
+   {
+    "month": 4,
+    "tHigh": 19.1,
+    "tLow": 8.1,
+    "rainMm": 146,
+    "rainDays": 10.8,
+    "sunHours": 10.2,
+    "humidity": 67,
+    "comfort": 0.62
+   },
+   {
+    "month": 5,
+    "tHigh": 22.8,
+    "tLow": 12.6,
+    "rainMm": 199,
+    "rainDays": 14.6,
+    "sunHours": 11.3,
+    "humidity": 71,
+    "comfort": 0.47
+   },
+   {
+    "month": 6,
+    "tHigh": 28.9,
+    "tLow": 17.3,
+    "rainMm": 81,
+    "rainDays": 8.7,
+    "sunHours": 12.9,
+    "humidity": 66,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 32.1,
+    "tLow": 19.6,
+    "rainMm": 47,
+    "rainDays": 5.4,
+    "sunHours": 13.5,
+    "humidity": 57,
+    "comfort": 0.5
+   },
+   {
+    "month": 8,
+    "tHigh": 32.2,
+    "tLow": 19.8,
+    "rainMm": 65,
+    "rainDays": 5,
+    "sunHours": 12.8,
+    "humidity": 58,
+    "comfort": 0.5
+   },
+   {
+    "month": 9,
+    "tHigh": 26.3,
+    "tLow": 15.6,
+    "rainMm": 183,
+    "rainDays": 9,
+    "sunHours": 10.3,
+    "humidity": 68,
+    "comfort": 0.75
+   },
+   {
+    "month": 10,
+    "tHigh": 21.3,
+    "tLow": 11,
+    "rainMm": 186,
+    "rainDays": 9.3,
+    "sunHours": 8.9,
+    "humidity": 73,
+    "comfort": 0.74
+   },
+   {
+    "month": 11,
+    "tHigh": 15.5,
+    "tLow": 7.3,
+    "rainMm": 320,
+    "rainDays": 13.8,
+    "sunHours": 6,
+    "humidity": 77,
+    "comfort": 0.36
+   },
+   {
+    "month": 12,
+    "tHigh": 11.5,
+    "tLow": 3.7,
+    "rainMm": 225,
+    "rainDays": 13.8,
+    "sunHours": 5.5,
+    "humidity": 76,
+    "comfort": 0.22
+   }
+  ],
+  "belgrade": [
+   {
+    "month": 1,
+    "tHigh": 5.3,
+    "tLow": -1.7,
+    "rainMm": 51,
+    "rainDays": 10.8,
+    "sunHours": 5,
+    "humidity": 81,
+    "comfort": 0.01
+   },
+   {
+    "month": 2,
+    "tHigh": 9.7,
+    "tLow": 1.1,
+    "rainMm": 41,
+    "rainDays": 9,
+    "sunHours": 6.8,
+    "humidity": 74,
+    "comfort": 0.23
+   },
+   {
+    "month": 3,
+    "tHigh": 13.3,
+    "tLow": 3.6,
+    "rainMm": 58,
+    "rainDays": 10.2,
+    "sunHours": 8.1,
+    "humidity": 69,
+    "comfort": 0.38
+   },
+   {
+    "month": 4,
+    "tHigh": 18.2,
+    "tLow": 7.7,
+    "rainMm": 47,
+    "rainDays": 9.5,
+    "sunHours": 10.2,
+    "humidity": 65,
+    "comfort": 0.64
+   },
+   {
+    "month": 5,
+    "tHigh": 22.1,
+    "tLow": 12.4,
+    "rainMm": 82,
+    "rainDays": 12.9,
+    "sunHours": 11.2,
+    "humidity": 68,
+    "comfort": 0.55
+   },
+   {
+    "month": 6,
+    "tHigh": 27.4,
+    "tLow": 17.5,
+    "rainMm": 84,
+    "rainDays": 10.9,
+    "sunHours": 12.6,
+    "humidity": 68,
+    "comfort": 0.63
+   },
+   {
+    "month": 7,
+    "tHigh": 29,
+    "tLow": 18.9,
+    "rainMm": 75,
+    "rainDays": 9.8,
+    "sunHours": 13,
+    "humidity": 64,
+    "comfort": 0.58
+   },
+   {
+    "month": 8,
+    "tHigh": 29.2,
+    "tLow": 18.8,
+    "rainMm": 51,
+    "rainDays": 6.7,
+    "sunHours": 12.1,
+    "humidity": 63,
+    "comfort": 0.69
+   },
+   {
+    "month": 9,
+    "tHigh": 24.4,
+    "tLow": 14.6,
+    "rainMm": 53,
+    "rainDays": 7.9,
+    "sunHours": 10.1,
+    "humidity": 67,
+    "comfort": 0.81
+   },
+   {
+    "month": 10,
+    "tHigh": 18.6,
+    "tLow": 9.5,
+    "rainMm": 42,
+    "rainDays": 7.1,
+    "sunHours": 8.1,
+    "humidity": 73,
+    "comfort": 0.77
+   },
+   {
+    "month": 11,
+    "tHigh": 12,
+    "tLow": 5,
+    "rainMm": 64,
+    "rainDays": 10.3,
+    "sunHours": 5.5,
+    "humidity": 81,
+    "comfort": 0.32
+   },
+   {
+    "month": 12,
+    "tHigh": 7.1,
+    "tLow": 1,
+    "rainMm": 57,
+    "rainDays": 9.5,
+    "sunHours": 4.6,
+    "humidity": 83,
+    "comfort": 0.1
+   }
+  ],
+  "novisad": [
+   {
+    "month": 1,
+    "tHigh": 5.1,
+    "tLow": -1.5,
+    "rainMm": 48,
+    "rainDays": 10.6,
+    "sunHours": 5,
+    "humidity": 81,
+    "comfort": 0.01
+   },
+   {
+    "month": 2,
+    "tHigh": 9.3,
+    "tLow": 1.2,
+    "rainMm": 42,
+    "rainDays": 7.7,
+    "sunHours": 6.8,
+    "humidity": 73,
+    "comfort": 0.23
+   },
+   {
+    "month": 3,
+    "tHigh": 12.7,
+    "tLow": 3.6,
+    "rainMm": 53,
+    "rainDays": 9.7,
+    "sunHours": 8.2,
+    "humidity": 68,
+    "comfort": 0.37
+   },
+   {
+    "month": 4,
+    "tHigh": 17.6,
+    "tLow": 7.7,
+    "rainMm": 50,
+    "rainDays": 8.9,
+    "sunHours": 10.1,
+    "humidity": 64,
+    "comfort": 0.64
+   },
+   {
+    "month": 5,
+    "tHigh": 21.4,
+    "tLow": 12.1,
+    "rainMm": 73,
+    "rainDays": 12.7,
+    "sunHours": 11.3,
+    "humidity": 68,
+    "comfort": 0.56
+   },
+   {
+    "month": 6,
+    "tHigh": 26.6,
+    "tLow": 17.3,
+    "rainMm": 72,
+    "rainDays": 11.3,
+    "sunHours": 12.7,
+    "humidity": 68,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 28.4,
+    "tLow": 18.7,
+    "rainMm": 55,
+    "rainDays": 8,
+    "sunHours": 13.1,
+    "humidity": 63,
+    "comfort": 0.7
+   },
+   {
+    "month": 8,
+    "tHigh": 28.7,
+    "tLow": 18.8,
+    "rainMm": 39,
+    "rainDays": 6.2,
+    "sunHours": 12.1,
+    "humidity": 63,
+    "comfort": 0.76
+   },
+   {
+    "month": 9,
+    "tHigh": 23.8,
+    "tLow": 14.5,
+    "rainMm": 46,
+    "rainDays": 7,
+    "sunHours": 9.9,
+    "humidity": 67,
+    "comfort": 0.85
+   },
+   {
+    "month": 10,
+    "tHigh": 18,
+    "tLow": 9.5,
+    "rainMm": 38,
+    "rainDays": 7.1,
+    "sunHours": 8.1,
+    "humidity": 72,
+    "comfort": 0.73
+   },
+   {
+    "month": 11,
+    "tHigh": 11.4,
+    "tLow": 4.7,
+    "rainMm": 58,
+    "rainDays": 9.8,
+    "sunHours": 5.5,
+    "humidity": 82,
+    "comfort": 0.3
+   },
+   {
+    "month": 12,
+    "tHigh": 6.7,
+    "tLow": 1,
+    "rainMm": 56,
+    "rainDays": 8.5,
+    "sunHours": 4.6,
+    "humidity": 83,
+    "comfort": 0.09
+   }
+  ],
+  "nis": [
+   {
+    "month": 1,
+    "tHigh": 5.3,
+    "tLow": -3.2,
+    "rainMm": 62,
+    "rainDays": 9.9,
+    "sunHours": 5.5,
+    "humidity": 80,
+    "comfort": 0.01
+   },
+   {
+    "month": 2,
+    "tHigh": 10,
+    "tLow": -0.6,
+    "rainMm": 35,
+    "rainDays": 6.7,
+    "sunHours": 7.2,
+    "humidity": 75,
+    "comfort": 0.29
+   },
+   {
+    "month": 3,
+    "tHigh": 13.6,
+    "tLow": 2,
+    "rainMm": 61,
+    "rainDays": 10,
+    "sunHours": 8.2,
+    "humidity": 70,
+    "comfort": 0.4
+   },
+   {
+    "month": 4,
+    "tHigh": 18.5,
+    "tLow": 6,
+    "rainMm": 49,
+    "rainDays": 9.1,
+    "sunHours": 10.2,
+    "humidity": 66,
+    "comfort": 0.67
+   },
+   {
+    "month": 5,
+    "tHigh": 22.4,
+    "tLow": 10.7,
+    "rainMm": 59,
+    "rainDays": 12,
+    "sunHours": 11.3,
+    "humidity": 69,
+    "comfort": 0.6
+   },
+   {
+    "month": 6,
+    "tHigh": 27.7,
+    "tLow": 15.9,
+    "rainMm": 65,
+    "rainDays": 9.7,
+    "sunHours": 12.7,
+    "humidity": 68,
+    "comfort": 0.67
+   },
+   {
+    "month": 7,
+    "tHigh": 30.1,
+    "tLow": 17.6,
+    "rainMm": 40,
+    "rainDays": 7.4,
+    "sunHours": 13.3,
+    "humidity": 61,
+    "comfort": 0.6
+   },
+   {
+    "month": 8,
+    "tHigh": 30.2,
+    "tLow": 17.2,
+    "rainMm": 39,
+    "rainDays": 5.9,
+    "sunHours": 12.2,
+    "humidity": 61,
+    "comfort": 0.64
+   },
+   {
+    "month": 9,
+    "tHigh": 25.3,
+    "tLow": 13,
+    "rainMm": 39,
+    "rainDays": 6.4,
+    "sunHours": 10.5,
+    "humidity": 65,
+    "comfort": 0.88
+   },
+   {
+    "month": 10,
+    "tHigh": 19,
+    "tLow": 7.6,
+    "rainMm": 51,
+    "rainDays": 7.2,
+    "sunHours": 8.3,
+    "humidity": 74,
+    "comfort": 0.79
+   },
+   {
+    "month": 11,
+    "tHigh": 12.5,
+    "tLow": 3.3,
+    "rainMm": 81,
+    "rainDays": 10,
+    "sunHours": 5.9,
+    "humidity": 81,
+    "comfort": 0.35
+   },
+   {
+    "month": 12,
+    "tHigh": 7.2,
+    "tLow": -0.3,
+    "rainMm": 61,
+    "rainDays": 8.7,
+    "sunHours": 5.2,
+    "humidity": 82,
+    "comfort": 0.11
+   }
+  ],
+  "pristina": [
+   {
+    "month": 1,
+    "tHigh": 4.6,
+    "tLow": -3.9,
+    "rainMm": 62,
+    "rainDays": 9.2,
+    "sunHours": 6.1,
+    "humidity": 78,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 8.8,
+    "tLow": -1,
+    "rainMm": 35,
+    "rainDays": 6.7,
+    "sunHours": 7.6,
+    "humidity": 74,
+    "comfort": 0.22
+   },
+   {
+    "month": 3,
+    "tHigh": 11.9,
+    "tLow": 0.8,
+    "rainMm": 56,
+    "rainDays": 10,
+    "sunHours": 8.6,
+    "humidity": 68,
+    "comfort": 0.32
+   },
+   {
+    "month": 4,
+    "tHigh": 16.8,
+    "tLow": 4.8,
+    "rainMm": 53,
+    "rainDays": 9.3,
+    "sunHours": 10.2,
+    "humidity": 63,
+    "comfort": 0.58
+   },
+   {
+    "month": 5,
+    "tHigh": 20.7,
+    "tLow": 9.3,
+    "rainMm": 65,
+    "rainDays": 11.4,
+    "sunHours": 11.5,
+    "humidity": 66,
+    "comfort": 0.63
+   },
+   {
+    "month": 6,
+    "tHigh": 26.5,
+    "tLow": 14.3,
+    "rainMm": 65,
+    "rainDays": 10.9,
+    "sunHours": 13.1,
+    "humidity": 63,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 29.1,
+    "tLow": 16.1,
+    "rainMm": 38,
+    "rainDays": 6.8,
+    "sunHours": 13.6,
+    "humidity": 56,
+    "comfort": 0.69
+   },
+   {
+    "month": 8,
+    "tHigh": 29.2,
+    "tLow": 16,
+    "rainMm": 32,
+    "rainDays": 5.8,
+    "sunHours": 12.4,
+    "humidity": 56,
+    "comfort": 0.73
+   },
+   {
+    "month": 9,
+    "tHigh": 23.8,
+    "tLow": 11.9,
+    "rainMm": 41,
+    "rainDays": 6.5,
+    "sunHours": 10.5,
+    "humidity": 63,
+    "comfort": 0.88
+   },
+   {
+    "month": 10,
+    "tHigh": 17.9,
+    "tLow": 6.7,
+    "rainMm": 54,
+    "rainDays": 7,
+    "sunHours": 8.6,
+    "humidity": 73,
+    "comfort": 0.73
+   },
+   {
+    "month": 11,
+    "tHigh": 11.6,
+    "tLow": 2.8,
+    "rainMm": 78,
+    "rainDays": 9.1,
+    "sunHours": 6.4,
+    "humidity": 80,
+    "comfort": 0.33
+   },
+   {
+    "month": 12,
+    "tHigh": 6.6,
+    "tLow": -1.1,
+    "rainMm": 53,
+    "rainDays": 9.5,
+    "sunHours": 5.8,
+    "humidity": 81,
+    "comfort": 0.08
+   }
+  ],
+  "prizren": [
+   {
+    "month": 1,
+    "tHigh": 5.9,
+    "tLow": -2.6,
+    "rainMm": 87,
+    "rainDays": 10.2,
+    "sunHours": 6.5,
+    "humidity": 70,
+    "comfort": 0.04
+   },
+   {
+    "month": 2,
+    "tHigh": 10.2,
+    "tLow": 0.2,
+    "rainMm": 57,
+    "rainDays": 7.9,
+    "sunHours": 8,
+    "humidity": 66,
+    "comfort": 0.28
+   },
+   {
+    "month": 3,
+    "tHigh": 13.2,
+    "tLow": 2.2,
+    "rainMm": 74,
+    "rainDays": 9.8,
+    "sunHours": 8.7,
+    "humidity": 64,
+    "comfort": 0.39
+   },
+   {
+    "month": 4,
+    "tHigh": 17.7,
+    "tLow": 6.3,
+    "rainMm": 68,
+    "rainDays": 9,
+    "sunHours": 10.4,
+    "humidity": 62,
+    "comfort": 0.64
+   },
+   {
+    "month": 5,
+    "tHigh": 21.5,
+    "tLow": 10.4,
+    "rainMm": 74,
+    "rainDays": 9.8,
+    "sunHours": 11.6,
+    "humidity": 65,
+    "comfort": 0.71
+   },
+   {
+    "month": 6,
+    "tHigh": 27.3,
+    "tLow": 15.5,
+    "rainMm": 46,
+    "rainDays": 6.8,
+    "sunHours": 13.3,
+    "humidity": 60,
+    "comfort": 0.83
+   },
+   {
+    "month": 7,
+    "tHigh": 30.4,
+    "tLow": 18.1,
+    "rainMm": 39,
+    "rainDays": 5.7,
+    "sunHours": 13.6,
+    "humidity": 52,
+    "comfort": 0.63
+   },
+   {
+    "month": 8,
+    "tHigh": 30.3,
+    "tLow": 18.1,
+    "rainMm": 30,
+    "rainDays": 5.1,
+    "sunHours": 12.5,
+    "humidity": 52,
+    "comfort": 0.66
+   },
+   {
+    "month": 9,
+    "tHigh": 25.3,
+    "tLow": 14,
+    "rainMm": 44,
+    "rainDays": 6,
+    "sunHours": 10.6,
+    "humidity": 57,
+    "comfort": 0.9
+   },
+   {
+    "month": 10,
+    "tHigh": 18.8,
+    "tLow": 8.7,
+    "rainMm": 73,
+    "rainDays": 7.8,
+    "sunHours": 9,
+    "humidity": 67,
+    "comfort": 0.74
+   },
+   {
+    "month": 11,
+    "tHigh": 12.4,
+    "tLow": 4.1,
+    "rainMm": 108,
+    "rainDays": 10.3,
+    "sunHours": 6.8,
+    "humidity": 74,
+    "comfort": 0.34
+   },
+   {
+    "month": 12,
+    "tHigh": 7.6,
+    "tLow": -0.1,
+    "rainMm": 72,
+    "rainDays": 8.7,
+    "sunHours": 6.5,
+    "humidity": 73,
+    "comfort": 0.13
+   }
+  ],
+  "peja": [
+   {
+    "month": 1,
+    "tHigh": 5.5,
+    "tLow": -1.1,
+    "rainMm": 134,
+    "rainDays": 12.6,
+    "sunHours": 6.1,
+    "humidity": 72,
+    "comfort": 0.02
+   },
+   {
+    "month": 2,
+    "tHigh": 9,
+    "tLow": 1,
+    "rainMm": 100,
+    "rainDays": 11,
+    "sunHours": 7.6,
+    "humidity": 72,
+    "comfort": 0.18
+   },
+   {
+    "month": 3,
+    "tHigh": 11.9,
+    "tLow": 2.9,
+    "rainMm": 135,
+    "rainDays": 14.7,
+    "sunHours": 8.6,
+    "humidity": 69,
+    "comfort": 0.21
+   },
+   {
+    "month": 4,
+    "tHigh": 16.2,
+    "tLow": 6.5,
+    "rainMm": 118,
+    "rainDays": 13.4,
+    "sunHours": 10.3,
+    "humidity": 67,
+    "comfort": 0.39
+   },
+   {
+    "month": 5,
+    "tHigh": 19.9,
+    "tLow": 10.7,
+    "rainMm": 154,
+    "rainDays": 16.6,
+    "sunHours": 11.5,
+    "humidity": 70,
+    "comfort": 0.4
+   },
+   {
+    "month": 6,
+    "tHigh": 25.2,
+    "tLow": 15.7,
+    "rainMm": 133,
+    "rainDays": 13.7,
+    "sunHours": 13.2,
+    "humidity": 67,
+    "comfort": 0.52
+   },
+   {
+    "month": 7,
+    "tHigh": 27.7,
+    "tLow": 17.6,
+    "rainMm": 93,
+    "rainDays": 9.5,
+    "sunHours": 13.5,
+    "humidity": 62,
+    "comfort": 0.68
+   },
+   {
+    "month": 8,
+    "tHigh": 27.8,
+    "tLow": 17.6,
+    "rainMm": 64,
+    "rainDays": 8.9,
+    "sunHours": 12.4,
+    "humidity": 60,
+    "comfort": 0.7
+   },
+   {
+    "month": 9,
+    "tHigh": 23,
+    "tLow": 13.8,
+    "rainMm": 104,
+    "rainDays": 10.7,
+    "sunHours": 10.4,
+    "humidity": 66,
+    "comfort": 0.67
+   },
+   {
+    "month": 10,
+    "tHigh": 17.4,
+    "tLow": 9.6,
+    "rainMm": 116,
+    "rainDays": 10.7,
+    "sunHours": 8.7,
+    "humidity": 70,
+    "comfort": 0.55
+   },
+   {
+    "month": 11,
+    "tHigh": 11.7,
+    "tLow": 5.2,
+    "rainMm": 179,
+    "rainDays": 13.7,
+    "sunHours": 6.4,
+    "humidity": 77,
+    "comfort": 0.23
+   },
+   {
+    "month": 12,
+    "tHigh": 7.3,
+    "tLow": 1.1,
+    "rainMm": 138,
+    "rainDays": 11.4,
+    "sunHours": 5.9,
+    "humidity": 75,
+    "comfort": 0.1
+   }
+  ],
+  "skopje": [
+   {
+    "month": 1,
+    "tHigh": 5.2,
+    "tLow": -2.4,
+    "rainMm": 58,
+    "rainDays": 8.2,
+    "sunHours": 6.3,
+    "humidity": 75,
+    "comfort": 0.01
+   },
+   {
+    "month": 2,
+    "tHigh": 10.1,
+    "tLow": 0.7,
+    "rainMm": 34,
+    "rainDays": 6.6,
+    "sunHours": 7.6,
+    "humidity": 70,
+    "comfort": 0.29
+   },
+   {
+    "month": 3,
+    "tHigh": 14.1,
+    "tLow": 3.4,
+    "rainMm": 53,
+    "rainDays": 9.2,
+    "sunHours": 8.6,
+    "humidity": 64,
+    "comfort": 0.45
+   },
+   {
+    "month": 4,
+    "tHigh": 19.3,
+    "tLow": 7.6,
+    "rainMm": 45,
+    "rainDays": 8.6,
+    "sunHours": 10.4,
+    "humidity": 59,
+    "comfort": 0.73
+   },
+   {
+    "month": 5,
+    "tHigh": 23.2,
+    "tLow": 11.9,
+    "rainMm": 59,
+    "rainDays": 10.2,
+    "sunHours": 11.3,
+    "humidity": 61,
+    "comfort": 0.69
+   },
+   {
+    "month": 6,
+    "tHigh": 29.3,
+    "tLow": 17.1,
+    "rainMm": 38,
+    "rainDays": 6.2,
+    "sunHours": 13.3,
+    "humidity": 56,
+    "comfort": 0.7
+   },
+   {
+    "month": 7,
+    "tHigh": 32.4,
+    "tLow": 19.4,
+    "rainMm": 21,
+    "rainDays": 4.1,
+    "sunHours": 13.6,
+    "humidity": 48,
+    "comfort": 0.51
+   },
+   {
+    "month": 8,
+    "tHigh": 32.2,
+    "tLow": 19.3,
+    "rainMm": 20,
+    "rainDays": 3.8,
+    "sunHours": 12.5,
+    "humidity": 49,
+    "comfort": 0.53
+   },
+   {
+    "month": 9,
+    "tHigh": 26.5,
+    "tLow": 15,
+    "rainMm": 31,
+    "rainDays": 5.3,
+    "sunHours": 10.6,
+    "humidity": 56,
+    "comfort": 0.94
+   },
+   {
+    "month": 10,
+    "tHigh": 19.5,
+    "tLow": 9.6,
+    "rainMm": 46,
+    "rainDays": 6.6,
+    "sunHours": 8.7,
+    "humidity": 66,
+    "comfort": 0.84
+   },
+   {
+    "month": 11,
+    "tHigh": 12.5,
+    "tLow": 4.9,
+    "rainMm": 72,
+    "rainDays": 9.1,
+    "sunHours": 6.6,
+    "humidity": 77,
+    "comfort": 0.37
+   },
+   {
+    "month": 12,
+    "tHigh": 7.3,
+    "tLow": 0.3,
+    "rainMm": 52,
+    "rainDays": 8.1,
+    "sunHours": 6.1,
+    "humidity": 78,
+    "comfort": 0.12
+   }
+  ],
+  "ohrid": [
+   {
+    "month": 1,
+    "tHigh": 6.2,
+    "tLow": 0.2,
+    "rainMm": 97,
+    "rainDays": 11.3,
+    "sunHours": 6.4,
+    "humidity": 80,
+    "comfort": 0.05
+   },
+   {
+    "month": 2,
+    "tHigh": 8.8,
+    "tLow": 1.8,
+    "rainMm": 53,
+    "rainDays": 6.9,
+    "sunHours": 7.9,
+    "humidity": 77,
+    "comfort": 0.22
+   },
+   {
+    "month": 3,
+    "tHigh": 11.2,
+    "tLow": 3.7,
+    "rainMm": 79,
+    "rainDays": 11.3,
+    "sunHours": 8.7,
+    "humidity": 72,
+    "comfort": 0.26
+   },
+   {
+    "month": 4,
+    "tHigh": 15.4,
+    "tLow": 7,
+    "rainMm": 71,
+    "rainDays": 11.1,
+    "sunHours": 10.6,
+    "humidity": 71,
+    "comfort": 0.45
+   },
+   {
+    "month": 5,
+    "tHigh": 19.2,
+    "tLow": 11.2,
+    "rainMm": 84,
+    "rainDays": 13.1,
+    "sunHours": 11.6,
+    "humidity": 72,
+    "comfort": 0.52
+   },
+   {
+    "month": 6,
+    "tHigh": 24.8,
+    "tLow": 16,
+    "rainMm": 53,
+    "rainDays": 9.1,
+    "sunHours": 13.4,
+    "humidity": 68,
+    "comfort": 0.75
+   },
+   {
+    "month": 7,
+    "tHigh": 28.1,
+    "tLow": 18.6,
+    "rainMm": 28,
+    "rainDays": 5.1,
+    "sunHours": 13.8,
+    "humidity": 60,
+    "comfort": 0.85
+   },
+   {
+    "month": 8,
+    "tHigh": 28,
+    "tLow": 18.5,
+    "rainMm": 39,
+    "rainDays": 7,
+    "sunHours": 12.7,
+    "humidity": 61,
+    "comfort": 0.77
+   },
+   {
+    "month": 9,
+    "tHigh": 23.2,
+    "tLow": 14.8,
+    "rainMm": 57,
+    "rainDays": 8.2,
+    "sunHours": 10.7,
+    "humidity": 68,
+    "comfort": 0.79
+   },
+   {
+    "month": 10,
+    "tHigh": 17.9,
+    "tLow": 10.3,
+    "rainMm": 54,
+    "rainDays": 6.8,
+    "sunHours": 9.1,
+    "humidity": 76,
+    "comfort": 0.74
+   },
+   {
+    "month": 11,
+    "tHigh": 12.7,
+    "tLow": 6.6,
+    "rainMm": 125,
+    "rainDays": 11.4,
+    "sunHours": 6.5,
+    "humidity": 82,
+    "comfort": 0.32
+   },
+   {
+    "month": 12,
+    "tHigh": 8.2,
+    "tLow": 2.8,
+    "rainMm": 79,
+    "rainDays": 9.7,
+    "sunHours": 6.6,
+    "humidity": 82,
+    "comfort": 0.15
+   }
+  ],
+  "dubrovnik": [
+   {
+    "month": 1,
+    "tHigh": 11.4,
+    "tLow": 4,
+    "rainMm": 175,
+    "rainDays": 12.8,
+    "sunHours": 6.5,
+    "humidity": 71,
+    "comfort": 0.24
+   },
+   {
+    "month": 2,
+    "tHigh": 13.1,
+    "tLow": 5.3,
+    "rainMm": 149,
+    "rainDays": 10.6,
+    "sunHours": 7.7,
+    "humidity": 71,
+    "comfort": 0.36
+   },
+   {
+    "month": 3,
+    "tHigh": 14.7,
+    "tLow": 6.9,
+    "rainMm": 193,
+    "rainDays": 12.1,
+    "sunHours": 8.9,
+    "humidity": 68,
+    "comfort": 0.39
+   },
+   {
+    "month": 4,
+    "tHigh": 17.9,
+    "tLow": 9.5,
+    "rainMm": 112,
+    "rainDays": 9.8,
+    "sunHours": 10.6,
+    "humidity": 68,
+    "comfort": 0.61
+   },
+   {
+    "month": 5,
+    "tHigh": 21.6,
+    "tLow": 13.7,
+    "rainMm": 123,
+    "rainDays": 11.2,
+    "sunHours": 11.8,
+    "humidity": 71,
+    "comfort": 0.64
+   },
+   {
+    "month": 6,
+    "tHigh": 26.8,
+    "tLow": 18.7,
+    "rainMm": 43,
+    "rainDays": 5.7,
+    "sunHours": 13.3,
+    "humidity": 69,
+    "comfort": 0.92
+   },
+   {
+    "month": 7,
+    "tHigh": 29.8,
+    "tLow": 21.1,
+    "rainMm": 39,
+    "rainDays": 3,
+    "sunHours": 13.7,
+    "humidity": 61,
+    "comfort": 0.75
+   },
+   {
+    "month": 8,
+    "tHigh": 30.1,
+    "tLow": 21.4,
+    "rainMm": 46,
+    "rainDays": 4.5,
+    "sunHours": 13,
+    "humidity": 62,
+    "comfort": 0.7
+   },
+   {
+    "month": 9,
+    "tHigh": 25.6,
+    "tLow": 17.5,
+    "rainMm": 127,
+    "rainDays": 7.6,
+    "sunHours": 10.7,
+    "humidity": 69,
+    "comfort": 0.82
+   },
+   {
+    "month": 10,
+    "tHigh": 21.2,
+    "tLow": 13,
+    "rainMm": 168,
+    "rainDays": 9.9,
+    "sunHours": 9.2,
+    "humidity": 74,
+    "comfort": 0.71
+   },
+   {
+    "month": 11,
+    "tHigh": 16.8,
+    "tLow": 9.7,
+    "rainMm": 309,
+    "rainDays": 14.4,
+    "sunHours": 6.4,
+    "humidity": 75,
+    "comfort": 0.38
+   },
+   {
+    "month": 12,
+    "tHigh": 13.3,
+    "tLow": 6,
+    "rainMm": 208,
+    "rainDays": 12.3,
+    "sunHours": 6.1,
+    "humidity": 73,
+    "comfort": 0.32
+   }
+  ],
+  "split": [
+   {
+    "month": 1,
+    "tHigh": 11,
+    "tLow": 3.8,
+    "rainMm": 129,
+    "rainDays": 10.9,
+    "sunHours": 6.4,
+    "humidity": 68,
+    "comfort": 0.26
+   },
+   {
+    "month": 2,
+    "tHigh": 12.9,
+    "tLow": 5.4,
+    "rainMm": 99,
+    "rainDays": 9.7,
+    "sunHours": 7.6,
+    "humidity": 70,
+    "comfort": 0.38
+   },
+   {
+    "month": 3,
+    "tHigh": 14.9,
+    "tLow": 7,
+    "rainMm": 113,
+    "rainDays": 10.5,
+    "sunHours": 9.3,
+    "humidity": 66,
+    "comfort": 0.45
+   },
+   {
+    "month": 4,
+    "tHigh": 18.2,
+    "tLow": 10,
+    "rainMm": 96,
+    "rainDays": 9.3,
+    "sunHours": 10.8,
+    "humidity": 64,
+    "comfort": 0.65
+   },
+   {
+    "month": 5,
+    "tHigh": 22.3,
+    "tLow": 14.3,
+    "rainMm": 107,
+    "rainDays": 12.2,
+    "sunHours": 11.9,
+    "humidity": 66,
+    "comfort": 0.59
+   },
+   {
+    "month": 6,
+    "tHigh": 28.1,
+    "tLow": 19.3,
+    "rainMm": 47,
+    "rainDays": 6.3,
+    "sunHours": 13.2,
+    "humidity": 61,
+    "comfort": 0.8
+   },
+   {
+    "month": 7,
+    "tHigh": 31.2,
+    "tLow": 21.8,
+    "rainMm": 30,
+    "rainDays": 3.7,
+    "sunHours": 13.6,
+    "humidity": 51,
+    "comfort": 0.62
+   },
+   {
+    "month": 8,
+    "tHigh": 31.2,
+    "tLow": 22.2,
+    "rainMm": 57,
+    "rainDays": 4.8,
+    "sunHours": 12.9,
+    "humidity": 53,
+    "comfort": 0.59
+   },
+   {
+    "month": 9,
+    "tHigh": 26.1,
+    "tLow": 17.7,
+    "rainMm": 124,
+    "rainDays": 8.3,
+    "sunHours": 10.6,
+    "humidity": 63,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 21.2,
+    "tLow": 13.4,
+    "rainMm": 111,
+    "rainDays": 8.1,
+    "sunHours": 9.1,
+    "humidity": 69,
+    "comfort": 0.8
+   },
+   {
+    "month": 11,
+    "tHigh": 16.2,
+    "tLow": 9.7,
+    "rainMm": 258,
+    "rainDays": 13.9,
+    "sunHours": 6.5,
+    "humidity": 73,
+    "comfort": 0.38
+   },
+   {
+    "month": 12,
+    "tHigh": 12.7,
+    "tLow": 5.9,
+    "rainMm": 172,
+    "rainDays": 11.8,
+    "sunHours": 5.9,
+    "humidity": 72,
+    "comfort": 0.31
+   }
+  ],
+  "zadar": [
+   {
+    "month": 1,
+    "tHigh": 10.3,
+    "tLow": 3.1,
+    "rainMm": 104,
+    "rainDays": 11.3,
+    "sunHours": 6.5,
+    "humidity": 73,
+    "comfort": 0.22
+   },
+   {
+    "month": 2,
+    "tHigh": 11.9,
+    "tLow": 4.5,
+    "rainMm": 104,
+    "rainDays": 9.4,
+    "sunHours": 7.5,
+    "humidity": 74,
+    "comfort": 0.34
+   },
+   {
+    "month": 3,
+    "tHigh": 14,
+    "tLow": 6,
+    "rainMm": 102,
+    "rainDays": 10.7,
+    "sunHours": 9.4,
+    "humidity": 72,
+    "comfort": 0.4
+   },
+   {
+    "month": 4,
+    "tHigh": 17.3,
+    "tLow": 9,
+    "rainMm": 70,
+    "rainDays": 9.2,
+    "sunHours": 10.8,
+    "humidity": 71,
+    "comfort": 0.61
+   },
+   {
+    "month": 5,
+    "tHigh": 21.3,
+    "tLow": 13.6,
+    "rainMm": 98,
+    "rainDays": 10.7,
+    "sunHours": 11.9,
+    "humidity": 73,
+    "comfort": 0.67
+   },
+   {
+    "month": 6,
+    "tHigh": 26.7,
+    "tLow": 18.6,
+    "rainMm": 48,
+    "rainDays": 5.3,
+    "sunHours": 13.2,
+    "humidity": 69,
+    "comfort": 0.94
+   },
+   {
+    "month": 7,
+    "tHigh": 29.6,
+    "tLow": 20.7,
+    "rainMm": 37,
+    "rainDays": 4.7,
+    "sunHours": 13.5,
+    "humidity": 63,
+    "comfort": 0.74
+   },
+   {
+    "month": 8,
+    "tHigh": 30.1,
+    "tLow": 20.6,
+    "rainMm": 58,
+    "rainDays": 4.4,
+    "sunHours": 12.7,
+    "humidity": 62,
+    "comfort": 0.71
+   },
+   {
+    "month": 9,
+    "tHigh": 25,
+    "tLow": 16.6,
+    "rainMm": 121,
+    "rainDays": 8.6,
+    "sunHours": 10.5,
+    "humidity": 70,
+    "comfort": 0.77
+   },
+   {
+    "month": 10,
+    "tHigh": 20.2,
+    "tLow": 12.5,
+    "rainMm": 119,
+    "rainDays": 8.7,
+    "sunHours": 8.8,
+    "humidity": 76,
+    "comfort": 0.77
+   },
+   {
+    "month": 11,
+    "tHigh": 15.3,
+    "tLow": 8.8,
+    "rainMm": 180,
+    "rainDays": 13.5,
+    "sunHours": 6.3,
+    "humidity": 76,
+    "comfort": 0.36
+   },
+   {
+    "month": 12,
+    "tHigh": 11.9,
+    "tLow": 5.2,
+    "rainMm": 138,
+    "rainDays": 12.2,
+    "sunHours": 5.8,
+    "humidity": 76,
+    "comfort": 0.27
+   }
+  ],
+  "zagreb": [
+   {
+    "month": 1,
+    "tHigh": 5.4,
+    "tLow": -2,
+    "rainMm": 62,
+    "rainDays": 10.1,
+    "sunHours": 5.4,
+    "humidity": 82,
+    "comfort": 0.02
+   },
+   {
+    "month": 2,
+    "tHigh": 9,
+    "tLow": 0.2,
+    "rainMm": 59,
+    "rainDays": 7.8,
+    "sunHours": 6.7,
+    "humidity": 77,
+    "comfort": 0.21
+   },
+   {
+    "month": 3,
+    "tHigh": 12.5,
+    "tLow": 2.3,
+    "rainMm": 62,
+    "rainDays": 9.7,
+    "sunHours": 8.4,
+    "humidity": 71,
+    "comfort": 0.36
+   },
+   {
+    "month": 4,
+    "tHigh": 16.9,
+    "tLow": 6.3,
+    "rainMm": 66,
+    "rainDays": 9.2,
+    "sunHours": 9.9,
+    "humidity": 68,
+    "comfort": 0.59
+   },
+   {
+    "month": 5,
+    "tHigh": 20.3,
+    "tLow": 10.8,
+    "rainMm": 111,
+    "rainDays": 15.1,
+    "sunHours": 10.5,
+    "humidity": 73,
+    "comfort": 0.45
+   },
+   {
+    "month": 6,
+    "tHigh": 26.5,
+    "tLow": 16.1,
+    "rainMm": 77,
+    "rainDays": 10.1,
+    "sunHours": 12.4,
+    "humidity": 68,
+    "comfort": 0.7
+   },
+   {
+    "month": 7,
+    "tHigh": 28.1,
+    "tLow": 17.8,
+    "rainMm": 81,
+    "rainDays": 9,
+    "sunHours": 12.6,
+    "humidity": 65,
+    "comfort": 0.68
+   },
+   {
+    "month": 8,
+    "tHigh": 27.9,
+    "tLow": 17.6,
+    "rainMm": 75,
+    "rainDays": 9,
+    "sunHours": 11.9,
+    "humidity": 67,
+    "comfort": 0.69
+   },
+   {
+    "month": 9,
+    "tHigh": 22.4,
+    "tLow": 13.1,
+    "rainMm": 95,
+    "rainDays": 10,
+    "sunHours": 9.5,
+    "humidity": 74,
+    "comfort": 0.7
+   },
+   {
+    "month": 10,
+    "tHigh": 17.2,
+    "tLow": 8.5,
+    "rainMm": 76,
+    "rainDays": 8.4,
+    "sunHours": 7.8,
+    "humidity": 80,
+    "comfort": 0.63
+   },
+   {
+    "month": 11,
+    "tHigh": 10.2,
+    "tLow": 3.6,
+    "rainMm": 94,
+    "rainDays": 10,
+    "sunHours": 5,
+    "humidity": 86,
+    "comfort": 0.24
+   },
+   {
+    "month": 12,
+    "tHigh": 6,
+    "tLow": -0.2,
+    "rainMm": 67,
+    "rainDays": 9.5,
+    "sunHours": 4.8,
+    "humidity": 87,
+    "comfort": 0.05
+   }
+  ],
+  "ljubljana": [
+   {
+    "month": 1,
+    "tHigh": 5.2,
+    "tLow": -3.5,
+    "rainMm": 86,
+    "rainDays": 9,
+    "sunHours": 5,
+    "humidity": 83,
+    "comfort": 0.01
+   },
+   {
+    "month": 2,
+    "tHigh": 8.3,
+    "tLow": -1.5,
+    "rainMm": 85,
+    "rainDays": 8.4,
+    "sunHours": 5.9,
+    "humidity": 80,
+    "comfort": 0.17
+   },
+   {
+    "month": 3,
+    "tHigh": 12.1,
+    "tLow": 0.6,
+    "rainMm": 83,
+    "rainDays": 10.8,
+    "sunHours": 8.2,
+    "humidity": 74,
+    "comfort": 0.31
+   },
+   {
+    "month": 4,
+    "tHigh": 16.2,
+    "tLow": 4.4,
+    "rainMm": 84,
+    "rainDays": 9.4,
+    "sunHours": 9.7,
+    "humidity": 72,
+    "comfort": 0.55
+   },
+   {
+    "month": 5,
+    "tHigh": 19.4,
+    "tLow": 9,
+    "rainMm": 140,
+    "rainDays": 15.8,
+    "sunHours": 10.1,
+    "humidity": 77,
+    "comfort": 0.39
+   },
+   {
+    "month": 6,
+    "tHigh": 25.8,
+    "tLow": 14.2,
+    "rainMm": 83,
+    "rainDays": 11.4,
+    "sunHours": 12.4,
+    "humidity": 72,
+    "comfort": 0.63
+   },
+   {
+    "month": 7,
+    "tHigh": 27.5,
+    "tLow": 15.8,
+    "rainMm": 97,
+    "rainDays": 11.1,
+    "sunHours": 12.5,
+    "humidity": 71,
+    "comfort": 0.61
+   },
+   {
+    "month": 8,
+    "tHigh": 27.2,
+    "tLow": 15.6,
+    "rainMm": 89,
+    "rainDays": 9.3,
+    "sunHours": 11.6,
+    "humidity": 73,
+    "comfort": 0.72
+   },
+   {
+    "month": 9,
+    "tHigh": 21.8,
+    "tLow": 11.4,
+    "rainMm": 149,
+    "rainDays": 11.7,
+    "sunHours": 9.4,
+    "humidity": 79,
+    "comfort": 0.62
+   },
+   {
+    "month": 10,
+    "tHigh": 16.9,
+    "tLow": 7,
+    "rainMm": 114,
+    "rainDays": 10,
+    "sunHours": 7.3,
+    "humidity": 84,
+    "comfort": 0.55
+   },
+   {
+    "month": 11,
+    "tHigh": 10,
+    "tLow": 2.5,
+    "rainMm": 137,
+    "rainDays": 11.2,
+    "sunHours": 4.6,
+    "humidity": 87,
+    "comfort": 0.21
+   },
+   {
+    "month": 12,
+    "tHigh": 5.7,
+    "tLow": -1.6,
+    "rainMm": 99,
+    "rainDays": 9.2,
+    "sunHours": 4.3,
+    "humidity": 87,
+    "comfort": 0.03
+   }
+  ],
+  "bled": [
+   {
+    "month": 1,
+    "tHigh": 5.1,
+    "tLow": -2.5,
+    "rainMm": 100,
+    "rainDays": 9.9,
+    "sunHours": 5.5,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 7.2,
+    "tLow": -0.9,
+    "rainMm": 113,
+    "rainDays": 9.1,
+    "sunHours": 6.3,
+    "humidity": 80,
+    "comfort": 0.11
+   },
+   {
+    "month": 3,
+    "tHigh": 10.4,
+    "tLow": 1.3,
+    "rainMm": 105,
+    "rainDays": 11.5,
+    "sunHours": 8,
+    "humidity": 75,
+    "comfort": 0.23
+   },
+   {
+    "month": 4,
+    "tHigh": 14.8,
+    "tLow": 4.9,
+    "rainMm": 108,
+    "rainDays": 12,
+    "sunHours": 9.7,
+    "humidity": 74,
+    "comfort": 0.39
+   },
+   {
+    "month": 5,
+    "tHigh": 17.9,
+    "tLow": 9.3,
+    "rainMm": 169,
+    "rainDays": 19.3,
+    "sunHours": 9.7,
+    "humidity": 79,
+    "comfort": 0.34
+   },
+   {
+    "month": 6,
+    "tHigh": 23.9,
+    "tLow": 14.3,
+    "rainMm": 118,
+    "rainDays": 13.6,
+    "sunHours": 12.4,
+    "humidity": 76,
+    "comfort": 0.52
+   },
+   {
+    "month": 7,
+    "tHigh": 25.3,
+    "tLow": 15.8,
+    "rainMm": 110,
+    "rainDays": 15.2,
+    "sunHours": 12.5,
+    "humidity": 75,
+    "comfort": 0.44
+   },
+   {
+    "month": 8,
+    "tHigh": 25.1,
+    "tLow": 15.9,
+    "rainMm": 123,
+    "rainDays": 12.6,
+    "sunHours": 11.4,
+    "humidity": 77,
+    "comfort": 0.57
+   },
+   {
+    "month": 9,
+    "tHigh": 20.3,
+    "tLow": 11.8,
+    "rainMm": 163,
+    "rainDays": 13.3,
+    "sunHours": 9.2,
+    "humidity": 82,
+    "comfort": 0.54
+   },
+   {
+    "month": 10,
+    "tHigh": 15.9,
+    "tLow": 7.7,
+    "rainMm": 144,
+    "rainDays": 11.1,
+    "sunHours": 7.1,
+    "humidity": 85,
+    "comfort": 0.47
+   },
+   {
+    "month": 11,
+    "tHigh": 9.6,
+    "tLow": 2.8,
+    "rainMm": 169,
+    "rainDays": 11.9,
+    "sunHours": 5.1,
+    "humidity": 87,
+    "comfort": 0.19
+   },
+   {
+    "month": 12,
+    "tHigh": 6.1,
+    "tLow": -0.9,
+    "rainMm": 117,
+    "rainDays": 8.5,
+    "sunHours": 5,
+    "humidity": 84,
+    "comfort": 0.06
+   }
+  ],
+  "thessaloniki": [
+   {
+    "month": 1,
+    "tHigh": 10.2,
+    "tLow": 2.3,
+    "rainMm": 65,
+    "rainDays": 7.7,
+    "sunHours": 6.9,
+    "humidity": 75,
+    "comfort": 0.28
+   },
+   {
+    "month": 2,
+    "tHigh": 13.2,
+    "tLow": 4.4,
+    "rainMm": 40,
+    "rainDays": 7.3,
+    "sunHours": 7.7,
+    "humidity": 74,
+    "comfort": 0.45
+   },
+   {
+    "month": 3,
+    "tHigh": 15.8,
+    "tLow": 6.6,
+    "rainMm": 77,
+    "rainDays": 10.4,
+    "sunHours": 8.9,
+    "humidity": 73,
+    "comfort": 0.49
+   },
+   {
+    "month": 4,
+    "tHigh": 19.9,
+    "tLow": 10.1,
+    "rainMm": 57,
+    "rainDays": 8.3,
+    "sunHours": 10.9,
+    "humidity": 70,
+    "comfort": 0.78
+   },
+   {
+    "month": 5,
+    "tHigh": 24.3,
+    "tLow": 14.8,
+    "rainMm": 72,
+    "rainDays": 9.9,
+    "sunHours": 11.9,
+    "humidity": 68,
+    "comfort": 0.71
+   },
+   {
+    "month": 6,
+    "tHigh": 30.3,
+    "tLow": 20.1,
+    "rainMm": 57,
+    "rainDays": 6.2,
+    "sunHours": 13.7,
+    "humidity": 63,
+    "comfort": 0.63
+   },
+   {
+    "month": 7,
+    "tHigh": 32.9,
+    "tLow": 22.5,
+    "rainMm": 34,
+    "rainDays": 3.7,
+    "sunHours": 13.7,
+    "humidity": 57,
+    "comfort": 0.46
+   },
+   {
+    "month": 8,
+    "tHigh": 32.4,
+    "tLow": 22.3,
+    "rainMm": 29,
+    "rainDays": 4.5,
+    "sunHours": 12.8,
+    "humidity": 59,
+    "comfort": 0.5
+   },
+   {
+    "month": 9,
+    "tHigh": 27.7,
+    "tLow": 18.3,
+    "rainMm": 35,
+    "rainDays": 5.3,
+    "sunHours": 10.9,
+    "humidity": 65,
+    "comfort": 0.88
+   },
+   {
+    "month": 10,
+    "tHigh": 22,
+    "tLow": 13.2,
+    "rainMm": 58,
+    "rainDays": 5.1,
+    "sunHours": 8.8,
+    "humidity": 73,
+    "comfort": 0.95
+   },
+   {
+    "month": 11,
+    "tHigh": 16.9,
+    "tLow": 9.2,
+    "rainMm": 81,
+    "rainDays": 9.2,
+    "sunHours": 7.1,
+    "humidity": 79,
+    "comfort": 0.59
+   },
+   {
+    "month": 12,
+    "tHigh": 12.2,
+    "tLow": 4.9,
+    "rainMm": 82,
+    "rainDays": 8.3,
+    "sunHours": 6.7,
+    "humidity": 78,
+    "comfort": 0.38
+   }
+  ],
+  "athens": [
+   {
+    "month": 1,
+    "tHigh": 12.4,
+    "tLow": 5.4,
+    "rainMm": 70,
+    "rainDays": 8.5,
+    "sunHours": 7.3,
+    "humidity": 75,
+    "comfort": 0.38
+   },
+   {
+    "month": 2,
+    "tHigh": 13.7,
+    "tLow": 6.4,
+    "rainMm": 49,
+    "rainDays": 7.4,
+    "sunHours": 8.3,
+    "humidity": 74,
+    "comfort": 0.48
+   },
+   {
+    "month": 3,
+    "tHigh": 16.1,
+    "tLow": 8,
+    "rainMm": 46,
+    "rainDays": 6.7,
+    "sunHours": 9.6,
+    "humidity": 68,
+    "comfort": 0.64
+   },
+   {
+    "month": 4,
+    "tHigh": 20.4,
+    "tLow": 11.2,
+    "rainMm": 34,
+    "rainDays": 6,
+    "sunHours": 11.3,
+    "humidity": 60,
+    "comfort": 0.9
+   },
+   {
+    "month": 5,
+    "tHigh": 25,
+    "tLow": 15.8,
+    "rainMm": 32,
+    "rainDays": 5.2,
+    "sunHours": 12.1,
+    "humidity": 55,
+    "comfort": 0.94
+   },
+   {
+    "month": 6,
+    "tHigh": 30.5,
+    "tLow": 20.7,
+    "rainMm": 28,
+    "rainDays": 5.1,
+    "sunHours": 13.6,
+    "humidity": 50,
+    "comfort": 0.65
+   },
+   {
+    "month": 7,
+    "tHigh": 33.7,
+    "tLow": 23.4,
+    "rainMm": 10,
+    "rainDays": 2.2,
+    "sunHours": 13.6,
+    "humidity": 42,
+    "comfort": 0.39
+   },
+   {
+    "month": 8,
+    "tHigh": 33,
+    "tLow": 23,
+    "rainMm": 11,
+    "rainDays": 2.4,
+    "sunHours": 12.9,
+    "humidity": 45,
+    "comfort": 0.46
+   },
+   {
+    "month": 9,
+    "tHigh": 28.6,
+    "tLow": 19.4,
+    "rainMm": 25,
+    "rainDays": 2.9,
+    "sunHours": 11.4,
+    "humidity": 55,
+    "comfort": 0.86
+   },
+   {
+    "month": 10,
+    "tHigh": 23.4,
+    "tLow": 14.9,
+    "rainMm": 26,
+    "rainDays": 3.3,
+    "sunHours": 9.6,
+    "humidity": 65,
+    "comfort": 1
+   },
+   {
+    "month": 11,
+    "tHigh": 18.6,
+    "tLow": 11.3,
+    "rainMm": 81,
+    "rainDays": 8.2,
+    "sunHours": 8.1,
+    "humidity": 74,
+    "comfort": 0.72
+   },
+   {
+    "month": 12,
+    "tHigh": 14.2,
+    "tLow": 7.7,
+    "rainMm": 96,
+    "rainDays": 9,
+    "sunHours": 7.3,
+    "humidity": 76,
+    "comfort": 0.46
+   }
+  ],
+  "sofia": [
+   {
+    "month": 1,
+    "tHigh": 4.9,
+    "tLow": -3.6,
+    "rainMm": 63,
+    "rainDays": 9.2,
+    "sunHours": 6.5,
+    "humidity": 75,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 8.8,
+    "tLow": -1.5,
+    "rainMm": 34,
+    "rainDays": 7.2,
+    "sunHours": 7.6,
+    "humidity": 72,
+    "comfort": 0.21
+   },
+   {
+    "month": 3,
+    "tHigh": 12.1,
+    "tLow": 1.2,
+    "rainMm": 65,
+    "rainDays": 11.1,
+    "sunHours": 8.2,
+    "humidity": 68,
+    "comfort": 0.31
+   },
+   {
+    "month": 4,
+    "tHigh": 16.8,
+    "tLow": 5.2,
+    "rainMm": 59,
+    "rainDays": 10.1,
+    "sunHours": 10.3,
+    "humidity": 64,
+    "comfort": 0.55
+   },
+   {
+    "month": 5,
+    "tHigh": 20.4,
+    "tLow": 9.7,
+    "rainMm": 76,
+    "rainDays": 13.7,
+    "sunHours": 11.3,
+    "humidity": 67,
+    "comfort": 0.52
+   },
+   {
+    "month": 6,
+    "tHigh": 25.4,
+    "tLow": 14.6,
+    "rainMm": 67,
+    "rainDays": 11,
+    "sunHours": 13.2,
+    "humidity": 67,
+    "comfort": 0.65
+   },
+   {
+    "month": 7,
+    "tHigh": 28.3,
+    "tLow": 16.6,
+    "rainMm": 47,
+    "rainDays": 5.9,
+    "sunHours": 13.8,
+    "humidity": 59,
+    "comfort": 0.8
+   },
+   {
+    "month": 8,
+    "tHigh": 28.5,
+    "tLow": 16.4,
+    "rainMm": 36,
+    "rainDays": 6.6,
+    "sunHours": 12.5,
+    "humidity": 57,
+    "comfort": 0.75
+   },
+   {
+    "month": 9,
+    "tHigh": 24.1,
+    "tLow": 12.5,
+    "rainMm": 29,
+    "rainDays": 4.4,
+    "sunHours": 10.7,
+    "humidity": 60,
+    "comfort": 0.98
+   },
+   {
+    "month": 10,
+    "tHigh": 18.1,
+    "tLow": 7.3,
+    "rainMm": 65,
+    "rainDays": 6.6,
+    "sunHours": 8.7,
+    "humidity": 69,
+    "comfort": 0.76
+   },
+   {
+    "month": 11,
+    "tHigh": 11.5,
+    "tLow": 3,
+    "rainMm": 66,
+    "rainDays": 9.9,
+    "sunHours": 6.5,
+    "humidity": 79,
+    "comfort": 0.31
+   },
+   {
+    "month": 12,
+    "tHigh": 6.4,
+    "tLow": -0.9,
+    "rainMm": 59,
+    "rainDays": 10,
+    "sunHours": 6.1,
+    "humidity": 79,
+    "comfort": 0.07
+   }
+  ],
+  "plovdiv": [
+   {
+    "month": 1,
+    "tHigh": 6.8,
+    "tLow": -0.9,
+    "rainMm": 57,
+    "rainDays": 7.5,
+    "sunHours": 6.4,
+    "humidity": 71,
+    "comfort": 0.1
+   },
+   {
+    "month": 2,
+    "tHigh": 10.2,
+    "tLow": 1.4,
+    "rainMm": 41,
+    "rainDays": 7.2,
+    "sunHours": 7.2,
+    "humidity": 70,
+    "comfort": 0.29
+   },
+   {
+    "month": 3,
+    "tHigh": 13.8,
+    "tLow": 3.8,
+    "rainMm": 56,
+    "rainDays": 10,
+    "sunHours": 8.2,
+    "humidity": 67,
+    "comfort": 0.41
+   },
+   {
+    "month": 4,
+    "tHigh": 18.8,
+    "tLow": 7.8,
+    "rainMm": 67,
+    "rainDays": 9.8,
+    "sunHours": 10.5,
+    "humidity": 63,
+    "comfort": 0.66
+   },
+   {
+    "month": 5,
+    "tHigh": 22.9,
+    "tLow": 12.4,
+    "rainMm": 68,
+    "rainDays": 12.5,
+    "sunHours": 11.5,
+    "humidity": 62,
+    "comfort": 0.57
+   },
+   {
+    "month": 6,
+    "tHigh": 28.6,
+    "tLow": 17.8,
+    "rainMm": 63,
+    "rainDays": 9.7,
+    "sunHours": 13.3,
+    "humidity": 57,
+    "comfort": 0.61
+   },
+   {
+    "month": 7,
+    "tHigh": 31.8,
+    "tLow": 20.4,
+    "rainMm": 47,
+    "rainDays": 4.4,
+    "sunHours": 13.6,
+    "humidity": 48,
+    "comfort": 0.56
+   },
+   {
+    "month": 8,
+    "tHigh": 31.7,
+    "tLow": 20.1,
+    "rainMm": 18,
+    "rainDays": 2.9,
+    "sunHours": 12.5,
+    "humidity": 47,
+    "comfort": 0.58
+   },
+   {
+    "month": 9,
+    "tHigh": 26.7,
+    "tLow": 15.7,
+    "rainMm": 25,
+    "rainDays": 3.7,
+    "sunHours": 10.9,
+    "humidity": 53,
+    "comfort": 1
+   },
+   {
+    "month": 10,
+    "tHigh": 19.9,
+    "tLow": 10,
+    "rainMm": 56,
+    "rainDays": 6,
+    "sunHours": 8.6,
+    "humidity": 64,
+    "comfort": 0.9
+   },
+   {
+    "month": 11,
+    "tHigh": 13.3,
+    "tLow": 5.5,
+    "rainMm": 53,
+    "rainDays": 7.7,
+    "sunHours": 6.2,
+    "humidity": 76,
+    "comfort": 0.45
+   },
+   {
+    "month": 12,
+    "tHigh": 8.5,
+    "tLow": 1.5,
+    "rainMm": 64,
+    "rainDays": 8.1,
+    "sunHours": 5.7,
+    "humidity": 76,
+    "comfort": 0.18
+   }
+  ],
+  "velikotarnovo": [
+   {
+    "month": 1,
+    "tHigh": 6.4,
+    "tLow": -2.2,
+    "rainMm": 61,
+    "rainDays": 9.4,
+    "sunHours": 5.9,
+    "humidity": 78,
+    "comfort": 0.07
+   },
+   {
+    "month": 2,
+    "tHigh": 9.4,
+    "tLow": 0.1,
+    "rainMm": 48,
+    "rainDays": 7.7,
+    "sunHours": 6.7,
+    "humidity": 75,
+    "comfort": 0.24
+   },
+   {
+    "month": 3,
+    "tHigh": 13,
+    "tLow": 2.8,
+    "rainMm": 63,
+    "rainDays": 10.6,
+    "sunHours": 7.9,
+    "humidity": 71,
+    "comfort": 0.36
+   },
+   {
+    "month": 4,
+    "tHigh": 18,
+    "tLow": 6.9,
+    "rainMm": 63,
+    "rainDays": 10.4,
+    "sunHours": 9.9,
+    "humidity": 67,
+    "comfort": 0.59
+   },
+   {
+    "month": 5,
+    "tHigh": 21.7,
+    "tLow": 11.3,
+    "rainMm": 91,
+    "rainDays": 13.9,
+    "sunHours": 11.2,
+    "humidity": 70,
+    "comfort": 0.51
+   },
+   {
+    "month": 6,
+    "tHigh": 26.7,
+    "tLow": 16.2,
+    "rainMm": 84,
+    "rainDays": 11.2,
+    "sunHours": 12.7,
+    "humidity": 70,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 29.7,
+    "tLow": 18.4,
+    "rainMm": 51,
+    "rainDays": 7,
+    "sunHours": 13.5,
+    "humidity": 60,
+    "comfort": 0.64
+   },
+   {
+    "month": 8,
+    "tHigh": 30.1,
+    "tLow": 18.2,
+    "rainMm": 29,
+    "rainDays": 5.4,
+    "sunHours": 12.4,
+    "humidity": 56,
+    "comfort": 0.67
+   },
+   {
+    "month": 9,
+    "tHigh": 25.7,
+    "tLow": 14.1,
+    "rainMm": 28,
+    "rainDays": 4.2,
+    "sunHours": 10.7,
+    "humidity": 59,
+    "comfort": 0.99
+   },
+   {
+    "month": 10,
+    "tHigh": 19.2,
+    "tLow": 8.6,
+    "rainMm": 61,
+    "rainDays": 6,
+    "sunHours": 8.2,
+    "humidity": 71,
+    "comfort": 0.85
+   },
+   {
+    "month": 11,
+    "tHigh": 12.9,
+    "tLow": 4.4,
+    "rainMm": 61,
+    "rainDays": 8.3,
+    "sunHours": 5.8,
+    "humidity": 80,
+    "comfort": 0.42
+   },
+   {
+    "month": 12,
+    "tHigh": 7.9,
+    "tLow": 0.3,
+    "rainMm": 63,
+    "rainDays": 8.7,
+    "sunHours": 5,
+    "humidity": 82,
+    "comfort": 0.15
+   }
+  ],
+  "varna": [
+   {
+    "month": 1,
+    "tHigh": 7,
+    "tLow": 0.5,
+    "rainMm": 57,
+    "rainDays": 7.8,
+    "sunHours": 5.9,
+    "humidity": 77,
+    "comfort": 0.11
+   },
+   {
+    "month": 2,
+    "tHigh": 8.9,
+    "tLow": 1.9,
+    "rainMm": 39,
+    "rainDays": 6.7,
+    "sunHours": 6.6,
+    "humidity": 77,
+    "comfort": 0.23
+   },
+   {
+    "month": 3,
+    "tHigh": 11.7,
+    "tLow": 3.9,
+    "rainMm": 43,
+    "rainDays": 9,
+    "sunHours": 8,
+    "humidity": 75,
+    "comfort": 0.33
+   },
+   {
+    "month": 4,
+    "tHigh": 15.5,
+    "tLow": 7.4,
+    "rainMm": 51,
+    "rainDays": 8.6,
+    "sunHours": 10.1,
+    "humidity": 74,
+    "comfort": 0.54
+   },
+   {
+    "month": 5,
+    "tHigh": 20.1,
+    "tLow": 12.4,
+    "rainMm": 64,
+    "rainDays": 11.3,
+    "sunHours": 11.8,
+    "humidity": 74,
+    "comfort": 0.64
+   },
+   {
+    "month": 6,
+    "tHigh": 25.6,
+    "tLow": 17.9,
+    "rainMm": 77,
+    "rainDays": 10.8,
+    "sunHours": 13,
+    "humidity": 72,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 28.3,
+    "tLow": 19.9,
+    "rainMm": 40,
+    "rainDays": 6.9,
+    "sunHours": 13.6,
+    "humidity": 67,
+    "comfort": 0.76
+   },
+   {
+    "month": 8,
+    "tHigh": 28.6,
+    "tLow": 20.4,
+    "rainMm": 23,
+    "rainDays": 4.8,
+    "sunHours": 12.8,
+    "humidity": 64,
+    "comfort": 0.82
+   },
+   {
+    "month": 9,
+    "tHigh": 24.4,
+    "tLow": 16.5,
+    "rainMm": 33,
+    "rainDays": 5.1,
+    "sunHours": 11,
+    "humidity": 67,
+    "comfort": 0.95
+   },
+   {
+    "month": 10,
+    "tHigh": 18.6,
+    "tLow": 11.4,
+    "rainMm": 57,
+    "rainDays": 6.4,
+    "sunHours": 8.2,
+    "humidity": 74,
+    "comfort": 0.8
+   },
+   {
+    "month": 11,
+    "tHigh": 13.5,
+    "tLow": 7.2,
+    "rainMm": 71,
+    "rainDays": 9.6,
+    "sunHours": 6,
+    "humidity": 80,
+    "comfort": 0.41
+   },
+   {
+    "month": 12,
+    "tHigh": 8.9,
+    "tLow": 2.9,
+    "rainMm": 62,
+    "rainDays": 9.4,
+    "sunHours": 5,
+    "humidity": 81,
+    "comfort": 0.19
+   }
+  ],
+  "bucharest": [
+   {
+    "month": 1,
+    "tHigh": 4.5,
+    "tLow": -3.4,
+    "rainMm": 44,
+    "rainDays": 7.8,
+    "sunHours": 5.5,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 7.9,
+    "tLow": -1.2,
+    "rainMm": 31,
+    "rainDays": 6.3,
+    "sunHours": 6.4,
+    "humidity": 78,
+    "comfort": 0.17
+   },
+   {
+    "month": 3,
+    "tHigh": 12.4,
+    "tLow": 1.9,
+    "rainMm": 52,
+    "rainDays": 9.3,
+    "sunHours": 7.8,
+    "humidity": 72,
+    "comfort": 0.36
+   },
+   {
+    "month": 4,
+    "tHigh": 17.8,
+    "tLow": 6.6,
+    "rainMm": 60,
+    "rainDays": 9.2,
+    "sunHours": 9.7,
+    "humidity": 68,
+    "comfort": 0.63
+   },
+   {
+    "month": 5,
+    "tHigh": 22,
+    "tLow": 11.6,
+    "rainMm": 71,
+    "rainDays": 12,
+    "sunHours": 11.1,
+    "humidity": 69,
+    "comfort": 0.6
+   },
+   {
+    "month": 6,
+    "tHigh": 27.5,
+    "tLow": 17.1,
+    "rainMm": 75,
+    "rainDays": 10.8,
+    "sunHours": 12.8,
+    "humidity": 68,
+    "comfort": 0.63
+   },
+   {
+    "month": 7,
+    "tHigh": 30.1,
+    "tLow": 19,
+    "rainMm": 63,
+    "rainDays": 8.3,
+    "sunHours": 13.4,
+    "humidity": 61,
+    "comfort": 0.57
+   },
+   {
+    "month": 8,
+    "tHigh": 30.5,
+    "tLow": 19.2,
+    "rainMm": 32,
+    "rainDays": 5.3,
+    "sunHours": 12.4,
+    "humidity": 56,
+    "comfort": 0.64
+   },
+   {
+    "month": 9,
+    "tHigh": 25.3,
+    "tLow": 14.2,
+    "rainMm": 33,
+    "rainDays": 4.1,
+    "sunHours": 10.6,
+    "humidity": 60,
+    "comfort": 1
+   },
+   {
+    "month": 10,
+    "tHigh": 18.3,
+    "tLow": 8.4,
+    "rainMm": 59,
+    "rainDays": 7.2,
+    "sunHours": 7.8,
+    "humidity": 73,
+    "comfort": 0.75
+   },
+   {
+    "month": 11,
+    "tHigh": 11.3,
+    "tLow": 3.8,
+    "rainMm": 62,
+    "rainDays": 9.2,
+    "sunHours": 5.1,
+    "humidity": 84,
+    "comfort": 0.31
+   },
+   {
+    "month": 12,
+    "tHigh": 6.3,
+    "tLow": -0.3,
+    "rainMm": 49,
+    "rainDays": 8.1,
+    "sunHours": 4.4,
+    "humidity": 87,
+    "comfort": 0.07
+   }
+  ],
+  "brasov": [
+   {
+    "month": 1,
+    "tHigh": 1.9,
+    "tLow": -5.7,
+    "rainMm": 48,
+    "rainDays": 10.5,
+    "sunHours": 5.4,
+    "humidity": 78,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 5.3,
+    "tLow": -3.6,
+    "rainMm": 43,
+    "rainDays": 9.9,
+    "sunHours": 6.5,
+    "humidity": 75,
+    "comfort": 0.01
+   },
+   {
+    "month": 3,
+    "tHigh": 9.3,
+    "tLow": -0.9,
+    "rainMm": 61,
+    "rainDays": 11.5,
+    "sunHours": 7.9,
+    "humidity": 70,
+    "comfort": 0.18
+   },
+   {
+    "month": 4,
+    "tHigh": 14.2,
+    "tLow": 3.1,
+    "rainMm": 70,
+    "rainDays": 11.9,
+    "sunHours": 9.8,
+    "humidity": 69,
+    "comfort": 0.37
+   },
+   {
+    "month": 5,
+    "tHigh": 18,
+    "tLow": 7.7,
+    "rainMm": 114,
+    "rainDays": 16.1,
+    "sunHours": 11,
+    "humidity": 72,
+    "comfort": 0.35
+   },
+   {
+    "month": 6,
+    "tHigh": 23,
+    "tLow": 13.1,
+    "rainMm": 114,
+    "rainDays": 14.4,
+    "sunHours": 12.5,
+    "humidity": 73,
+    "comfort": 0.48
+   },
+   {
+    "month": 7,
+    "tHigh": 24.5,
+    "tLow": 14.5,
+    "rainMm": 103,
+    "rainDays": 13.8,
+    "sunHours": 12.8,
+    "humidity": 71,
+    "comfort": 0.51
+   },
+   {
+    "month": 8,
+    "tHigh": 25.2,
+    "tLow": 14.4,
+    "rainMm": 69,
+    "rainDays": 8.9,
+    "sunHours": 12,
+    "humidity": 68,
+    "comfort": 0.76
+   },
+   {
+    "month": 9,
+    "tHigh": 20.3,
+    "tLow": 10,
+    "rainMm": 56,
+    "rainDays": 8.4,
+    "sunHours": 10,
+    "humidity": 70,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 14.4,
+    "tLow": 4.9,
+    "rainMm": 64,
+    "rainDays": 9.2,
+    "sunHours": 7.7,
+    "humidity": 74,
+    "comfort": 0.47
+   },
+   {
+    "month": 11,
+    "tHigh": 8.8,
+    "tLow": 0.9,
+    "rainMm": 56,
+    "rainDays": 9.8,
+    "sunHours": 5.7,
+    "humidity": 80,
+    "comfort": 0.18
+   },
+   {
+    "month": 12,
+    "tHigh": 4,
+    "tLow": -2.6,
+    "rainMm": 56,
+    "rainDays": 11.4,
+    "sunHours": 4.4,
+    "humidity": 81,
+    "comfort": 0
+   }
+  ],
+  "sighisoara": [
+   {
+    "month": 1,
+    "tHigh": 3.1,
+    "tLow": -5,
+    "rainMm": 36,
+    "rainDays": 9.5,
+    "sunHours": 5.1,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.5,
+    "tLow": -2.6,
+    "rainMm": 37,
+    "rainDays": 7.4,
+    "sunHours": 6.2,
+    "humidity": 76,
+    "comfort": 0.08
+   },
+   {
+    "month": 3,
+    "tHigh": 10.7,
+    "tLow": -0.1,
+    "rainMm": 50,
+    "rainDays": 10.5,
+    "sunHours": 7.9,
+    "humidity": 70,
+    "comfort": 0.26
+   },
+   {
+    "month": 4,
+    "tHigh": 15.8,
+    "tLow": 4.2,
+    "rainMm": 55,
+    "rainDays": 9.5,
+    "sunHours": 9.8,
+    "humidity": 68,
+    "comfort": 0.52
+   },
+   {
+    "month": 5,
+    "tHigh": 19.5,
+    "tLow": 8.8,
+    "rainMm": 101,
+    "rainDays": 14.8,
+    "sunHours": 11.1,
+    "humidity": 71,
+    "comfort": 0.44
+   },
+   {
+    "month": 6,
+    "tHigh": 24.5,
+    "tLow": 13.9,
+    "rainMm": 103,
+    "rainDays": 14.5,
+    "sunHours": 12.5,
+    "humidity": 74,
+    "comfort": 0.48
+   },
+   {
+    "month": 7,
+    "tHigh": 25.9,
+    "tLow": 15.1,
+    "rainMm": 86,
+    "rainDays": 12.3,
+    "sunHours": 12.8,
+    "humidity": 72,
+    "comfort": 0.59
+   },
+   {
+    "month": 8,
+    "tHigh": 26.5,
+    "tLow": 15.2,
+    "rainMm": 65,
+    "rainDays": 8.7,
+    "sunHours": 12,
+    "humidity": 70,
+    "comfort": 0.77
+   },
+   {
+    "month": 9,
+    "tHigh": 21.5,
+    "tLow": 10.9,
+    "rainMm": 57,
+    "rainDays": 8.3,
+    "sunHours": 9.9,
+    "humidity": 71,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 15.7,
+    "tLow": 5.3,
+    "rainMm": 46,
+    "rainDays": 8.4,
+    "sunHours": 7.7,
+    "humidity": 76,
+    "comfort": 0.55
+   },
+   {
+    "month": 11,
+    "tHigh": 9.7,
+    "tLow": 1.3,
+    "rainMm": 49,
+    "rainDays": 9.5,
+    "sunHours": 5.5,
+    "humidity": 83,
+    "comfort": 0.23
+   },
+   {
+    "month": 12,
+    "tHigh": 4.6,
+    "tLow": -1.9,
+    "rainMm": 43,
+    "rainDays": 9.6,
+    "sunHours": 4.1,
+    "humidity": 84,
+    "comfort": 0
+   }
+  ],
+  "sibiu": [
+   {
+    "month": 1,
+    "tHigh": 3.8,
+    "tLow": -4.2,
+    "rainMm": 39,
+    "rainDays": 9.5,
+    "sunHours": 5.7,
+    "humidity": 76,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 7.5,
+    "tLow": -1.6,
+    "rainMm": 41,
+    "rainDays": 9.1,
+    "sunHours": 6.4,
+    "humidity": 72,
+    "comfort": 0.12
+   },
+   {
+    "month": 3,
+    "tHigh": 11.3,
+    "tLow": 0.8,
+    "rainMm": 56,
+    "rainDays": 11.5,
+    "sunHours": 8,
+    "humidity": 68,
+    "comfort": 0.26
+   },
+   {
+    "month": 4,
+    "tHigh": 16.2,
+    "tLow": 5,
+    "rainMm": 68,
+    "rainDays": 10.7,
+    "sunHours": 10,
+    "humidity": 66,
+    "comfort": 0.5
+   },
+   {
+    "month": 5,
+    "tHigh": 19.8,
+    "tLow": 9.4,
+    "rainMm": 109,
+    "rainDays": 15.1,
+    "sunHours": 11.1,
+    "humidity": 71,
+    "comfort": 0.44
+   },
+   {
+    "month": 6,
+    "tHigh": 25,
+    "tLow": 14.5,
+    "rainMm": 109,
+    "rainDays": 14.2,
+    "sunHours": 12.5,
+    "humidity": 71,
+    "comfort": 0.49
+   },
+   {
+    "month": 7,
+    "tHigh": 26.5,
+    "tLow": 15.7,
+    "rainMm": 93,
+    "rainDays": 13.1,
+    "sunHours": 13,
+    "humidity": 69,
+    "comfort": 0.55
+   },
+   {
+    "month": 8,
+    "tHigh": 27.2,
+    "tLow": 15.8,
+    "rainMm": 62,
+    "rainDays": 8.4,
+    "sunHours": 12,
+    "humidity": 67,
+    "comfort": 0.76
+   },
+   {
+    "month": 9,
+    "tHigh": 22.2,
+    "tLow": 11.6,
+    "rainMm": 52,
+    "rainDays": 7.6,
+    "sunHours": 10,
+    "humidity": 69,
+    "comfort": 0.82
+   },
+   {
+    "month": 10,
+    "tHigh": 16.2,
+    "tLow": 6.4,
+    "rainMm": 50,
+    "rainDays": 7.9,
+    "sunHours": 8,
+    "humidity": 73,
+    "comfort": 0.6
+   },
+   {
+    "month": 11,
+    "tHigh": 10.1,
+    "tLow": 2.3,
+    "rainMm": 57,
+    "rainDays": 10.2,
+    "sunHours": 5.7,
+    "humidity": 80,
+    "comfort": 0.24
+   },
+   {
+    "month": 12,
+    "tHigh": 5.3,
+    "tLow": -1.4,
+    "rainMm": 49,
+    "rainDays": 10.5,
+    "sunHours": 4.8,
+    "humidity": 80,
+    "comfort": 0.01
+   }
+  ],
+  "cluj": [
+   {
+    "month": 1,
+    "tHigh": 3,
+    "tLow": -3.9,
+    "rainMm": 36,
+    "rainDays": 10.3,
+    "sunHours": 5.3,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.7,
+    "tLow": -1.7,
+    "rainMm": 35,
+    "rainDays": 9,
+    "sunHours": 6.4,
+    "humidity": 76,
+    "comfort": 0.09
+   },
+   {
+    "month": 3,
+    "tHigh": 10.8,
+    "tLow": 0.1,
+    "rainMm": 51,
+    "rainDays": 10.1,
+    "sunHours": 8.4,
+    "humidity": 71,
+    "comfort": 0.27
+   },
+   {
+    "month": 4,
+    "tHigh": 15.9,
+    "tLow": 4.5,
+    "rainMm": 58,
+    "rainDays": 10.9,
+    "sunHours": 10.2,
+    "humidity": 69,
+    "comfort": 0.48
+   },
+   {
+    "month": 5,
+    "tHigh": 19.6,
+    "tLow": 9,
+    "rainMm": 79,
+    "rainDays": 14.5,
+    "sunHours": 11.5,
+    "humidity": 72,
+    "comfort": 0.46
+   },
+   {
+    "month": 6,
+    "tHigh": 24.9,
+    "tLow": 14.2,
+    "rainMm": 104,
+    "rainDays": 14,
+    "sunHours": 12.9,
+    "humidity": 72,
+    "comfort": 0.5
+   },
+   {
+    "month": 7,
+    "tHigh": 26.3,
+    "tLow": 15.3,
+    "rainMm": 86,
+    "rainDays": 12.1,
+    "sunHours": 13,
+    "humidity": 69,
+    "comfort": 0.6
+   },
+   {
+    "month": 8,
+    "tHigh": 27,
+    "tLow": 15.4,
+    "rainMm": 55,
+    "rainDays": 8.1,
+    "sunHours": 12.1,
+    "humidity": 68,
+    "comfort": 0.8
+   },
+   {
+    "month": 9,
+    "tHigh": 21.8,
+    "tLow": 11.2,
+    "rainMm": 63,
+    "rainDays": 8.3,
+    "sunHours": 10.1,
+    "humidity": 72,
+    "comfort": 0.78
+   },
+   {
+    "month": 10,
+    "tHigh": 15.7,
+    "tLow": 5.8,
+    "rainMm": 43,
+    "rainDays": 7.7,
+    "sunHours": 8,
+    "humidity": 77,
+    "comfort": 0.58
+   },
+   {
+    "month": 11,
+    "tHigh": 9.2,
+    "tLow": 1.8,
+    "rainMm": 52,
+    "rainDays": 9.5,
+    "sunHours": 5.5,
+    "humidity": 85,
+    "comfort": 0.2
+   },
+   {
+    "month": 12,
+    "tHigh": 4.3,
+    "tLow": -1.6,
+    "rainMm": 45,
+    "rainDays": 9.5,
+    "sunHours": 4.8,
+    "humidity": 87,
+    "comfort": 0
+   }
+  ],
+  "chisinau": [
+   {
+    "month": 1,
+    "tHigh": 3.1,
+    "tLow": -3.8,
+    "rainMm": 34,
+    "rainDays": 6.6,
+    "sunHours": 4.5,
+    "humidity": 80,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.1,
+    "tLow": -1.9,
+    "rainMm": 24,
+    "rainDays": 5.7,
+    "sunHours": 5.8,
+    "humidity": 75,
+    "comfort": 0.07
+   },
+   {
+    "month": 3,
+    "tHigh": 10.8,
+    "tLow": 1,
+    "rainMm": 38,
+    "rainDays": 7.6,
+    "sunHours": 7.7,
+    "humidity": 69,
+    "comfort": 0.32
+   },
+   {
+    "month": 4,
+    "tHigh": 16.7,
+    "tLow": 5.6,
+    "rainMm": 57,
+    "rainDays": 8.4,
+    "sunHours": 9.7,
+    "humidity": 63,
+    "comfort": 0.61
+   },
+   {
+    "month": 5,
+    "tHigh": 21.3,
+    "tLow": 10.6,
+    "rainMm": 60,
+    "rainDays": 10.5,
+    "sunHours": 11.4,
+    "humidity": 64,
+    "comfort": 0.68
+   },
+   {
+    "month": 6,
+    "tHigh": 26.7,
+    "tLow": 16.4,
+    "rainMm": 65,
+    "rainDays": 9.2,
+    "sunHours": 12.9,
+    "humidity": 65,
+    "comfort": 0.74
+   },
+   {
+    "month": 7,
+    "tHigh": 28.5,
+    "tLow": 18,
+    "rainMm": 48,
+    "rainDays": 7.5,
+    "sunHours": 13.2,
+    "humidity": 61,
+    "comfort": 0.71
+   },
+   {
+    "month": 8,
+    "tHigh": 29,
+    "tLow": 17.8,
+    "rainMm": 25,
+    "rainDays": 4.7,
+    "sunHours": 12.6,
+    "humidity": 57,
+    "comfort": 0.79
+   },
+   {
+    "month": 9,
+    "tHigh": 23.6,
+    "tLow": 13.2,
+    "rainMm": 42,
+    "rainDays": 5.6,
+    "sunHours": 10.1,
+    "humidity": 61,
+    "comfort": 0.92
+   },
+   {
+    "month": 10,
+    "tHigh": 16.5,
+    "tLow": 7.4,
+    "rainMm": 45,
+    "rainDays": 6.7,
+    "sunHours": 7.6,
+    "humidity": 73,
+    "comfort": 0.67
+   },
+   {
+    "month": 11,
+    "tHigh": 9.1,
+    "tLow": 2.5,
+    "rainMm": 44,
+    "rainDays": 7.1,
+    "sunHours": 4.2,
+    "humidity": 82,
+    "comfort": 0.23
+   },
+   {
+    "month": 12,
+    "tHigh": 4.7,
+    "tLow": -0.7,
+    "rainMm": 37,
+    "rainDays": 8,
+    "sunHours": 3.2,
+    "humidity": 83,
+    "comfort": 0
+   }
+  ],
+  "budapest": [
+   {
+    "month": 1,
+    "tHigh": 4.1,
+    "tLow": -2.4,
+    "rainMm": 36,
+    "rainDays": 8.5,
+    "sunHours": 4.9,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 7.9,
+    "tLow": -0.2,
+    "rainMm": 41,
+    "rainDays": 8.7,
+    "sunHours": 6.3,
+    "humidity": 76,
+    "comfort": 0.15
+   },
+   {
+    "month": 3,
+    "tHigh": 12.2,
+    "tLow": 2,
+    "rainMm": 47,
+    "rainDays": 8.2,
+    "sunHours": 8.3,
+    "humidity": 68,
+    "comfort": 0.38
+   },
+   {
+    "month": 4,
+    "tHigh": 17.1,
+    "tLow": 6.4,
+    "rainMm": 49,
+    "rainDays": 9.2,
+    "sunHours": 10.1,
+    "humidity": 63,
+    "comfort": 0.6
+   },
+   {
+    "month": 5,
+    "tHigh": 20.9,
+    "tLow": 11.1,
+    "rainMm": 79,
+    "rainDays": 12.5,
+    "sunHours": 11.1,
+    "humidity": 67,
+    "comfort": 0.57
+   },
+   {
+    "month": 6,
+    "tHigh": 26.7,
+    "tLow": 16.4,
+    "rainMm": 70,
+    "rainDays": 10.8,
+    "sunHours": 12.9,
+    "humidity": 64,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 28.4,
+    "tLow": 17.8,
+    "rainMm": 70,
+    "rainDays": 9.3,
+    "sunHours": 12.8,
+    "humidity": 60,
+    "comfort": 0.64
+   },
+   {
+    "month": 8,
+    "tHigh": 28.4,
+    "tLow": 17.6,
+    "rainMm": 56,
+    "rainDays": 7.8,
+    "sunHours": 12,
+    "humidity": 62,
+    "comfort": 0.71
+   },
+   {
+    "month": 9,
+    "tHigh": 22.9,
+    "tLow": 13.1,
+    "rainMm": 63,
+    "rainDays": 7.5,
+    "sunHours": 9.7,
+    "humidity": 70,
+    "comfort": 0.83
+   },
+   {
+    "month": 10,
+    "tHigh": 16.6,
+    "tLow": 7.7,
+    "rainMm": 49,
+    "rainDays": 7.3,
+    "sunHours": 7.5,
+    "humidity": 77,
+    "comfort": 0.65
+   },
+   {
+    "month": 11,
+    "tHigh": 9.4,
+    "tLow": 2.9,
+    "rainMm": 62,
+    "rainDays": 9.6,
+    "sunHours": 4.9,
+    "humidity": 85,
+    "comfort": 0.21
+   },
+   {
+    "month": 12,
+    "tHigh": 4.9,
+    "tLow": -0.5,
+    "rainMm": 52,
+    "rainDays": 9.2,
+    "sunHours": 3.9,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "eger": [
+   {
+    "month": 1,
+    "tHigh": 2.9,
+    "tLow": -2.9,
+    "rainMm": 38,
+    "rainDays": 8.2,
+    "sunHours": 4.9,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.8,
+    "tLow": -0.6,
+    "rainMm": 43,
+    "rainDays": 9,
+    "sunHours": 6.3,
+    "humidity": 76,
+    "comfort": 0.09
+   },
+   {
+    "month": 3,
+    "tHigh": 11.1,
+    "tLow": 1.9,
+    "rainMm": 43,
+    "rainDays": 7.5,
+    "sunHours": 8.3,
+    "humidity": 66,
+    "comfort": 0.34
+   },
+   {
+    "month": 4,
+    "tHigh": 16.1,
+    "tLow": 6.4,
+    "rainMm": 53,
+    "rainDays": 9.2,
+    "sunHours": 10,
+    "humidity": 63,
+    "comfort": 0.55
+   },
+   {
+    "month": 5,
+    "tHigh": 20.2,
+    "tLow": 10.9,
+    "rainMm": 71,
+    "rainDays": 12.4,
+    "sunHours": 11.4,
+    "humidity": 65,
+    "comfort": 0.58
+   },
+   {
+    "month": 6,
+    "tHigh": 25.7,
+    "tLow": 16.2,
+    "rainMm": 75,
+    "rainDays": 11.3,
+    "sunHours": 13.1,
+    "humidity": 65,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 27.1,
+    "tLow": 17.3,
+    "rainMm": 74,
+    "rainDays": 11.1,
+    "sunHours": 13,
+    "humidity": 63,
+    "comfort": 0.64
+   },
+   {
+    "month": 8,
+    "tHigh": 27.4,
+    "tLow": 17.6,
+    "rainMm": 55,
+    "rainDays": 7.9,
+    "sunHours": 12.2,
+    "humidity": 62,
+    "comfort": 0.77
+   },
+   {
+    "month": 9,
+    "tHigh": 22,
+    "tLow": 13.2,
+    "rainMm": 62,
+    "rainDays": 8.7,
+    "sunHours": 9.9,
+    "humidity": 68,
+    "comfort": 0.77
+   },
+   {
+    "month": 10,
+    "tHigh": 15.5,
+    "tLow": 7.6,
+    "rainMm": 57,
+    "rainDays": 8.4,
+    "sunHours": 7.7,
+    "humidity": 75,
+    "comfort": 0.55
+   },
+   {
+    "month": 11,
+    "tHigh": 8.6,
+    "tLow": 2.8,
+    "rainMm": 67,
+    "rainDays": 9.7,
+    "sunHours": 4.8,
+    "humidity": 85,
+    "comfort": 0.17
+   },
+   {
+    "month": 12,
+    "tHigh": 4.1,
+    "tLow": -0.7,
+    "rainMm": 46,
+    "rainDays": 8.8,
+    "sunHours": 3.6,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "bratislava": [
+   {
+    "month": 1,
+    "tHigh": 4,
+    "tLow": -2,
+    "rainMm": 38,
+    "rainDays": 10.2,
+    "sunHours": 4.6,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 7.6,
+    "tLow": 0.1,
+    "rainMm": 35,
+    "rainDays": 8.3,
+    "sunHours": 6.3,
+    "humidity": 75,
+    "comfort": 0.14
+   },
+   {
+    "month": 3,
+    "tHigh": 11.7,
+    "tLow": 2,
+    "rainMm": 32,
+    "rainDays": 7,
+    "sunHours": 8.4,
+    "humidity": 68,
+    "comfort": 0.38
+   },
+   {
+    "month": 4,
+    "tHigh": 16.2,
+    "tLow": 6.2,
+    "rainMm": 42,
+    "rainDays": 8.8,
+    "sunHours": 9.9,
+    "humidity": 64,
+    "comfort": 0.57
+   },
+   {
+    "month": 5,
+    "tHigh": 20.2,
+    "tLow": 10.7,
+    "rainMm": 71,
+    "rainDays": 11.1,
+    "sunHours": 10.7,
+    "humidity": 66,
+    "comfort": 0.65
+   },
+   {
+    "month": 6,
+    "tHigh": 26,
+    "tLow": 16,
+    "rainMm": 66,
+    "rainDays": 10.8,
+    "sunHours": 12.8,
+    "humidity": 65,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 27.5,
+    "tLow": 17.3,
+    "rainMm": 54,
+    "rainDays": 9.2,
+    "sunHours": 12.5,
+    "humidity": 61,
+    "comfort": 0.71
+   },
+   {
+    "month": 8,
+    "tHigh": 27.3,
+    "tLow": 17.2,
+    "rainMm": 59,
+    "rainDays": 8.6,
+    "sunHours": 11.7,
+    "humidity": 65,
+    "comfort": 0.75
+   },
+   {
+    "month": 9,
+    "tHigh": 22,
+    "tLow": 12.9,
+    "rainMm": 78,
+    "rainDays": 9,
+    "sunHours": 9.4,
+    "humidity": 71,
+    "comfort": 0.75
+   },
+   {
+    "month": 10,
+    "tHigh": 16.1,
+    "tLow": 8.2,
+    "rainMm": 52,
+    "rainDays": 9,
+    "sunHours": 7.2,
+    "humidity": 78,
+    "comfort": 0.55
+   },
+   {
+    "month": 11,
+    "tHigh": 9.1,
+    "tLow": 3.2,
+    "rainMm": 50,
+    "rainDays": 9.4,
+    "sunHours": 4.7,
+    "humidity": 84,
+    "comfort": 0.2
+   },
+   {
+    "month": 12,
+    "tHigh": 4.9,
+    "tLow": -0.2,
+    "rainMm": 48,
+    "rainDays": 9.8,
+    "sunHours": 3.9,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "kosice": [
+   {
+    "month": 1,
+    "tHigh": 1.8,
+    "tLow": -4.1,
+    "rainMm": 39,
+    "rainDays": 9.1,
+    "sunHours": 4.1,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 5.9,
+    "tLow": -2.1,
+    "rainMm": 42,
+    "rainDays": 9.5,
+    "sunHours": 5.7,
+    "humidity": 78,
+    "comfort": 0.04
+   },
+   {
+    "month": 3,
+    "tHigh": 10.4,
+    "tLow": 0.1,
+    "rainMm": 42,
+    "rainDays": 7.8,
+    "sunHours": 7.9,
+    "humidity": 70,
+    "comfort": 0.29
+   },
+   {
+    "month": 4,
+    "tHigh": 15.5,
+    "tLow": 4.7,
+    "rainMm": 47,
+    "rainDays": 9.2,
+    "sunHours": 9.6,
+    "humidity": 66,
+    "comfort": 0.52
+   },
+   {
+    "month": 5,
+    "tHigh": 19.8,
+    "tLow": 9.3,
+    "rainMm": 71,
+    "rainDays": 12.3,
+    "sunHours": 11.1,
+    "humidity": 68,
+    "comfort": 0.58
+   },
+   {
+    "month": 6,
+    "tHigh": 25.5,
+    "tLow": 14.8,
+    "rainMm": 71,
+    "rainDays": 12.6,
+    "sunHours": 12.8,
+    "humidity": 66,
+    "comfort": 0.57
+   },
+   {
+    "month": 7,
+    "tHigh": 26.7,
+    "tLow": 16,
+    "rainMm": 64,
+    "rainDays": 11.5,
+    "sunHours": 12.5,
+    "humidity": 65,
+    "comfort": 0.63
+   },
+   {
+    "month": 8,
+    "tHigh": 27,
+    "tLow": 15.9,
+    "rainMm": 65,
+    "rainDays": 8.8,
+    "sunHours": 11.7,
+    "humidity": 66,
+    "comfort": 0.76
+   },
+   {
+    "month": 9,
+    "tHigh": 21.6,
+    "tLow": 11.4,
+    "rainMm": 71,
+    "rainDays": 8,
+    "sunHours": 9.4,
+    "humidity": 72,
+    "comfort": 0.8
+   },
+   {
+    "month": 10,
+    "tHigh": 14.8,
+    "tLow": 5.8,
+    "rainMm": 62,
+    "rainDays": 8.5,
+    "sunHours": 7.1,
+    "humidity": 79,
+    "comfort": 0.51
+   },
+   {
+    "month": 11,
+    "tHigh": 8,
+    "tLow": 1.4,
+    "rainMm": 66,
+    "rainDays": 10.5,
+    "sunHours": 4.2,
+    "humidity": 87,
+    "comfort": 0.13
+   },
+   {
+    "month": 12,
+    "tHigh": 3.2,
+    "tLow": -1.7,
+    "rainMm": 47,
+    "rainDays": 10.1,
+    "sunHours": 2.9,
+    "humidity": 87,
+    "comfort": 0
+   }
+  ],
+  "poprad": [
+   {
+    "month": 1,
+    "tHigh": 1.3,
+    "tLow": -5.5,
+    "rainMm": 49,
+    "rainDays": 11.2,
+    "sunHours": 4.6,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 3.8,
+    "tLow": -3.7,
+    "rainMm": 63,
+    "rainDays": 13.1,
+    "sunHours": 5.9,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 7.5,
+    "tLow": -1.3,
+    "rainMm": 46,
+    "rainDays": 10.3,
+    "sunHours": 8,
+    "humidity": 71,
+    "comfort": 0.12
+   },
+   {
+    "month": 4,
+    "tHigh": 12,
+    "tLow": 2.3,
+    "rainMm": 66,
+    "rainDays": 12.4,
+    "sunHours": 9.2,
+    "humidity": 72,
+    "comfort": 0.27
+   },
+   {
+    "month": 5,
+    "tHigh": 16,
+    "tLow": 6.5,
+    "rainMm": 93,
+    "rainDays": 16.1,
+    "sunHours": 11,
+    "humidity": 73,
+    "comfort": 0.29
+   },
+   {
+    "month": 6,
+    "tHigh": 21.5,
+    "tLow": 11.9,
+    "rainMm": 102,
+    "rainDays": 16.1,
+    "sunHours": 12.5,
+    "humidity": 73,
+    "comfort": 0.4
+   },
+   {
+    "month": 7,
+    "tHigh": 22.6,
+    "tLow": 13,
+    "rainMm": 121,
+    "rainDays": 16.4,
+    "sunHours": 12.3,
+    "humidity": 72,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 22.8,
+    "tLow": 13.2,
+    "rainMm": 110,
+    "rainDays": 15.2,
+    "sunHours": 11.3,
+    "humidity": 74,
+    "comfort": 0.44
+   },
+   {
+    "month": 9,
+    "tHigh": 18.2,
+    "tLow": 9.3,
+    "rainMm": 90,
+    "rainDays": 11,
+    "sunHours": 9,
+    "humidity": 77,
+    "comfort": 0.57
+   },
+   {
+    "month": 10,
+    "tHigh": 12.8,
+    "tLow": 4.5,
+    "rainMm": 73,
+    "rainDays": 11.1,
+    "sunHours": 6.8,
+    "humidity": 79,
+    "comfort": 0.34
+   },
+   {
+    "month": 11,
+    "tHigh": 6.8,
+    "tLow": 0.3,
+    "rainMm": 65,
+    "rainDays": 10.5,
+    "sunHours": 5.2,
+    "humidity": 82,
+    "comfort": 0.08
+   },
+   {
+    "month": 12,
+    "tHigh": 2.6,
+    "tLow": -3.4,
+    "rainMm": 52,
+    "rainDays": 12.1,
+    "sunHours": 3.9,
+    "humidity": 81,
+    "comfort": 0
+   }
+  ],
+  "prague": [
+   {
+    "month": 1,
+    "tHigh": 3.8,
+    "tLow": -1.9,
+    "rainMm": 39,
+    "rainDays": 11.7,
+    "sunHours": 4.1,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.4,
+    "tLow": -1,
+    "rainMm": 42,
+    "rainDays": 9.9,
+    "sunHours": 5.8,
+    "humidity": 77,
+    "comfort": 0.07
+   },
+   {
+    "month": 3,
+    "tHigh": 10.3,
+    "tLow": 0.9,
+    "rainMm": 35,
+    "rainDays": 9.3,
+    "sunHours": 7.7,
+    "humidity": 71,
+    "comfort": 0.26
+   },
+   {
+    "month": 4,
+    "tHigh": 15.1,
+    "tLow": 4.5,
+    "rainMm": 41,
+    "rainDays": 9.5,
+    "sunHours": 9.5,
+    "humidity": 64,
+    "comfort": 0.49
+   },
+   {
+    "month": 5,
+    "tHigh": 19.5,
+    "tLow": 9.1,
+    "rainMm": 65,
+    "rainDays": 12,
+    "sunHours": 10.8,
+    "humidity": 64,
+    "comfort": 0.58
+   },
+   {
+    "month": 6,
+    "tHigh": 25.1,
+    "tLow": 14.3,
+    "rainMm": 73,
+    "rainDays": 11.6,
+    "sunHours": 12.5,
+    "humidity": 63,
+    "comfort": 0.62
+   },
+   {
+    "month": 7,
+    "tHigh": 25.9,
+    "tLow": 15.5,
+    "rainMm": 65,
+    "rainDays": 11.6,
+    "sunHours": 12.3,
+    "humidity": 61,
+    "comfort": 0.62
+   },
+   {
+    "month": 8,
+    "tHigh": 25.7,
+    "tLow": 15.3,
+    "rainMm": 77,
+    "rainDays": 10.5,
+    "sunHours": 10.9,
+    "humidity": 65,
+    "comfort": 0.68
+   },
+   {
+    "month": 9,
+    "tHigh": 21.1,
+    "tLow": 11.4,
+    "rainMm": 62,
+    "rainDays": 8.8,
+    "sunHours": 9,
+    "humidity": 71,
+    "comfort": 0.76
+   },
+   {
+    "month": 10,
+    "tHigh": 15.3,
+    "tLow": 7.2,
+    "rainMm": 51,
+    "rainDays": 11.4,
+    "sunHours": 6.6,
+    "humidity": 79,
+    "comfort": 0.43
+   },
+   {
+    "month": 11,
+    "tHigh": 8,
+    "tLow": 2,
+    "rainMm": 42,
+    "rainDays": 9.4,
+    "sunHours": 4.3,
+    "humidity": 85,
+    "comfort": 0.15
+   },
+   {
+    "month": 12,
+    "tHigh": 4.8,
+    "tLow": -0.2,
+    "rainMm": 45,
+    "rainDays": 10.3,
+    "sunHours": 3.8,
+    "humidity": 84,
+    "comfort": 0
+   }
+  ],
+  "ceskykrumlov": [
+   {
+    "month": 1,
+    "tHigh": 3.4,
+    "tLow": -3,
+    "rainMm": 55,
+    "rainDays": 12.5,
+    "sunHours": 4.4,
+    "humidity": 83,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.3,
+    "tLow": -1.3,
+    "rainMm": 47,
+    "rainDays": 9.6,
+    "sunHours": 6,
+    "humidity": 77,
+    "comfort": 0.06
+   },
+   {
+    "month": 3,
+    "tHigh": 9.8,
+    "tLow": 0.6,
+    "rainMm": 47,
+    "rainDays": 11.2,
+    "sunHours": 8,
+    "humidity": 72,
+    "comfort": 0.2
+   },
+   {
+    "month": 4,
+    "tHigh": 13.9,
+    "tLow": 4.1,
+    "rainMm": 57,
+    "rainDays": 11.2,
+    "sunHours": 9.4,
+    "humidity": 69,
+    "comfort": 0.38
+   },
+   {
+    "month": 5,
+    "tHigh": 17.5,
+    "tLow": 8.1,
+    "rainMm": 92,
+    "rainDays": 15.4,
+    "sunHours": 10,
+    "humidity": 72,
+    "comfort": 0.36
+   },
+   {
+    "month": 6,
+    "tHigh": 23.1,
+    "tLow": 13.4,
+    "rainMm": 106,
+    "rainDays": 14.5,
+    "sunHours": 12.3,
+    "humidity": 71,
+    "comfort": 0.48
+   },
+   {
+    "month": 7,
+    "tHigh": 23.9,
+    "tLow": 14.4,
+    "rainMm": 95,
+    "rainDays": 14.3,
+    "sunHours": 12,
+    "humidity": 70,
+    "comfort": 0.49
+   },
+   {
+    "month": 8,
+    "tHigh": 24,
+    "tLow": 14.4,
+    "rainMm": 101,
+    "rainDays": 12.6,
+    "sunHours": 10.8,
+    "humidity": 73,
+    "comfort": 0.57
+   },
+   {
+    "month": 9,
+    "tHigh": 19.5,
+    "tLow": 10.8,
+    "rainMm": 75,
+    "rainDays": 11.1,
+    "sunHours": 8.8,
+    "humidity": 77,
+    "comfort": 0.63
+   },
+   {
+    "month": 10,
+    "tHigh": 14.9,
+    "tLow": 6.7,
+    "rainMm": 53,
+    "rainDays": 10.3,
+    "sunHours": 6.9,
+    "humidity": 81,
+    "comfort": 0.45
+   },
+   {
+    "month": 11,
+    "tHigh": 8,
+    "tLow": 1.4,
+    "rainMm": 50,
+    "rainDays": 9.4,
+    "sunHours": 5,
+    "humidity": 85,
+    "comfort": 0.15
+   },
+   {
+    "month": 12,
+    "tHigh": 4.6,
+    "tLow": -0.9,
+    "rainMm": 59,
+    "rainDays": 11.8,
+    "sunHours": 4.3,
+    "humidity": 85,
+    "comfort": 0
+   }
+  ],
+  "brno": [
+   {
+    "month": 1,
+    "tHigh": 3,
+    "tLow": -3.1,
+    "rainMm": 35,
+    "rainDays": 9.4,
+    "sunHours": 4.1,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.3,
+    "tLow": -1.3,
+    "rainMm": 31,
+    "rainDays": 7.2,
+    "sunHours": 5.8,
+    "humidity": 76,
+    "comfort": 0.07
+   },
+   {
+    "month": 3,
+    "tHigh": 10.6,
+    "tLow": 0.6,
+    "rainMm": 33,
+    "rainDays": 7.7,
+    "sunHours": 8.2,
+    "humidity": 70,
+    "comfort": 0.3
+   },
+   {
+    "month": 4,
+    "tHigh": 15.2,
+    "tLow": 4.7,
+    "rainMm": 40,
+    "rainDays": 8.5,
+    "sunHours": 9.5,
+    "humidity": 64,
+    "comfort": 0.53
+   },
+   {
+    "month": 5,
+    "tHigh": 19.3,
+    "tLow": 9.3,
+    "rainMm": 73,
+    "rainDays": 12.9,
+    "sunHours": 10.8,
+    "humidity": 66,
+    "comfort": 0.53
+   },
+   {
+    "month": 6,
+    "tHigh": 25.1,
+    "tLow": 14.5,
+    "rainMm": 69,
+    "rainDays": 10.7,
+    "sunHours": 12.6,
+    "humidity": 64,
+    "comfort": 0.67
+   },
+   {
+    "month": 7,
+    "tHigh": 26.4,
+    "tLow": 15.7,
+    "rainMm": 63,
+    "rainDays": 10.2,
+    "sunHours": 12.5,
+    "humidity": 62,
+    "comfort": 0.69
+   },
+   {
+    "month": 8,
+    "tHigh": 26.3,
+    "tLow": 15.8,
+    "rainMm": 68,
+    "rainDays": 8.8,
+    "sunHours": 11.3,
+    "humidity": 65,
+    "comfort": 0.76
+   },
+   {
+    "month": 9,
+    "tHigh": 21,
+    "tLow": 11.6,
+    "rainMm": 85,
+    "rainDays": 9.2,
+    "sunHours": 9.1,
+    "humidity": 72,
+    "comfort": 0.74
+   },
+   {
+    "month": 10,
+    "tHigh": 14.9,
+    "tLow": 6.9,
+    "rainMm": 44,
+    "rainDays": 7.8,
+    "sunHours": 6.6,
+    "humidity": 79,
+    "comfort": 0.54
+   },
+   {
+    "month": 11,
+    "tHigh": 7.9,
+    "tLow": 2.1,
+    "rainMm": 45,
+    "rainDays": 8.7,
+    "sunHours": 4,
+    "humidity": 85,
+    "comfort": 0.15
+   },
+   {
+    "month": 12,
+    "tHigh": 3.9,
+    "tLow": -1.1,
+    "rainMm": 43,
+    "rainDays": 9.6,
+    "sunHours": 3.1,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "krakow": [
+   {
+    "month": 1,
+    "tHigh": 2.8,
+    "tLow": -3.2,
+    "rainMm": 50,
+    "rainDays": 11.7,
+    "sunHours": 4.1,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 5.9,
+    "tLow": -1.5,
+    "rainMm": 56,
+    "rainDays": 12.2,
+    "sunHours": 5,
+    "humidity": 77,
+    "comfort": 0.03
+   },
+   {
+    "month": 3,
+    "tHigh": 9.8,
+    "tLow": 0.3,
+    "rainMm": 44,
+    "rainDays": 11.3,
+    "sunHours": 7.5,
+    "humidity": 71,
+    "comfort": 0.2
+   },
+   {
+    "month": 4,
+    "tHigh": 14.5,
+    "tLow": 4.3,
+    "rainMm": 66,
+    "rainDays": 12.1,
+    "sunHours": 9,
+    "humidity": 69,
+    "comfort": 0.38
+   },
+   {
+    "month": 5,
+    "tHigh": 18.7,
+    "tLow": 8.6,
+    "rainMm": 87,
+    "rainDays": 14,
+    "sunHours": 10.7,
+    "humidity": 71,
+    "comfort": 0.46
+   },
+   {
+    "month": 6,
+    "tHigh": 24.1,
+    "tLow": 14,
+    "rainMm": 68,
+    "rainDays": 10.9,
+    "sunHours": 12.1,
+    "humidity": 70,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 24.7,
+    "tLow": 15.3,
+    "rainMm": 120,
+    "rainDays": 14.9,
+    "sunHours": 11.8,
+    "humidity": 71,
+    "comfort": 0.46
+   },
+   {
+    "month": 8,
+    "tHigh": 24.9,
+    "tLow": 15.2,
+    "rainMm": 102,
+    "rainDays": 11.9,
+    "sunHours": 10.8,
+    "humidity": 73,
+    "comfort": 0.61
+   },
+   {
+    "month": 9,
+    "tHigh": 20.3,
+    "tLow": 11.2,
+    "rainMm": 109,
+    "rainDays": 11.7,
+    "sunHours": 8.6,
+    "humidity": 76,
+    "comfort": 0.62
+   },
+   {
+    "month": 10,
+    "tHigh": 14.7,
+    "tLow": 6.4,
+    "rainMm": 69,
+    "rainDays": 10.9,
+    "sunHours": 6.6,
+    "humidity": 79,
+    "comfort": 0.43
+   },
+   {
+    "month": 11,
+    "tHigh": 8.2,
+    "tLow": 1.9,
+    "rainMm": 54,
+    "rainDays": 10.3,
+    "sunHours": 4.5,
+    "humidity": 84,
+    "comfort": 0.14
+   },
+   {
+    "month": 12,
+    "tHigh": 4,
+    "tLow": -1.2,
+    "rainMm": 52,
+    "rainDays": 12.5,
+    "sunHours": 3.1,
+    "humidity": 84,
+    "comfort": 0
+   }
+  ],
+  "warsaw": [
+   {
+    "month": 1,
+    "tHigh": 2.1,
+    "tLow": -2.7,
+    "rainMm": 49,
+    "rainDays": 12.8,
+    "sunHours": 2.9,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 4.5,
+    "tLow": -1.7,
+    "rainMm": 49,
+    "rainDays": 11.1,
+    "sunHours": 4.6,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 8.8,
+    "tLow": 0.3,
+    "rainMm": 38,
+    "rainDays": 9.9,
+    "sunHours": 7,
+    "humidity": 74,
+    "comfort": 0.18
+   },
+   {
+    "month": 4,
+    "tHigh": 14.3,
+    "tLow": 4.5,
+    "rainMm": 46,
+    "rainDays": 10.3,
+    "sunHours": 9.5,
+    "humidity": 67,
+    "comfort": 0.42
+   },
+   {
+    "month": 5,
+    "tHigh": 19.2,
+    "tLow": 8.9,
+    "rainMm": 71,
+    "rainDays": 12.3,
+    "sunHours": 11.4,
+    "humidity": 65,
+    "comfort": 0.55
+   },
+   {
+    "month": 6,
+    "tHigh": 24.4,
+    "tLow": 14.1,
+    "rainMm": 69,
+    "rainDays": 11.2,
+    "sunHours": 12.5,
+    "humidity": 65,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 24.8,
+    "tLow": 15.4,
+    "rainMm": 88,
+    "rainDays": 14,
+    "sunHours": 11.6,
+    "humidity": 69,
+    "comfort": 0.5
+   },
+   {
+    "month": 8,
+    "tHigh": 24.9,
+    "tLow": 15.2,
+    "rainMm": 79,
+    "rainDays": 11.6,
+    "sunHours": 11,
+    "humidity": 70,
+    "comfort": 0.62
+   },
+   {
+    "month": 9,
+    "tHigh": 20.3,
+    "tLow": 11.3,
+    "rainMm": 59,
+    "rainDays": 9.7,
+    "sunHours": 8.8,
+    "humidity": 74,
+    "comfort": 0.72
+   },
+   {
+    "month": 10,
+    "tHigh": 13.8,
+    "tLow": 6.8,
+    "rainMm": 68,
+    "rainDays": 12.6,
+    "sunHours": 5.9,
+    "humidity": 82,
+    "comfort": 0.34
+   },
+   {
+    "month": 11,
+    "tHigh": 7.1,
+    "tLow": 2.4,
+    "rainMm": 42,
+    "rainDays": 9.3,
+    "sunHours": 3.4,
+    "humidity": 87,
+    "comfort": 0.1
+   },
+   {
+    "month": 12,
+    "tHigh": 3.6,
+    "tLow": -0.5,
+    "rainMm": 54,
+    "rainDays": 11.6,
+    "sunHours": 2.2,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "gdansk": [
+   {
+    "month": 1,
+    "tHigh": 2.9,
+    "tLow": -1.1,
+    "rainMm": 52,
+    "rainDays": 13.5,
+    "sunHours": 2.9,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 4.3,
+    "tLow": -0.8,
+    "rainMm": 44,
+    "rainDays": 11.4,
+    "sunHours": 5.2,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 7.7,
+    "tLow": 0.6,
+    "rainMm": 34,
+    "rainDays": 9.8,
+    "sunHours": 7.2,
+    "humidity": 76,
+    "comfort": 0.13
+   },
+   {
+    "month": 4,
+    "tHigh": 11.9,
+    "tLow": 3.9,
+    "rainMm": 34,
+    "rainDays": 8.7,
+    "sunHours": 10.1,
+    "humidity": 72,
+    "comfort": 0.35
+   },
+   {
+    "month": 5,
+    "tHigh": 16.6,
+    "tLow": 8.3,
+    "rainMm": 53,
+    "rainDays": 10.8,
+    "sunHours": 12.2,
+    "humidity": 71,
+    "comfort": 0.51
+   },
+   {
+    "month": 6,
+    "tHigh": 21.7,
+    "tLow": 13.3,
+    "rainMm": 67,
+    "rainDays": 11.9,
+    "sunHours": 13.2,
+    "humidity": 71,
+    "comfort": 0.61
+   },
+   {
+    "month": 7,
+    "tHigh": 22.4,
+    "tLow": 15,
+    "rainMm": 104,
+    "rainDays": 13.7,
+    "sunHours": 12.3,
+    "humidity": 74,
+    "comfort": 0.52
+   },
+   {
+    "month": 8,
+    "tHigh": 23,
+    "tLow": 15.2,
+    "rainMm": 70,
+    "rainDays": 11.3,
+    "sunHours": 11.3,
+    "humidity": 73,
+    "comfort": 0.64
+   },
+   {
+    "month": 9,
+    "tHigh": 19.3,
+    "tLow": 12.2,
+    "rainMm": 52,
+    "rainDays": 9.9,
+    "sunHours": 9.1,
+    "humidity": 75,
+    "comfort": 0.67
+   },
+   {
+    "month": 10,
+    "tHigh": 13.6,
+    "tLow": 7.8,
+    "rainMm": 60,
+    "rainDays": 12.2,
+    "sunHours": 6,
+    "humidity": 80,
+    "comfort": 0.34
+   },
+   {
+    "month": 11,
+    "tHigh": 7.5,
+    "tLow": 3.4,
+    "rainMm": 50,
+    "rainDays": 10.4,
+    "sunHours": 3.4,
+    "humidity": 85,
+    "comfort": 0.11
+   },
+   {
+    "month": 12,
+    "tHigh": 4.3,
+    "tLow": 0.7,
+    "rainMm": 50,
+    "rainDays": 12.3,
+    "sunHours": 2.6,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "wroclaw": [
+   {
+    "month": 1,
+    "tHigh": 3.8,
+    "tLow": -1.9,
+    "rainMm": 44,
+    "rainDays": 12.6,
+    "sunHours": 3.8,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 6.3,
+    "tLow": -0.8,
+    "rainMm": 50,
+    "rainDays": 11,
+    "sunHours": 5.3,
+    "humidity": 77,
+    "comfort": 0.06
+   },
+   {
+    "month": 3,
+    "tHigh": 10,
+    "tLow": 1,
+    "rainMm": 39,
+    "rainDays": 10.6,
+    "sunHours": 7.4,
+    "humidity": 72,
+    "comfort": 0.22
+   },
+   {
+    "month": 4,
+    "tHigh": 14.6,
+    "tLow": 4.8,
+    "rainMm": 43,
+    "rainDays": 10.5,
+    "sunHours": 9.4,
+    "humidity": 68,
+    "comfort": 0.43
+   },
+   {
+    "month": 5,
+    "tHigh": 19,
+    "tLow": 8.9,
+    "rainMm": 65,
+    "rainDays": 11.6,
+    "sunHours": 11.1,
+    "humidity": 68,
+    "comfort": 0.58
+   },
+   {
+    "month": 6,
+    "tHigh": 24.3,
+    "tLow": 14.2,
+    "rainMm": 73,
+    "rainDays": 10.9,
+    "sunHours": 12.5,
+    "humidity": 68,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 24.8,
+    "tLow": 15.2,
+    "rainMm": 81,
+    "rainDays": 12.6,
+    "sunHours": 12.2,
+    "humidity": 68,
+    "comfort": 0.57
+   },
+   {
+    "month": 8,
+    "tHigh": 25,
+    "tLow": 15.3,
+    "rainMm": 80,
+    "rainDays": 11.1,
+    "sunHours": 10.9,
+    "humidity": 70,
+    "comfort": 0.65
+   },
+   {
+    "month": 9,
+    "tHigh": 20.7,
+    "tLow": 11.6,
+    "rainMm": 72,
+    "rainDays": 9.2,
+    "sunHours": 8.9,
+    "humidity": 74,
+    "comfort": 0.74
+   },
+   {
+    "month": 10,
+    "tHigh": 15.1,
+    "tLow": 7.4,
+    "rainMm": 68,
+    "rainDays": 12.2,
+    "sunHours": 6.5,
+    "humidity": 80,
+    "comfort": 0.4
+   },
+   {
+    "month": 11,
+    "tHigh": 8.4,
+    "tLow": 2.7,
+    "rainMm": 48,
+    "rainDays": 9.7,
+    "sunHours": 4.4,
+    "humidity": 84,
+    "comfort": 0.16
+   },
+   {
+    "month": 12,
+    "tHigh": 5,
+    "tLow": -0.1,
+    "rainMm": 43,
+    "rainDays": 10.9,
+    "sunHours": 3.2,
+    "humidity": 85,
+    "comfort": 0
+   }
+  ],
+  "zakopane": [
+   {
+    "month": 1,
+    "tHigh": 0.7,
+    "tLow": -5.2,
+    "rainMm": 75,
+    "rainDays": 13.7,
+    "sunHours": 4.4,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 3.1,
+    "tLow": -4,
+    "rainMm": 83,
+    "rainDays": 15.7,
+    "sunHours": 5.3,
+    "humidity": 76,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 6.5,
+    "tLow": -1.9,
+    "rainMm": 62,
+    "rainDays": 13.7,
+    "sunHours": 7.7,
+    "humidity": 71,
+    "comfort": 0.05
+   },
+   {
+    "month": 4,
+    "tHigh": 10.9,
+    "tLow": 1.8,
+    "rainMm": 97,
+    "rainDays": 14.2,
+    "sunHours": 8.8,
+    "humidity": 71,
+    "comfort": 0.19
+   },
+   {
+    "month": 5,
+    "tHigh": 14.8,
+    "tLow": 5.9,
+    "rainMm": 152,
+    "rainDays": 17.6,
+    "sunHours": 10.2,
+    "humidity": 73,
+    "comfort": 0.26
+   },
+   {
+    "month": 6,
+    "tHigh": 20.1,
+    "tLow": 11,
+    "rainMm": 143,
+    "rainDays": 16.2,
+    "sunHours": 11.8,
+    "humidity": 74,
+    "comfort": 0.4
+   },
+   {
+    "month": 7,
+    "tHigh": 20.8,
+    "tLow": 12.2,
+    "rainMm": 156,
+    "rainDays": 17.6,
+    "sunHours": 11.8,
+    "humidity": 74,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 21.3,
+    "tLow": 12.4,
+    "rainMm": 129,
+    "rainDays": 14,
+    "sunHours": 10.8,
+    "humidity": 75,
+    "comfort": 0.5
+   },
+   {
+    "month": 9,
+    "tHigh": 17,
+    "tLow": 8.7,
+    "rainMm": 144,
+    "rainDays": 13.8,
+    "sunHours": 8.7,
+    "humidity": 77,
+    "comfort": 0.41
+   },
+   {
+    "month": 10,
+    "tHigh": 12,
+    "tLow": 4.3,
+    "rainMm": 102,
+    "rainDays": 12.9,
+    "sunHours": 6.8,
+    "humidity": 77,
+    "comfort": 0.26
+   },
+   {
+    "month": 11,
+    "tHigh": 6.1,
+    "tLow": -0.5,
+    "rainMm": 68,
+    "rainDays": 11.9,
+    "sunHours": 5.1,
+    "humidity": 81,
+    "comfort": 0.04
+   },
+   {
+    "month": 12,
+    "tHigh": 2,
+    "tLow": -3.7,
+    "rainMm": 73,
+    "rainDays": 13.8,
+    "sunHours": 3.6,
+    "humidity": 80,
+    "comfort": 0
+   }
+  ],
+  "poznan": [
+   {
+    "month": 1,
+    "tHigh": 3.1,
+    "tLow": -1.7,
+    "rainMm": 50,
+    "rainDays": 13.5,
+    "sunHours": 3.1,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 5.4,
+    "tLow": -1,
+    "rainMm": 46,
+    "rainDays": 11.1,
+    "sunHours": 5,
+    "humidity": 80,
+    "comfort": 0.02
+   },
+   {
+    "month": 3,
+    "tHigh": 9.2,
+    "tLow": 0.8,
+    "rainMm": 37,
+    "rainDays": 10.1,
+    "sunHours": 7.3,
+    "humidity": 75,
+    "comfort": 0.2
+   },
+   {
+    "month": 4,
+    "tHigh": 14.2,
+    "tLow": 4.5,
+    "rainMm": 36,
+    "rainDays": 9.7,
+    "sunHours": 9.6,
+    "humidity": 68,
+    "comfort": 0.44
+   },
+   {
+    "month": 5,
+    "tHigh": 18.8,
+    "tLow": 8.9,
+    "rainMm": 59,
+    "rainDays": 10.6,
+    "sunHours": 11.3,
+    "humidity": 66,
+    "comfort": 0.62
+   },
+   {
+    "month": 6,
+    "tHigh": 24.3,
+    "tLow": 14,
+    "rainMm": 68,
+    "rainDays": 11.1,
+    "sunHours": 12.7,
+    "humidity": 64,
+    "comfort": 0.65
+   },
+   {
+    "month": 7,
+    "tHigh": 24.6,
+    "tLow": 15,
+    "rainMm": 74,
+    "rainDays": 11.9,
+    "sunHours": 11.9,
+    "humidity": 66,
+    "comfort": 0.61
+   },
+   {
+    "month": 8,
+    "tHigh": 24.9,
+    "tLow": 15.2,
+    "rainMm": 68,
+    "rainDays": 10.2,
+    "sunHours": 11,
+    "humidity": 67,
+    "comfort": 0.69
+   },
+   {
+    "month": 9,
+    "tHigh": 20.5,
+    "tLow": 11.6,
+    "rainMm": 48,
+    "rainDays": 8,
+    "sunHours": 9,
+    "humidity": 72,
+    "comfort": 0.8
+   },
+   {
+    "month": 10,
+    "tHigh": 14.3,
+    "tLow": 7.4,
+    "rainMm": 59,
+    "rainDays": 11.9,
+    "sunHours": 5.9,
+    "humidity": 82,
+    "comfort": 0.38
+   },
+   {
+    "month": 11,
+    "tHigh": 7.6,
+    "tLow": 2.7,
+    "rainMm": 40,
+    "rainDays": 8,
+    "sunHours": 3.6,
+    "humidity": 87,
+    "comfort": 0.14
+   },
+   {
+    "month": 12,
+    "tHigh": 4.3,
+    "tLow": 0,
+    "rainMm": 43,
+    "rainDays": 10,
+    "sunHours": 2.6,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "torun": [
+   {
+    "month": 1,
+    "tHigh": 2.6,
+    "tLow": -2,
+    "rainMm": 46,
+    "rainDays": 12.6,
+    "sunHours": 2.8,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 4.7,
+    "tLow": -1.6,
+    "rainMm": 48,
+    "rainDays": 10.6,
+    "sunHours": 4.9,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 8.8,
+    "tLow": 0.4,
+    "rainMm": 34,
+    "rainDays": 9.4,
+    "sunHours": 7,
+    "humidity": 75,
+    "comfort": 0.19
+   },
+   {
+    "month": 4,
+    "tHigh": 14.1,
+    "tLow": 4,
+    "rainMm": 36,
+    "rainDays": 8.8,
+    "sunHours": 9.4,
+    "humidity": 68,
+    "comfort": 0.46
+   },
+   {
+    "month": 5,
+    "tHigh": 18.8,
+    "tLow": 8.6,
+    "rainMm": 58,
+    "rainDays": 10.8,
+    "sunHours": 11.3,
+    "humidity": 66,
+    "comfort": 0.61
+   },
+   {
+    "month": 6,
+    "tHigh": 24,
+    "tLow": 13.7,
+    "rainMm": 68,
+    "rainDays": 11,
+    "sunHours": 12.5,
+    "humidity": 66,
+    "comfort": 0.65
+   },
+   {
+    "month": 7,
+    "tHigh": 24.3,
+    "tLow": 14.8,
+    "rainMm": 86,
+    "rainDays": 12.4,
+    "sunHours": 11.5,
+    "humidity": 70,
+    "comfort": 0.58
+   },
+   {
+    "month": 8,
+    "tHigh": 24.7,
+    "tLow": 14.9,
+    "rainMm": 62,
+    "rainDays": 9.9,
+    "sunHours": 10.9,
+    "humidity": 69,
+    "comfort": 0.71
+   },
+   {
+    "month": 9,
+    "tHigh": 20.3,
+    "tLow": 11.4,
+    "rainMm": 59,
+    "rainDays": 9.2,
+    "sunHours": 8.7,
+    "humidity": 73,
+    "comfort": 0.74
+   },
+   {
+    "month": 10,
+    "tHigh": 13.9,
+    "tLow": 7.1,
+    "rainMm": 61,
+    "rainDays": 11.8,
+    "sunHours": 5.8,
+    "humidity": 82,
+    "comfort": 0.36
+   },
+   {
+    "month": 11,
+    "tHigh": 7.3,
+    "tLow": 2.5,
+    "rainMm": 39,
+    "rainDays": 9.1,
+    "sunHours": 3.3,
+    "humidity": 87,
+    "comfort": 0.11
+   },
+   {
+    "month": 12,
+    "tHigh": 3.9,
+    "tLow": -0.1,
+    "rainMm": 45,
+    "rainDays": 11.5,
+    "sunHours": 2.3,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "vilnius": [
+   {
+    "month": 1,
+    "tHigh": -0.7,
+    "tLow": -5.1,
+    "rainMm": 59,
+    "rainDays": 13.7,
+    "sunHours": 2,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 1.1,
+    "tLow": -4.2,
+    "rainMm": 46,
+    "rainDays": 11.9,
+    "sunHours": 3.9,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 6.2,
+    "tLow": -1.7,
+    "rainMm": 40,
+    "rainDays": 10,
+    "sunHours": 6.8,
+    "humidity": 74,
+    "comfort": 0.06
+   },
+   {
+    "month": 4,
+    "tHigh": 12,
+    "tLow": 2.5,
+    "rainMm": 52,
+    "rainDays": 10.1,
+    "sunHours": 9,
+    "humidity": 70,
+    "comfort": 0.32
+   },
+   {
+    "month": 5,
+    "tHigh": 17.4,
+    "tLow": 7.2,
+    "rainMm": 67,
+    "rainDays": 11.7,
+    "sunHours": 11.5,
+    "humidity": 67,
+    "comfort": 0.51
+   },
+   {
+    "month": 6,
+    "tHigh": 22.5,
+    "tLow": 12.6,
+    "rainMm": 75,
+    "rainDays": 11.8,
+    "sunHours": 12.9,
+    "humidity": 68,
+    "comfort": 0.61
+   },
+   {
+    "month": 7,
+    "tHigh": 22.8,
+    "tLow": 14.2,
+    "rainMm": 120,
+    "rainDays": 14.4,
+    "sunHours": 11.7,
+    "humidity": 74,
+    "comfort": 0.48
+   },
+   {
+    "month": 8,
+    "tHigh": 22.7,
+    "tLow": 13.6,
+    "rainMm": 94,
+    "rainDays": 12.4,
+    "sunHours": 11.2,
+    "humidity": 75,
+    "comfort": 0.58
+   },
+   {
+    "month": 9,
+    "tHigh": 18.1,
+    "tLow": 10,
+    "rainMm": 54,
+    "rainDays": 9.6,
+    "sunHours": 8.5,
+    "humidity": 77,
+    "comfort": 0.63
+   },
+   {
+    "month": 10,
+    "tHigh": 11.1,
+    "tLow": 5.1,
+    "rainMm": 70,
+    "rainDays": 13.9,
+    "sunHours": 5,
+    "humidity": 85,
+    "comfort": 0.21
+   },
+   {
+    "month": 11,
+    "tHigh": 4.7,
+    "tLow": 0.9,
+    "rainMm": 55,
+    "rainDays": 12.7,
+    "sunHours": 2,
+    "humidity": 89,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 1.2,
+    "tLow": -2.4,
+    "rainMm": 57,
+    "rainDays": 14.9,
+    "sunHours": 1.3,
+    "humidity": 90,
+    "comfort": 0
+   }
+  ],
+  "kaunas": [
+   {
+    "month": 1,
+    "tHigh": 0.4,
+    "tLow": -4,
+    "rainMm": 57,
+    "rainDays": 13.6,
+    "sunHours": 2.3,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 2.3,
+    "tLow": -3.2,
+    "rainMm": 44,
+    "rainDays": 10.6,
+    "sunHours": 4.1,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 6.9,
+    "tLow": -1.1,
+    "rainMm": 37,
+    "rainDays": 10.3,
+    "sunHours": 6.9,
+    "humidity": 74,
+    "comfort": 0.08
+   },
+   {
+    "month": 4,
+    "tHigh": 12.5,
+    "tLow": 2.9,
+    "rainMm": 49,
+    "rainDays": 10.5,
+    "sunHours": 9.3,
+    "humidity": 69,
+    "comfort": 0.34
+   },
+   {
+    "month": 5,
+    "tHigh": 17.9,
+    "tLow": 7.4,
+    "rainMm": 58,
+    "rainDays": 10.2,
+    "sunHours": 12,
+    "humidity": 67,
+    "comfort": 0.59
+   },
+   {
+    "month": 6,
+    "tHigh": 22.9,
+    "tLow": 13,
+    "rainMm": 65,
+    "rainDays": 11.2,
+    "sunHours": 13.4,
+    "humidity": 68,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 23.4,
+    "tLow": 14.8,
+    "rainMm": 102,
+    "rainDays": 14.9,
+    "sunHours": 11.9,
+    "humidity": 73,
+    "comfort": 0.46
+   },
+   {
+    "month": 8,
+    "tHigh": 23.2,
+    "tLow": 14.2,
+    "rainMm": 84,
+    "rainDays": 13.2,
+    "sunHours": 11.1,
+    "humidity": 74,
+    "comfort": 0.54
+   },
+   {
+    "month": 9,
+    "tHigh": 18.9,
+    "tLow": 10.7,
+    "rainMm": 50,
+    "rainDays": 9.4,
+    "sunHours": 9.1,
+    "humidity": 76,
+    "comfort": 0.68
+   },
+   {
+    "month": 10,
+    "tHigh": 12,
+    "tLow": 5.9,
+    "rainMm": 69,
+    "rainDays": 12.8,
+    "sunHours": 5.3,
+    "humidity": 83,
+    "comfort": 0.26
+   },
+   {
+    "month": 11,
+    "tHigh": 5.6,
+    "tLow": 1.9,
+    "rainMm": 47,
+    "rainDays": 11.4,
+    "sunHours": 2.5,
+    "humidity": 87,
+    "comfort": 0.03
+   },
+   {
+    "month": 12,
+    "tHigh": 2.2,
+    "tLow": -1.4,
+    "rainMm": 54,
+    "rainDays": 13,
+    "sunHours": 1.6,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "klaipeda": [
+   {
+    "month": 1,
+    "tHigh": 2.2,
+    "tLow": -1.8,
+    "rainMm": 86,
+    "rainDays": 16.7,
+    "sunHours": 2.5,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 2.9,
+    "tLow": -1.5,
+    "rainMm": 59,
+    "rainDays": 12.1,
+    "sunHours": 4.7,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 5.7,
+    "tLow": 0,
+    "rainMm": 44,
+    "rainDays": 10.9,
+    "sunHours": 7.3,
+    "humidity": 78,
+    "comfort": 0.03
+   },
+   {
+    "month": 4,
+    "tHigh": 10.8,
+    "tLow": 3.3,
+    "rainMm": 39,
+    "rainDays": 8.9,
+    "sunHours": 10.3,
+    "humidity": 73,
+    "comfort": 0.29
+   },
+   {
+    "month": 5,
+    "tHigh": 16.1,
+    "tLow": 8.1,
+    "rainMm": 40,
+    "rainDays": 9.2,
+    "sunHours": 12.7,
+    "humidity": 70,
+    "comfort": 0.55
+   },
+   {
+    "month": 6,
+    "tHigh": 20.5,
+    "tLow": 13.3,
+    "rainMm": 61,
+    "rainDays": 10.8,
+    "sunHours": 13.7,
+    "humidity": 73,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 21.5,
+    "tLow": 15.6,
+    "rainMm": 86,
+    "rainDays": 15.4,
+    "sunHours": 12.5,
+    "humidity": 75,
+    "comfort": 0.43
+   },
+   {
+    "month": 8,
+    "tHigh": 21.6,
+    "tLow": 15.4,
+    "rainMm": 104,
+    "rainDays": 14.5,
+    "sunHours": 11.1,
+    "humidity": 76,
+    "comfort": 0.48
+   },
+   {
+    "month": 9,
+    "tHigh": 18.2,
+    "tLow": 12.2,
+    "rainMm": 85,
+    "rainDays": 10.6,
+    "sunHours": 9.2,
+    "humidity": 76,
+    "comfort": 0.59
+   },
+   {
+    "month": 10,
+    "tHigh": 12.2,
+    "tLow": 7.8,
+    "rainMm": 114,
+    "rainDays": 15.7,
+    "sunHours": 5.7,
+    "humidity": 80,
+    "comfort": 0.2
+   },
+   {
+    "month": 11,
+    "tHigh": 7,
+    "tLow": 3.5,
+    "rainMm": 87,
+    "rainDays": 14.2,
+    "sunHours": 3.2,
+    "humidity": 84,
+    "comfort": 0.06
+   },
+   {
+    "month": 12,
+    "tHigh": 4,
+    "tLow": 0.4,
+    "rainMm": 82,
+    "rainDays": 16.3,
+    "sunHours": 2,
+    "humidity": 85,
+    "comfort": 0
+   }
+  ],
+  "riga": [
+   {
+    "month": 1,
+    "tHigh": 0.2,
+    "tLow": -4.3,
+    "rainMm": 57,
+    "rainDays": 14,
+    "sunHours": 2.1,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 1.4,
+    "tLow": -3.6,
+    "rainMm": 48,
+    "rainDays": 11.4,
+    "sunHours": 4.2,
+    "humidity": 83,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 5.8,
+    "tLow": -1.6,
+    "rainMm": 41,
+    "rainDays": 10.7,
+    "sunHours": 7.1,
+    "humidity": 76,
+    "comfort": 0.04
+   },
+   {
+    "month": 4,
+    "tHigh": 11.2,
+    "tLow": 2.3,
+    "rainMm": 47,
+    "rainDays": 11.3,
+    "sunHours": 10.1,
+    "humidity": 71,
+    "comfort": 0.26
+   },
+   {
+    "month": 5,
+    "tHigh": 17,
+    "tLow": 6.9,
+    "rainMm": 56,
+    "rainDays": 9.4,
+    "sunHours": 12.7,
+    "humidity": 66,
+    "comfort": 0.58
+   },
+   {
+    "month": 6,
+    "tHigh": 21.8,
+    "tLow": 12.5,
+    "rainMm": 77,
+    "rainDays": 12.3,
+    "sunHours": 13.7,
+    "humidity": 70,
+    "comfort": 0.59
+   },
+   {
+    "month": 7,
+    "tHigh": 22.7,
+    "tLow": 14.6,
+    "rainMm": 91,
+    "rainDays": 16.1,
+    "sunHours": 13,
+    "humidity": 75,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 22.1,
+    "tLow": 13.7,
+    "rainMm": 98,
+    "rainDays": 14.7,
+    "sunHours": 11.2,
+    "humidity": 76,
+    "comfort": 0.47
+   },
+   {
+    "month": 9,
+    "tHigh": 18,
+    "tLow": 10.6,
+    "rainMm": 61,
+    "rainDays": 11.4,
+    "sunHours": 9.2,
+    "humidity": 78,
+    "comfort": 0.55
+   },
+   {
+    "month": 10,
+    "tHigh": 11.2,
+    "tLow": 5.5,
+    "rainMm": 83,
+    "rainDays": 15.6,
+    "sunHours": 5.4,
+    "humidity": 83,
+    "comfort": 0.17
+   },
+   {
+    "month": 11,
+    "tHigh": 5.3,
+    "tLow": 1.4,
+    "rainMm": 56,
+    "rainDays": 13.2,
+    "sunHours": 2.4,
+    "humidity": 88,
+    "comfort": 0.01
+   },
+   {
+    "month": 12,
+    "tHigh": 2,
+    "tLow": -1.8,
+    "rainMm": 52,
+    "rainDays": 14.6,
+    "sunHours": 1.6,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "sigulda": [
+   {
+    "month": 1,
+    "tHigh": -0.7,
+    "tLow": -5.3,
+    "rainMm": 67,
+    "rainDays": 14.8,
+    "sunHours": 1.8,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 0.4,
+    "tLow": -4.8,
+    "rainMm": 55,
+    "rainDays": 12.2,
+    "sunHours": 4,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 4.9,
+    "tLow": -2.4,
+    "rainMm": 48,
+    "rainDays": 11.8,
+    "sunHours": 6.7,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 10.7,
+    "tLow": 1.7,
+    "rainMm": 54,
+    "rainDays": 12.1,
+    "sunHours": 9.8,
+    "humidity": 71,
+    "comfort": 0.23
+   },
+   {
+    "month": 5,
+    "tHigh": 16.4,
+    "tLow": 6.4,
+    "rainMm": 58,
+    "rainDays": 11.1,
+    "sunHours": 12.5,
+    "humidity": 67,
+    "comfort": 0.49
+   },
+   {
+    "month": 6,
+    "tHigh": 21.2,
+    "tLow": 11.9,
+    "rainMm": 86,
+    "rainDays": 12.1,
+    "sunHours": 13.4,
+    "humidity": 71,
+    "comfort": 0.6
+   },
+   {
+    "month": 7,
+    "tHigh": 22,
+    "tLow": 13.9,
+    "rainMm": 111,
+    "rainDays": 17.4,
+    "sunHours": 12.6,
+    "humidity": 77,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 21.3,
+    "tLow": 13.1,
+    "rainMm": 108,
+    "rainDays": 15.8,
+    "sunHours": 10.8,
+    "humidity": 78,
+    "comfort": 0.41
+   },
+   {
+    "month": 9,
+    "tHigh": 17.2,
+    "tLow": 9.9,
+    "rainMm": 69,
+    "rainDays": 11.5,
+    "sunHours": 8.8,
+    "humidity": 79,
+    "comfort": 0.51
+   },
+   {
+    "month": 10,
+    "tHigh": 10.3,
+    "tLow": 4.8,
+    "rainMm": 93,
+    "rainDays": 15.7,
+    "sunHours": 5.1,
+    "humidity": 85,
+    "comfort": 0.15
+   },
+   {
+    "month": 11,
+    "tHigh": 4.5,
+    "tLow": 0.8,
+    "rainMm": 66,
+    "rainDays": 14.1,
+    "sunHours": 2,
+    "humidity": 89,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 1.2,
+    "tLow": -2.6,
+    "rainMm": 62,
+    "rainDays": 15.4,
+    "sunHours": 1.3,
+    "humidity": 89,
+    "comfort": 0
+   }
+  ],
+  "tallinn": [
+   {
+    "month": 1,
+    "tHigh": -0.7,
+    "tLow": -4.8,
+    "rainMm": 60,
+    "rainDays": 15.1,
+    "sunHours": 1.6,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 0.1,
+    "tLow": -4.3,
+    "rainMm": 48,
+    "rainDays": 11.6,
+    "sunHours": 3.3,
+    "humidity": 86,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 3.6,
+    "tLow": -2.7,
+    "rainMm": 37,
+    "rainDays": 10.5,
+    "sunHours": 6.6,
+    "humidity": 79,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 8.7,
+    "tLow": 0.7,
+    "rainMm": 45,
+    "rainDays": 10.6,
+    "sunHours": 10.2,
+    "humidity": 74,
+    "comfort": 0.17
+   },
+   {
+    "month": 5,
+    "tHigh": 15.1,
+    "tLow": 5.8,
+    "rainMm": 46,
+    "rainDays": 8.3,
+    "sunHours": 13.2,
+    "humidity": 68,
+    "comfort": 0.53
+   },
+   {
+    "month": 6,
+    "tHigh": 20.1,
+    "tLow": 11.5,
+    "rainMm": 73,
+    "rainDays": 11.3,
+    "sunHours": 14.1,
+    "humidity": 70,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 21.5,
+    "tLow": 14,
+    "rainMm": 94,
+    "rainDays": 14.7,
+    "sunHours": 13.4,
+    "humidity": 76,
+    "comfort": 0.47
+   },
+   {
+    "month": 8,
+    "tHigh": 20.6,
+    "tLow": 13.5,
+    "rainMm": 98,
+    "rainDays": 15.8,
+    "sunHours": 11.1,
+    "humidity": 79,
+    "comfort": 0.41
+   },
+   {
+    "month": 9,
+    "tHigh": 16.3,
+    "tLow": 10.1,
+    "rainMm": 67,
+    "rainDays": 12.3,
+    "sunHours": 8.6,
+    "humidity": 81,
+    "comfort": 0.44
+   },
+   {
+    "month": 10,
+    "tHigh": 9.7,
+    "tLow": 5.1,
+    "rainMm": 75,
+    "rainDays": 14.6,
+    "sunHours": 4.9,
+    "humidity": 85,
+    "comfort": 0.15
+   },
+   {
+    "month": 11,
+    "tHigh": 4.5,
+    "tLow": 1.1,
+    "rainMm": 64,
+    "rainDays": 14.6,
+    "sunHours": 2.2,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 1.2,
+    "tLow": -2.4,
+    "rainMm": 56,
+    "rainDays": 13.8,
+    "sunHours": 1.1,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "tartu": [
+   {
+    "month": 1,
+    "tHigh": -1.4,
+    "tLow": -5.9,
+    "rainMm": 52,
+    "rainDays": 13.3,
+    "sunHours": 1.3,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -0.4,
+    "tLow": -5.3,
+    "rainMm": 43,
+    "rainDays": 10.9,
+    "sunHours": 3.1,
+    "humidity": 86,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 4.1,
+    "tLow": -3.2,
+    "rainMm": 34,
+    "rainDays": 10.3,
+    "sunHours": 6.6,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 9.9,
+    "tLow": 0.9,
+    "rainMm": 49,
+    "rainDays": 10.7,
+    "sunHours": 9.3,
+    "humidity": 71,
+    "comfort": 0.22
+   },
+   {
+    "month": 5,
+    "tHigh": 16.1,
+    "tLow": 6.1,
+    "rainMm": 48,
+    "rainDays": 10.1,
+    "sunHours": 12.5,
+    "humidity": 66,
+    "comfort": 0.51
+   },
+   {
+    "month": 6,
+    "tHigh": 21,
+    "tLow": 11.8,
+    "rainMm": 78,
+    "rainDays": 11.6,
+    "sunHours": 13.5,
+    "humidity": 70,
+    "comfort": 0.62
+   },
+   {
+    "month": 7,
+    "tHigh": 22.1,
+    "tLow": 13.9,
+    "rainMm": 86,
+    "rainDays": 14.8,
+    "sunHours": 12.7,
+    "humidity": 75,
+    "comfort": 0.46
+   },
+   {
+    "month": 8,
+    "tHigh": 21,
+    "tLow": 13.1,
+    "rainMm": 89,
+    "rainDays": 14.1,
+    "sunHours": 10.5,
+    "humidity": 78,
+    "comfort": 0.5
+   },
+   {
+    "month": 9,
+    "tHigh": 16.6,
+    "tLow": 9.6,
+    "rainMm": 52,
+    "rainDays": 9.8,
+    "sunHours": 8.4,
+    "humidity": 80,
+    "comfort": 0.55
+   },
+   {
+    "month": 10,
+    "tHigh": 9.6,
+    "tLow": 4.3,
+    "rainMm": 67,
+    "rainDays": 13.4,
+    "sunHours": 4.7,
+    "humidity": 85,
+    "comfort": 0.16
+   },
+   {
+    "month": 11,
+    "tHigh": 3.9,
+    "tLow": 0.3,
+    "rainMm": 56,
+    "rainDays": 12.2,
+    "sunHours": 1.8,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 0.4,
+    "tLow": -3.2,
+    "rainMm": 45,
+    "rainDays": 12.4,
+    "sunHours": 1.1,
+    "humidity": 89,
+    "comfort": 0
+   }
+  ],
+  "parnu": [
+   {
+    "month": 1,
+    "tHigh": -0.4,
+    "tLow": -4.4,
+    "rainMm": 68,
+    "rainDays": 15.5,
+    "sunHours": 1.9,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 0.3,
+    "tLow": -4,
+    "rainMm": 52,
+    "rainDays": 11.5,
+    "sunHours": 3.7,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 3.6,
+    "tLow": -2.3,
+    "rainMm": 42,
+    "rainDays": 10.6,
+    "sunHours": 6.8,
+    "humidity": 80,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 9.3,
+    "tLow": 1.6,
+    "rainMm": 41,
+    "rainDays": 10.6,
+    "sunHours": 10,
+    "humidity": 73,
+    "comfort": 0.19
+   },
+   {
+    "month": 5,
+    "tHigh": 15.7,
+    "tLow": 6.7,
+    "rainMm": 43,
+    "rainDays": 8,
+    "sunHours": 13.1,
+    "humidity": 66,
+    "comfort": 0.57
+   },
+   {
+    "month": 6,
+    "tHigh": 20.2,
+    "tLow": 12.5,
+    "rainMm": 80,
+    "rainDays": 12.8,
+    "sunHours": 13.8,
+    "humidity": 71,
+    "comfort": 0.56
+   },
+   {
+    "month": 7,
+    "tHigh": 21.6,
+    "tLow": 14.7,
+    "rainMm": 105,
+    "rainDays": 16.2,
+    "sunHours": 13.1,
+    "humidity": 75,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 20.4,
+    "tLow": 14.2,
+    "rainMm": 112,
+    "rainDays": 16.2,
+    "sunHours": 11,
+    "humidity": 79,
+    "comfort": 0.4
+   },
+   {
+    "month": 9,
+    "tHigh": 16.6,
+    "tLow": 10.7,
+    "rainMm": 81,
+    "rainDays": 10.6,
+    "sunHours": 8.9,
+    "humidity": 80,
+    "comfort": 0.52
+   },
+   {
+    "month": 10,
+    "tHigh": 10.1,
+    "tLow": 5.5,
+    "rainMm": 92,
+    "rainDays": 14.5,
+    "sunHours": 5.2,
+    "humidity": 84,
+    "comfort": 0.16
+   },
+   {
+    "month": 11,
+    "tHigh": 4.9,
+    "tLow": 1.4,
+    "rainMm": 75,
+    "rainDays": 14.1,
+    "sunHours": 2.2,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 1.6,
+    "tLow": -1.8,
+    "rainMm": 55,
+    "rainDays": 12.9,
+    "sunHours": 1.4,
+    "humidity": 87,
+    "comfort": 0
+   }
+  ],
+  "stpetersburg": [
+   {
+    "month": 1,
+    "tHigh": -3,
+    "tLow": -7.6,
+    "rainMm": 51,
+    "rainDays": 14,
+    "sunHours": 1.3,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -2.2,
+    "tLow": -7.2,
+    "rainMm": 45,
+    "rainDays": 12,
+    "sunHours": 2.9,
+    "humidity": 86,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 2.1,
+    "tLow": -4.5,
+    "rainMm": 44,
+    "rainDays": 10.8,
+    "sunHours": 6.5,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 8.1,
+    "tLow": -0.3,
+    "rainMm": 50,
+    "rainDays": 11,
+    "sunHours": 9.5,
+    "humidity": 75,
+    "comfort": 0.14
+   },
+   {
+    "month": 5,
+    "tHigh": 14.9,
+    "tLow": 6.1,
+    "rainMm": 48,
+    "rainDays": 10.4,
+    "sunHours": 12.7,
+    "humidity": 68,
+    "comfort": 0.45
+   },
+   {
+    "month": 6,
+    "tHigh": 20.3,
+    "tLow": 12.5,
+    "rainMm": 66,
+    "rainDays": 11.7,
+    "sunHours": 14.3,
+    "humidity": 69,
+    "comfort": 0.62
+   },
+   {
+    "month": 7,
+    "tHigh": 22.3,
+    "tLow": 14.9,
+    "rainMm": 93,
+    "rainDays": 15.6,
+    "sunHours": 12.9,
+    "humidity": 74,
+    "comfort": 0.42
+   },
+   {
+    "month": 8,
+    "tHigh": 20.7,
+    "tLow": 13.6,
+    "rainMm": 115,
+    "rainDays": 15.3,
+    "sunHours": 11,
+    "humidity": 79,
+    "comfort": 0.43
+   },
+   {
+    "month": 9,
+    "tHigh": 16,
+    "tLow": 9.5,
+    "rainMm": 64,
+    "rainDays": 11.7,
+    "sunHours": 8.2,
+    "humidity": 81,
+    "comfort": 0.45
+   },
+   {
+    "month": 10,
+    "tHigh": 8.7,
+    "tLow": 3.9,
+    "rainMm": 74,
+    "rainDays": 14.2,
+    "sunHours": 4.7,
+    "humidity": 85,
+    "comfort": 0.12
+   },
+   {
+    "month": 11,
+    "tHigh": 2.8,
+    "tLow": -0.7,
+    "rainMm": 59,
+    "rainDays": 13.9,
+    "sunHours": 1.6,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": -0.8,
+    "tLow": -4.5,
+    "rainMm": 56,
+    "rainDays": 15.7,
+    "sunHours": 0.8,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "moscow": [
+   {
+    "month": 1,
+    "tHigh": -4.3,
+    "tLow": -9.3,
+    "rainMm": 45,
+    "rainDays": 12.9,
+    "sunHours": 1.6,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -3,
+    "tLow": -8.7,
+    "rainMm": 34,
+    "rainDays": 8.5,
+    "sunHours": 3.7,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 2.8,
+    "tLow": -5.6,
+    "rainMm": 37,
+    "rainDays": 9.2,
+    "sunHours": 6.9,
+    "humidity": 78,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 11.5,
+    "tLow": 1.3,
+    "rainMm": 48,
+    "rainDays": 10.2,
+    "sunHours": 9.1,
+    "humidity": 68,
+    "comfort": 0.3
+   },
+   {
+    "month": 5,
+    "tHigh": 17.6,
+    "tLow": 7,
+    "rainMm": 63,
+    "rainDays": 11.2,
+    "sunHours": 11.4,
+    "humidity": 64,
+    "comfort": 0.54
+   },
+   {
+    "month": 6,
+    "tHigh": 22.5,
+    "tLow": 12.1,
+    "rainMm": 65,
+    "rainDays": 11.3,
+    "sunHours": 13.3,
+    "humidity": 65,
+    "comfort": 0.64
+   },
+   {
+    "month": 7,
+    "tHigh": 24.2,
+    "tLow": 14.9,
+    "rainMm": 85,
+    "rainDays": 14,
+    "sunHours": 12.5,
+    "humidity": 70,
+    "comfort": 0.5
+   },
+   {
+    "month": 8,
+    "tHigh": 23.3,
+    "tLow": 13.4,
+    "rainMm": 60,
+    "rainDays": 9.2,
+    "sunHours": 11.2,
+    "humidity": 71,
+    "comfort": 0.74
+   },
+   {
+    "month": 9,
+    "tHigh": 17.1,
+    "tLow": 8.6,
+    "rainMm": 43,
+    "rainDays": 8.5,
+    "sunHours": 8.1,
+    "humidity": 73,
+    "comfort": 0.63
+   },
+   {
+    "month": 10,
+    "tHigh": 9.5,
+    "tLow": 3.4,
+    "rainMm": 60,
+    "rainDays": 12,
+    "sunHours": 4.3,
+    "humidity": 80,
+    "comfort": 0.18
+   },
+   {
+    "month": 11,
+    "tHigh": 2.1,
+    "tLow": -2,
+    "rainMm": 54,
+    "rainDays": 11.3,
+    "sunHours": 1.7,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": -2.1,
+    "tLow": -6.3,
+    "rainMm": 55,
+    "rainDays": 14.3,
+    "sunHours": 0.8,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "pskov": [
+   {
+    "month": 1,
+    "tHigh": -1.9,
+    "tLow": -6.4,
+    "rainMm": 54,
+    "rainDays": 13.6,
+    "sunHours": 1.6,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -0.8,
+    "tLow": -5.7,
+    "rainMm": 46,
+    "rainDays": 12,
+    "sunHours": 3.3,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 4.1,
+    "tLow": -3.5,
+    "rainMm": 44,
+    "rainDays": 11.6,
+    "sunHours": 6.6,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 10.6,
+    "tLow": 1.3,
+    "rainMm": 55,
+    "rainDays": 11,
+    "sunHours": 9.4,
+    "humidity": 70,
+    "comfort": 0.24
+   },
+   {
+    "month": 5,
+    "tHigh": 16.4,
+    "tLow": 6.5,
+    "rainMm": 60,
+    "rainDays": 11.2,
+    "sunHours": 12.6,
+    "humidity": 66,
+    "comfort": 0.49
+   },
+   {
+    "month": 6,
+    "tHigh": 21.2,
+    "tLow": 12.2,
+    "rainMm": 88,
+    "rainDays": 13.1,
+    "sunHours": 13.6,
+    "humidity": 70,
+    "comfort": 0.55
+   },
+   {
+    "month": 7,
+    "tHigh": 22.2,
+    "tLow": 14.4,
+    "rainMm": 108,
+    "rainDays": 16.3,
+    "sunHours": 12.6,
+    "humidity": 76,
+    "comfort": 0.4
+   },
+   {
+    "month": 8,
+    "tHigh": 21.2,
+    "tLow": 13.2,
+    "rainMm": 104,
+    "rainDays": 14.7,
+    "sunHours": 10.8,
+    "humidity": 78,
+    "comfort": 0.47
+   },
+   {
+    "month": 9,
+    "tHigh": 16.7,
+    "tLow": 9.6,
+    "rainMm": 51,
+    "rainDays": 10.1,
+    "sunHours": 8.6,
+    "humidity": 79,
+    "comfort": 0.54
+   },
+   {
+    "month": 10,
+    "tHigh": 9.6,
+    "tLow": 4.3,
+    "rainMm": 76,
+    "rainDays": 14.6,
+    "sunHours": 4.8,
+    "humidity": 84,
+    "comfort": 0.14
+   },
+   {
+    "month": 11,
+    "tHigh": 3.7,
+    "tLow": 0.2,
+    "rainMm": 64,
+    "rainDays": 14.3,
+    "sunHours": 1.8,
+    "humidity": 88,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 0,
+    "tLow": -3.6,
+    "rainMm": 54,
+    "rainDays": 15,
+    "sunHours": 1.1,
+    "humidity": 89,
+    "comfort": 0
+   }
+  ],
+  "velikynovgorod": [
+   {
+    "month": 1,
+    "tHigh": -2.8,
+    "tLow": -7.7,
+    "rainMm": 56,
+    "rainDays": 13.9,
+    "sunHours": 1.4,
+    "humidity": 87,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -1.8,
+    "tLow": -6.9,
+    "rainMm": 44,
+    "rainDays": 11.1,
+    "sunHours": 3,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 3.7,
+    "tLow": -4.4,
+    "rainMm": 41,
+    "rainDays": 9.8,
+    "sunHours": 6.3,
+    "humidity": 77,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 10.5,
+    "tLow": 0.4,
+    "rainMm": 56,
+    "rainDays": 12.2,
+    "sunHours": 9,
+    "humidity": 71,
+    "comfort": 0.22
+   },
+   {
+    "month": 5,
+    "tHigh": 16.9,
+    "tLow": 6,
+    "rainMm": 50,
+    "rainDays": 10.4,
+    "sunHours": 12.3,
+    "humidity": 66,
+    "comfort": 0.54
+   },
+   {
+    "month": 6,
+    "tHigh": 21.9,
+    "tLow": 11.9,
+    "rainMm": 81,
+    "rainDays": 11.8,
+    "sunHours": 13.4,
+    "humidity": 68,
+    "comfort": 0.61
+   },
+   {
+    "month": 7,
+    "tHigh": 22.8,
+    "tLow": 14.1,
+    "rainMm": 100,
+    "rainDays": 15.1,
+    "sunHours": 12.1,
+    "humidity": 76,
+    "comfort": 0.45
+   },
+   {
+    "month": 8,
+    "tHigh": 21.5,
+    "tLow": 13,
+    "rainMm": 90,
+    "rainDays": 14.6,
+    "sunHours": 10.6,
+    "humidity": 79,
+    "comfort": 0.47
+   },
+   {
+    "month": 9,
+    "tHigh": 16.4,
+    "tLow": 9.2,
+    "rainMm": 49,
+    "rainDays": 9.6,
+    "sunHours": 8,
+    "humidity": 80,
+    "comfort": 0.55
+   },
+   {
+    "month": 10,
+    "tHigh": 9,
+    "tLow": 3.6,
+    "rainMm": 75,
+    "rainDays": 13.6,
+    "sunHours": 4.2,
+    "humidity": 85,
+    "comfort": 0.14
+   },
+   {
+    "month": 11,
+    "tHigh": 2.8,
+    "tLow": -0.7,
+    "rainMm": 72,
+    "rainDays": 14.2,
+    "sunHours": 1.5,
+    "humidity": 89,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": -0.8,
+    "tLow": -4.4,
+    "rainMm": 59,
+    "rainDays": 14.9,
+    "sunHours": 0.8,
+    "humidity": 89,
+    "comfort": 0
+   }
+  ],
+  "kazan": [
+   {
+    "month": 1,
+    "tHigh": -7.7,
+    "tLow": -12.5,
+    "rainMm": 51,
+    "rainDays": 12.1,
+    "sunHours": 2,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -6.3,
+    "tLow": -11.3,
+    "rainMm": 44,
+    "rainDays": 11.5,
+    "sunHours": 3.9,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 0,
+    "tLow": -6.5,
+    "rainMm": 38,
+    "rainDays": 9.7,
+    "sunHours": 7.1,
+    "humidity": 82,
+    "comfort": 0
+   },
+   {
+    "month": 4,
+    "tHigh": 9.9,
+    "tLow": 0.6,
+    "rainMm": 49,
+    "rainDays": 9,
+    "sunHours": 9.6,
+    "humidity": 72,
+    "comfort": 0.24
+   },
+   {
+    "month": 5,
+    "tHigh": 17.8,
+    "tLow": 7.7,
+    "rainMm": 48,
+    "rainDays": 9.4,
+    "sunHours": 12,
+    "humidity": 65,
+    "comfort": 0.62
+   },
+   {
+    "month": 6,
+    "tHigh": 22.1,
+    "tLow": 12.9,
+    "rainMm": 43,
+    "rainDays": 8.8,
+    "sunHours": 13.7,
+    "humidity": 65,
+    "comfort": 0.76
+   },
+   {
+    "month": 7,
+    "tHigh": 25.3,
+    "tLow": 16,
+    "rainMm": 52,
+    "rainDays": 8.2,
+    "sunHours": 13.8,
+    "humidity": 67,
+    "comfort": 0.79
+   },
+   {
+    "month": 8,
+    "tHigh": 24,
+    "tLow": 14.7,
+    "rainMm": 51,
+    "rainDays": 7.7,
+    "sunHours": 11.7,
+    "humidity": 68,
+    "comfort": 0.82
+   },
+   {
+    "month": 9,
+    "tHigh": 16.6,
+    "tLow": 8.6,
+    "rainMm": 38,
+    "rainDays": 8.9,
+    "sunHours": 8.2,
+    "humidity": 74,
+    "comfort": 0.58
+   },
+   {
+    "month": 10,
+    "tHigh": 8.7,
+    "tLow": 2.9,
+    "rainMm": 58,
+    "rainDays": 11.4,
+    "sunHours": 4.9,
+    "humidity": 79,
+    "comfort": 0.16
+   },
+   {
+    "month": 11,
+    "tHigh": 0.6,
+    "tLow": -3.7,
+    "rainMm": 52,
+    "rainDays": 11.5,
+    "sunHours": 2.3,
+    "humidity": 84,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": -5.5,
+    "tLow": -10.3,
+    "rainMm": 49,
+    "rainDays": 12,
+    "sunHours": 1.4,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "lviv": [
+   {
+    "month": 1,
+    "tHigh": 1.3,
+    "tLow": -3.9,
+    "rainMm": 50,
+    "rainDays": 13.1,
+    "sunHours": 3.6,
+    "humidity": 83,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 3.9,
+    "tLow": -2.5,
+    "rainMm": 53,
+    "rainDays": 11.1,
+    "sunHours": 4.9,
+    "humidity": 80,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 8.4,
+    "tLow": -0.1,
+    "rainMm": 51,
+    "rainDays": 12.2,
+    "sunHours": 6.9,
+    "humidity": 73,
+    "comfort": 0.13
+   },
+   {
+    "month": 4,
+    "tHigh": 14.1,
+    "tLow": 4.4,
+    "rainMm": 55,
+    "rainDays": 10.9,
+    "sunHours": 9.1,
+    "humidity": 68,
+    "comfort": 0.4
+   },
+   {
+    "month": 5,
+    "tHigh": 18.3,
+    "tLow": 8.7,
+    "rainMm": 81,
+    "rainDays": 14.2,
+    "sunHours": 10.9,
+    "humidity": 70,
+    "comfort": 0.44
+   },
+   {
+    "month": 6,
+    "tHigh": 23.5,
+    "tLow": 14.2,
+    "rainMm": 83,
+    "rainDays": 13.2,
+    "sunHours": 11.8,
+    "humidity": 72,
+    "comfort": 0.54
+   },
+   {
+    "month": 7,
+    "tHigh": 24.4,
+    "tLow": 15.3,
+    "rainMm": 100,
+    "rainDays": 14,
+    "sunHours": 12,
+    "humidity": 73,
+    "comfort": 0.5
+   },
+   {
+    "month": 8,
+    "tHigh": 24.8,
+    "tLow": 15.1,
+    "rainMm": 60,
+    "rainDays": 10.6,
+    "sunHours": 11.5,
+    "humidity": 71,
+    "comfort": 0.67
+   },
+   {
+    "month": 9,
+    "tHigh": 19.8,
+    "tLow": 11.3,
+    "rainMm": 88,
+    "rainDays": 10.7,
+    "sunHours": 8.6,
+    "humidity": 75,
+    "comfort": 0.66
+   },
+   {
+    "month": 10,
+    "tHigh": 13.7,
+    "tLow": 6.5,
+    "rainMm": 54,
+    "rainDays": 10.2,
+    "sunHours": 6.5,
+    "humidity": 79,
+    "comfort": 0.4
+   },
+   {
+    "month": 11,
+    "tHigh": 7,
+    "tLow": 1.6,
+    "rainMm": 50,
+    "rainDays": 11,
+    "sunHours": 3.8,
+    "humidity": 86,
+    "comfort": 0.09
+   },
+   {
+    "month": 12,
+    "tHigh": 2.8,
+    "tLow": -1.5,
+    "rainMm": 65,
+    "rainDays": 13.5,
+    "sunHours": 2.5,
+    "humidity": 86,
+    "comfort": 0
+   }
+  ],
+  "kyiv": [
+   {
+    "month": 1,
+    "tHigh": 0.1,
+    "tLow": -4.8,
+    "rainMm": 42,
+    "rainDays": 11.2,
+    "sunHours": 2.6,
+    "humidity": 85,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": 2.1,
+    "tLow": -4.1,
+    "rainMm": 39,
+    "rainDays": 9,
+    "sunHours": 4.3,
+    "humidity": 81,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 7.8,
+    "tLow": -0.4,
+    "rainMm": 40,
+    "rainDays": 9.6,
+    "sunHours": 6.7,
+    "humidity": 74,
+    "comfort": 0.14
+   },
+   {
+    "month": 4,
+    "tHigh": 14.7,
+    "tLow": 5,
+    "rainMm": 55,
+    "rainDays": 9.1,
+    "sunHours": 9.3,
+    "humidity": 66,
+    "comfort": 0.48
+   },
+   {
+    "month": 5,
+    "tHigh": 19.8,
+    "tLow": 9.9,
+    "rainMm": 67,
+    "rainDays": 11.6,
+    "sunHours": 11.1,
+    "humidity": 64,
+    "comfort": 0.61
+   },
+   {
+    "month": 6,
+    "tHigh": 25.5,
+    "tLow": 15.6,
+    "rainMm": 63,
+    "rainDays": 10.9,
+    "sunHours": 13.5,
+    "humidity": 64,
+    "comfort": 0.66
+   },
+   {
+    "month": 7,
+    "tHigh": 26.3,
+    "tLow": 16.8,
+    "rainMm": 76,
+    "rainDays": 11.4,
+    "sunHours": 12.7,
+    "humidity": 66,
+    "comfort": 0.63
+   },
+   {
+    "month": 8,
+    "tHigh": 26.3,
+    "tLow": 16.2,
+    "rainMm": 42,
+    "rainDays": 6.6,
+    "sunHours": 12,
+    "humidity": 65,
+    "comfort": 0.87
+   },
+   {
+    "month": 9,
+    "tHigh": 20.9,
+    "tLow": 11.6,
+    "rainMm": 34,
+    "rainDays": 7.2,
+    "sunHours": 9.2,
+    "humidity": 67,
+    "comfort": 0.84
+   },
+   {
+    "month": 10,
+    "tHigh": 13.4,
+    "tLow": 6.2,
+    "rainMm": 58,
+    "rainDays": 9,
+    "sunHours": 6,
+    "humidity": 79,
+    "comfort": 0.42
+   },
+   {
+    "month": 11,
+    "tHigh": 5.9,
+    "tLow": 0.9,
+    "rainMm": 52,
+    "rainDays": 9.7,
+    "sunHours": 3,
+    "humidity": 85,
+    "comfort": 0.04
+   },
+   {
+    "month": 12,
+    "tHigh": 1.7,
+    "tLow": -2.2,
+    "rainMm": 61,
+    "rainDays": 13.5,
+    "sunHours": 1.9,
+    "humidity": 88,
+    "comfort": 0
+   }
+  ],
+  "minsk": [
+   {
+    "month": 1,
+    "tHigh": -1.8,
+    "tLow": -6,
+    "rainMm": 54,
+    "rainDays": 13,
+    "sunHours": 1.8,
+    "humidity": 89,
+    "comfort": 0
+   },
+   {
+    "month": 2,
+    "tHigh": -0.2,
+    "tLow": -5.5,
+    "rainMm": 36,
+    "rainDays": 9.8,
+    "sunHours": 4.1,
+    "humidity": 86,
+    "comfort": 0
+   },
+   {
+    "month": 3,
+    "tHigh": 5.7,
+    "tLow": -2.3,
+    "rainMm": 43,
+    "rainDays": 10.9,
+    "sunHours": 6.8,
+    "humidity": 75,
+    "comfort": 0.03
+   },
+   {
+    "month": 4,
+    "tHigh": 12.1,
+    "tLow": 2.5,
+    "rainMm": 54,
+    "rainDays": 11.3,
+    "sunHours": 9,
+    "humidity": 69,
+    "comfort": 0.3
+   },
+   {
+    "month": 5,
+    "tHigh": 17.4,
+    "tLow": 7.5,
+    "rainMm": 70,
+    "rainDays": 12.4,
+    "sunHours": 11.5,
+    "humidity": 67,
+    "comfort": 0.48
+   },
+   {
+    "month": 6,
+    "tHigh": 22.6,
+    "tLow": 12.9,
+    "rainMm": 79,
+    "rainDays": 11.9,
+    "sunHours": 13,
+    "humidity": 68,
+    "comfort": 0.61
+   },
+   {
+    "month": 7,
+    "tHigh": 23.1,
+    "tLow": 14.3,
+    "rainMm": 107,
+    "rainDays": 15.1,
+    "sunHours": 12.2,
+    "humidity": 73,
+    "comfort": 0.45
+   },
+   {
+    "month": 8,
+    "tHigh": 23.2,
+    "tLow": 13.8,
+    "rainMm": 64,
+    "rainDays": 9.9,
+    "sunHours": 11.6,
+    "humidity": 73,
+    "comfort": 0.71
+   },
+   {
+    "month": 9,
+    "tHigh": 18.1,
+    "tLow": 9.7,
+    "rainMm": 55,
+    "rainDays": 9.1,
+    "sunHours": 8.6,
+    "humidity": 75,
+    "comfort": 0.65
+   },
+   {
+    "month": 10,
+    "tHigh": 10.9,
+    "tLow": 4.6,
+    "rainMm": 73,
+    "rainDays": 13.1,
+    "sunHours": 5,
+    "humidity": 84,
+    "comfort": 0.21
+   },
+   {
+    "month": 11,
+    "tHigh": 3.9,
+    "tLow": 0,
+    "rainMm": 53,
+    "rainDays": 11.3,
+    "sunHours": 1.9,
+    "humidity": 89,
+    "comfort": 0
+   },
+   {
+    "month": 12,
+    "tHigh": 0.3,
+    "tLow": -3.3,
+    "rainMm": 55,
+    "rainDays": 14.3,
+    "sunHours": 1.1,
+    "humidity": 91,
+    "comfort": 0
+   }
+  ]
+ }
+}

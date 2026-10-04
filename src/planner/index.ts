@@ -480,7 +480,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     } else if (m.tHigh < 12) {
       warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold (avg high ${m.tHigh}°C)` })
     } else if (m.rainDays >= 14) {
-      warnings.push({ kind: 'weather', severity: 'info', cityId: s.cityId, title: `${name}: rainy (${m.rainDays} rain days/month)` })
+      warnings.push({ kind: 'weather', severity: 'info', cityId: s.cityId, title: `${name}: often wet (~${Math.round(m.rainDays)} days with rain that month)`, detail: 'Counts days with at least 1 mm; in summer these are often short showers.' })
     }
   }
 

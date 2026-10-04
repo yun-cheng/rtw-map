@@ -346,11 +346,11 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 ### Progress (5 Oct 2026)
 - **Phase 0, done:** Vite + React + TS app; data pipeline in `scripts/` (GeoNames, Natural Earth, OSRM, Passport Index, Open-Meteo, FCDO + US State Dept, World Bank, FX). 22 countries, 69 cities, ~100 curated connections; costs and connections are seed estimates. Advisories use both FCDO and US levels: a country is excluded by default if either says "do not travel" (Russia, Ukraine, Belarus).
 - **Phase 1, mostly done:** setup form → generated plan; map with route and layers (weather, cost, English, Schengen, safety); itinerary editing (± nights auto-locks + rebalances, lock, remove, drag to reorder, add from map, re-order); Schengen 90/180 counter enforced while planning; visa, advisory, border (Kosovo → Serbia), weather and pace checks; city and leg drawers; timeline; localStorage + JSON export/import.
+- **Climate, done:** monthly averages for all 69 cities (Open-Meteo ERA5, 2016–2025). Weather now affects which cities are picked and when, plus heat/cold/wet checks. ERA5 tends to count slightly more wet days than weather stations, so the wet-month note says "days with ≥1 mm, often short showers".
 - **Display currency, done:** currency picker in the header; every price (header total, legs, city costs, map cost layer) is converted; supermarket prices also show the local-currency amount.
 - **English & language, done:** Language section in the city panel, an English map layer (route stops are coloured by the active layer), and a trip check naming stops where English is limited.
 - **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips. The data build fails if any city or country is missing.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
-- **Open:** climate download still in progress (Open-Meteo rate limits, ~38 cities/hour), so weather charts, checks and the weather layer are empty for some cities until it finishes.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
 
 ---

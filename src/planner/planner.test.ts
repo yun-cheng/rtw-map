@@ -139,3 +139,11 @@ describe('local transport', () => {
     expect(est.max).toBeGreaterThan(est.min)
   })
 })
+
+describe('weather checks', () => {
+  it('warns about heat for a midsummer stay in Athens', () => {
+    const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-20' }
+    const plan = evaluatePlan(ds, input, [{ cityId: 'athens', nights: 10, locked: false, groupId: '' }])
+    expect(plan.warnings.some((w) => w.kind === 'weather' && w.title.includes('hot'))).toBe(true)
+  })
+})
