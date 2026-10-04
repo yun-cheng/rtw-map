@@ -29,7 +29,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
 - **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, pace, limited English, unreachable or estimated legs.
 - **Map layers**: route, weather (by month), cost, English, Schengen, safety.
-- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares), weather chart, costs by budget style incl. supermarket prices, connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa or safety jumps to the top when there's a problem (visa needed in advance, do-not-travel advice). Every fact shows its source and date.
+- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares, bike/e-scooter/car/scooter rentals), weather chart, costs by budget style incl. supermarket prices, connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa or safety jumps to the top when there's a problem (visa needed in advance, do-not-travel advice). Every fact shows its source and date.
 - **Display currency**: pick EUR, USD, TWD, JPY, …; all prices convert (data is stored in EUR).
 - **Saving**: automatic (localStorage) plus JSON export/import. Esc closes the side panel.
 
@@ -72,4 +72,4 @@ npm run data:refresh   # fast-changing data only; also runs daily via .github/wo
 
 To add a city: add a row to `data/seed/cities.csv` (and connections to `data/seed/connections.csv`), then run `npm run data:build`.
 
-**Estimates:** costs, connections, English levels, local transport and taxi data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.
+**Estimates:** costs, connections, English levels, local transport, taxi and rental data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.

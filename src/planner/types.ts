@@ -90,11 +90,25 @@ export type Advisory = {
 
 export type TransitMode = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'minibus' | 'train' | 'ferry' | 'funicular' | 'cablecar'
 
-/** Getting around a city: 1 = little or no public transport … 5 = excellent network. */
-export type CityTransport = { ease: number; modes: TransitMode[]; walkable: boolean; pay?: string; note?: string }
+export type RentalKind = 'bikeShare' | 'eScooter' | 'bike' | 'car' | 'moto'
 
-/** Taxis in a country: ride-hailing apps travellers use and typical metered prices in EUR. */
-export type CountryTransport = { taxi: { apps: string[]; flagFall: number; perKm: number; tip: string } }
+/** Getting around a city: 1 = little or no public transport … 5 = excellent network. */
+export type CityTransport = {
+  ease: number
+  modes: TransitMode[]
+  walkable: boolean
+  pay?: string
+  note?: string
+  rentals: RentalKind[]
+  rentalNote?: string
+}
+
+/** Taxis and rentals in a country: apps travellers use and typical prices in EUR. */
+export type CountryTransport = {
+  taxi: { apps: string[]; flagFall: number; perKm: number; tip: string }
+  /** Shared bike/e-scooter apps; daily rental price ranges for a small car and a scooter/motorbike. */
+  rentals: { apps: string[]; carDay: [number, number]; motoDay?: [number, number] }
+}
 
 export type Notice = { id: string; appliesTo: string; title: string; text: string; url: string }
 

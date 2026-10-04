@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, TRANSIT_LABELS, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
+import { ENGLISH_LABELS, RENTAL_INFO, TRANSIT_LABELS, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
@@ -49,6 +49,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const transit = ds.localTransport.cities[cityId]
   const taxi = ds.localTransport.countries[city.iso2]?.taxi
   const taxiRide = taxiEstimate(ds, cityId)
+  const rentals = ds.localTransport.countries[city.iso2]?.rentals
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
@@ -96,6 +97,31 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </>
         )}
 
+        <div className="mt-3 mb-1 text-[12px] font-semibold">Rentals</div>
+        {transit.rentals.length ? (
+          <>
+            <div className="flex flex-wrap gap-1">
+              {transit.rentals.map((r) => (
+                <span key={r} className="rounded-full border border-line px-2 py-0.5 text-[12px]">{RENTAL_INFO[r].icon} {RENTAL_INFO[r].label}</span>
+              ))}
+            </div>
+            <div className="mt-2">
+              {rentals && rentals.apps.length > 0 && (transit.rentals.includes('bikeShare') || transit.rentals.includes('eScooter')) && (
+                <Row label="Bike / scooter apps">{rentals.apps.join(', ')}</Row>
+              )}
+              {rentals && transit.rentals.includes('car') && <Row label="Car / day">{fmt(rentals.carDay[0])}–{fmt(rentals.carDay[1])}</Row>}
+              {rentals?.motoDay && transit.rentals.includes('moto') && <Row label="Scooter / motorbike / day">{fmt(rentals.motoDay[0])}–{fmt(rentals.motoDay[1])}</Row>}
+            </div>
+            {transit.rentalNote && <p className="mt-1 text-[13px]">{transit.rentalNote}</p>}
+            <ul className="mt-1.5 flex flex-col gap-1">
+              {transit.rentals.map((r) => (
+                <li key={r} className="text-[12px] text-muted">{RENTAL_INFO[r].icon} {RENTAL_INFO[r].tip}</li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p className="text-[13px] text-muted">{transit.rentalNote ?? 'No rentals to speak of here.'}</p>
+        )}
         <Source>
           {ds.meta.localTransport.source} Check{' '}
           <a className="text-accent hover:underline" href={`https://en.wikivoyage.org/wiki/Special:Search?go=Go&search=${encodeURIComponent(city.name)}#Get_around`} target="_blank" rel="noreferrer">

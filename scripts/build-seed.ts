@@ -38,8 +38,13 @@ writeJson(join(GEN, 'connections.json'), {
 })
 
 // Local transport and taxis: every city and country must have an entry.
-type LocalTransport = { _meta: unknown; countries: Record<string, unknown>; cities: Record<string, { modes: string[] }> }
+type LocalTransport = {
+  _meta: unknown
+  countries: Record<string, { rentals?: unknown }>
+  cities: Record<string, { modes: string[]; rentals?: string[] }>
+}
 const MODES = new Set(['metro', 'tram', 'trolleybus', 'bus', 'minibus', 'train', 'ferry', 'funicular', 'cablecar'])
+const RENTALS = new Set(['bikeShare', 'eScooter', 'bike', 'car', 'moto'])
 const lt = readJson<LocalTransport>(join(SEED, 'local-transport.json'))
 const cityIds = readCsv(join(SEED, 'cities.csv')).map((r) => r.id)
 const isoCodes = (countries.countries as { iso2: string }[]).map((c) => c.iso2)
@@ -48,6 +53,9 @@ const problems = [
   ...Object.keys(lt.cities).filter((id) => !cityIds.includes(id)).map((id) => `unknown city ${id}`),
   ...isoCodes.filter((c) => !lt.countries[c]).map((c) => `missing country ${c}`),
   ...Object.entries(lt.cities).flatMap(([id, c]) => c.modes.filter((m) => !MODES.has(m)).map((m) => `${id}: unknown mode ${m}`)),
+  ...Object.entries(lt.cities).filter(([, c]) => !c.rentals).map(([id]) => `${id}: missing rentals`),
+  ...Object.entries(lt.cities).flatMap(([id, c]) => (c.rentals ?? []).filter((r) => !RENTALS.has(r)).map((r) => `${id}: unknown rental ${r}`)),
+  ...isoCodes.filter((c) => lt.countries[c] && !lt.countries[c].rentals).map((c) => `${c}: missing rentals`),
 ]
 if (problems.length) {
   console.error(`local-transport.json: ${problems.join('; ')}`)

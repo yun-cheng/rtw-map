@@ -132,6 +132,15 @@ describe('local transport', () => {
     for (const iso2 of Object.keys(ds.countries)) expect(ds.localTransport.countries[iso2], iso2).toBeDefined()
   })
 
+  it('lists rentals for every city, with prices for car and scooter rentals', () => {
+    for (const [id, c] of Object.entries(ds.localTransport.cities)) {
+      expect(Array.isArray(c.rentals), id).toBe(true)
+      const country = ds.localTransport.countries[ds.cities[id].iso2].rentals
+      if (c.rentals.includes('car')) expect(country.carDay[0], id).toBeLessThan(country.carDay[1])
+      if (c.rentals.includes('moto')) expect(country.motoDay, id).toBeDefined()
+    }
+  })
+
   it('estimates a 5 km taxi ride from start fare and per-km price', () => {
     const taxi = ds.localTransport.countries.PL.taxi
     const est = taxiEstimate(ds, 'krakow')!

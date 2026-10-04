@@ -176,6 +176,7 @@ At this scale, **data lives in the repo as hand-curated files**, enriched by scr
 | **Language** | **How easy it is to get by in English** per city (1 hard → 5 easy): a country estimate, one step easier in big/very touristy cities, one step harder in small towns. Plus other useful languages (e.g. Russian in the Baltics, German in Kosovo, Italian in Albania) and the alphabet on signs (Cyrillic, Greek). Map layer + a trip check for stops where English is limited | Our own estimate, labelled as such; compared against the EF English Proficiency Index and the EU Eurobarometer language survey (references only, not copied) | Yearly |
 | **Welcomeness** | LGBTQ+ legal status, women-traveler notes, notes for travelers of different ethnicities | Equaldex, FCDO's dedicated advisory sections | Monthly |
 | **Local transport** | Per city: how easy public transport is (1 little/none → 5 excellent), which kinds exist (metro, tram, trolleybus, bus, minibus, train, ferry, funicular, cable car), whether the centre is walkable, how to pay (contactless, app, cash to the conductor, free in Belgrade), tips | Hand-curated from Wikivoyage "Get around" and city transport operators; link to the Wikivoyage page | Yearly |
+| **Rentals** | Per city: bike share, e-scooters, bike rental shops, car rental, scooter/motorbike rental. Per country: bike/scooter apps (e.g. Bolt, Lime, nextbike, Whoosh), daily price range for a small car and a scooter, plus what you need to rent (credit card, age, IDP, licence category, helmet) | Hand-curated; only operators we're confident about are named. Car rental data is the starting point for road-trip mode (§6.4) | Yearly |
 | **Taxis** | Per country: ride-hailing apps travellers actually use (Uber, Bolt, FREENOW, Yandex Go, CarGo…, or "none: use local taxis"), start fare + per-km price, an estimated 5 km ride, scam tips (e.g. Sofia price stickers, Prague street taxis) | Hand-curated; only apps we're confident operate are listed, since availability changes often | Yearly |
 | **Practical** | Currency + FX (local currency + the user's display currency), plug type, SIM/eSIM, card acceptance (e.g., cash-only Russia) | ExchangeRate-API open endpoint (covers ALL, RSD, MKD, BAM, MDL, RUB… which ECB doesn't), curated | Daily FX |
 | **Driving (country)** | Driving side, IDP needed for which licences, vignettes/tolls, alcohol limit, daytime headlights, typical road quality, road deaths per 100k, fuel price, driving culture notes | Curated from official sources; **FCDO "Road travel / Driving" advisory sections** (already fetched); WHO Global Health Observatory (road traffic deaths); EU Weekly Oil Bulletin (fuel, EU countries) + curated for the rest; official vignette/toll sites | Yearly; fuel monthly |
@@ -311,8 +312,10 @@ Connection { from, to, mode, durationMin, priceMin, priceMax, frequency, overnig
 VisaRule   { passport, dest, requirement, maxStayDays, zone, evisaUrl, notes, source, updatedAt }
 Advisory   { iso2, issuer, level, summary, sections{}, url, updatedAt }
 Welcome    { iso2, lgbtqLegal{}, womenNotes, ethnicityNotes, sources[] }
-CityTransport    { cityId, ease: 1..5, modes[], walkable, pay?, note? }
-CountryTransport { iso2, taxi: { apps[], flagFall, perKm, tip } }
+CityTransport    { cityId, ease: 1..5, modes[], walkable, pay?, note?,
+                   rentals: ('bikeShare' | 'eScooter' | 'bike' | 'car' | 'moto')[], rentalNote? }
+CountryTransport { iso2, taxi: { apps[], flagFall, perKm, tip },
+                   rentals: { apps[], carDay: [min, max], motoDay?: [min, max] } }
 
 CountryDriving { iso2, side: 'right' | 'left', idp: { required, forLicences[], note },
                  vignette?, tolls?, alcoholLimit, headlightsDay, roadDeathsPer100k,
@@ -349,7 +352,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Climate, done:** monthly averages for all 69 cities (Open-Meteo ERA5, 2016–2025). Weather now affects which cities are picked and when, plus heat/cold/wet checks. ERA5 tends to count slightly more wet days than weather stations, so the wet-month note says "days with ≥1 mm, often short showers".
 - **Display currency, done:** currency picker in the header; every price (header total, legs, city costs, map cost layer) is converted; supermarket prices also show the local-currency amount.
 - **English & language, done:** Language section in the city panel, an English map layer (route stops are coloured by the active layer), and a trip check naming stops where English is limited.
-- **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips. The data build fails if any city or country is missing.
+- **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips, and rentals (bike share, e-scooters, bikes, cars, scooters/motorbikes) with apps, daily prices and what you need to rent. The data build fails if any city or country is missing.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
 
