@@ -29,7 +29,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
 - **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, air pollution, tap water, cash-only places and countries where foreign cards fail, pace, limited English, unreachable or estimated legs.
 - **Map layers**: route, weather and air quality (by month), cost, cards, English, Schengen, safety.
-- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares, bike/e-scooter/car/scooter rentals), weather chart, costs by budget style incl. supermarket prices, money & payments (card acceptance, phone pay, cash needs, ATM tips, currency), health & water (tap water, air pollution by month, vaccines, risks, healthcare), shops & services (supermarkets, pharmacies, clinics, nearest hospital, chains, Sunday closures), connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa, safety or money jumps to the top when there's a problem (visa needed in advance, do-not-travel advice, foreign cards not working). Every fact shows its source and date.
+- **City panel**, most useful first: getting around (public transport ease and kinds, how to pay, taxi apps and fares, bike/e-scooter/car/scooter rentals), weather chart, costs by budget style incl. supermarket prices, price level vs a country you pick (with a how-to-read explainer) and a Big Mac reference, money & payments (card acceptance, phone pay, cash needs, ATM tips, currency), health & water (tap water, air pollution by month, vaccines, risks, healthcare), shops & services (supermarkets, pharmacies, clinics, nearest hospital, chains, Sunday closures), connections, safety, language (English level, other useful languages, alphabet), visa, people & practical info. Visa, safety or money jumps to the top when there's a problem (visa needed in advance, do-not-travel advice, foreign cards not working). Every fact shows its source and date.
 - **Display currency**: pick EUR, USD, TWD, JPY, …; all prices convert (data is stored in EUR).
 - **Saving**: automatic (localStorage) plus JSON export/import. Esc closes the side panel.
 
@@ -66,6 +66,8 @@ All data lives in the repo. Hand-curated files are in `data/seed/`; scripts enri
 | `fetch-advisories.ts` | UK FCDO (OGL) + US State Dept | `advisories.json` |
 | `fetch-fx.ts` | ExchangeRate-API open endpoint | `fx.json` |
 | `fetch-population.ts` | World Bank (CC-BY) | `population.json` |
+| `fetch-price-levels.ts` | World Bank PPP (IMF where missing) ÷ our exchange rates | `price-levels.json`: US = 1.00; also used to estimate costs where we have none |
+| `fetch-big-mac.ts` | The Economist's Big Mac index (MIT) | `big-mac.json` |
 
 ```bash
 npm run data:build     # everything; climate is slow (Open-Meteo rate limits) and resumes from .cache/

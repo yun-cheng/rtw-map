@@ -180,6 +180,8 @@ Phone (Phase 3): a read-only itinerary + today's stop + offline city info.
 | **Climate** | Monthly avg high/low, rain days, humidity, sunshine; derived "comfort score" | Open-Meteo historical (ERA5): monthly averages over 2016–2025, computed ourselves | Once |
 | **Seasons/events** | Peak season, heat, festivals, public holidays | Nager.Date (holidays), curated | Yearly |
 | **Costs** | Hostel dorm bed, private room, street meal, restaurant, local transport, **supermarket basket** | Curated seed data, Open Prices (Open Food Facts), World Bank price levels as fallback | Manual |
+| **Price level** | How far money goes in each country vs the US (= 1.00), shown in plain language against a country the user picks (default from the display currency, e.g. TWD → Taiwan): "about 35% cheaper than Germany". A "How to read the price level" explainer. Used to **estimate costs** for any country without hand-entered prices, and to flag hand-entered costs that are >25% above or >20% below what the level suggests | World Bank PPP conversion factors (IMF where missing, e.g. Taiwan) ÷ our daily exchange rates | Yearly (rates daily) |
+| **Big Mac** | Local Big Mac price, converted to the display currency, next to the comparison country's price: a relatable reference, not used for estimates (only ~53 countries; McDonald's isn't in e.g. Albania, Kosovo, Russia) | The Economist's Big Mac index (MIT) | Twice a year |
 | **Transport** | Between cities: mode, duration, price range, frequency, overnight option, booking tip | **Own `connections` file**, seeded from Wikivoyage + region references (§3.4) using AI extraction + my review; OSRM for road times | Manual |
 | **Visa** | Requirement per passport, max stay, Schengen zone, e-visa link, ETIAS/EES notes | Passport Index open dataset + Wikipedia, always linked to the official government site | Monthly check |
 | **Safety** | Advisory level + summary, scams, emergency numbers | UK FCDO (gov.uk content API), US State Dept | Daily (automated) |
@@ -211,7 +213,7 @@ Phone (Phase 3): a read-only itinerary + today's stop + offline city info.
 | Road travel times (OSRM demo server) | Small batches only | Self-hosted OSRM or OpenRouteService (free key) |
 | Visa (Passport Index) | Yes: 199 passports | Add more passports to the picker |
 | Advisories (FCDO + US), exchange rates, World Bank | Yes | Nothing |
-| Curated data (costs, transport, English, taxis, rentals, water, shops, health, driving) | No: hand-made per region | Country defaults first, then city overrides; AI-assisted extraction + review; Open Prices and World Bank price levels as cost fallbacks; "report outdated" button for corrections |
+| Curated data (costs, transport, English, taxis, rentals, water, shops, health, driving) | No: hand-made per region | Country defaults first, then city overrides; AI-assisted extraction + review; "report outdated" button for corrections. **Costs already work everywhere**: estimated from the national price level until hand-checked |
 
 ---
 
@@ -355,6 +357,8 @@ CountryHealth    { iso2, tapWater: { level: 'safe' | 'safe_bottled' | 'boil' | '
 AirMonth         { cityId, month, pm25, daysOverWho }
 Amenities        { cityId, supermarket, convenience, pharmacy, clinic, atm, nearestHospitalKm }
 Shopping         { iso2, chains[], lateNight?, sunday? }
+PriceLevel       { iso2, level, year, source: 'World Bank' | 'IMF' }   // US = 1.00
+BigMac           { iso2, localPrice, currency }                      // + euro-area average
 Payments         { iso2, cardLevel: 1..5, foreignCardsWork, mobilePay, cashFor, atm, note? }  // + city overrides
 CityTransport    { cityId, ease: 1..5, modes[], walkable, pay?, note?,
                    rentals: ('bikeShare' | 'eScooter' | 'bike' | 'car' | 'moto')[], rentalNote? }
@@ -400,6 +404,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips, and rentals (bike share, e-scooters, bikes, cars, scooters/motorbikes) with apps, daily prices and what you need to rent. The data build fails if any city or country is missing.
 - **Health, air & services, done:** "Health & water" section (tap water, monthly air pollution chart, vaccines, risks, healthcare + CDC link) and "Shops & services" section (OSM counts near the centre, nearest hospital, chains, Sunday/late-night). The OSM counts are still downloading (the shared Overpass server is slow), so the section shows "not loaded yet" for now. Air map layer by month; checks for undrinkable tap water and polluted months.
 - **Money & payments, done:** city section with card acceptance (1–5), phone pay, cash needs, ATM tips, ATMs nearby, currency and rate; Cards map layer; checks for countries where foreign cards fail and for mostly-cash stops. The section jumps to the top in Russia.
+- **Price level & Big Mac, done:** price level with a plain-language comparison (user picks the country) and a "how to read" explainer; costs estimated from the price level for countries without hand-entered prices; a warning when our hand-entered costs differ a lot from the level (currently Croatia ~36% higher, Albania ~21% lower); Big Mac reference price.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

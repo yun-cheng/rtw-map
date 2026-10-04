@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "data:build": "tsx scripts/build-cities.ts && tsx scripts/build-boundaries.ts && tsx scripts/build-seed.ts && tsx scripts/build-roads.ts && tsx scripts/build-visa.ts && tsx scripts/build-climate.ts && tsx scripts/build-air.ts && tsx scripts/fetch-amenities.ts",
-    "data:refresh": "tsx scripts/build-seed.ts && tsx scripts/fetch-population.ts && tsx scripts/fetch-advisories.ts && tsx scripts/fetch-fx.ts"
+    "data:refresh": "tsx scripts/build-seed.ts && tsx scripts/fetch-population.ts && tsx scripts/fetch-advisories.ts && tsx scripts/fetch-fx.ts && tsx scripts/fetch-price-levels.ts && tsx scripts/fetch-big-mac.ts"
   },
   "dependencies": {
     "maplibre-gl": "^6.12.0",

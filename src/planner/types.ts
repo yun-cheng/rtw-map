@@ -135,6 +135,11 @@ export type Amenities = {
 
 export type Shopping = { chains: string[]; lateNight?: string; sunday?: string }
 
+/** How far money goes in a country compared with the United States (= 1.00). */
+export type PriceLevel = { level: number; year: number; source: string }
+
+export type BigMac = { localPrice: number; currency: string }
+
 /** How you pay in a country: 1 = cash only … 5 = cards and phones everywhere. */
 export type CountryPayments = {
   cardLevel: number
@@ -164,6 +169,8 @@ export type Dataset = {
   air: { whoDaily: number; byCity: Record<string, AirMonth[]> }
   amenities: { radiusKm: number; byCity: Record<string, Amenities> }
   shopping: Record<string, Shopping>
+  priceLevels: { compare: { iso2: string; name: string; currency: string }[]; levels: Record<string, PriceLevel> }
+  bigMac: { date: string; euroArea: BigMac | null; prices: Record<string, BigMac> }
   payments: { tips: string[]; countries: Record<string, CountryPayments>; cities: Record<string, { cardLevel?: number; note?: string }> }
   meta: Record<string, Meta>
 }

@@ -1,12 +1,13 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AirChart } from './AirChart'
 import { ClimateChart } from './ClimateChart'
+import { PriceLevel } from './PriceLevel'
 
 const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' | 'info' }> = {
   free_movement: { label: 'Free movement (EU citizen)', tone: 'ok' },
@@ -40,7 +41,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const { currency, fmt } = useMoney()
   const city = ds.cities[cityId]
   const country = ds.countries[city.iso2]
-  const cost = ds.costs[city.iso2]
+  const costInfo = costProfile(ds, city.iso2)
+  const cost = costInfo?.profile
   const climate = ds.climate[cityId]
   const adv = ds.advisories[city.iso2]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
@@ -166,7 +168,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     costs: cost && (
-      <Section title="Costs" aside={<Badge tone="warn">estimates</Badge>}>
+      <Section title="Costs" aside={<Badge tone="warn">{costInfo?.estimated ? 'estimated from price level' : 'estimates'}</Badge>}>
         <div className="mb-3 grid grid-cols-4 gap-1 text-center">
           {BUDGETS.map((b) => (
             <div key={b.value} className={`rounded-md border px-1 py-1.5 ${b.value === input.budget ? 'border-accent bg-accent-soft' : 'border-line'}`}>
@@ -187,7 +189,13 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </Row>
         ))}
         <Row label="Groceries for a day of cooking">{fmt(groceryDay(cost), true)}</Row>
-        <Source>{ds.meta.costs.source} ({ds.meta.costs.updatedAt}). City price level ×{city.costFactor}.</Source>
+        <PriceLevel iso2={city.iso2} countryName={country.name} />
+        <Source>
+          {costInfo?.estimated
+            ? `No hand-checked prices for ${country.name} yet: estimated from its national price level and our other countries' prices.`
+            : `${ds.meta.costs.source} (${ds.meta.costs.updatedAt}).`}{' '}
+          City price factor ×{city.costFactor}.
+        </Source>
       </Section>
     ),
     money: pay && (

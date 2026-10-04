@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
+import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -209,5 +209,34 @@ describe('money & payments', () => {
     const cash = money.find((w) => w.title.startsWith('Mostly cash'))
     expect(cash?.title).toMatch(/Theth/)
     expect(cash?.title).not.toMatch(/Prague|Saint Petersburg/)
+  })
+})
+
+describe('price levels and estimated costs', () => {
+  it('has a price level for every country we cover', () => {
+    for (const iso2 of Object.keys(ds.countries)) expect(ds.priceLevels.levels[iso2]?.level, iso2).toBeGreaterThan(0)
+  })
+
+  it('describes price differences in plain language', () => {
+    expect(comparePrices(0.51, 0.8, 'Germany')).toBe('about 35% cheaper than Germany')
+    expect(comparePrices(1.12, 0.8, 'Germany')).toBe('about 40% more expensive than Germany')
+    expect(comparePrices(0.81, 0.8, 'Germany')).toBe('about the same as Germany')
+  })
+
+  it('estimates costs from the price level for a country without hand-entered prices', () => {
+    const { PL: _removed, ...costs } = ds.costs
+    const noPoland = { ...ds, costs }
+    const info = costProfile(noPoland, 'PL')
+    expect(info?.estimated).toBe(true)
+    expect(dailyCost(noPoland, 'krakow', 'backpacker')).toBeGreaterThan(0)
+    // The estimate should land near our hand-entered Polish prices.
+    expect(info!.profile.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
+    expect(info!.profile.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)
+  })
+
+  it('compares hand-entered costs with the price level', () => {
+    const ratio = costSanity(ds, 'PL')!
+    expect(ratio).toBeGreaterThan(0.8)
+    expect(ratio).toBeLessThan(1.25)
   })
 })

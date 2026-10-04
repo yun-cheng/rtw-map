@@ -1,4 +1,5 @@
 import advisoriesJson from '../../data/gen/advisories.json'
+import bigMacJson from '../../data/gen/big-mac.json'
 import airJson from '../../data/gen/air.json'
 import amenitiesJson from '../../data/gen/amenities.json'
 import citiesJson from '../../data/gen/cities.json'
@@ -12,6 +13,7 @@ import localTransportJson from '../../data/gen/local-transport.json'
 import noticesJson from '../../data/gen/notices.json'
 import paymentsJson from '../../data/gen/payments.json'
 import populationJson from '../../data/gen/population.json'
+import priceLevelsJson from '../../data/gen/price-levels.json'
 import roadsJson from '../../data/gen/roads.json'
 import shoppingJson from '../../data/gen/shopping.json'
 import visaJson from '../../data/gen/visa.json'
@@ -37,6 +39,8 @@ export const dataset: Dataset = {
   amenities: { radiusKm: amenitiesJson.radiusKm, byCity: amenitiesJson.amenities as Dataset['amenities']['byCity'] },
   shopping: shoppingJson.countries as Dataset['shopping'],
   payments: paymentsJson as unknown as Dataset['payments'],
+  priceLevels: { compare: priceLevelsJson.compare, levels: priceLevelsJson.levels },
+  bigMac: bigMacJson as unknown as Dataset['bigMac'],
   meta: {
     cities: citiesJson._meta,
     climate: climateJson._meta,
@@ -54,5 +58,7 @@ export const dataset: Dataset = {
     amenities: amenitiesJson._meta,
     shopping: shoppingJson._meta,
     payments: paymentsJson._meta,
+    priceLevels: priceLevelsJson._meta,
+    bigMac: bigMacJson._meta,
   },
 }

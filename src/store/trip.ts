@@ -21,6 +21,8 @@ type State = {
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
   currency: string
+  /** Country to compare price levels with; null = guess from the display currency. */
+  priceCompare: string | null
 
   setInput: (patch: Partial<TripInput>) => void
   generate: () => void
@@ -37,6 +39,7 @@ type State = {
   setLayerMonth: (m: number) => void
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
+  setPriceCompare: (iso2: string) => void
   importTrip: (data: { input: TripInput; stops: Stop[] }) => void
 }
 
@@ -88,6 +91,7 @@ export const useTrip = create<State>()(
         panel: 'setup',
         fitRequest: 0,
         currency: 'EUR',
+        priceCompare: null,
 
         setInput: (patch) => {
           const input = { ...get().input, ...patch }
@@ -132,6 +136,7 @@ export const useTrip = create<State>()(
         setLayerMonth: (layerMonth) => set({ layerMonth }),
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
+        setPriceCompare: (priceCompare) => set({ priceCompare }),
         importTrip: ({ input, stops }) => {
           set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null, selected: null, fitRequest: get().fitRequest + 1 })
         },
@@ -141,7 +146,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, priceCompare: s.priceCompare }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         try {

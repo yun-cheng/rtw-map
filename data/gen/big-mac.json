@@ -1,0 +1,225 @@
+{
+ "_meta": {
+  "source": "The Economist's Big Mac index (MIT), 2026-07-01",
+  "updatedAt": "2026-10-04"
+ },
+ "date": "2026-07-01",
+ "euroArea": {
+  "localPrice": 6.19,
+  "currency": "EUR"
+ },
+ "prices": {
+  "AE": {
+   "localPrice": 19,
+   "currency": "AED"
+  },
+  "AR": {
+   "localPrice": 8700,
+   "currency": "ARS"
+  },
+  "AU": {
+   "localPrice": 8.5,
+   "currency": "AUD"
+  },
+  "AZ": {
+   "localPrice": 7.25,
+   "currency": "AZN"
+  },
+  "BH": {
+   "localPrice": 1.8,
+   "currency": "BHD"
+  },
+  "BR": {
+   "localPrice": 23.9,
+   "currency": "BRL"
+  },
+  "CA": {
+   "localPrice": 8.17,
+   "currency": "CAD"
+  },
+  "CH": {
+   "localPrice": 7.3,
+   "currency": "CHF"
+  },
+  "CL": {
+   "localPrice": 4990,
+   "currency": "CLP"
+  },
+  "CN": {
+   "localPrice": 26.5,
+   "currency": "CNY"
+  },
+  "CO": {
+   "localPrice": 25900,
+   "currency": "COP"
+  },
+  "CR": {
+   "localPrice": 3150,
+   "currency": "CRC"
+  },
+  "CZ": {
+   "localPrice": 115,
+   "currency": "CZK"
+  },
+  "DK": {
+   "localPrice": 46,
+   "currency": "DKK"
+  },
+  "EG": {
+   "localPrice": 145,
+   "currency": "EGP"
+  },
+  "GB": {
+   "localPrice": 5.49,
+   "currency": "GBP"
+  },
+  "GT": {
+   "localPrice": 34,
+   "currency": "GTQ"
+  },
+  "HK": {
+   "localPrice": 25.5,
+   "currency": "HKD"
+  },
+  "HN": {
+   "localPrice": 139,
+   "currency": "HNL"
+  },
+  "HU": {
+   "localPrice": 1660,
+   "currency": "HUF"
+  },
+  "ID": {
+   "localPrice": 43000,
+   "currency": "IDR"
+  },
+  "IN": {
+   "localPrice": 236.25,
+   "currency": "INR"
+  },
+  "IL": {
+   "localPrice": 23,
+   "currency": "ILS"
+  },
+  "JO": {
+   "localPrice": 2.5,
+   "currency": "JOD"
+  },
+  "JP": {
+   "localPrice": 500,
+   "currency": "JPY"
+  },
+  "KR": {
+   "localPrice": 5700,
+   "currency": "KRW"
+  },
+  "KW": {
+   "localPrice": 1.4,
+   "currency": "KWD"
+  },
+  "LB": {
+   "localPrice": 480000,
+   "currency": "LBP"
+  },
+  "MD": {
+   "localPrice": 80,
+   "currency": "MDL"
+  },
+  "MX": {
+   "localPrice": 109,
+   "currency": "MXN"
+  },
+  "MY": {
+   "localPrice": 14.55,
+   "currency": "MYR"
+  },
+  "NI": {
+   "localPrice": 187,
+   "currency": "NIO"
+  },
+  "NO": {
+   "localPrice": 78,
+   "currency": "NOK"
+  },
+  "NZ": {
+   "localPrice": 8.8,
+   "currency": "NZD"
+  },
+  "OM": {
+   "localPrice": 1.53,
+   "currency": "OMR"
+  },
+  "PK": {
+   "localPrice": 1080,
+   "currency": "PKR"
+  },
+  "PE": {
+   "localPrice": 16.9,
+   "currency": "PEN"
+  },
+  "PH": {
+   "localPrice": 169,
+   "currency": "PHP"
+  },
+  "PL": {
+   "localPrice": 23.5,
+   "currency": "PLN"
+  },
+  "QA": {
+   "localPrice": 18,
+   "currency": "QAR"
+  },
+  "RO": {
+   "localPrice": 18.35,
+   "currency": "RON"
+  },
+  "SA": {
+   "localPrice": 19,
+   "currency": "SAR"
+  },
+  "SG": {
+   "localPrice": 7.45,
+   "currency": "SGD"
+  },
+  "SE": {
+   "localPrice": 69,
+   "currency": "SEK"
+  },
+  "TH": {
+   "localPrice": 135,
+   "currency": "THB"
+  },
+  "TR": {
+   "localPrice": 325,
+   "currency": "TRY"
+  },
+  "TW": {
+   "localPrice": 78,
+   "currency": "TWD"
+  },
+  "UA": {
+   "localPrice": 149,
+   "currency": "UAH"
+  },
+  "UY": {
+   "localPrice": 359,
+   "currency": "UYU"
+  },
+  "US": {
+   "localPrice": 6.22,
+   "currency": "USD"
+  },
+  "VE": {
+   "localPrice": 3267,
+   "currency": "VES"
+  },
+  "VN": {
+   "localPrice": 76000,
+   "currency": "VND"
+  },
+  "ZA": {
+   "localPrice": 56.9,
+   "currency": "ZAR"
+  }
+ }
+}
