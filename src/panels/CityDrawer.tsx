@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
+import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, weatherKind } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AirChart } from './AirChart'
@@ -466,7 +466,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const monthName = new Date(2000, month - 1).toLocaleString('en', { month: 'short' })
   const clim = climate?.[month - 1]
   const airM = air?.[month - 1]
-  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; problem?: boolean }[] = [
+  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; problem?: boolean; color?: string }[] = [
     ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tone: VISA_TEXT[visa.req].tone, tab: 'entry' as const, problem: visaProblem }] : []),
     ...(adv ? [{
       icon: '🛡', label: 'Safety', tab: 'safety' as const, problem: safetyProblem,
@@ -474,7 +474,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       tone: (adv.excludedByDefault ? 'error' : adv.level >= 3 ? 'warn' : adv.us && adv.us.level >= 2 ? 'info' : 'ok') as Tone,
     }] : []),
     ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
-    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${Math.round(clim.tLow)}–${Math.round(clim.tHigh)}°C, ~${Math.round(clim.rainDays)} rain days`, tone: (clim.comfort >= 0.6 ? 'ok' : clim.comfort >= 0.35 ? 'info' : 'warn') as Tone, tab: 'weather' as const }] : []),
+    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${Math.round(clim.tLow)}–${Math.round(clim.tHigh)}°C, ~${Math.round(clim.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind(clim)].color, tab: 'weather' as const }] : []),
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'safety' as const }] : []),
     ...(cost ? [{ icon: '💶', label: 'Daily budget', value: `${fmt(dailyCost(ds, cityId, input.budget))} (${BUDGETS.find((b) => b.value === input.budget)?.label.toLowerCase()})`, tone: 'info' as const, tab: 'money' as const }] : []),
@@ -551,7 +551,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
                   onClick={() => setCityTab(g.tab)}
                   className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : ''}`}
                 >
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[g.tone]}`} />
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${g.color ? '' : TONE_DOT[g.tone]}`} style={g.color ? { background: g.color } : undefined} />
                   <span className="w-5 shrink-0 text-center">{g.icon}</span>
                   <span className="w-32 shrink-0 text-muted">{g.label}</span>
                   <span className={`flex-1 font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>

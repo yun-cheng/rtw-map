@@ -1,5 +1,5 @@
 import { useTrip, type MapLayer } from '../store/trip'
-import { MONTHS } from '../ui/format'
+import { MONTHS, WEATHER_STYLE } from '../ui/format'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
@@ -13,7 +13,7 @@ const LAYERS: { value: MapLayer; label: string }[] = [
 ]
 
 const LEGENDS: Partial<Record<MapLayer, { color: string; label: string }[]>> = {
-  climate: [{ color: '#16a34a', label: 'Pleasant' }, { color: '#eab308', label: 'OK' }, { color: '#dc2626', label: 'Too hot / cold / wet' }],
+  climate: Object.values(WEATHER_STYLE),
   air: [{ color: '#16a34a', label: 'Clean' }, { color: '#eab308', label: 'Moderate' }, { color: '#dc2626', label: 'Polluted' }],
   cost: [{ color: '#16a34a', label: 'Cheap' }, { color: '#eab308', label: 'Medium' }, { color: '#dc2626', label: 'Expensive' }],
   cards: [{ color: '#16a34a', label: 'Cards everywhere' }, { color: '#eab308', label: 'Mixed' }, { color: '#dc2626', label: 'Cash only' }],

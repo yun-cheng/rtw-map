@@ -7,7 +7,7 @@ import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, airBand, cardLevel, dailyCost, englishLevel } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_COLOR, MONTHS, money, ramp } from '../ui/format'
+import { MODE_COLOR, MONTHS, WEATHER_STYLE, money, ramp, weatherKind } from '../ui/format'
 
 // Vite bundles MapLibre's worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
@@ -153,7 +153,8 @@ export function MapView() {
       if (layer === 'climate') {
         const m = ds.climate[cityId]?.[layerMonth - 1]
         if (!m) return {}
-        return { color: ramp(m.comfort), label: `${MONTHS[layerMonth - 1]}: ${m.tHigh}°C, ${m.rainDays} rain days` }
+        const kind = weatherKind(m)
+        return { color: WEATHER_STYLE[kind].color, label: `${MONTHS[layerMonth - 1]}: ${WEATHER_STYLE[kind].label.replace(/ \(.*\)/, '').toLowerCase()}, high ${m.tHigh}°C, ${m.rainDays} rain days` }
       }
       if (layer === 'air') {
         const a = ds.air.byCity[cityId]?.[layerMonth - 1]

@@ -75,3 +75,24 @@ export function rateText(from: string, to: string): string | null {
   const r = b / a
   return r >= 1 ? `1 ${from} = ${r.toFixed(2)} ${to}` : `1 ${to} = ${(1 / r).toFixed(2)} ${from}`
 }
+
+export type WeatherKind = 'cold' | 'cool' | 'pleasant' | 'warm' | 'hot' | 'wet'
+
+/** Temperature-style colours: blue for cold, green for pleasant, orange/red for heat, grey for rainy months. */
+export const WEATHER_STYLE: Record<WeatherKind, { color: string; label: string }> = {
+  cold: { color: '#1d4ed8', label: 'Cold (<12°C)' },
+  cool: { color: '#38bdf8', label: 'Cool' },
+  pleasant: { color: '#16a34a', label: 'Pleasant' },
+  warm: { color: '#f59e0b', label: 'Warm' },
+  hot: { color: '#dc2626', label: 'Very hot (32°C+)' },
+  wet: { color: '#94a3b8', label: 'Wet' },
+}
+
+/** Classifies a month by its average high, using the same thresholds as the weather warnings. */
+export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {
+  if (m.tHigh < 12) return 'cold'
+  if (m.tHigh < 18) return 'cool'
+  if (m.tHigh >= 32) return 'hot'
+  if (m.tHigh >= 28) return 'warm'
+  return m.rainDays >= 14 ? 'wet' : 'pleasant'
+}

@@ -1,7 +1,7 @@
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, monthOf } from '../planner'
 import { useTrip } from '../store/trip'
-import { MONTHS, ramp } from '../ui/format'
+import { MONTHS, WEATHER_STYLE, weatherKind } from '../ui/format'
 
 export function Timeline() {
   const { plan, input, selected, select } = useTrip()
@@ -48,18 +48,26 @@ export function Timeline() {
           )
         })}
       </div>
-      <div className="relative mt-1 h-1.5" title="Weather comfort during each stay (green = pleasant)">
+      <div className="relative mt-1 h-1.5" title="Weather during each stay">
         {plan.stops.map((s) => {
           const m = ds.climate[s.cityId]?.[monthOf(addDays(s.arrive, Math.floor(s.nights / 2))) - 1]
           return (
-            <div key={s.cityId} className="absolute top-0 h-1.5 rounded-full border-r-2 border-panel" style={{ left: pct(daysBetween(start, s.arrive)), width: pct(s.nights), background: m ? ramp(m.comfort) : '#e7e5e4' }} />
+            <div key={s.cityId} className="absolute top-0 h-1.5 rounded-full border-r-2 border-panel" style={{ left: pct(daysBetween(start, s.arrive)), width: pct(s.nights), background: m ? WEATHER_STYLE[weatherKind(m)].color : '#e7e5e4' }} />
           )
         })}
       </div>
       <div className="mt-1.5 flex gap-4 text-[11px] text-muted">
         <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-schengen" />Schengen</span>
         <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-outside" />Outside Schengen</span>
-        <span><span className="mr-1 inline-block h-2 w-3 rounded-full bg-gradient-to-r from-red-600 via-yellow-500 to-green-600" />Weather comfort</span>
+        <span className="flex items-center gap-2">
+          Weather:
+          {Object.values(WEATHER_STYLE).map((w) => (
+            <span key={w.label} className="flex items-center gap-1">
+              <span className="inline-block h-2 w-3 rounded-full" style={{ background: w.color }} />
+              {w.label.replace(/ \(.*\)/, '')}
+            </span>
+          ))}
+        </span>
       </div>
     </div>
   )
