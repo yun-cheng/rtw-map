@@ -1739,12 +1739,6 @@
    "km": 739
   },
   {
-   "a": "belgrade",
-   "b": "brno",
-   "driveMin": 431,
-   "km": 698
-  },
-  {
    "a": "novisad",
    "b": "nis",
    "driveMin": 209,
@@ -1905,18 +1899,6 @@
    "b": "ceskykrumlov",
    "driveMin": 507,
    "km": 735
-  },
-  {
-   "a": "novisad",
-   "b": "brno",
-   "driveMin": 385,
-   "km": 616
-  },
-  {
-   "a": "novisad",
-   "b": "zakopane",
-   "driveMin": 477,
-   "km": 719
   },
   {
    "a": "nis",
@@ -2561,10 +2543,10 @@
    "km": 740
   },
   {
-   "a": "zadar",
-   "b": "brno",
-   "driveMin": 522,
-   "km": 768
+   "a": "zagreb",
+   "b": "peja",
+   "driveMin": 590,
+   "km": 747
   },
   {
    "a": "zagreb",
@@ -2627,18 +2609,6 @@
    "km": 472
   },
   {
-   "a": "zagreb",
-   "b": "brno",
-   "driveMin": 348,
-   "km": 500
-  },
-  {
-   "a": "zagreb",
-   "b": "zakopane",
-   "driveMin": 526,
-   "km": 739
-  },
-  {
    "a": "ljubljana",
    "b": "bled",
    "driveMin": 41,
@@ -2687,18 +2657,6 @@
    "km": 484
   },
   {
-   "a": "ljubljana",
-   "b": "brno",
-   "driveMin": 345,
-   "km": 510
-  },
-  {
-   "a": "ljubljana",
-   "b": "zakopane",
-   "driveMin": 523,
-   "km": 749
-  },
-  {
    "a": "bled",
    "b": "budapest",
    "driveMin": 320,
@@ -2739,18 +2697,6 @@
    "b": "ceskykrumlov",
    "driveMin": 308,
    "km": 438
-  },
-  {
-   "a": "bled",
-   "b": "brno",
-   "driveMin": 362,
-   "km": 504
-  },
-  {
-   "a": "bled",
-   "b": "zakopane",
-   "driveMin": 540,
-   "km": 744
   },
   {
    "a": "thessaloniki",
@@ -2883,6 +2829,12 @@
    "b": "sibiu",
    "driveMin": 572,
    "km": 595
+  },
+  {
+   "a": "velikotarnovo",
+   "b": "kotor",
+   "driveMin": 757,
+   "km": 798
   },
   {
    "a": "velikotarnovo",
@@ -3047,12 +2999,6 @@
    "km": 797
   },
   {
-   "a": "brasov",
-   "b": "lviv",
-   "driveMin": 756,
-   "km": 708
-  },
-  {
    "a": "sighisoara",
    "b": "sibiu",
    "driveMin": 103,
@@ -3093,18 +3039,6 @@
    "b": "poprad",
    "driveMin": 514,
    "km": 680
-  },
-  {
-   "a": "sighisoara",
-   "b": "zakopane",
-   "driveMin": 583,
-   "km": 742
-  },
-  {
-   "a": "sighisoara",
-   "b": "lviv",
-   "driveMin": 645,
-   "km": 643
   },
   {
    "a": "sibiu",
@@ -3149,16 +3083,10 @@
    "km": 705
   },
   {
-   "a": "sibiu",
-   "b": "zakopane",
-   "driveMin": 599,
-   "km": 767
-  },
-  {
-   "a": "sibiu",
-   "b": "lviv",
-   "driveMin": 661,
-   "km": 667
+   "a": "cluj",
+   "b": "plovdiv",
+   "driveMin": 690,
+   "km": 772
   },
   {
    "a": "cluj",
@@ -3195,6 +3123,222 @@
    "b": "poprad",
    "driveMin": 411,
    "km": 537
+  },
+  {
+   "a": "budapest",
+   "b": "eger",
+   "driveMin": 95,
+   "km": 133
+  },
+  {
+   "a": "budapest",
+   "b": "bratislava",
+   "driveMin": 127,
+   "km": 201
+  },
+  {
+   "a": "budapest",
+   "b": "kosice",
+   "driveMin": 172,
+   "km": 263
+  },
+  {
+   "a": "budapest",
+   "b": "poprad",
+   "driveMin": 238,
+   "km": 377
+  },
+  {
+   "a": "budapest",
+   "b": "prague",
+   "driveMin": 326,
+   "km": 529
+  },
+  {
+   "a": "budapest",
+   "b": "ceskykrumlov",
+   "driveMin": 326,
+   "km": 446
+  },
+  {
+   "a": "eger",
+   "b": "bratislava",
+   "driveMin": 219,
+   "km": 331
+  },
+  {
+   "a": "eger",
+   "b": "kosice",
+   "driveMin": 114,
+   "km": 161
+  },
+  {
+   "a": "eger",
+   "b": "poprad",
+   "driveMin": 180,
+   "km": 274
+  },
+  {
+   "a": "eger",
+   "b": "prague",
+   "driveMin": 418,
+   "km": 659
+  },
+  {
+   "a": "eger",
+   "b": "ceskykrumlov",
+   "driveMin": 418,
+   "km": 576
+  },
+  {
+   "a": "bratislava",
+   "b": "kosice",
+   "driveMin": 291,
+   "km": 444
+  },
+  {
+   "a": "bratislava",
+   "b": "poprad",
+   "driveMin": 223,
+   "km": 333
+  },
+  {
+   "a": "bratislava",
+   "b": "prague",
+   "driveMin": 211,
+   "km": 333
+  },
+  {
+   "a": "bratislava",
+   "b": "ceskykrumlov",
+   "driveMin": 228,
+   "km": 282
+  },
+  {
+   "a": "kosice",
+   "b": "poprad",
+   "driveMin": 78,
+   "km": 113
+  },
+  {
+   "a": "kosice",
+   "b": "prague",
+   "driveMin": 462,
+   "km": 656
+  },
+  {
+   "a": "kosice",
+   "b": "ceskykrumlov",
+   "driveMin": 492,
+   "km": 688
+  },
+  {
+   "a": "poprad",
+   "b": "prague",
+   "driveMin": 393,
+   "km": 545
+  },
+  {
+   "a": "poprad",
+   "b": "ceskykrumlov",
+   "driveMin": 423,
+   "km": 577
+  },
+  {
+   "a": "prague",
+   "b": "ceskykrumlov",
+   "driveMin": 128,
+   "km": 175
+  },
+  {
+   "a": "belgrade",
+   "b": "brno",
+   "driveMin": 431,
+   "km": 698
+  },
+  {
+   "a": "novisad",
+   "b": "brno",
+   "driveMin": 385,
+   "km": 616
+  },
+  {
+   "a": "novisad",
+   "b": "zakopane",
+   "driveMin": 477,
+   "km": 719
+  },
+  {
+   "a": "zadar",
+   "b": "brno",
+   "driveMin": 522,
+   "km": 768
+  },
+  {
+   "a": "zagreb",
+   "b": "brno",
+   "driveMin": 348,
+   "km": 500
+  },
+  {
+   "a": "zagreb",
+   "b": "zakopane",
+   "driveMin": 526,
+   "km": 739
+  },
+  {
+   "a": "ljubljana",
+   "b": "brno",
+   "driveMin": 345,
+   "km": 510
+  },
+  {
+   "a": "ljubljana",
+   "b": "zakopane",
+   "driveMin": 523,
+   "km": 749
+  },
+  {
+   "a": "bled",
+   "b": "brno",
+   "driveMin": 362,
+   "km": 504
+  },
+  {
+   "a": "bled",
+   "b": "zakopane",
+   "driveMin": 540,
+   "km": 744
+  },
+  {
+   "a": "brasov",
+   "b": "lviv",
+   "driveMin": 756,
+   "km": 708
+  },
+  {
+   "a": "sighisoara",
+   "b": "zakopane",
+   "driveMin": 583,
+   "km": 742
+  },
+  {
+   "a": "sighisoara",
+   "b": "lviv",
+   "driveMin": 645,
+   "km": 643
+  },
+  {
+   "a": "sibiu",
+   "b": "zakopane",
+   "driveMin": 599,
+   "km": 767
+  },
+  {
+   "a": "sibiu",
+   "b": "lviv",
+   "driveMin": 661,
+   "km": 667
   },
   {
    "a": "cluj",
@@ -3234,42 +3378,6 @@
   },
   {
    "a": "budapest",
-   "b": "eger",
-   "driveMin": 95,
-   "km": 133
-  },
-  {
-   "a": "budapest",
-   "b": "bratislava",
-   "driveMin": 127,
-   "km": 201
-  },
-  {
-   "a": "budapest",
-   "b": "kosice",
-   "driveMin": 172,
-   "km": 263
-  },
-  {
-   "a": "budapest",
-   "b": "poprad",
-   "driveMin": 238,
-   "km": 377
-  },
-  {
-   "a": "budapest",
-   "b": "prague",
-   "driveMin": 326,
-   "km": 529
-  },
-  {
-   "a": "budapest",
-   "b": "ceskykrumlov",
-   "driveMin": 326,
-   "km": 446
-  },
-  {
-   "a": "budapest",
    "b": "brno",
    "driveMin": 204,
    "km": 327
@@ -3296,36 +3404,6 @@
    "a": "budapest",
    "b": "lviv",
    "driveMin": 491,
-   "km": 576
-  },
-  {
-   "a": "eger",
-   "b": "bratislava",
-   "driveMin": 219,
-   "km": 331
-  },
-  {
-   "a": "eger",
-   "b": "kosice",
-   "driveMin": 114,
-   "km": 161
-  },
-  {
-   "a": "eger",
-   "b": "poprad",
-   "driveMin": 180,
-   "km": 274
-  },
-  {
-   "a": "eger",
-   "b": "prague",
-   "driveMin": 418,
-   "km": 659
-  },
-  {
-   "a": "eger",
-   "b": "ceskykrumlov",
-   "driveMin": 418,
    "km": 576
   },
   {
@@ -3363,30 +3441,6 @@
    "b": "lviv",
    "driveMin": 433,
    "km": 474
-  },
-  {
-   "a": "bratislava",
-   "b": "kosice",
-   "driveMin": 291,
-   "km": 444
-  },
-  {
-   "a": "bratislava",
-   "b": "poprad",
-   "driveMin": 223,
-   "km": 333
-  },
-  {
-   "a": "bratislava",
-   "b": "prague",
-   "driveMin": 211,
-   "km": 333
-  },
-  {
-   "a": "bratislava",
-   "b": "ceskykrumlov",
-   "driveMin": 228,
-   "km": 282
   },
   {
    "a": "bratislava",
@@ -3438,24 +3492,6 @@
   },
   {
    "a": "kosice",
-   "b": "poprad",
-   "driveMin": 78,
-   "km": 113
-  },
-  {
-   "a": "kosice",
-   "b": "prague",
-   "driveMin": 462,
-   "km": 656
-  },
-  {
-   "a": "kosice",
-   "b": "ceskykrumlov",
-   "driveMin": 492,
-   "km": 688
-  },
-  {
-   "a": "kosice",
    "b": "brno",
    "driveMin": 339,
    "km": 451
@@ -3501,18 +3537,6 @@
    "b": "lviv",
    "driveMin": 346,
    "km": 321
-  },
-  {
-   "a": "poprad",
-   "b": "prague",
-   "driveMin": 393,
-   "km": 545
-  },
-  {
-   "a": "poprad",
-   "b": "ceskykrumlov",
-   "driveMin": 423,
-   "km": 577
   },
   {
    "a": "poprad",
@@ -3567,12 +3591,6 @@
    "b": "lviv",
    "driveMin": 349,
    "km": 467
-  },
-  {
-   "a": "prague",
-   "b": "ceskykrumlov",
-   "driveMin": 128,
-   "km": 175
   },
   {
    "a": "prague",
@@ -4407,6 +4425,780 @@
    "b": "minsk",
    "driveMin": 575,
    "km": 651
+  },
+  {
+   "a": "minsk",
+   "b": "torun",
+   "driveMin": 537,
+   "km": 800
+  },
+  {
+   "a": "taipei",
+   "b": "taichung",
+   "driveMin": 126,
+   "km": 158
+  },
+  {
+   "a": "taipei",
+   "b": "tainan",
+   "driveMin": 223,
+   "km": 308
+  },
+  {
+   "a": "taipei",
+   "b": "kaohsiung",
+   "driveMin": 252,
+   "km": 349
+  },
+  {
+   "a": "taipei",
+   "b": "hualien",
+   "driveMin": 189,
+   "km": 162
+  },
+  {
+   "a": "taichung",
+   "b": "tainan",
+   "driveMin": 117,
+   "km": 158
+  },
+  {
+   "a": "taichung",
+   "b": "kaohsiung",
+   "driveMin": 146,
+   "km": 199
+  },
+  {
+   "a": "taichung",
+   "b": "hualien",
+   "driveMin": 301,
+   "km": 313
+  },
+  {
+   "a": "tainan",
+   "b": "kaohsiung",
+   "driveMin": 42,
+   "km": 48
+  },
+  {
+   "a": "tainan",
+   "b": "hualien",
+   "driveMin": 398,
+   "km": 345
+  },
+  {
+   "a": "kaohsiung",
+   "b": "hualien",
+   "driveMin": 395,
+   "km": 335
+  },
+  {
+   "a": "tokyo",
+   "b": "hakone",
+   "driveMin": 99,
+   "km": 95
+  },
+  {
+   "a": "tokyo",
+   "b": "kyoto",
+   "driveMin": 339,
+   "km": 454
+  },
+  {
+   "a": "tokyo",
+   "b": "nara",
+   "driveMin": 346,
+   "km": 466
+  },
+  {
+   "a": "tokyo",
+   "b": "osaka",
+   "driveMin": 374,
+   "km": 490
+  },
+  {
+   "a": "tokyo",
+   "b": "kanazawa",
+   "driveMin": 353,
+   "km": 395
+  },
+  {
+   "a": "tokyo",
+   "b": "takayama",
+   "driveMin": 272,
+   "km": 293
+  },
+  {
+   "a": "hakone",
+   "b": "kyoto",
+   "driveMin": 274,
+   "km": 365
+  },
+  {
+   "a": "hakone",
+   "b": "nara",
+   "driveMin": 281,
+   "km": 377
+  },
+  {
+   "a": "hakone",
+   "b": "osaka",
+   "driveMin": 309,
+   "km": 401
+  },
+  {
+   "a": "hakone",
+   "b": "hiroshima",
+   "driveMin": 564,
+   "km": 719
+  },
+  {
+   "a": "hakone",
+   "b": "kanazawa",
+   "driveMin": 330,
+   "km": 385
+  },
+  {
+   "a": "hakone",
+   "b": "takayama",
+   "driveMin": 249,
+   "km": 282
+  },
+  {
+   "a": "kyoto",
+   "b": "nara",
+   "driveMin": 52,
+   "km": 42
+  },
+  {
+   "a": "kyoto",
+   "b": "osaka",
+   "driveMin": 59,
+   "km": 50
+  },
+  {
+   "a": "kyoto",
+   "b": "hiroshima",
+   "driveMin": 313,
+   "km": 362
+  },
+  {
+   "a": "kyoto",
+   "b": "kanazawa",
+   "driveMin": 208,
+   "km": 260
+  },
+  {
+   "a": "kyoto",
+   "b": "takayama",
+   "driveMin": 221,
+   "km": 255
+  },
+  {
+   "a": "kyoto",
+   "b": "fukuoka",
+   "driveMin": 524,
+   "km": 639
+  },
+  {
+   "a": "nara",
+   "b": "osaka",
+   "driveMin": 39,
+   "km": 32
+  },
+  {
+   "a": "nara",
+   "b": "hiroshima",
+   "driveMin": 320,
+   "km": 363
+  },
+  {
+   "a": "nara",
+   "b": "kanazawa",
+   "driveMin": 234,
+   "km": 287
+  },
+  {
+   "a": "nara",
+   "b": "takayama",
+   "driveMin": 233,
+   "km": 291
+  },
+  {
+   "a": "nara",
+   "b": "fukuoka",
+   "driveMin": 531,
+   "km": 640
+  },
+  {
+   "a": "osaka",
+   "b": "hiroshima",
+   "driveMin": 289,
+   "km": 331
+  },
+  {
+   "a": "osaka",
+   "b": "kanazawa",
+   "driveMin": 244,
+   "km": 297
+  },
+  {
+   "a": "osaka",
+   "b": "takayama",
+   "driveMin": 257,
+   "km": 292
+  },
+  {
+   "a": "osaka",
+   "b": "fukuoka",
+   "driveMin": 500,
+   "km": 608
+  },
+  {
+   "a": "hiroshima",
+   "b": "kanazawa",
+   "driveMin": 498,
+   "km": 613
+  },
+  {
+   "a": "hiroshima",
+   "b": "takayama",
+   "driveMin": 510,
+   "km": 608
+  },
+  {
+   "a": "hiroshima",
+   "b": "fukuoka",
+   "driveMin": 223,
+   "km": 284
+  },
+  {
+   "a": "kanazawa",
+   "b": "takayama",
+   "driveMin": 101,
+   "km": 133
+  },
+  {
+   "a": "bangkok",
+   "b": "ayutthaya",
+   "driveMin": 62,
+   "km": 78
+  },
+  {
+   "a": "bangkok",
+   "b": "kanchanaburi",
+   "driveMin": 96,
+   "km": 129
+  },
+  {
+   "a": "bangkok",
+   "b": "chiangmai",
+   "driveMin": 518,
+   "km": 686
+  },
+  {
+   "a": "bangkok",
+   "b": "chiangrai",
+   "driveMin": 600,
+   "km": 786
+  },
+  {
+   "a": "bangkok",
+   "b": "krabi",
+   "driveMin": 560,
+   "km": 773
+  },
+  {
+   "a": "bangkok",
+   "b": "kohsamui",
+   "driveMin": 620,
+   "km": 742
+  },
+  {
+   "a": "bangkok",
+   "b": "phnompenh",
+   "driveMin": 487,
+   "km": 675
+  },
+  {
+   "a": "bangkok",
+   "b": "siemreap",
+   "driveMin": 307,
+   "km": 422
+  },
+  {
+   "a": "bangkok",
+   "b": "battambang",
+   "driveMin": 280,
+   "km": 382
+  },
+  {
+   "a": "bangkok",
+   "b": "kampot",
+   "driveMin": 518,
+   "km": 658
+  },
+  {
+   "a": "ayutthaya",
+   "b": "kanchanaburi",
+   "driveMin": 127,
+   "km": 157
+  },
+  {
+   "a": "ayutthaya",
+   "b": "chiangmai",
+   "driveMin": 465,
+   "km": 612
+  },
+  {
+   "a": "ayutthaya",
+   "b": "pai",
+   "driveMin": 596,
+   "km": 739
+  },
+  {
+   "a": "ayutthaya",
+   "b": "chiangrai",
+   "driveMin": 548,
+   "km": 713
+  },
+  {
+   "a": "ayutthaya",
+   "b": "phnompenh",
+   "driveMin": 479,
+   "km": 661
+  },
+  {
+   "a": "ayutthaya",
+   "b": "siemreap",
+   "driveMin": 299,
+   "km": 408
+  },
+  {
+   "a": "ayutthaya",
+   "b": "battambang",
+   "driveMin": 273,
+   "km": 369
+  },
+  {
+   "a": "ayutthaya",
+   "b": "kampot",
+   "driveMin": 553,
+   "km": 712
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "chiangmai",
+   "driveMin": 540,
+   "km": 694
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "krabi",
+   "driveMin": 583,
+   "km": 790
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "kohsamui",
+   "driveMin": 643,
+   "km": 758
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "phnompenh",
+   "driveMin": 571,
+   "km": 786
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "siemreap",
+   "driveMin": 391,
+   "km": 533
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "battambang",
+   "driveMin": 365,
+   "km": 493
+  },
+  {
+   "a": "kanchanaburi",
+   "b": "kampot",
+   "driveMin": 607,
+   "km": 783
+  },
+  {
+   "a": "chiangmai",
+   "b": "pai",
+   "driveMin": 138,
+   "km": 129
+  },
+  {
+   "a": "chiangmai",
+   "b": "chiangrai",
+   "driveMin": 178,
+   "km": 186
+  },
+  {
+   "a": "pai",
+   "b": "chiangrai",
+   "driveMin": 304,
+   "km": 306
+  },
+  {
+   "a": "krabi",
+   "b": "phuket",
+   "driveMin": 151,
+   "km": 170
+  },
+  {
+   "a": "krabi",
+   "b": "kohsamui",
+   "driveMin": 265,
+   "km": 245
+  },
+  {
+   "a": "krabi",
+   "b": "georgetown",
+   "driveMin": 372,
+   "km": 496
+  },
+  {
+   "a": "krabi",
+   "b": "cameronhighlands",
+   "driveMin": 540,
+   "km": 708
+  },
+  {
+   "a": "krabi",
+   "b": "langkawi",
+   "driveMin": 437,
+   "km": 438
+  },
+  {
+   "a": "phuket",
+   "b": "kohsamui",
+   "driveMin": 358,
+   "km": 327
+  },
+  {
+   "a": "phuket",
+   "b": "georgetown",
+   "driveMin": 518,
+   "km": 660
+  },
+  {
+   "a": "phuket",
+   "b": "langkawi",
+   "driveMin": 582,
+   "km": 603
+  },
+  {
+   "a": "kohsamui",
+   "b": "georgetown",
+   "driveMin": 494,
+   "km": 554
+  },
+  {
+   "a": "kohsamui",
+   "b": "cameronhighlands",
+   "driveMin": 662,
+   "km": 767
+  },
+  {
+   "a": "kohsamui",
+   "b": "langkawi",
+   "driveMin": 558,
+   "km": 497
+  },
+  {
+   "a": "hanoi",
+   "b": "sapa",
+   "driveMin": 256,
+   "km": 316
+  },
+  {
+   "a": "hanoi",
+   "b": "halong",
+   "driveMin": 116,
+   "km": 160
+  },
+  {
+   "a": "hanoi",
+   "b": "ninhbinh",
+   "driveMin": 70,
+   "km": 92
+  },
+  {
+   "a": "hanoi",
+   "b": "hue",
+   "driveMin": 528,
+   "km": 666
+  },
+  {
+   "a": "hanoi",
+   "b": "hoian",
+   "driveMin": 629,
+   "km": 793
+  },
+  {
+   "a": "hanoi",
+   "b": "danang",
+   "driveMin": 610,
+   "km": 767
+  },
+  {
+   "a": "sapa",
+   "b": "halong",
+   "driveMin": 358,
+   "km": 468
+  },
+  {
+   "a": "sapa",
+   "b": "ninhbinh",
+   "driveMin": 318,
+   "km": 404
+  },
+  {
+   "a": "halong",
+   "b": "ninhbinh",
+   "driveMin": 130,
+   "km": 175
+  },
+  {
+   "a": "halong",
+   "b": "hue",
+   "driveMin": 589,
+   "km": 750
+  },
+  {
+   "a": "ninhbinh",
+   "b": "hue",
+   "driveMin": 461,
+   "km": 575
+  },
+  {
+   "a": "ninhbinh",
+   "b": "hoian",
+   "driveMin": 563,
+   "km": 701
+  },
+  {
+   "a": "ninhbinh",
+   "b": "danang",
+   "driveMin": 543,
+   "km": 675
+  },
+  {
+   "a": "hue",
+   "b": "hoian",
+   "driveMin": 105,
+   "km": 121
+  },
+  {
+   "a": "hue",
+   "b": "danang",
+   "driveMin": 85,
+   "km": 95
+  },
+  {
+   "a": "hue",
+   "b": "dalat",
+   "driveMin": 589,
+   "km": 726
+  },
+  {
+   "a": "hue",
+   "b": "siemreap",
+   "driveMin": 676,
+   "km": 799
+  },
+  {
+   "a": "hoian",
+   "b": "danang",
+   "driveMin": 30,
+   "km": 32
+  },
+  {
+   "a": "hoian",
+   "b": "dalat",
+   "driveMin": 502,
+   "km": 613
+  },
+  {
+   "a": "danang",
+   "b": "dalat",
+   "driveMin": 516,
+   "km": 631
+  },
+  {
+   "a": "dalat",
+   "b": "hcmc",
+   "driveMin": 234,
+   "km": 303
+  },
+  {
+   "a": "dalat",
+   "b": "phnompenh",
+   "driveMin": 415,
+   "km": 526
+  },
+  {
+   "a": "dalat",
+   "b": "siemreap",
+   "driveMin": 579,
+   "km": 732
+  },
+  {
+   "a": "dalat",
+   "b": "kampot",
+   "driveMin": 503,
+   "km": 648
+  },
+  {
+   "a": "hcmc",
+   "b": "phnompenh",
+   "driveMin": 186,
+   "km": 229
+  },
+  {
+   "a": "hcmc",
+   "b": "siemreap",
+   "driveMin": 364,
+   "km": 467
+  },
+  {
+   "a": "hcmc",
+   "b": "battambang",
+   "driveMin": 392,
+   "km": 516
+  },
+  {
+   "a": "hcmc",
+   "b": "kampot",
+   "driveMin": 274,
+   "km": 350
+  },
+  {
+   "a": "kualalumpur",
+   "b": "georgetown",
+   "driveMin": 260,
+   "km": 351
+  },
+  {
+   "a": "kualalumpur",
+   "b": "melaka",
+   "driveMin": 112,
+   "km": 140
+  },
+  {
+   "a": "kualalumpur",
+   "b": "cameronhighlands",
+   "driveMin": 162,
+   "km": 204
+  },
+  {
+   "a": "kualalumpur",
+   "b": "langkawi",
+   "driveMin": 505,
+   "km": 528
+  },
+  {
+   "a": "kualalumpur",
+   "b": "singapore",
+   "driveMin": 264,
+   "km": 358
+  },
+  {
+   "a": "georgetown",
+   "b": "melaka",
+   "driveMin": 365,
+   "km": 497
+  },
+  {
+   "a": "georgetown",
+   "b": "cameronhighlands",
+   "driveMin": 203,
+   "km": 247
+  },
+  {
+   "a": "georgetown",
+   "b": "langkawi",
+   "driveMin": 280,
+   "km": 210
+  },
+  {
+   "a": "georgetown",
+   "b": "singapore",
+   "driveMin": 517,
+   "km": 715
+  },
+  {
+   "a": "melaka",
+   "b": "cameronhighlands",
+   "driveMin": 266,
+   "km": 350
+  },
+  {
+   "a": "melaka",
+   "b": "langkawi",
+   "driveMin": 609,
+   "km": 674
+  },
+  {
+   "a": "melaka",
+   "b": "singapore",
+   "driveMin": 184,
+   "km": 246
+  },
+  {
+   "a": "cameronhighlands",
+   "b": "langkawi",
+   "driveMin": 447,
+   "km": 423
+  },
+  {
+   "a": "cameronhighlands",
+   "b": "singapore",
+   "driveMin": 419,
+   "km": 569
+  },
+  {
+   "a": "phnompenh",
+   "b": "siemreap",
+   "driveMin": 229,
+   "km": 314
+  },
+  {
+   "a": "phnompenh",
+   "b": "battambang",
+   "driveMin": 212,
+   "km": 290
+  },
+  {
+   "a": "phnompenh",
+   "b": "kampot",
+   "driveMin": 117,
+   "km": 156
+  },
+  {
+   "a": "siemreap",
+   "b": "battambang",
+   "driveMin": 127,
+   "km": 172
+  },
+  {
+   "a": "siemreap",
+   "b": "kampot",
+   "driveMin": 339,
+   "km": 454
+  },
+  {
+   "a": "battambang",
+   "b": "kampot",
+   "driveMin": 317,
+   "km": 429
   }
  ]
 }

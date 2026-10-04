@@ -170,6 +170,59 @@
    "cashFor": "Markets and small shops",
    "atm": "Check with your bank whether payments in Belarus are blocked.",
    "note": "Some foreign banks block card payments in Belarus because of sanctions."
+  },
+  "TW": {
+   "cardLevel": 3,
+   "foreignCardsWork": true,
+   "mobilePay": "some",
+   "cashFor": "Night markets, small restaurants and local shops; an EasyCard covers transport and convenience stores",
+   "atm": "ATMs in 7-Eleven and banks accept foreign cards; fees vary by bank.",
+   "note": "Local apps (LINE Pay, JKOPAY) are common; Apple/Google Pay works in convenience stores and chains."
+  },
+  "JP": {
+   "cardLevel": 4,
+   "foreignCardsWork": true,
+   "mobilePay": "common",
+   "cashFor": "Some small restaurants, temples, shrines and rural shops",
+   "atm": "7-Eleven (Seven Bank) and Japan Post ATMs accept foreign cards.",
+   "note": "You can add a Suica card to an iPhone and pay with it almost everywhere."
+  },
+  "TH": {
+   "cardLevel": 3,
+   "foreignCardsWork": true,
+   "mobilePay": "some",
+   "cashFor": "Street food, markets, tuk-tuks and small guesthouses",
+   "atm": "Thai ATMs charge foreign cards a fee (about 220 THB) per withdrawal: take out larger amounts."
+  },
+  "VN": {
+   "cardLevel": 3,
+   "foreignCardsWork": true,
+   "mobilePay": "some",
+   "cashFor": "Street food, markets, small hotels and motorbike taxis",
+   "atm": "Some ATMs charge fees and many have low withdrawal limits.",
+   "note": "Prices have many zeros: check notes carefully (10,000 and 100,000 look alike)."
+  },
+  "MY": {
+   "cardLevel": 4,
+   "foreignCardsWork": true,
+   "mobilePay": "common",
+   "cashFor": "Hawker stalls and small shops",
+   "atm": "Bank ATMs are easy to find."
+  },
+  "SG": {
+   "cardLevel": 5,
+   "foreignCardsWork": true,
+   "mobilePay": "common",
+   "cashFor": "A few hawker stalls (most take cards or PayNow now)",
+   "atm": "Bank ATMs are everywhere."
+  },
+  "KH": {
+   "cardLevel": 3,
+   "foreignCardsWork": true,
+   "mobilePay": "some",
+   "cashFor": "Most things: prices are often in US dollars, with change in riel",
+   "atm": "ATMs give US dollars; most charge about $4–6 per withdrawal.",
+   "note": "Bring clean, untorn US dollar notes: damaged ones are often refused."
   }
  },
  "cities": {

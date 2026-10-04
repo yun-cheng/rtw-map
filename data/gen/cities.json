@@ -1617,6 +1617,1017 @@
    "costFactor": 1,
    "longStay": false,
    "blurb": "Soviet-era showcase capital"
+  },
+  {
+   "id": "taipei",
+   "name": "Taipei",
+   "iso2": "TW",
+   "lat": 25.05306,
+   "lon": 121.52639,
+   "population": 7871900,
+   "timezone": "Asia/Taipei",
+   "geonameId": 1668341,
+   "tags": [
+    "city",
+    "food",
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.1,
+   "longStay": true,
+   "blurb": "Night markets, temples and a spotless metro, with hot springs and hikes on the edge of town"
+  },
+  {
+   "id": "taichung",
+   "name": "Taichung",
+   "iso2": "TW",
+   "lat": 24.1469,
+   "lon": 120.6839,
+   "population": 2850285,
+   "timezone": "Asia/Taipei",
+   "geonameId": 1668399,
+   "tags": [
+    "city",
+    "food",
+    "culture"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Laid-back city of cafés and creative parks; gateway to Sun Moon Lake"
+  },
+  {
+   "id": "tainan",
+   "name": "Tainan",
+   "iso2": "TW",
+   "lat": 22.99083,
+   "lon": 120.21333,
+   "population": 1856642,
+   "timezone": "Asia/Taipei",
+   "geonameId": 1668355,
+   "tags": [
+    "history",
+    "food",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Taiwan's old capital and its best street-food city"
+  },
+  {
+   "id": "kaohsiung",
+   "name": "Kaohsiung",
+   "iso2": "TW",
+   "lat": 22.61626,
+   "lon": 120.31333,
+   "population": 2737660,
+   "timezone": "Asia/Taipei",
+   "geonameId": 1673820,
+   "tags": [
+    "city",
+    "food",
+    "beach"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Harbour city with art districts and easy trips to Kenting"
+  },
+  {
+   "id": "hualien",
+   "name": "Hualien",
+   "iso2": "TW",
+   "lat": 23.97694,
+   "lon": 121.60444,
+   "population": 99458,
+   "timezone": "Asia/Taipei",
+   "geonameId": 1674504,
+   "tags": [
+    "nature",
+    "hiking",
+    "beach"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Base for the marble cliffs of Taroko Gorge and the east coast"
+  },
+  {
+   "id": "tokyo",
+   "name": "Tokyo",
+   "iso2": "JP",
+   "lat": 35.6895,
+   "lon": 139.69171,
+   "population": 9733276,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1850147,
+   "tags": [
+    "city",
+    "food",
+    "culture",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 5,
+    "max": 8
+   },
+   "costFactor": 1.3,
+   "longStay": true,
+   "blurb": "Huge, safe and endlessly varied: neon nights, quiet shrines and the world's best food"
+  },
+  {
+   "id": "hakone",
+   "name": "Hakone",
+   "iso2": "JP",
+   "lat": 35.18945,
+   "lon": 139.02649,
+   "population": 11293,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1863357,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1.4,
+   "longStay": false,
+   "blurb": "Hot springs, lake cruises and views of Mount Fuji"
+  },
+  {
+   "id": "kyoto",
+   "name": "Kyoto",
+   "iso2": "JP",
+   "lat": 35.02107,
+   "lon": 135.75385,
+   "population": 1463723,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1857910,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 6
+   },
+   "costFactor": 1.25,
+   "longStay": false,
+   "blurb": "Temples, gardens and geisha streets of Japan's old capital"
+  },
+  {
+   "id": "nara",
+   "name": "Nara",
+   "iso2": "JP",
+   "lat": 34.68505,
+   "lon": 135.80485,
+   "population": 367353,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1855612,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Giant Buddha and friendly deer; easy day trip from Kyoto or Osaka"
+  },
+  {
+   "id": "osaka",
+   "name": "Osaka",
+   "iso2": "JP",
+   "lat": 34.69379,
+   "lon": 135.50107,
+   "population": 2753862,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1853909,
+   "tags": [
+    "city",
+    "food",
+    "nightlife"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.15,
+   "longStay": true,
+   "blurb": "Japan's kitchen: street food, nightlife and a castle"
+  },
+  {
+   "id": "hiroshima",
+   "name": "Hiroshima",
+   "iso2": "JP",
+   "lat": 34.4,
+   "lon": 132.45,
+   "population": 1200754,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1862415,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Peace Memorial and the floating torii gate of Miyajima"
+  },
+  {
+   "id": "kanazawa",
+   "name": "Kanazawa",
+   "iso2": "JP",
+   "lat": 36.6,
+   "lon": 136.61667,
+   "population": 466029,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1860243,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Samurai and geisha districts and one of Japan's great gardens"
+  },
+  {
+   "id": "takayama",
+   "name": "Takayama",
+   "iso2": "JP",
+   "lat": 36.13333,
+   "lon": 137.25,
+   "population": 88473,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1850892,
+   "tags": [
+    "history",
+    "nature"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Old merchant town in the Japanese Alps, near Shirakawa-go"
+  },
+  {
+   "id": "fukuoka",
+   "name": "Fukuoka",
+   "iso2": "JP",
+   "lat": 33.6,
+   "lon": 130.41667,
+   "population": 1612392,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 1863967,
+   "tags": [
+    "city",
+    "food",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Easy-going city famous for ramen and riverside food stalls"
+  },
+  {
+   "id": "sapporo",
+   "name": "Sapporo",
+   "iso2": "JP",
+   "lat": 43.06667,
+   "lon": 141.35,
+   "population": 1973832,
+   "timezone": "Asia/Tokyo",
+   "geonameId": 2128295,
+   "tags": [
+    "city",
+    "food",
+    "nature"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.05,
+   "longStay": false,
+   "blurb": "Hokkaido's capital: cool summers, snow festival and seafood"
+  },
+  {
+   "id": "bangkok",
+   "name": "Bangkok",
+   "iso2": "TH",
+   "lat": 13.75398,
+   "lon": 100.50144,
+   "population": 5104476,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1609350,
+   "tags": [
+    "city",
+    "food",
+    "nightlife",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.1,
+   "longStay": true,
+   "blurb": "Temples, rooftop bars and some of the world's best street food"
+  },
+  {
+   "id": "ayutthaya",
+   "name": "Ayutthaya",
+   "iso2": "TH",
+   "lat": 14.35167,
+   "lon": 100.57739,
+   "population": 50830,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1607532,
+   "tags": [
+    "history"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 1,
+    "max": 2
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Ruined temples of the old Siamese capital"
+  },
+  {
+   "id": "kanchanaburi",
+   "name": "Kanchanaburi",
+   "iso2": "TH",
+   "lat": 14.00412,
+   "lon": 99.54832,
+   "population": 63699,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1153081,
+   "tags": [
+    "history",
+    "nature"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Bridge on the River Kwai, waterfalls and jungle"
+  },
+  {
+   "id": "chiangmai",
+   "name": "Chiang Mai",
+   "iso2": "TH",
+   "lat": 18.79038,
+   "lon": 98.98468,
+   "population": 127240,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1153671,
+   "tags": [
+    "culture",
+    "food",
+    "nature",
+    "hiking"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 3,
+    "ideal": 5,
+    "max": 10
+   },
+   "costFactor": 0.95,
+   "longStay": true,
+   "blurb": "Old walled city full of temples, cafés and cooking schools"
+  },
+  {
+   "id": "pai",
+   "name": "Pai",
+   "iso2": "TH",
+   "lat": 19.3583,
+   "lon": 98.44,
+   "population": 2284,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1151601,
+   "tags": [
+    "nature",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 7
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Backpacker valley town with hot springs and canyons"
+  },
+  {
+   "id": "chiangrai",
+   "name": "Chiang Rai",
+   "iso2": "TH",
+   "lat": 19.90858,
+   "lon": 99.8325,
+   "population": 78756,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1153669,
+   "tags": [
+    "culture",
+    "nature"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "White and Blue temples and the Golden Triangle"
+  },
+  {
+   "id": "krabi",
+   "name": "Krabi",
+   "iso2": "TH",
+   "lat": 8.07257,
+   "lon": 98.91052,
+   "population": 31219,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1152633,
+   "tags": [
+    "beach",
+    "nature"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.1,
+   "longStay": false,
+   "blurb": "Limestone cliffs, Railay beach and island hopping"
+  },
+  {
+   "id": "phuket",
+   "name": "Phuket",
+   "iso2": "TH",
+   "lat": 7.89059,
+   "lon": 98.3981,
+   "population": 79308,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1151254,
+   "tags": [
+    "beach",
+    "nightlife"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 1.25,
+   "longStay": false,
+   "blurb": "Thailand's biggest island: beaches, diving and nightlife"
+  },
+  {
+   "id": "kohsamui",
+   "name": "Koh Samui",
+   "iso2": "TH",
+   "lat": 9.535,
+   "lon": 99.936,
+   "population": 50000,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1154689,
+   "tags": [
+    "beach"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 4,
+    "max": 7
+   },
+   "costFactor": 1.3,
+   "longStay": false,
+   "blurb": "Palm-fringed island, next to Koh Phangan and Koh Tao"
+  },
+  {
+   "id": "hanoi",
+   "name": "Hanoi",
+   "iso2": "VN",
+   "lat": 21.0245,
+   "lon": 105.84117,
+   "population": 8053663,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1581130,
+   "tags": [
+    "city",
+    "food",
+    "culture",
+    "history"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 0.95,
+   "longStay": true,
+   "blurb": "Chaotic old quarter, street food and French colonial streets"
+  },
+  {
+   "id": "sapa",
+   "name": "Sa Pa",
+   "iso2": "VN",
+   "lat": 22.3364,
+   "lon": 103.8438,
+   "population": 10554,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1568043,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Rice terraces and trekking to hill-tribe villages"
+  },
+  {
+   "id": "halong",
+   "name": "Ha Long",
+   "iso2": "VN",
+   "lat": 20.95045,
+   "lon": 107.07336,
+   "population": 270054,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1580410,
+   "tags": [
+    "nature"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Base for cruises among the limestone islands of Ha Long Bay"
+  },
+  {
+   "id": "ninhbinh",
+   "name": "Ninh Binh",
+   "iso2": "VN",
+   "lat": 20.25809,
+   "lon": 105.97965,
+   "population": 319125,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1571968,
+   "tags": [
+    "nature"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "'Ha Long Bay on land': boat trips through karst valleys"
+  },
+  {
+   "id": "hue",
+   "name": "Hue",
+   "iso2": "VN",
+   "lat": 16.4619,
+   "lon": 107.59546,
+   "population": 1380000,
+   "timezone": "Asia/Bangkok",
+   "geonameId": 1580240,
+   "tags": [
+    "history",
+    "culture",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Imperial citadel and royal tombs on the Perfume River"
+  },
+  {
+   "id": "hoian",
+   "name": "Hoi An",
+   "iso2": "VN",
+   "lat": 15.87944,
+   "lon": 108.335,
+   "population": 32757,
+   "timezone": "Asia/Ho_Chi_Minh",
+   "geonameId": 1580541,
+   "tags": [
+    "history",
+    "food",
+    "beach"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 6
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Lantern-lit old town, tailors and beaches nearby"
+  },
+  {
+   "id": "danang",
+   "name": "Da Nang",
+   "iso2": "VN",
+   "lat": 16.06778,
+   "lon": 108.22083,
+   "population": 1276000,
+   "timezone": "Asia/Ho_Chi_Minh",
+   "geonameId": 1583992,
+   "tags": [
+    "city",
+    "beach"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.95,
+   "longStay": true,
+   "blurb": "Modern beach city between Hue and Hoi An"
+  },
+  {
+   "id": "dalat",
+   "name": "Da Lat",
+   "iso2": "VN",
+   "lat": 11.94646,
+   "lon": 108.44193,
+   "population": 258014,
+   "timezone": "Asia/Ho_Chi_Minh",
+   "geonameId": 1584071,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Cool highland town of pine forests, coffee and waterfalls"
+  },
+  {
+   "id": "hcmc",
+   "name": "Ho Chi Minh City",
+   "iso2": "VN",
+   "lat": 10.82302,
+   "lon": 106.62965,
+   "population": 14002598,
+   "timezone": "Asia/Ho_Chi_Minh",
+   "geonameId": 1566083,
+   "tags": [
+    "city",
+    "food",
+    "nightlife",
+    "history"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Saigon: buzzing, modern and full of history; day trips to the Mekong Delta"
+  },
+  {
+   "id": "kualalumpur",
+   "name": "Kuala Lumpur",
+   "iso2": "MY",
+   "lat": 3.1412,
+   "lon": 101.68653,
+   "population": 1453975,
+   "timezone": "Asia/Kuala_Lumpur",
+   "geonameId": 1735161,
+   "tags": [
+    "city",
+    "food",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1.05,
+   "longStay": true,
+   "blurb": "Petronas Towers, hawker food and a mix of Malay, Chinese and Indian culture"
+  },
+  {
+   "id": "georgetown",
+   "name": "George Town",
+   "iso2": "MY",
+   "lat": 5.41123,
+   "lon": 100.33543,
+   "population": 158336,
+   "timezone": "Asia/Kuala_Lumpur",
+   "geonameId": 1735106,
+   "tags": [
+    "history",
+    "food",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 0.95,
+   "longStay": true,
+   "blurb": "Penang's colonial old town: street art and Malaysia's best food"
+  },
+  {
+   "id": "melaka",
+   "name": "Melaka",
+   "iso2": "MY",
+   "lat": 2.196,
+   "lon": 102.2405,
+   "population": 579000,
+   "timezone": "Asia/Kuala_Lumpur",
+   "geonameId": 1734759,
+   "tags": [
+    "history",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.95,
+   "longStay": false,
+   "blurb": "Historic trading port with Dutch, Portuguese and Peranakan heritage"
+  },
+  {
+   "id": "cameronhighlands",
+   "name": "Cameron Highlands",
+   "iso2": "MY",
+   "lat": 4.472,
+   "lon": 101.377,
+   "population": 7000,
+   "timezone": "Asia/Kuala_Lumpur",
+   "geonameId": 1735262,
+   "tags": [
+    "nature",
+    "hiking"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 2,
+    "ideal": 2,
+    "max": 4
+   },
+   "costFactor": 0.9,
+   "longStay": false,
+   "blurb": "Cool hill station with tea plantations and jungle trails"
+  },
+  {
+   "id": "langkawi",
+   "name": "Langkawi",
+   "iso2": "MY",
+   "lat": 6.3247,
+   "lon": 99.8433,
+   "population": 30212,
+   "timezone": "Asia/Kuala_Lumpur",
+   "geonameId": 1222396,
+   "tags": [
+    "beach",
+    "nature"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Duty-free island with beaches, mangroves and a cable car"
+  },
+  {
+   "id": "singapore",
+   "name": "Singapore",
+   "iso2": "SG",
+   "lat": 1.28967,
+   "lon": 103.85007,
+   "population": 5638700,
+   "timezone": "Asia/Singapore",
+   "geonameId": 1880252,
+   "tags": [
+    "city",
+    "food",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Spotless city-state of hawker centres, gardens and skyscrapers"
+  },
+  {
+   "id": "phnompenh",
+   "name": "Phnom Penh",
+   "iso2": "KH",
+   "lat": 11.56245,
+   "lon": 104.91601,
+   "population": 1573544,
+   "timezone": "Asia/Phnom_Penh",
+   "geonameId": 1821306,
+   "tags": [
+    "city",
+    "history",
+    "food"
+   ],
+   "popularity": 4,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 4
+   },
+   "costFactor": 1,
+   "longStay": true,
+   "blurb": "Riverside capital: royal palace, markets and sobering Khmer Rouge history"
+  },
+  {
+   "id": "siemreap",
+   "name": "Siem Reap",
+   "iso2": "KH",
+   "lat": 13.36179,
+   "lon": 103.86056,
+   "population": 139458,
+   "timezone": "Asia/Phnom_Penh",
+   "geonameId": 1822214,
+   "tags": [
+    "history",
+    "culture"
+   ],
+   "popularity": 5,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 1,
+   "longStay": false,
+   "blurb": "Gateway to the temples of Angkor"
+  },
+  {
+   "id": "battambang",
+   "name": "Battambang",
+   "iso2": "KH",
+   "lat": 13.10271,
+   "lon": 103.19822,
+   "population": 119251,
+   "timezone": "Asia/Phnom_Penh",
+   "geonameId": 1831797,
+   "tags": [
+    "culture",
+    "history"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 1,
+    "ideal": 2,
+    "max": 3
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Relaxed colonial town; bamboo train and countryside"
+  },
+  {
+   "id": "kampot",
+   "name": "Kampot",
+   "iso2": "KH",
+   "lat": 10.61041,
+   "lon": 104.18145,
+   "population": 22691,
+   "timezone": "Asia/Phnom_Penh",
+   "geonameId": 1831112,
+   "tags": [
+    "nature"
+   ],
+   "popularity": 3,
+   "days": {
+    "min": 2,
+    "ideal": 3,
+    "max": 5
+   },
+   "costFactor": 0.85,
+   "longStay": false,
+   "blurb": "Riverside town famous for pepper farms and Bokor Mountain"
   }
  ]
 }

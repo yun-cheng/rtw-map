@@ -118,6 +118,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "visa_free",
+    "days": 45
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "GB": {
@@ -208,6 +236,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "visa_free",
+    "days": 45
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "US": {
@@ -298,6 +354,34 @@
    "BY": {
     "req": "e_visa",
     "raw": "e-visa"
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "CA": {
@@ -388,6 +472,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "AU": {
@@ -478,6 +590,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "NZ": {
@@ -568,6 +708,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "JP": {
@@ -658,6 +826,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "own_country",
+    "raw": "-1"
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "visa_free",
+    "days": 45
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "KR": {
@@ -748,6 +944,34 @@
    "BY": {
     "req": "visa_free",
     "days": 30
+   },
+   "TW": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "visa_free",
+    "days": 45
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   },
   "TW": {
@@ -838,6 +1062,34 @@
    "BY": {
     "req": "visa_required",
     "raw": "visa required"
+   },
+   "TW": {
+    "req": "own_country",
+    "raw": "-1"
+   },
+   "JP": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "TH": {
+    "req": "visa_free",
+    "days": 60
+   },
+   "VN": {
+    "req": "e_visa",
+    "raw": "e-visa"
+   },
+   "MY": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "SG": {
+    "req": "visa_free",
+    "days": 30
+   },
+   "KH": {
+    "req": "visa_on_arrival",
+    "raw": "visa on arrival"
    }
   }
  }

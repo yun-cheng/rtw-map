@@ -1,7 +1,7 @@
 {
  "_meta": {
   "source": "Hand-curated. Religion is a short summary of the latest national census or survey and is approximate. Verify before relying on it. English levels are our own estimates (1 = hard, 5 = easy almost everywhere); compare with the EF English Proficiency Index and the EU Eurobarometer language survey.",
-  "updatedAt": "2026-10-04"
+  "updatedAt": "2026-10-05"
  },
  "countries": [
   {
@@ -32,7 +32,8 @@
      "Greek (in the south)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "ME",
@@ -63,7 +64,8 @@
      "Russian (some tourism workers)"
     ],
     "script": "Latin (Cyrillic also official)"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "BA",
@@ -94,7 +96,8 @@
      "German (returnees)"
     ],
     "script": "Latin and Cyrillic"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "RS",
@@ -123,7 +126,8 @@
      "Russian (some older people)"
     ],
     "script": "Cyrillic and Latin (both used on signs)"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "XK",
@@ -153,7 +157,8 @@
      "Serbian (in the north)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "MK",
@@ -181,7 +186,8 @@
      "Albanian (in the west)"
     ],
     "script": "Cyrillic"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "HR",
@@ -211,7 +217,8 @@
      "Italian (on the coast)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "SI",
@@ -239,7 +246,8 @@
      "Croatian"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "GR",
@@ -265,7 +273,8 @@
     "level": 4,
     "otherLanguages": [],
     "script": "Greek alphabet (signs in tourist areas also in Latin script)"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "BG",
@@ -295,7 +304,8 @@
      "Russian (older people)"
     ],
     "script": "Cyrillic"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "RO",
@@ -324,7 +334,8 @@
      "Hungarian (parts of Transylvania)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "MD",
@@ -353,7 +364,8 @@
      "Russian (spoken by almost everyone)"
     ],
     "script": "Latin (Cyrillic in Transnistria)"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "HU",
@@ -379,7 +391,8 @@
      "German (older people)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "SK",
@@ -406,7 +419,8 @@
      "German (older people)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "CZ",
@@ -433,7 +447,8 @@
      "German (older people)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "PL",
@@ -462,7 +477,8 @@
      "Russian (older people)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "LT",
@@ -489,7 +505,8 @@
      "Polish (around Vilnius)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "LV",
@@ -516,7 +533,8 @@
      "Russian (widely spoken, especially in Riga)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "EE",
@@ -546,7 +564,8 @@
      "Finnish (Tallinn tourism)"
     ],
     "script": "Latin"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "RU",
@@ -574,7 +593,8 @@
     "level": 2,
     "otherLanguages": [],
     "script": "Cyrillic (Moscow and St Petersburg metro also signed in English)"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "UA",
@@ -600,7 +620,8 @@
      "Russian (widely understood)"
     ],
     "script": "Cyrillic"
-   }
+   },
+   "voltage": 230
   },
   {
    "iso2": "BY",
@@ -627,6 +648,223 @@
      "Russian (main everyday language)"
     ],
     "script": "Cyrillic"
+   },
+   "voltage": 230
+  },
+  {
+   "iso2": "TW",
+   "name": "Taiwan",
+   "block": "East Asia",
+   "fcdoSlug": "taiwan",
+   "schengen": false,
+   "eu": false,
+   "currency": "TWD",
+   "languages": [
+    "Mandarin Chinese"
+   ],
+   "religion": "Mix of Buddhism, Taoism and folk religion; small Christian minority",
+   "plugs": [
+    "A",
+    "B"
+   ],
+   "voltage": 110,
+   "emergency": "110 police, 119 ambulance/fire",
+   "notes": [
+    "Typhoon season is July–October, and earthquakes are common.",
+    "Plugs and voltage (110V) are like North America."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "Taiwanese Hokkien",
+     "Japanese (some older people)"
+    ],
+    "script": "Traditional Chinese characters; MRT and main signs also in English"
+   }
+  },
+  {
+   "iso2": "JP",
+   "name": "Japan",
+   "block": "East Asia",
+   "fcdoSlug": "japan",
+   "schengen": false,
+   "eu": false,
+   "currency": "JPY",
+   "languages": [
+    "Japanese"
+   ],
+   "religion": "Shinto and Buddhist traditions; most people are not religious in daily life",
+   "plugs": [
+    "A",
+    "B"
+   ],
+   "voltage": 100,
+   "emergency": "110 police, 119 ambulance/fire",
+   "notes": [
+    "Tipping is not customary and is often refused.",
+    "Some common cold and allergy medicines are banned: check before you pack.",
+    "Carry your passport: it is required for tax-free shopping and hotel check-in."
+   ],
+   "english": {
+    "level": 2,
+    "otherLanguages": [],
+    "script": "Japanese (kanji, hiragana, katakana); stations and big-city signs also in English"
+   }
+  },
+  {
+   "iso2": "TH",
+   "name": "Thailand",
+   "block": "Southeast Asia",
+   "fcdoSlug": "thailand",
+   "schengen": false,
+   "eu": false,
+   "currency": "THB",
+   "languages": [
+    "Thai"
+   ],
+   "religion": "Mostly Theravada Buddhist (~93%); Muslim minority in the far south",
+   "plugs": [
+    "A",
+    "B",
+    "C",
+    "O"
+   ],
+   "voltage": 220,
+   "emergency": "191 police, 1669 ambulance, 1155 tourist police",
+   "notes": [
+    "Laws protecting the monarchy are strict: do not criticise the royal family.",
+    "Cover shoulders and knees in temples."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [],
+    "script": "Thai script; tourist areas also in English"
+   }
+  },
+  {
+   "iso2": "VN",
+   "name": "Vietnam",
+   "block": "Southeast Asia",
+   "fcdoSlug": "vietnam",
+   "schengen": false,
+   "eu": false,
+   "currency": "VND",
+   "languages": [
+    "Vietnamese"
+   ],
+   "religion": "Mostly folk religion or not religious; Buddhist and Catholic minorities",
+   "plugs": [
+    "A",
+    "C"
+   ],
+   "voltage": 220,
+   "emergency": "113 police, 115 ambulance",
+   "notes": [
+    "Traffic is intense: cross streets slowly and steadily so scooters can flow around you.",
+    "Typhoons hit the central coast mostly September–November."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [],
+    "script": "Latin alphabet with accents"
+   }
+  },
+  {
+   "iso2": "MY",
+   "name": "Malaysia",
+   "block": "Southeast Asia",
+   "fcdoSlug": "malaysia",
+   "schengen": false,
+   "eu": false,
+   "currency": "MYR",
+   "languages": [
+    "Malay",
+    "English",
+    "Chinese",
+    "Tamil"
+   ],
+   "religion": "Islam (official, ~64%); Buddhist, Christian and Hindu minorities",
+   "plugs": [
+    "G"
+   ],
+   "voltage": 240,
+   "emergency": "999",
+   "notes": [
+    "Dress modestly at mosques; alcohol is expensive outside duty-free Langkawi."
+   ],
+   "english": {
+    "level": 4,
+    "otherLanguages": [
+     "Malay",
+     "Mandarin",
+     "Tamil"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "SG",
+   "name": "Singapore",
+   "block": "Southeast Asia",
+   "fcdoSlug": "singapore",
+   "schengen": false,
+   "eu": false,
+   "currency": "SGD",
+   "languages": [
+    "English",
+    "Mandarin",
+    "Malay",
+    "Tamil"
+   ],
+   "religion": "Buddhist (~31%), Christian, Muslim, Taoist and Hindu; ~20% no religion",
+   "plugs": [
+    "G"
+   ],
+   "voltage": 230,
+   "emergency": "999 police, 995 ambulance",
+   "notes": [
+    "Rules are strictly enforced: fines for littering, jaywalking and eating or drinking on the MRT.",
+    "Drug offences carry very severe penalties."
+   ],
+   "english": {
+    "level": 5,
+    "otherLanguages": [
+     "Mandarin",
+     "Malay",
+     "Tamil"
+    ],
+    "script": "Latin"
+   }
+  },
+  {
+   "iso2": "KH",
+   "name": "Cambodia",
+   "block": "Southeast Asia",
+   "fcdoSlug": "cambodia",
+   "schengen": false,
+   "eu": false,
+   "currency": "KHR",
+   "languages": [
+    "Khmer"
+   ],
+   "religion": "Mostly Theravada Buddhist (~97%)",
+   "plugs": [
+    "A",
+    "C",
+    "G"
+   ],
+   "voltage": 230,
+   "emergency": "117 police, 119 ambulance",
+   "notes": [
+    "US dollars are used alongside riel: prices are often in dollars, change in riel.",
+    "Cover shoulders and knees at Angkor and other temples."
+   ],
+   "english": {
+    "level": 3,
+    "otherLanguages": [
+     "French (some older people)"
+    ],
+    "script": "Khmer script; tourist areas also in English"
    }
   }
  ]

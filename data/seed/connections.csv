@@ -106,3 +106,83 @@ krakow,lviv,train,420,25,40,daily,0,Via Przemyśl
 lviv,kyiv,train,300,15,30,several daily,0,
 vilnius,minsk,bus,300,15,25,daily,0,Expect long border waits
 minsk,moscow,train,480,30,60,daily,1,
+taipei,hualien,train,120,15,25,several daily,0,Book Taroko/Puyuma express seats ahead at weekends
+taipei,taichung,train,60,20,25,frequent,0,High-speed rail (THSR)
+taichung,tainan,train,50,20,25,frequent,0,High-speed rail (THSR)
+tainan,kaohsiung,train,40,3,5,frequent,0,
+taipei,kaohsiung,train,95,40,45,frequent,0,High-speed rail (THSR)
+hualien,kaohsiung,train,270,15,25,few daily,0,Scenic east-coast line
+tokyo,hakone,train,90,15,25,frequent,0,Odakyu Romancecar; the Hakone Free Pass covers local transport
+hakone,kyoto,train,150,80,95,frequent,0,Shinkansen from Odawara
+tokyo,kyoto,train,135,90,100,frequent,0,Shinkansen (Nozomi)
+tokyo,osaka,bus,480,25,50,nightly,1,Night buses are the budget alternative to the shinkansen
+kyoto,osaka,train,30,4,10,frequent,0,
+kyoto,nara,train,45,5,9,frequent,0,
+osaka,nara,train,40,4,6,frequent,0,
+osaka,hiroshima,train,85,70,80,frequent,0,Shinkansen
+hiroshima,fukuoka,train,65,60,70,frequent,0,Shinkansen
+kyoto,kanazawa,train,135,45,60,frequent,0,Limited express + Hokuriku shinkansen via Tsuruga
+tokyo,kanazawa,train,150,95,105,frequent,0,Hokuriku shinkansen
+kanazawa,takayama,bus,135,25,30,several daily,0,Stops at Shirakawa-go
+takayama,kyoto,train,240,60,75,several daily,0,Via Nagoya
+tokyo,sapporo,flight,95,50,150,frequent,0,
+fukuoka,tokyo,flight,110,50,150,frequent,0,
+osaka,sapporo,flight,125,50,150,frequent,0,
+taipei,tokyo,flight,210,100,250,frequent,0,
+taipei,osaka,flight,170,90,230,frequent,0,
+taipei,fukuoka,flight,150,90,200,daily,0,
+taipei,bangkok,flight,230,100,250,frequent,0,
+taipei,hcmc,flight,210,100,250,daily,0,
+taipei,kualalumpur,flight,290,110,250,daily,0,
+taipei,singapore,flight,280,120,280,daily,0,
+tokyo,bangkok,flight,405,150,400,daily,0,
+osaka,bangkok,flight,360,150,350,daily,0,
+bangkok,ayutthaya,train,90,1,3,frequent,0,
+bangkok,kanchanaburi,train,180,1,3,2 daily,0,Buses and minivans are faster
+bangkok,chiangmai,train,690,25,45,several daily,1,Sleeper trains; flights take 75 minutes
+chiangmai,pai,minibus,180,6,8,frequent,0,762 curves: take motion-sickness pills
+chiangmai,chiangrai,bus,180,6,10,frequent,0,
+bangkok,krabi,flight,80,25,60,frequent,0,Overnight buses also run (about 12h)
+bangkok,phuket,flight,85,25,70,frequent,0,
+krabi,phuket,minibus,150,8,12,frequent,0,Ferries also run via Phi Phi
+bangkok,kohsamui,flight,70,60,150,frequent,0,Cheaper: overnight train or bus to Surat Thani + ferry
+krabi,kohsamui,ferry,300,18,25,daily,0,Minibus + ferry combined ticket
+bangkok,siemreap,bus,480,20,30,daily,0,"Via the Aranyaprathet/Poipet border; beware scams around the crossing"
+bangkok,phnompenh,bus,660,25,35,daily,0,
+krabi,georgetown,minibus,600,25,35,daily,0,Via Hat Yai and the border
+bangkok,kualalumpur,flight,130,30,90,frequent,0,
+bangkok,georgetown,flight,105,40,100,daily,0,
+bangkok,hanoi,flight,120,50,120,frequent,0,
+bangkok,hcmc,flight,90,40,100,frequent,0,
+bangkok,singapore,flight,145,40,120,frequent,0,
+hanoi,sapa,bus,330,12,18,frequent,0,Sleeper buses; overnight trains go to Lao Cai
+hanoi,halong,bus,150,10,15,frequent,0,Most cruises include transfers from Hanoi
+hanoi,ninhbinh,train,120,5,8,frequent,0,
+ninhbinh,hue,train,600,20,35,nightly,1,Sleeper train
+hanoi,hue,train,780,25,45,nightly,1,Sleeper train; flights take 75 minutes
+hue,danang,train,150,5,8,several daily,0,Scenic Hai Van Pass section
+hue,hoian,bus,240,8,12,frequent,0,
+danang,hoian,bus,45,3,5,frequent,0,
+danang,dalat,flight,70,30,70,daily,0,Overnight buses also run
+hoian,dalat,bus,840,18,25,nightly,1,Sleeper bus
+dalat,hcmc,bus,420,10,15,frequent,0,
+hanoi,hcmc,flight,130,35,90,frequent,0,
+danang,hcmc,flight,80,30,70,frequent,0,
+hcmc,phnompenh,bus,360,15,20,frequent,0,"Moc Bai/Bavet border: get the Cambodia e-visa first or a visa on arrival"
+hcmc,singapore,flight,120,40,120,frequent,0,
+hcmc,kualalumpur,flight,120,30,100,frequent,0,
+phnompenh,siemreap,bus,360,10,15,frequent,0,
+siemreap,battambang,bus,210,8,10,several daily,0,A slow boat runs in the wet season
+battambang,phnompenh,bus,330,8,12,several daily,0,
+phnompenh,kampot,bus,210,7,10,several daily,0,
+kualalumpur,melaka,bus,150,4,6,frequent,0,
+kualalumpur,georgetown,train,255,12,20,several daily,0,ETS electric train to Butterworth + ferry
+kualalumpur,cameronhighlands,bus,240,8,12,several daily,0,
+cameronhighlands,georgetown,bus,270,8,12,daily,0,
+georgetown,langkawi,ferry,165,18,22,daily,0,
+kualalumpur,langkawi,flight,60,20,60,frequent,0,
+melaka,singapore,bus,240,8,15,several daily,0,
+kualalumpur,singapore,bus,330,10,20,frequent,0,"Johor–Singapore causeway: queues at weekends"
+danang,hanoi,flight,80,30,70,frequent,0,
+hanoi,hue,flight,75,30,70,daily,0,
+bangkok,chiangmai,flight,75,25,60,frequent,0,The overnight sleeper train saves a night's accommodation

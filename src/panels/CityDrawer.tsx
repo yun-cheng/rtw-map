@@ -309,7 +309,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
         <div className="mt-2">
           <Row label="Travel insurance">Strongly recommended</Row>
-          <Row label="Plugs">Type {country.plugs.join(' / ')} · 230V</Row>
+          <Row label="Plugs">Type {country.plugs.join(' / ')} · {country.voltage}V</Row>
         </div>
         {adv?.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
         <Source>

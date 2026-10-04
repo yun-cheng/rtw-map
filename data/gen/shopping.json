@@ -189,6 +189,72 @@
     "Santa",
     "Korona"
    ]
+  },
+  "TW": {
+   "chains": [
+    "7-Eleven",
+    "FamilyMart",
+    "PX Mart",
+    "Carrefour"
+   ],
+   "lateNight": "24-hour convenience stores are on almost every corner."
+  },
+  "JP": {
+   "chains": [
+    "7-Eleven",
+    "FamilyMart",
+    "Lawson",
+    "AEON",
+    "Gyomu Super"
+   ],
+   "lateNight": "Konbini (convenience stores) are open 24 hours and sell good, cheap meals."
+  },
+  "TH": {
+   "chains": [
+    "7-Eleven",
+    "Lotus’s",
+    "Big C",
+    "Tops",
+    "FamilyMart"
+   ],
+   "lateNight": "24-hour 7-Elevens are on almost every corner."
+  },
+  "VN": {
+   "chains": [
+    "WinMart",
+    "Co.op Mart",
+    "Bách Hóa Xanh",
+    "Circle K",
+    "GS25"
+   ],
+   "lateNight": "Circle K and GS25 convenience stores stay open late."
+  },
+  "MY": {
+   "chains": [
+    "99 Speedmart",
+    "Lotus’s",
+    "AEON",
+    "Jaya Grocer",
+    "7-Eleven"
+   ],
+   "lateNight": "24-hour convenience stores and mamak restaurants."
+  },
+  "SG": {
+   "chains": [
+    "FairPrice",
+    "Cold Storage",
+    "Sheng Siong",
+    "7-Eleven"
+   ],
+   "lateNight": "Some FairPrice and Sheng Siong supermarkets are open 24 hours."
+  },
+  "KH": {
+   "chains": [
+    "Lucky Supermarket",
+    "AEON",
+    "Circle K"
+   ],
+   "lateNight": "Circle K and local minimarts stay open late."
   }
  }
 }

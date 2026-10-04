@@ -420,6 +420,162 @@
      50
     ]
    }
+  },
+  "TW": {
+   "taxi": {
+    "apps": [
+     "Uber",
+     "55688 (Taiwan Taxi)"
+    ],
+    "flagFall": 2.4,
+    "perKm": 0.7,
+    "tip": "Taxis are metered and honest; most drivers speak little English, so show the address in Chinese."
+   },
+   "rentals": {
+    "apps": [
+     "YouBike"
+    ],
+    "carDay": [
+     35,
+     60
+    ],
+    "motoDay": [
+     8,
+     15
+    ]
+   }
+  },
+  "JP": {
+   "taxi": {
+    "apps": [
+     "GO",
+     "Uber"
+    ],
+    "flagFall": 3,
+    "perKm": 2.3,
+    "tip": "Taxis are clean, metered and honest but expensive. Doors open automatically: no need to touch them."
+   },
+   "rentals": {
+    "apps": [
+     "Docomo Bike Share",
+     "HELLO CYCLING"
+    ],
+    "carDay": [
+     40,
+     80
+    ]
+   }
+  },
+  "TH": {
+   "taxi": {
+    "apps": [
+     "Grab",
+     "Bolt"
+    ],
+    "flagFall": 0.9,
+    "perKm": 0.25,
+    "tip": "Insist on the meter in Bangkok or use Grab/Bolt; tuk-tuk drivers quote high prices and may take you to gem shops."
+   },
+   "rentals": {
+    "apps": [],
+    "carDay": [
+     20,
+     40
+    ],
+    "motoDay": [
+     5,
+     10
+    ]
+   }
+  },
+  "VN": {
+   "taxi": {
+    "apps": [
+     "Grab",
+     "Xanh SM",
+     "Be"
+    ],
+    "flagFall": 0.45,
+    "perKm": 0.6,
+    "tip": "Use Grab or Xanh SM. For street taxis choose Mai Linh or Vinasun, and watch for look-alike fakes."
+   },
+   "rentals": {
+    "apps": [],
+    "carDay": [
+     35,
+     60
+    ],
+    "motoDay": [
+     5,
+     10
+    ]
+   }
+  },
+  "MY": {
+   "taxi": {
+    "apps": [
+     "Grab"
+    ],
+    "flagFall": 0.6,
+    "perKm": 0.3,
+    "tip": "Grab is the norm; street taxis often refuse to use the meter."
+   },
+   "rentals": {
+    "apps": [],
+    "carDay": [
+     20,
+     40
+    ],
+    "motoDay": [
+     8,
+     15
+    ]
+   }
+  },
+  "SG": {
+   "taxi": {
+    "apps": [
+     "Grab",
+     "Gojek",
+     "TADA",
+     "CDG Zig"
+    ],
+    "flagFall": 3,
+    "perKm": 0.55,
+    "tip": "Taxis are metered, with surcharges at peak hours, late at night and from the airport."
+   },
+   "rentals": {
+    "apps": [
+     "Anywheel",
+     "HelloRide"
+    ],
+    "carDay": [
+     60,
+     120
+    ]
+   }
+  },
+  "KH": {
+   "taxi": {
+    "apps": [
+     "Grab",
+     "PassApp"
+    ],
+    "flagFall": 1,
+    "perKm": 0.4,
+    "tip": "Tuk-tuks and remorks are everywhere: agree the price first, or book in PassApp/Grab."
+   },
+   "rentals": {
+    "apps": [],
+    "carDay": [
+     30,
+     50
+    ],
+    "motoDay": [
+     6,
+     10
+    ]
+   }
   }
  },
  "cities": {
@@ -1307,6 +1463,541 @@
    "walkable": false,
    "rentals": [
     "car"
+   ]
+  },
+  "taipei": {
+   "ease": 5,
+   "modes": [
+    "metro",
+    "bus",
+    "train"
+   ],
+   "walkable": true,
+   "pay": "EasyCard (sold at MRT stations and convenience stores; also works in shops)",
+   "note": "The MRT is spotless and signed in English; YouBike stations are everywhere.",
+   "rentals": [
+    "bikeShare",
+    "moto",
+    "car"
+   ]
+  },
+  "taichung": {
+   "ease": 3,
+   "modes": [
+    "metro",
+    "bus"
+   ],
+   "walkable": false,
+   "pay": "EasyCard",
+   "rentals": [
+    "bikeShare",
+    "moto",
+    "car"
+   ]
+  },
+  "tainan": {
+   "ease": 2,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "note": "Buses are infrequent: most visitors use YouBike, scooters or taxis.",
+   "rentals": [
+    "bikeShare",
+    "moto",
+    "car"
+   ]
+  },
+  "kaohsiung": {
+   "ease": 4,
+   "modes": [
+    "metro",
+    "tram",
+    "bus",
+    "ferry"
+   ],
+   "walkable": false,
+   "pay": "EasyCard or iPASS card",
+   "note": "Ferry to Cijin Island; light rail around the harbour.",
+   "rentals": [
+    "bikeShare",
+    "moto",
+    "car"
+   ]
+  },
+  "hualien": {
+   "ease": 2,
+   "modes": [
+    "bus",
+    "train"
+   ],
+   "walkable": true,
+   "note": "Reach Taroko Gorge by tourist bus, taxi tour or scooter.",
+   "rentals": [
+    "bike",
+    "moto",
+    "car"
+   ]
+  },
+  "tokyo": {
+   "ease": 5,
+   "modes": [
+    "metro",
+    "train",
+    "bus",
+    "tram",
+    "ferry"
+   ],
+   "walkable": false,
+   "pay": "Suica or PASMO card (also on iPhone); paper tickets at machines",
+   "note": "Trains stop around midnight: plan the last train home.",
+   "rentals": [
+    "bikeShare",
+    "car"
+   ]
+  },
+  "hakone": {
+   "ease": 3,
+   "modes": [
+    "train",
+    "bus",
+    "cablecar",
+    "ferry",
+    "funicular"
+   ],
+   "walkable": false,
+   "pay": "Hakone Free Pass covers the loop",
+   "note": "Classic loop: mountain train, cable car, ropeway and pirate-ship lake cruise.",
+   "rentals": []
+  },
+  "kyoto": {
+   "ease": 4,
+   "modes": [
+    "bus",
+    "metro",
+    "train"
+   ],
+   "walkable": true,
+   "pay": "IC card (ICOCA or Suica)",
+   "note": "Buses get very crowded; a rental bike is often easier.",
+   "rentals": [
+    "bike",
+    "car"
+   ]
+  },
+  "nara": {
+   "ease": 2,
+   "modes": [
+    "bus",
+    "train"
+   ],
+   "walkable": true,
+   "note": "Main sights are within walking distance of the stations.",
+   "rentals": [
+    "bike"
+   ]
+  },
+  "osaka": {
+   "ease": 5,
+   "modes": [
+    "metro",
+    "train",
+    "bus"
+   ],
+   "walkable": false,
+   "pay": "IC card (ICOCA or Suica)",
+   "rentals": [
+    "bikeShare",
+    "car"
+   ]
+  },
+  "hiroshima": {
+   "ease": 4,
+   "modes": [
+    "tram",
+    "bus",
+    "train",
+    "ferry"
+   ],
+   "walkable": true,
+   "note": "Trams to the Peace Park; train + ferry to Miyajima.",
+   "rentals": [
+    "bike",
+    "car"
+   ]
+  },
+  "kanazawa": {
+   "ease": 3,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "rentalNote": "Machi-nori bike share covers the old districts.",
+   "rentals": [
+    "bikeShare",
+    "car"
+   ]
+  },
+  "takayama": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Small, walkable old town; buses to Shirakawa-go.",
+   "rentals": [
+    "bike",
+    "car"
+   ]
+  },
+  "fukuoka": {
+   "ease": 4,
+   "modes": [
+    "metro",
+    "bus",
+    "train"
+   ],
+   "walkable": true,
+   "pay": "IC card (Hayakaken, Suica and others work)",
+   "rentals": [
+    "bikeShare",
+    "car"
+   ]
+  },
+  "sapporo": {
+   "ease": 4,
+   "modes": [
+    "metro",
+    "tram",
+    "bus"
+   ],
+   "walkable": true,
+   "pay": "IC card (SAPICA, Suica and others work)",
+   "rentals": [
+    "car"
+   ]
+  },
+  "bangkok": {
+   "ease": 4,
+   "modes": [
+    "train",
+    "metro",
+    "bus",
+    "ferry"
+   ],
+   "walkable": false,
+   "pay": "Rabbit card or single tickets on the BTS Skytrain; contactless bank cards on the MRT",
+   "note": "Chao Phraya river boats are cheap and avoid traffic.",
+   "rentals": [
+    "car"
+   ]
+  },
+  "ayutthaya": {
+   "ease": 1,
+   "modes": [],
+   "walkable": false,
+   "note": "Rent a bike or hire a tuk-tuk to tour the temple ruins.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "kanchanaburi": {
+   "ease": 1,
+   "modes": [
+    "bus",
+    "train"
+   ],
+   "walkable": true,
+   "note": "Death Railway trains run to Nam Tok; buses to Erawan Falls.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "chiangmai": {
+   "ease": 2,
+   "modes": [
+    "minibus"
+   ],
+   "walkable": true,
+   "pay": "Cash to the red songthaew trucks (shared, flag one down)",
+   "note": "The old city is walkable; Grab and Bolt work well.",
+   "rentals": [
+    "moto",
+    "bike",
+    "car"
+   ]
+  },
+  "pai": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Most travellers rent a scooter: ride carefully on the mountain roads.",
+   "rentals": [
+    "moto",
+    "bike"
+   ]
+  },
+  "chiangrai": {
+   "ease": 1,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "rentals": [
+    "moto",
+    "car"
+   ]
+  },
+  "krabi": {
+   "ease": 2,
+   "modes": [
+    "minibus",
+    "ferry"
+   ],
+   "walkable": false,
+   "note": "Longtail boats to Railay and the islands from Ao Nang.",
+   "rentals": [
+    "moto",
+    "car"
+   ]
+  },
+  "phuket": {
+   "ease": 2,
+   "modes": [
+    "bus",
+    "minibus"
+   ],
+   "walkable": false,
+   "note": "Taxis are expensive and rarely metered: use Grab or Bolt.",
+   "rentals": [
+    "moto",
+    "car"
+   ]
+  },
+  "kohsamui": {
+   "ease": 2,
+   "modes": [
+    "minibus",
+    "ferry"
+   ],
+   "walkable": false,
+   "note": "Shared songthaews around the island; ferries to Koh Phangan and Koh Tao.",
+   "rentals": [
+    "moto",
+    "car"
+   ]
+  },
+  "hanoi": {
+   "ease": 3,
+   "modes": [
+    "bus",
+    "metro"
+   ],
+   "walkable": true,
+   "note": "Grab motorbike taxis are the quickest way around.",
+   "rentals": [
+    "moto"
+   ]
+  },
+  "sapa": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Trek to villages with a local guide; motorbike taxis for longer trips.",
+   "rentals": [
+    "moto"
+   ]
+  },
+  "halong": {
+   "ease": 1,
+   "modes": [
+    "ferry",
+    "bus"
+   ],
+   "walkable": false,
+   "note": "Most visitors arrive with a bay cruise that includes transfers.",
+   "rentals": []
+  },
+  "ninhbinh": {
+   "ease": 1,
+   "modes": [],
+   "walkable": false,
+   "note": "Rent a bike or scooter to reach Tam Coc and Trang An.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "hue": {
+   "ease": 2,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "note": "Rent a bike or hire a driver for the royal tombs.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "hoian": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "The old town is car-free; cycle to An Bang beach.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "danang": {
+   "ease": 3,
+   "modes": [
+    "bus"
+   ],
+   "walkable": false,
+   "rentals": [
+    "moto",
+    "car"
+   ]
+  },
+  "dalat": {
+   "ease": 2,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "rentals": [
+    "moto"
+   ]
+  },
+  "hcmc": {
+   "ease": 3,
+   "modes": [
+    "metro",
+    "bus",
+    "ferry"
+   ],
+   "walkable": false,
+   "note": "Metro line 1 opened in late 2024; Grab bikes are the easiest way around.",
+   "rentals": [
+    "moto"
+   ]
+  },
+  "kualalumpur": {
+   "ease": 4,
+   "modes": [
+    "metro",
+    "train",
+    "bus"
+   ],
+   "walkable": false,
+   "pay": "Touch 'n Go card or single tokens",
+   "note": "Free GoKL city buses loop the centre.",
+   "rentals": [
+    "car"
+   ]
+  },
+  "georgetown": {
+   "ease": 2,
+   "modes": [
+    "bus",
+    "ferry"
+   ],
+   "walkable": true,
+   "note": "Free CAT shuttle bus in the heritage area; ferry to Butterworth.",
+   "rentals": [
+    "bikeShare",
+    "bike",
+    "moto",
+    "car"
+   ]
+  },
+  "melaka": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "rentals": [
+    "bike",
+    "car"
+   ]
+  },
+  "cameronhighlands": {
+   "ease": 1,
+   "modes": [
+    "bus"
+   ],
+   "walkable": true,
+   "note": "Tours or taxis to the tea plantations.",
+   "rentals": [
+    "car"
+   ]
+  },
+  "langkawi": {
+   "ease": 1,
+   "modes": [
+    "cablecar"
+   ],
+   "walkable": false,
+   "note": "No real public transport: rent a car or scooter, or use Grab.",
+   "rentals": [
+    "car",
+    "moto"
+   ]
+  },
+  "singapore": {
+   "ease": 5,
+   "modes": [
+    "metro",
+    "bus"
+   ],
+   "walkable": true,
+   "pay": "Tap a contactless bank card or phone on the MRT and buses",
+   "note": "Signs are in English; trains are frequent and air-conditioned.",
+   "rentals": [
+    "bikeShare",
+    "car"
+   ]
+  },
+  "phnompenh": {
+   "ease": 2,
+   "modes": [
+    "bus"
+   ],
+   "walkable": false,
+   "note": "Tuk-tuks through PassApp or Grab are the easy option.",
+   "rentals": [
+    "moto"
+   ]
+  },
+  "siemreap": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Hire a tuk-tuk driver for the day to tour Angkor, or cycle.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "battambang": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Bamboo train and countryside by tuk-tuk or bike.",
+   "rentals": [
+    "bike",
+    "moto"
+   ]
+  },
+  "kampot": {
+   "ease": 1,
+   "modes": [],
+   "walkable": true,
+   "note": "Rent a scooter for Bokor Mountain and the pepper farms.",
+   "rentals": [
+    "bike",
+    "moto"
    ]
   }
  }

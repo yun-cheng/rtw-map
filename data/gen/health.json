@@ -400,6 +400,146 @@
    ],
    "healthcare": "Public hospitals are basic outside the capital; private clinics in big cities. You usually pay upfront, so travel insurance is essential.",
    "cdcSlug": "belarus"
+  },
+  "TW": {
+   "tapWater": {
+    "level": "boil",
+    "note": "Treated, but most people boil it or use filtered water dispensers (common in stations and hostels)."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)"
+   ],
+   "risks": [
+    "Typhoons July–October",
+    "Earthquakes",
+    "Dengue in the south in summer"
+   ],
+   "healthcare": "Excellent and affordable hospitals; pay upfront and claim from your insurance.",
+   "cdcSlug": "taiwan"
+  },
+  "JP": {
+   "tapWater": {
+    "level": "safe",
+    "note": "Safe everywhere."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Japanese encephalitis (long stays in rural areas)"
+   ],
+   "risks": [
+    "Earthquakes and tsunamis: learn the evacuation signs",
+    "Summer heat and humidity",
+    "Typhoons August–October"
+   ],
+   "healthcare": "Excellent hospitals, but few English-speaking staff outside big cities and high costs without insurance.",
+   "cdcSlug": "japan"
+  },
+  "TH": {
+   "tapWater": {
+    "level": "bottled",
+    "note": "Don't drink the tap water; bottled water and refill stations are everywhere."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Typhoid",
+    "Japanese encephalitis (long stays in rural areas)",
+    "Rabies (if you will be around animals or far from medical care)"
+   ],
+   "risks": [
+    "Dengue fever (mosquitoes)",
+    "Road accidents, especially on scooters",
+    "Strong currents at beaches in monsoon season",
+    "Heat"
+   ],
+   "healthcare": "Good private hospitals in Bangkok, Chiang Mai and Phuket; public ones are basic. Travel insurance strongly recommended.",
+   "cdcSlug": "thailand"
+  },
+  "VN": {
+   "tapWater": {
+    "level": "bottled",
+    "note": "Don't drink the tap water; use bottled or filtered water."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Typhoid",
+    "Japanese encephalitis (long stays in rural areas)",
+    "Rabies (if you will be around animals or far from medical care)"
+   ],
+   "risks": [
+    "Dengue fever",
+    "Chaotic traffic and scooter accidents",
+    "Air pollution in Hanoi in winter",
+    "Typhoons in the centre September–November"
+   ],
+   "healthcare": "Good international clinics in Hanoi and Ho Chi Minh City; basic elsewhere. Serious cases are often evacuated to Bangkok or Singapore.",
+   "cdcSlug": "vietnam"
+  },
+  "MY": {
+   "tapWater": {
+    "level": "boil",
+    "note": "Treated in cities, but most people boil or filter it."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Typhoid",
+    "Japanese encephalitis (long stays in rural areas)",
+    "Rabies (if you will be around animals or far from medical care)"
+   ],
+   "risks": [
+    "Dengue fever",
+    "Haze from forest fires in some years (August–October)"
+   ],
+   "healthcare": "Good private hospitals in cities at moderate prices.",
+   "cdcSlug": "malaysia"
+  },
+  "SG": {
+   "tapWater": {
+    "level": "safe",
+    "note": "Safe everywhere."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)"
+   ],
+   "risks": [
+    "Dengue fever",
+    "Heat and humidity"
+   ],
+   "healthcare": "World-class but expensive: travel insurance is essential.",
+   "cdcSlug": "singapore"
+  },
+  "KH": {
+   "tapWater": {
+    "level": "bottled",
+    "note": "Don't drink the tap water; bottled water is cheap everywhere."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Typhoid",
+    "Japanese encephalitis (long stays in rural areas)",
+    "Rabies (if you will be around animals or far from medical care)"
+   ],
+   "risks": [
+    "Dengue fever",
+    "Malaria in remote forest areas",
+    "Landmines in rural areas: stay on marked paths",
+    "Road accidents"
+   ],
+   "healthcare": "Very limited; serious cases go to Bangkok. Insurance with medical evacuation is essential.",
+   "cdcSlug": "cambodia"
   }
  },
  "cities": {

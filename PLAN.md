@@ -9,7 +9,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Topic | Decision |
 |---|---|
 | First user | Me (personal use). **Test case:** my RTW trip, May–Sept 2027: Balkans → Eastern Europe → Poland (longer) → Baltics → Russia. The website plans it; we use it to find bugs (§3.3) |
-| Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). First region: Balkans, Eastern Europe, Poland, Baltic States, Russia (the test case). Order of later regions: decided after the field test |
+| Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). Region 1: Balkans, Eastern Europe, Poland, Baltic States, Russia (the test case). Region 2: Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore, Cambodia (§3.5). Order of later regions: decided after the field test |
 | Language | English only |
 | Passports | A few: EU/EEA/Swiss (one group), UK, US, Canada, Australia, New Zealand, Japan, South Korea, **Taiwan** |
 | Platform | Desktop-first web app; a simple read-only phone view for use on the road |
@@ -107,6 +107,13 @@ The first region is the one my RTW plan covers, and it gets complete curated dat
 | Russia | Russia (main cities, starting with St Petersburg and Moscow) | No |
 
 Countries with "do not travel" advisories (e.g. Ukraine, Belarus) are **excluded from routes by default**.
+
+### 3.1b Second region: East & Southeast Asia (7 countries, 43 cities)
+Taiwan (Taipei, Taichung, Tainan, Kaohsiung, Hualien), Japan (Tokyo, Hakone, Kyoto, Nara, Osaka, Hiroshima, Kanazawa, Takayama, Fukuoka, Sapporo), Thailand (Bangkok, Ayutthaya, Kanchanaburi, Chiang Mai, Pai, Chiang Rai, Krabi, Phuket, Koh Samui), Vietnam (Hanoi, Sa Pa, Ha Long, Ninh Binh, Hue, Hoi An, Da Nang, Da Lat, Ho Chi Minh City), Malaysia (Kuala Lumpur, George Town, Melaka, Cameron Highlands, Langkawi), Singapore, Cambodia (Phnom Penh, Siem Reap, Battambang, Kampot). All curated data types are filled in. What this region added:
+- **Flights** as a connection mode (islands, and long distances where buses make no sense), with ~2½ h airport time per flight and a fare term in route costs, so cheap ground routes still win when they're reasonable. Ground routes where they're good: shinkansen, Taiwan HSR, Vietnam sleeper trains, border buses (Thailand–Cambodia, Vietnam–Cambodia, Malaysia–Singapore).
+- **Voltage per country** (Japan 100V, Taiwan 110V; was assumed 230V).
+- **Population fallback to the IMF** (Taiwan isn't in World Bank data).
+- **Test trip:** Taiwan → Japan → Southeast Asia (Oct–Dec 2027) in `planner.test.ts`.
 
 ### 3.2 Features this region forces into the MVP
 - **Schengen 90/180 calculator.** Most of this region is Schengen (Croatia joined in 2023, Bulgaria and Romania in 2025). Any long trip here hits the 90-day limit for non-EU passports, so the engine must treat Schengen days as a budget while planning, not just warn afterwards.
@@ -408,6 +415,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **City panel tabs, done:** Overview (suggested days per pace + one line per topic, problems first) and tabs ordered by use: Transport, Weather, Money, Daily life, Safety, Entry. Red dots on tabs with a problem; the chosen tab stays when switching cities.
 - **Weather colours, done:** temperature-style colours on the map layer, the timeline and the Overview: blue = cold, green = pleasant, orange/red = hot, grey = wet (same thresholds as the weather checks).
 - **Routing, improved:** leg costs count ~2½ h airport time per flight and the fare, so routes stop zig-zagging by plane; the search adds swap moves, a seeded shake-and-reoptimize loop, and re-orders the route after cities are added or dropped.
+- **East & Southeast Asia, done:** 7 countries, 43 cities, all curated data (§3.1b). Weather and air for the new cities are still downloading.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

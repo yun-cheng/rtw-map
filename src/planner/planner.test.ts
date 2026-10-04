@@ -260,3 +260,33 @@ describe('suggested days per pace', () => {
     expect(longer.balanced).toBeGreaterThan(plain.balanced)
   })
 })
+
+describe('Asia trip (Taiwan → Japan → Southeast Asia)', () => {
+  const asia: TripInput = {
+    ...testTrip('US'),
+    startDate: '2027-10-01',
+    endDate: '2027-12-15',
+    groups: [
+      { id: 'ea', name: 'East Asia', countries: [{ iso2: 'TW', mode: 'must' }, { iso2: 'JP', mode: 'must' }], longer: false },
+      { id: 'sea', name: 'Southeast Asia', countries: ['TH', 'VN', 'MY', 'SG', 'KH'].map((iso2) => ({ iso2, mode: 'must' as const })), longer: false },
+    ],
+  }
+  const plan = generatePlan(ds, asia)
+
+  it('fills the dates and keeps the region order', () => {
+    expect(plan.assignedNights).toBe(plan.totalNights)
+    const groups = plan.stops.map((s) => s.groupId)
+    expect(groups.lastIndexOf('ea')).toBeLessThan(groups.indexOf('sea'))
+  })
+
+  it('visits every must-visit country and can reach every stop', () => {
+    const visited = new Set(plan.stops.map((s) => iso(s.cityId)))
+    for (const c of ['TW', 'JP', 'TH', 'VN', 'MY', 'SG', 'KH']) expect(visited.has(c), c).toBe(true)
+    expect(plan.warnings.filter((w) => w.kind === 'unreachable')).toEqual([])
+  })
+
+  it('flags the e-visa for Vietnam and no Schengen limit', () => {
+    expect(plan.warnings.some((w) => w.kind === 'visa' && w.iso2 === 'VN')).toBe(true)
+    expect(plan.schengen.days).toBe(0)
+  })
+})

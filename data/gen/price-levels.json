@@ -221,6 +221,41 @@
    "year": 2025,
    "source": "World Bank"
   },
+  "TW": {
+   "level": 0.43,
+   "year": 2025,
+   "source": "IMF"
+  },
+  "JP": {
+   "level": 0.61,
+   "year": 2025,
+   "source": "World Bank"
+  },
+  "TH": {
+   "level": 0.3,
+   "year": 2025,
+   "source": "World Bank"
+  },
+  "VN": {
+   "level": 0.27,
+   "year": 2025,
+   "source": "World Bank"
+  },
+  "MY": {
+   "level": 0.33,
+   "year": 2025,
+   "source": "World Bank"
+  },
+  "SG": {
+   "level": 0.62,
+   "year": 2025,
+   "source": "World Bank"
+  },
+  "KH": {
+   "level": 0.33,
+   "year": 2025,
+   "source": "World Bank"
+  },
   "US": {
    "level": 1,
    "year": 2025,
@@ -291,28 +326,13 @@
    "year": 2025,
    "source": "World Bank"
   },
-  "JP": {
-   "level": 0.61,
-   "year": 2025,
-   "source": "World Bank"
-  },
   "KR": {
    "level": 0.6,
    "year": 2025,
    "source": "World Bank"
   },
-  "TW": {
-   "level": 0.43,
-   "year": 2025,
-   "source": "IMF"
-  },
   "HK": {
    "level": 0.7,
-   "year": 2025,
-   "source": "World Bank"
-  },
-  "SG": {
-   "level": 0.62,
    "year": 2025,
    "source": "World Bank"
   },

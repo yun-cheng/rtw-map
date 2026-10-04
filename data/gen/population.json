@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "source": "World Bank, SP.POP.TOTL (CC-BY 4.0)",
+  "source": "World Bank, SP.POP.TOTL (CC-BY 4.0); IMF where missing",
   "updatedAt": "2026-10-04"
  },
  "population": {
@@ -40,6 +40,14 @@
    "value": 9514251,
    "year": 2025
   },
+  "JP": {
+   "value": 123366734,
+   "year": 2025
+  },
+  "KH": {
+   "value": 17847982,
+   "year": 2025
+  },
   "LT": {
    "value": 2888774,
    "year": 2025
@@ -60,6 +68,10 @@
    "value": 623129,
    "year": 2025
   },
+  "MY": {
+   "value": 35977838,
+   "year": 2025
+  },
   "PL": {
    "value": 36435861,
    "year": 2025
@@ -70,6 +82,10 @@
   },
   "RU": {
    "value": 143513328,
+   "year": 2025
+  },
+  "SG": {
+   "value": 6111175,
    "year": 2025
   },
   "RS": {
@@ -84,13 +100,26 @@
    "value": 2130986,
    "year": 2025
   },
+  "TH": {
+   "value": 71619863,
+   "year": 2025
+  },
   "UA": {
    "value": 38980376,
+   "year": 2025
+  },
+  "VN": {
+   "value": 101598527,
    "year": 2025
   },
   "XK": {
    "value": 1576876,
    "year": 2025
+  },
+  "TW": {
+   "value": 23299000,
+   "year": 2025,
+   "source": "IMF"
   }
  }
 }

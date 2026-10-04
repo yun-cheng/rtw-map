@@ -13,6 +13,7 @@ export type Country = {
   languages: string[]
   religion: string
   plugs: string[]
+  voltage: number
   emergency: string
   notes: string[]
   /** How easy it is to get by in English: 1 = hard … 5 = easy almost everywhere (our estimate). */

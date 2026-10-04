@@ -7,6 +7,8 @@ export const REGION_PRESETS: { name: string; countries: string[] }[] = [
   { name: 'Poland', countries: ['PL'] },
   { name: 'Baltic States', countries: ['LT', 'LV', 'EE'] },
   { name: 'Russia', countries: ['RU'] },
+  { name: 'East Asia', countries: ['TW', 'JP'] },
+  { name: 'Southeast Asia', countries: ['TH', 'VN', 'MY', 'SG', 'KH'] },
 ]
 
 /** Countries with a "do not travel" advisory start as excluded; everything else as must-visit. */

@@ -1,6 +1,6 @@
 # rtw-map
 
-A map-based planner for long, multi-country trips. It's built for cities worldwide; detailed data currently covers the Balkans, Eastern Europe, Poland, the Baltic States and Russia (more regions to follow).
+A map-based planner for long, multi-country trips. It's built for cities worldwide; detailed data currently covers the Balkans, Eastern Europe, Poland, the Baltic States and Russia, plus Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore and Cambodia (more regions to follow).
 You choose regions, dates, pace and budget. It suggests a route with nights per city, enforces the Schengen 90/180 rule,
 checks visas and travel advisories, and shows weather, costs, English level and transport for every stop.
 
@@ -58,14 +58,14 @@ All data lives in the repo. Hand-curated files are in `data/seed/`; scripts enri
 | `build-cities.ts` | GeoNames cities500 (CC-BY) | `cities.json`: coordinates, population, timezone |
 | `build-boundaries.ts` | Natural Earth 1:50m (public domain) | `boundaries.json` |
 | `build-seed.ts` | `data/seed/*` | `countries`, `costs`, `connections`, `notices`, `local-transport`, `health`, `shopping`, `payments` (validated: every city/country needs an entry) |
-| `build-roads.ts` | OSRM demo server (OpenStreetMap, ODbL) | `roads.json`: driving times for estimated legs |
+| `build-roads.ts` | OSRM demo server (OpenStreetMap, ODbL) | `roads.json`: driving times for estimated legs (queried in batches of nearby cities) |
 | `build-visa.ts` | Passport Index dataset (MIT) | `visa.json` |
 | `build-climate.ts` | Open-Meteo archive, ERA5 (CC-BY) | `climate.json`: monthly averages 2016–2025 |
 | `build-air.ts` | Open-Meteo Air Quality, CAMS model (CC-BY) | `air.json`: monthly PM2.5 2023–2024 |
 | `fetch-amenities.ts` | OpenStreetMap via Overpass (ODbL) | `amenities.json`: shops, pharmacies, clinics near the centre; nearest hospital |
 | `fetch-advisories.ts` | UK FCDO (OGL) + US State Dept | `advisories.json` |
 | `fetch-fx.ts` | ExchangeRate-API open endpoint | `fx.json` |
-| `fetch-population.ts` | World Bank (CC-BY) | `population.json` |
+| `fetch-population.ts` | World Bank (CC-BY); IMF where missing (e.g. Taiwan) | `population.json` |
 | `fetch-price-levels.ts` | World Bank PPP (IMF where missing) ÷ our exchange rates | `price-levels.json`: US = 1.00; also used to estimate costs where we have none |
 | `fetch-big-mac.ts` | The Economist's Big Mac index (MIT) | `big-mac.json` |
 

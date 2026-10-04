@@ -378,6 +378,125 @@
     "beer05": 0.9,
     "water15": 0.4
    }
+  },
+  "TW": {
+   "dormBed": 20,
+   "privateRoom": 50,
+   "mealCheap": 4,
+   "mealMid": 12,
+   "localTransportDay": 3,
+   "groceries": {
+    "bread": 1.6,
+    "eggs12": 2.8,
+    "milk1l": 2.8,
+    "rice1kg": 2.5,
+    "chicken1kg": 7,
+    "tomatoes1kg": 3,
+    "beer05": 1.6,
+    "water15": 0.8
+   }
+  },
+  "JP": {
+   "dormBed": 25,
+   "privateRoom": 60,
+   "mealCheap": 7,
+   "mealMid": 18,
+   "localTransportDay": 6,
+   "groceries": {
+    "bread": 1.5,
+    "eggs12": 1.8,
+    "milk1l": 1.4,
+    "rice1kg": 5,
+    "chicken1kg": 6.5,
+    "tomatoes1kg": 5,
+    "beer05": 1.5,
+    "water15": 0.7
+   }
+  },
+  "TH": {
+   "dormBed": 9,
+   "privateRoom": 22,
+   "mealCheap": 2,
+   "mealMid": 8,
+   "localTransportDay": 2,
+   "groceries": {
+    "bread": 1.2,
+    "eggs12": 1.8,
+    "milk1l": 1.5,
+    "rice1kg": 1.2,
+    "chicken1kg": 2.8,
+    "tomatoes1kg": 1.2,
+    "beer05": 1.6,
+    "water15": 0.4
+   }
+  },
+  "VN": {
+   "dormBed": 6,
+   "privateRoom": 18,
+   "mealCheap": 2,
+   "mealMid": 7,
+   "localTransportDay": 2,
+   "groceries": {
+    "bread": 0.6,
+    "eggs12": 1.3,
+    "milk1l": 1.4,
+    "rice1kg": 1,
+    "chicken1kg": 3.2,
+    "tomatoes1kg": 1,
+    "beer05": 0.8,
+    "water15": 0.4
+   }
+  },
+  "MY": {
+   "dormBed": 9,
+   "privateRoom": 25,
+   "mealCheap": 2.5,
+   "mealMid": 9,
+   "localTransportDay": 2,
+   "groceries": {
+    "bread": 1,
+    "eggs12": 1.8,
+    "milk1l": 1.8,
+    "rice1kg": 1.2,
+    "chicken1kg": 2.8,
+    "tomatoes1kg": 1.5,
+    "beer05": 3.5,
+    "water15": 0.5
+   }
+  },
+  "SG": {
+   "dormBed": 25,
+   "privateRoom": 80,
+   "mealCheap": 4,
+   "mealMid": 20,
+   "localTransportDay": 4,
+   "groceries": {
+    "bread": 2,
+    "eggs12": 2.5,
+    "milk1l": 2.5,
+    "rice1kg": 2,
+    "chicken1kg": 6,
+    "tomatoes1kg": 3,
+    "beer05": 4,
+    "water15": 1.2
+   }
+  },
+  "KH": {
+   "dormBed": 6,
+   "privateRoom": 18,
+   "mealCheap": 2.5,
+   "mealMid": 8,
+   "localTransportDay": 3,
+   "groceries": {
+    "bread": 0.7,
+    "eggs12": 1.7,
+    "milk1l": 2.2,
+    "rice1kg": 1,
+    "chicken1kg": 3,
+    "tomatoes1kg": 1.2,
+    "beer05": 0.8,
+    "water15": 0.5
+   }
   }
  }
 }
