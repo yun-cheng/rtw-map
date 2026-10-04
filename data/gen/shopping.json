@@ -129,6 +129,16 @@
    ],
    "lateNight": "Small corner shops (\"večerka\") open late."
   },
+  "AT": {
+   "chains": [
+    "Billa",
+    "Spar",
+    "Hofer",
+    "Lidl",
+    "Penny"
+   ],
+   "sunday": "Shops close on Sundays; supermarkets at big train stations (e.g. Vienna Hauptbahnhof) stay open."
+  },
   "PL": {
    "chains": [
     "Biedronka",

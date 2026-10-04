@@ -276,6 +276,24 @@
    "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
    "cdcSlug": "czechia"
   },
+  "AT": {
+   "tapWater": {
+    "level": "safe",
+    "note": "Safe, and excellent: much of it comes straight from Alpine springs."
+   },
+   "vaccines": [
+    "Routine vaccines (incl. measles)",
+    "Hepatitis A",
+    "Hepatitis B (for some travellers)",
+    "Tick-borne encephalitis (if hiking or camping in forests, spring to autumn)"
+   ],
+   "risks": [
+    "Ticks (tick-borne encephalitis is widespread)",
+    "Mountain weather in the Alps"
+   ],
+   "healthcare": "EU citizens can use the EHIC/GHIC card at public hospitals; good private clinics in cities. Travel insurance still recommended.",
+   "cdcSlug": "austria"
+  },
   "PL": {
    "tapWater": {
     "level": "safe",

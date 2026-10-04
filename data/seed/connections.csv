@@ -186,3 +186,20 @@ kualalumpur,singapore,bus,330,10,20,frequent,0,"Johor–Singapore causeway: queu
 danang,hanoi,flight,80,30,70,frequent,0,
 hanoi,hue,flight,75,30,70,daily,0,
 bangkok,chiangmai,flight,75,25,60,frequent,0,The overnight sleeper train saves a night's accommodation
+vienna,bratislava,train,60,10,15,frequent,0,Also the Twin City Liner boat on the Danube (spring to autumn)
+vienna,budapest,train,160,15,40,frequent,0,
+vienna,brno,train,90,10,25,frequent,0,
+vienna,prague,train,240,15,45,frequent,0,
+vienna,krakow,train,420,25,60,several daily,1,Night train option
+vienna,warsaw,train,480,30,70,several daily,1,Night train option
+vienna,ljubljana,train,370,30,70,daily,0,Buses take about 5 hours
+vienna,graz,train,155,15,40,frequent,0,
+vienna,salzburg,train,145,20,60,frequent,0,Cheaper with the private Westbahn trains
+vienna,innsbruck,train,255,30,80,frequent,0,
+vienna,hallstatt,train,225,30,60,several daily,0,Change at Attnang-Puchheim; a small ferry links Hallstatt station to the village
+salzburg,hallstatt,bus,135,10,15,several daily,0,Bus to Bad Ischl and change
+salzburg,innsbruck,train,110,15,45,frequent,0,
+salzburg,graz,train,240,20,50,several daily,0,
+salzburg,ljubljana,train,260,25,50,several daily,0,
+graz,ljubljana,bus,190,15,25,daily,0,
+graz,zagreb,bus,210,15,25,daily,0,

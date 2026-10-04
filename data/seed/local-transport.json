@@ -283,6 +283,27 @@
         ]
       }
     },
+    "AT": {
+      "taxi": {
+        "apps": [
+          "Uber",
+          "Bolt"
+        ],
+        "flagFall": 4.5,
+        "perKm": 1.8,
+        "tip": "Uber and Bolt work in the big cities; in small towns, call a local taxi."
+      },
+      "rentals": {
+        "apps": [
+          "Lime",
+          "Bolt"
+        ],
+        "carDay": [
+          40,
+          70
+        ]
+      }
+    },
     "PL": {
       "taxi": {
         "apps": [
@@ -1145,6 +1166,82 @@
       "rentals": [
         "car",
         "bikeShare",
+        "eScooter"
+      ]
+    },
+    "vienna": {
+      "ease": 5,
+      "modes": [
+        "metro",
+        "tram",
+        "bus",
+        "train"
+      ],
+      "walkable": true,
+      "pay": "Tickets and passes from machines or the WienMobil app",
+      "note": "No barriers, but inspectors fine riders without a valid ticket; stamp paper tickets before boarding.",
+      "rentals": [
+        "car",
+        "bikeShare",
+        "eScooter"
+      ],
+      "rentalNote": "WienMobil Rad bike share across the city."
+    },
+    "salzburg": {
+      "ease": 3,
+      "modes": [
+        "trolleybus",
+        "bus",
+        "funicular"
+      ],
+      "walkable": true,
+      "pay": "Tickets from machines, the driver or the Salzburg Verkehr app",
+      "note": "The old town is compact; the funicular goes up to the fortress.",
+      "rentals": [
+        "car",
+        "bike"
+      ]
+    },
+    "hallstatt": {
+      "ease": 1,
+      "modes": [
+        "bus",
+        "ferry"
+      ],
+      "walkable": true,
+      "note": "Tiny village, best on foot; a ferry crosses the lake to the train station.",
+      "rentals": [
+        "bike"
+      ]
+    },
+    "innsbruck": {
+      "ease": 4,
+      "modes": [
+        "tram",
+        "bus",
+        "funicular",
+        "cablecar"
+      ],
+      "walkable": true,
+      "pay": "Tickets from machines or the IVB app",
+      "note": "The Hungerburg funicular and Nordkette cable car go from the centre to the mountains.",
+      "rentals": [
+        "car",
+        "bikeShare"
+      ]
+    },
+    "graz": {
+      "ease": 4,
+      "modes": [
+        "tram",
+        "bus",
+        "funicular"
+      ],
+      "walkable": true,
+      "pay": "Tickets from machines on trams and at stops, or the Graz Linien app",
+      "note": "Funicular up the Schlossberg castle hill.",
+      "rentals": [
+        "car",
         "eScooter"
       ]
     },

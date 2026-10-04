@@ -3,7 +3,7 @@ import type { CountryMode, Dataset, TripGroup } from '../planner/types'
 /** Region presets the user can add as trip groups. */
 export const REGION_PRESETS: { name: string; countries: string[] }[] = [
   { name: 'Balkans', countries: ['AL', 'ME', 'BA', 'RS', 'XK', 'MK', 'HR', 'SI', 'GR'] },
-  { name: 'Eastern Europe', countries: ['BG', 'RO', 'MD', 'HU', 'SK', 'CZ', 'UA', 'BY'] },
+  { name: 'Central & Eastern Europe', countries: ['BG', 'RO', 'MD', 'HU', 'SK', 'CZ', 'AT', 'UA', 'BY'] },
   { name: 'Poland', countries: ['PL'] },
   { name: 'Baltic States', countries: ['LT', 'LV', 'EE'] },
   { name: 'Russia', countries: ['RU'] },

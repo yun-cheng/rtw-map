@@ -3251,10 +3251,58 @@
    "km": 175
   },
   {
+   "a": "zabljak",
+   "b": "graz",
+   "driveMin": 670,
+   "km": 796
+  },
+  {
+   "a": "sarajevo",
+   "b": "vienna",
+   "driveMin": 524,
+   "km": 739
+  },
+  {
+   "a": "sarajevo",
+   "b": "hallstatt",
+   "driveMin": 547,
+   "km": 754
+  },
+  {
+   "a": "sarajevo",
+   "b": "graz",
+   "driveMin": 418,
+   "km": 585
+  },
+  {
+   "a": "mostar",
+   "b": "graz",
+   "driveMin": 467,
+   "km": 716
+  },
+  {
    "a": "belgrade",
    "b": "brno",
    "driveMin": 431,
    "km": 698
+  },
+  {
+   "a": "belgrade",
+   "b": "vienna",
+   "driveMin": 384,
+   "km": 615
+  },
+  {
+   "a": "belgrade",
+   "b": "hallstatt",
+   "driveMin": 495,
+   "km": 751
+  },
+  {
+   "a": "belgrade",
+   "b": "graz",
+   "driveMin": 365,
+   "km": 581
   },
   {
    "a": "novisad",
@@ -3264,9 +3312,57 @@
   },
   {
    "a": "novisad",
+   "b": "vienna",
+   "driveMin": 339,
+   "km": 533
+  },
+  {
+   "a": "novisad",
+   "b": "hallstatt",
+   "driveMin": 506,
+   "km": 733
+  },
+  {
+   "a": "novisad",
+   "b": "graz",
+   "driveMin": 377,
+   "km": 564
+  },
+  {
+   "a": "novisad",
    "b": "zakopane",
    "driveMin": 477,
    "km": 719
+  },
+  {
+   "a": "dubrovnik",
+   "b": "graz",
+   "driveMin": 536,
+   "km": 776
+  },
+  {
+   "a": "split",
+   "b": "vienna",
+   "driveMin": 497,
+   "km": 764
+  },
+  {
+   "a": "split",
+   "b": "salzburg",
+   "driveMin": 507,
+   "km": 744
+  },
+  {
+   "a": "split",
+   "b": "hallstatt",
+   "driveMin": 507,
+   "km": 749
+  },
+  {
+   "a": "split",
+   "b": "graz",
+   "driveMin": 377,
+   "km": 579
   },
   {
    "a": "zadar",
@@ -3275,10 +3371,70 @@
    "km": 768
   },
   {
+   "a": "zadar",
+   "b": "vienna",
+   "driveMin": 432,
+   "km": 642
+  },
+  {
+   "a": "zadar",
+   "b": "salzburg",
+   "driveMin": 441,
+   "km": 621
+  },
+  {
+   "a": "zadar",
+   "b": "hallstatt",
+   "driveMin": 441,
+   "km": 626
+  },
+  {
+   "a": "zadar",
+   "b": "innsbruck",
+   "driveMin": 553,
+   "km": 795
+  },
+  {
+   "a": "zadar",
+   "b": "graz",
+   "driveMin": 311,
+   "km": 457
+  },
+  {
    "a": "zagreb",
    "b": "brno",
    "driveMin": 348,
    "km": 500
+  },
+  {
+   "a": "zagreb",
+   "b": "vienna",
+   "driveMin": 257,
+   "km": 374
+  },
+  {
+   "a": "zagreb",
+   "b": "salzburg",
+   "driveMin": 284,
+   "km": 416
+  },
+  {
+   "a": "zagreb",
+   "b": "hallstatt",
+   "driveMin": 267,
+   "km": 358
+  },
+  {
+   "a": "zagreb",
+   "b": "innsbruck",
+   "driveMin": 396,
+   "km": 590
+  },
+  {
+   "a": "zagreb",
+   "b": "graz",
+   "driveMin": 137,
+   "km": 188
   },
   {
    "a": "zagreb",
@@ -3294,6 +3450,36 @@
   },
   {
    "a": "ljubljana",
+   "b": "vienna",
+   "driveMin": 254,
+   "km": 384
+  },
+  {
+   "a": "ljubljana",
+   "b": "salzburg",
+   "driveMin": 190,
+   "km": 276
+  },
+  {
+   "a": "ljubljana",
+   "b": "hallstatt",
+   "driveMin": 200,
+   "km": 270
+  },
+  {
+   "a": "ljubljana",
+   "b": "innsbruck",
+   "driveMin": 302,
+   "km": 449
+  },
+  {
+   "a": "ljubljana",
+   "b": "graz",
+   "driveMin": 134,
+   "km": 198
+  },
+  {
+   "a": "ljubljana",
    "b": "zakopane",
    "driveMin": 523,
    "km": 749
@@ -3303,6 +3489,36 @@
    "b": "brno",
    "driveMin": 362,
    "km": 504
+  },
+  {
+   "a": "bled",
+   "b": "vienna",
+   "driveMin": 272,
+   "km": 379
+  },
+  {
+   "a": "bled",
+   "b": "salzburg",
+   "driveMin": 160,
+   "km": 229
+  },
+  {
+   "a": "bled",
+   "b": "hallstatt",
+   "driveMin": 169,
+   "km": 223
+  },
+  {
+   "a": "bled",
+   "b": "innsbruck",
+   "driveMin": 271,
+   "km": 403
+  },
+  {
+   "a": "bled",
+   "b": "graz",
+   "driveMin": 153,
+   "km": 219
   },
   {
    "a": "bled",
@@ -3330,6 +3546,12 @@
   },
   {
    "a": "sibiu",
+   "b": "vienna",
+   "driveMin": 516,
+   "km": 799
+  },
+  {
+   "a": "sibiu",
    "b": "zakopane",
    "driveMin": 599,
    "km": 767
@@ -3345,6 +3567,12 @@
    "b": "brno",
    "driveMin": 573,
    "km": 791
+  },
+  {
+   "a": "cluj",
+   "b": "vienna",
+   "driveMin": 527,
+   "km": 708
   },
   {
    "a": "cluj",
@@ -3384,6 +3612,36 @@
   },
   {
    "a": "budapest",
+   "b": "vienna",
+   "driveMin": 158,
+   "km": 244
+  },
+  {
+   "a": "budapest",
+   "b": "salzburg",
+   "driveMin": 341,
+   "km": 548
+  },
+  {
+   "a": "budapest",
+   "b": "hallstatt",
+   "driveMin": 346,
+   "km": 500
+  },
+  {
+   "a": "budapest",
+   "b": "innsbruck",
+   "driveMin": 460,
+   "km": 728
+  },
+  {
+   "a": "budapest",
+   "b": "graz",
+   "driveMin": 238,
+   "km": 346
+  },
+  {
+   "a": "budapest",
    "b": "krakow",
    "driveMin": 376,
    "km": 523
@@ -3411,6 +3669,30 @@
    "b": "brno",
    "driveMin": 296,
    "km": 457
+  },
+  {
+   "a": "eger",
+   "b": "vienna",
+   "driveMin": 250,
+   "km": 374
+  },
+  {
+   "a": "eger",
+   "b": "salzburg",
+   "driveMin": 433,
+   "km": 678
+  },
+  {
+   "a": "eger",
+   "b": "hallstatt",
+   "driveMin": 438,
+   "km": 630
+  },
+  {
+   "a": "eger",
+   "b": "graz",
+   "driveMin": 330,
+   "km": 476
   },
   {
    "a": "eger",
@@ -3447,6 +3729,36 @@
    "b": "brno",
    "driveMin": 90,
    "km": 131
+  },
+  {
+   "a": "bratislava",
+   "b": "vienna",
+   "driveMin": 60,
+   "km": 80
+  },
+  {
+   "a": "bratislava",
+   "b": "salzburg",
+   "driveMin": 242,
+   "km": 383
+  },
+  {
+   "a": "bratislava",
+   "b": "hallstatt",
+   "driveMin": 254,
+   "km": 346
+  },
+  {
+   "a": "bratislava",
+   "b": "innsbruck",
+   "driveMin": 361,
+   "km": 564
+  },
+  {
+   "a": "bratislava",
+   "b": "graz",
+   "driveMin": 170,
+   "km": 244
   },
   {
    "a": "bratislava",
@@ -3498,6 +3810,24 @@
   },
   {
    "a": "kosice",
+   "b": "vienna",
+   "driveMin": 324,
+   "km": 504
+  },
+  {
+   "a": "kosice",
+   "b": "hallstatt",
+   "driveMin": 512,
+   "km": 760
+  },
+  {
+   "a": "kosice",
+   "b": "graz",
+   "driveMin": 404,
+   "km": 606
+  },
+  {
+   "a": "kosice",
    "b": "krakow",
    "driveMin": 217,
    "km": 259
@@ -3543,6 +3873,30 @@
    "b": "brno",
    "driveMin": 269,
    "km": 340
+  },
+  {
+   "a": "poprad",
+   "b": "vienna",
+   "driveMin": 273,
+   "km": 408
+  },
+  {
+   "a": "poprad",
+   "b": "salzburg",
+   "driveMin": 456,
+   "km": 712
+  },
+  {
+   "a": "poprad",
+   "b": "hallstatt",
+   "driveMin": 467,
+   "km": 674
+  },
+  {
+   "a": "poprad",
+   "b": "graz",
+   "driveMin": 383,
+   "km": 573
   },
   {
    "a": "poprad",
@@ -3600,6 +3954,36 @@
   },
   {
    "a": "prague",
+   "b": "vienna",
+   "driveMin": 230,
+   "km": 336
+  },
+  {
+   "a": "prague",
+   "b": "salzburg",
+   "driveMin": 266,
+   "km": 378
+  },
+  {
+   "a": "prague",
+   "b": "hallstatt",
+   "driveMin": 282,
+   "km": 369
+  },
+  {
+   "a": "prague",
+   "b": "innsbruck",
+   "driveMin": 345,
+   "km": 551
+  },
+  {
+   "a": "prague",
+   "b": "graz",
+   "driveMin": 332,
+   "km": 465
+  },
+  {
+   "a": "prague",
    "b": "krakow",
    "driveMin": 331,
    "km": 534
@@ -3648,6 +4032,36 @@
   },
   {
    "a": "ceskykrumlov",
+   "b": "vienna",
+   "driveMin": 183,
+   "km": 205
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "salzburg",
+   "driveMin": 159,
+   "km": 204
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "hallstatt",
+   "driveMin": 176,
+   "km": 195
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "innsbruck",
+   "driveMin": 278,
+   "km": 385
+  },
+  {
+   "a": "ceskykrumlov",
+   "b": "graz",
+   "driveMin": 226,
+   "km": 292
+  },
+  {
+   "a": "ceskykrumlov",
    "b": "krakow",
    "driveMin": 365,
    "km": 567
@@ -3675,6 +4089,36 @@
    "b": "poznan",
    "driveMin": 444,
    "km": 597
+  },
+  {
+   "a": "brno",
+   "b": "vienna",
+   "driveMin": 108,
+   "km": 136
+  },
+  {
+   "a": "brno",
+   "b": "salzburg",
+   "driveMin": 281,
+   "km": 401
+  },
+  {
+   "a": "brno",
+   "b": "hallstatt",
+   "driveMin": 297,
+   "km": 392
+  },
+  {
+   "a": "brno",
+   "b": "innsbruck",
+   "driveMin": 400,
+   "km": 581
+  },
+  {
+   "a": "brno",
+   "b": "graz",
+   "driveMin": 226,
+   "km": 325
   },
   {
    "a": "brno",
@@ -3723,6 +4167,168 @@
    "b": "lviv",
    "driveMin": 414,
    "km": 656
+  },
+  {
+   "a": "vienna",
+   "b": "salzburg",
+   "driveMin": 197,
+   "km": 299
+  },
+  {
+   "a": "vienna",
+   "b": "hallstatt",
+   "driveMin": 214,
+   "km": 290
+  },
+  {
+   "a": "vienna",
+   "b": "innsbruck",
+   "driveMin": 316,
+   "km": 479
+  },
+  {
+   "a": "vienna",
+   "b": "graz",
+   "driveMin": 136,
+   "km": 195
+  },
+  {
+   "a": "vienna",
+   "b": "krakow",
+   "driveMin": 307,
+   "km": 462
+  },
+  {
+   "a": "vienna",
+   "b": "warsaw",
+   "driveMin": 431,
+   "km": 670
+  },
+  {
+   "a": "vienna",
+   "b": "wroclaw",
+   "driveMin": 342,
+   "km": 534
+  },
+  {
+   "a": "vienna",
+   "b": "zakopane",
+   "driveMin": 298,
+   "km": 400
+  },
+  {
+   "a": "vienna",
+   "b": "poznan",
+   "driveMin": 464,
+   "km": 723
+  },
+  {
+   "a": "vienna",
+   "b": "torun",
+   "driveMin": 461,
+   "km": 739
+  },
+  {
+   "a": "vienna",
+   "b": "lviv",
+   "driveMin": 513,
+   "km": 788
+  },
+  {
+   "a": "salzburg",
+   "b": "hallstatt",
+   "driveMin": 73,
+   "km": 80
+  },
+  {
+   "a": "salzburg",
+   "b": "innsbruck",
+   "driveMin": 132,
+   "km": 186
+  },
+  {
+   "a": "salzburg",
+   "b": "graz",
+   "driveMin": 190,
+   "km": 280
+  },
+  {
+   "a": "salzburg",
+   "b": "krakow",
+   "driveMin": 478,
+   "km": 726
+  },
+  {
+   "a": "salzburg",
+   "b": "wroclaw",
+   "driveMin": 476,
+   "km": 651
+  },
+  {
+   "a": "salzburg",
+   "b": "zakopane",
+   "driveMin": 478,
+   "km": 704
+  },
+  {
+   "a": "hallstatt",
+   "b": "innsbruck",
+   "driveMin": 185,
+   "km": 252
+  },
+  {
+   "a": "hallstatt",
+   "b": "graz",
+   "driveMin": 144,
+   "km": 178
+  },
+  {
+   "a": "hallstatt",
+   "b": "krakow",
+   "driveMin": 495,
+   "km": 718
+  },
+  {
+   "a": "hallstatt",
+   "b": "wroclaw",
+   "driveMin": 493,
+   "km": 642
+  },
+  {
+   "a": "hallstatt",
+   "b": "zakopane",
+   "driveMin": 490,
+   "km": 667
+  },
+  {
+   "a": "hallstatt",
+   "b": "poznan",
+   "driveMin": 594,
+   "km": 789
+  },
+  {
+   "a": "innsbruck",
+   "b": "graz",
+   "driveMin": 310,
+   "km": 430
+  },
+  {
+   "a": "graz",
+   "b": "krakow",
+   "driveMin": 425,
+   "km": 651
+  },
+  {
+   "a": "graz",
+   "b": "wroclaw",
+   "driveMin": 460,
+   "km": 723
+  },
+  {
+   "a": "graz",
+   "b": "zakopane",
+   "driveMin": 407,
+   "km": 566
   },
   {
    "a": "krakow",

@@ -279,7 +279,7 @@
   {
    "iso2": "BG",
    "name": "Bulgaria",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "bulgaria",
    "schengen": true,
    "eu": true,
@@ -310,7 +310,7 @@
   {
    "iso2": "RO",
    "name": "Romania",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "romania",
    "schengen": true,
    "eu": true,
@@ -340,7 +340,7 @@
   {
    "iso2": "MD",
    "name": "Moldova",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "moldova",
    "schengen": false,
    "eu": false,
@@ -370,7 +370,7 @@
   {
    "iso2": "HU",
    "name": "Hungary",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "hungary",
    "schengen": true,
    "eu": true,
@@ -397,7 +397,7 @@
   {
    "iso2": "SK",
    "name": "Slovakia",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "slovakia",
    "schengen": true,
    "eu": true,
@@ -425,7 +425,7 @@
   {
    "iso2": "CZ",
    "name": "Czechia",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "czech-republic",
    "schengen": true,
    "eu": true,
@@ -446,6 +446,31 @@
      "Slovak (mutually intelligible)",
      "German (older people)"
     ],
+    "script": "Latin"
+   },
+   "voltage": 230
+  },
+  {
+   "iso2": "AT",
+   "name": "Austria",
+   "block": "Central & Eastern Europe",
+   "fcdoSlug": "austria",
+   "schengen": true,
+   "eu": true,
+   "currency": "EUR",
+   "languages": [
+    "German"
+   ],
+   "religion": "Mostly Catholic (~55%); about a fifth non-religious",
+   "plugs": [
+    "C",
+    "F"
+   ],
+   "emergency": "112",
+   "notes": [],
+   "english": {
+    "level": 4,
+    "otherLanguages": [],
     "script": "Latin"
    },
    "voltage": 230
@@ -599,7 +624,7 @@
   {
    "iso2": "UA",
    "name": "Ukraine",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "ukraine",
    "schengen": false,
    "eu": false,
@@ -626,7 +651,7 @@
   {
    "iso2": "BY",
    "name": "Belarus",
-   "block": "Eastern Europe",
+   "block": "Central & Eastern Europe",
    "fcdoSlug": "belarus",
    "schengen": false,
    "eu": false,

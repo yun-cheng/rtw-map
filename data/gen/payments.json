@@ -119,6 +119,13 @@
    "cashFor": "Rarely needed: even small pubs take cards",
    "atm": "Avoid Euronet ATMs (high fees and poor rates); bank ATMs are cheaper."
   },
+  "AT": {
+   "cardLevel": 4,
+   "foreignCardsWork": true,
+   "mobilePay": "common",
+   "cashFor": "Some cafés, bakeries, wine taverns (Heurigen) and market stalls",
+   "atm": "Bank ATMs are the cheapest; avoid Euronet ATMs."
+  },
   "PL": {
    "cardLevel": 5,
    "foreignCardsWork": true,

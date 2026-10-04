@@ -15,7 +15,7 @@ export function testCaseInput(ds: Dataset, passport = 'TW'): TripInput {
     endDate: '2027-09-30',
     groups: [
       makeGroup(ds, 'Balkans', preset('Balkans')),
-      makeGroup(ds, 'Eastern Europe', preset('Eastern Europe')),
+      makeGroup(ds, 'Central & Eastern Europe', preset('Central & Eastern Europe')),
       makeGroup(ds, 'Poland', preset('Poland'), true),
       makeGroup(ds, 'Baltic States', preset('Baltic States')),
       russia,

@@ -1932,6 +1932,183 @@
    "frequency": "frequent",
    "overnight": false,
    "note": "The overnight sleeper train saves a night's accommodation"
+  },
+  {
+   "from": "vienna",
+   "to": "bratislava",
+   "mode": "train",
+   "durationMin": 60,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "frequent",
+   "overnight": false,
+   "note": "Also the Twin City Liner boat on the Danube (spring to autumn)"
+  },
+  {
+   "from": "vienna",
+   "to": "budapest",
+   "mode": "train",
+   "durationMin": 160,
+   "priceMin": 15,
+   "priceMax": 40,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "vienna",
+   "to": "brno",
+   "mode": "train",
+   "durationMin": 90,
+   "priceMin": 10,
+   "priceMax": 25,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "vienna",
+   "to": "prague",
+   "mode": "train",
+   "durationMin": 240,
+   "priceMin": 15,
+   "priceMax": 45,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "vienna",
+   "to": "krakow",
+   "mode": "train",
+   "durationMin": 420,
+   "priceMin": 25,
+   "priceMax": 60,
+   "frequency": "several daily",
+   "overnight": true,
+   "note": "Night train option"
+  },
+  {
+   "from": "vienna",
+   "to": "warsaw",
+   "mode": "train",
+   "durationMin": 480,
+   "priceMin": 30,
+   "priceMax": 70,
+   "frequency": "several daily",
+   "overnight": true,
+   "note": "Night train option"
+  },
+  {
+   "from": "vienna",
+   "to": "ljubljana",
+   "mode": "train",
+   "durationMin": 370,
+   "priceMin": 30,
+   "priceMax": 70,
+   "frequency": "daily",
+   "overnight": false,
+   "note": "Buses take about 5 hours"
+  },
+  {
+   "from": "vienna",
+   "to": "graz",
+   "mode": "train",
+   "durationMin": 155,
+   "priceMin": 15,
+   "priceMax": 40,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "vienna",
+   "to": "salzburg",
+   "mode": "train",
+   "durationMin": 145,
+   "priceMin": 20,
+   "priceMax": 60,
+   "frequency": "frequent",
+   "overnight": false,
+   "note": "Cheaper with the private Westbahn trains"
+  },
+  {
+   "from": "vienna",
+   "to": "innsbruck",
+   "mode": "train",
+   "durationMin": 255,
+   "priceMin": 30,
+   "priceMax": 80,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "vienna",
+   "to": "hallstatt",
+   "mode": "train",
+   "durationMin": 225,
+   "priceMin": 30,
+   "priceMax": 60,
+   "frequency": "several daily",
+   "overnight": false,
+   "note": "Change at Attnang-Puchheim; a small ferry links Hallstatt station to the village"
+  },
+  {
+   "from": "salzburg",
+   "to": "hallstatt",
+   "mode": "bus",
+   "durationMin": 135,
+   "priceMin": 10,
+   "priceMax": 15,
+   "frequency": "several daily",
+   "overnight": false,
+   "note": "Bus to Bad Ischl and change"
+  },
+  {
+   "from": "salzburg",
+   "to": "innsbruck",
+   "mode": "train",
+   "durationMin": 110,
+   "priceMin": 15,
+   "priceMax": 45,
+   "frequency": "frequent",
+   "overnight": false
+  },
+  {
+   "from": "salzburg",
+   "to": "graz",
+   "mode": "train",
+   "durationMin": 240,
+   "priceMin": 20,
+   "priceMax": 50,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "salzburg",
+   "to": "ljubljana",
+   "mode": "train",
+   "durationMin": 260,
+   "priceMin": 25,
+   "priceMax": 50,
+   "frequency": "several daily",
+   "overnight": false
+  },
+  {
+   "from": "graz",
+   "to": "ljubljana",
+   "mode": "bus",
+   "durationMin": 190,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false
+  },
+  {
+   "from": "graz",
+   "to": "zagreb",
+   "mode": "bus",
+   "durationMin": 210,
+   "priceMin": 15,
+   "priceMax": 25,
+   "frequency": "daily",
+   "overnight": false
   }
  ]
 }

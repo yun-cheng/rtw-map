@@ -9,7 +9,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Topic | Decision |
 |---|---|
 | First user | Me (personal use). **Test case:** my RTW trip, May–Sept 2027: Balkans → Eastern Europe → Poland (longer) → Baltics → Russia. The website plans it; we use it to find bugs (§3.3) |
-| Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). Region 1: Balkans, Eastern Europe, Poland, Baltic States, Russia (the test case). Region 2: Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore, Cambodia (§3.5). Order of later regions: decided after the field test |
+| Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). Region 1: Balkans, Central & Eastern Europe (incl. Austria), Poland, Baltic States, Russia (the test case). Region 2: Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore, Cambodia (§3.5). Order of later regions: decided after the field test |
 | Language | English only |
 | Passports | A few: EU/EEA/Swiss (one group), UK, US, Canada, Australia, New Zealand, Japan, South Korea, **Taiwan** |
 | Platform | Desktop-first web app; a simple read-only phone view for use on the road |
@@ -100,7 +100,7 @@ The first region is the one my RTW plan covers, and it gets complete curated dat
 |---|---|---|
 | Western Balkans | Albania, Montenegro, Bosnia & Herzegovina, Serbia, Kosovo, North Macedonia | No |
 | Balkans (EU) | Slovenia, Croatia, Greece | Yes |
-| Eastern Europe | Bulgaria, Romania, Hungary, Slovakia, Czechia | Yes |
+| Central & Eastern Europe | Bulgaria, Romania, Hungary, Slovakia, Czechia, Austria | Yes |
 | | Moldova | No |
 | Poland | Poland | Yes |
 | Baltic States | Lithuania, Latvia, Estonia | Yes |
@@ -417,6 +417,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Routing, improved:** leg costs count ~2½ h airport time per flight and the fare, so routes stop zig-zagging by plane; the search adds swap moves, a seeded shake-and-reoptimize loop, and re-orders the route after cities are added or dropped.
 - **East & Southeast Asia, done:** 7 countries, 43 cities, all curated data (§3.1b). Weather and air for the new cities are still downloading.
 - **Schengen meter:** hidden in the header for trips without Schengen days.
+- **Austria, done:** Vienna, Salzburg, Hallstatt, Innsbruck and Graz with all curated data and 17 connections; the "Eastern Europe" region is now "Central & Eastern Europe" and includes Austria. Weather and air for Austria are still downloading.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

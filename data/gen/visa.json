@@ -95,6 +95,9 @@
    "CZ": {
     "req": "free_movement"
    },
+   "AT": {
+    "req": "free_movement"
+   },
    "PL": {
     "req": "free_movement"
    },
@@ -206,6 +209,10 @@
     "days": 90
    },
    "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "AT": {
     "req": "visa_free",
     "days": 90
    },
@@ -327,6 +334,10 @@
     "req": "visa_free",
     "days": 90
    },
+   "AT": {
+    "req": "visa_free",
+    "days": 90
+   },
    "PL": {
     "req": "visa_free",
     "days": 90
@@ -442,6 +453,10 @@
     "days": 90
    },
    "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "AT": {
     "req": "visa_free",
     "days": 90
    },
@@ -563,6 +578,10 @@
     "req": "visa_free",
     "days": 90
    },
+   "AT": {
+    "req": "visa_free",
+    "days": 90
+   },
    "PL": {
     "req": "visa_free",
     "days": 90
@@ -678,6 +697,10 @@
     "days": 90
    },
    "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "AT": {
     "req": "visa_free",
     "days": 90
    },
@@ -799,6 +822,10 @@
     "req": "visa_free",
     "days": 90
    },
+   "AT": {
+    "req": "visa_free",
+    "days": 90
+   },
    "PL": {
     "req": "visa_free",
     "days": 90
@@ -917,6 +944,10 @@
     "req": "visa_free",
     "days": 90
    },
+   "AT": {
+    "req": "visa_free",
+    "days": 90
+   },
    "PL": {
     "req": "visa_free",
     "days": 90
@@ -1032,6 +1063,10 @@
     "days": 90
    },
    "CZ": {
+    "req": "visa_free",
+    "days": 90
+   },
+   "AT": {
     "req": "visa_free",
     "days": 90
    },

@@ -260,6 +260,23 @@
     "water15": 0.5
    }
   },
+  "AT": {
+   "dormBed": 30,
+   "privateRoom": 75,
+   "mealCheap": 14,
+   "mealMid": 28,
+   "localTransportDay": 6,
+   "groceries": {
+    "bread": 1.8,
+    "eggs12": 4,
+    "milk1l": 1.4,
+    "rice1kg": 2.3,
+    "chicken1kg": 10,
+    "tomatoes1kg": 3.5,
+    "beer05": 1.3,
+    "water15": 0.6
+   }
+  },
   "PL": {
    "dormBed": 17,
    "privateRoom": 42,
