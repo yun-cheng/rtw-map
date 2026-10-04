@@ -67,7 +67,7 @@ A map-based trip planner for long, multi-country trips, covering the region of m
 - Phase 2: AI copilot ("make Poland longer", "add Moldova", "swap the flight for an overland route").
 
 ### ④ Explore
-- Click a **city** for weather, costs, people and culture, visa, safety and getting around.
+- Click a **city** for, in order: getting around, weather, costs, connections, safety, language, visa, people & practical. Visa or safety moves to the top when there's a problem for this passport or a do-not-travel advisory.
 - Click a **leg** for transport options with duration, price range, frequency and booking tips. When driving is an option, public transport and car are compared side by side (time, cost, difficulty).
 - City drawer gets a **Driving** section: how hard it is to drive and park there, old-town restrictions, whether a car is useful for the area.
 - **Month slider + map layers**: climate quality, Schengen vs. non-Schengen, cost level, safety advisory level, **driving** (road safety per country, driving difficulty per city).
