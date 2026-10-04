@@ -222,7 +222,7 @@ Phone (Phase 3): a read-only itinerary + today's stop + offline city info.
 A pure TypeScript module (`src/planner`) with unit tests, running in the browser, so edits re-plan instantly.
 
 ### 6.1 City profile (per city, in the data files)
-- `days_min / days_ideal / days_max`, e.g. Kraków 3/5/10, Kotor 1/2/4, a transit town 0.5/1/2
+- `days_min / days_ideal / days_max`, e.g. Kraków 3/5/10, Kotor 1/2/4, a transit town 0.5/1/2. The city panel shows the resulting suggested days for each pace (chill / balanced / fast), using the same rules as the planner
 - `tags`, `popularity`, `long_stay_friendly`
 - `climate_score[month]` (0–1)
 - `daily_cost[budget_tier]`

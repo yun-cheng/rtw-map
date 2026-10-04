@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
@@ -20,6 +20,10 @@ const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' 
   own_country: { label: 'Your own country', tone: 'ok' },
   unknown: { label: 'Unknown: check official sources', tone: 'info' },
 }
+
+const PACES: { value: Pace; icon: string; label: string }[] = [
+  { value: 'chill', icon: '🐢', label: 'Chill' }, { value: 'balanced', icon: '⚖️', label: 'Balanced' }, { value: 'fast', icon: '🐇', label: 'Fast' },
+]
 
 type SectionKey = 'around' | 'weather' | 'costs' | 'money' | 'health' | 'services' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
 
@@ -49,6 +53,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const passportName = ds.visa.passports.find((p) => p.code === input.passport)?.name
   const pop = ds.population[city.iso2]
   const english = englishLevel(ds, cityId)
+  const suggested = suggestedDays(ds, input, cityId)
   const transit = ds.localTransport.cities[cityId]
   const taxi = ds.localTransport.countries[city.iso2]?.taxi
   const taxiRide = taxiEstimate(ds, cityId)
@@ -429,8 +434,20 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <p className="mt-2 text-[13px]">{city.blurb}</p>
         <div className="mt-2 flex flex-wrap items-center gap-1">
           {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
-          <span className="ml-1 text-[12px] text-muted">Suggested {city.days.min}–{city.days.max} days</span>
         </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
+          <span className="text-muted">Suggested days:</span>
+          {PACES.map((p) => (
+            <span
+              key={p.value}
+              title={p.value === input.pace ? 'Your pace' : undefined}
+              className={`rounded-full border px-2 py-0.5 ${p.value === input.pace ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-muted'}`}
+            >
+              {p.icon} {p.label} <b>{suggested[p.value]}</b>
+            </span>
+          ))}
+        </div>
+        {suggested.longer && <p className="mt-1 text-[11px] text-muted">Includes extra time because {suggested.longer} is marked "Longer".</p>}
         <div className="mt-3 flex items-center gap-2">
           {stop ? (
             <>

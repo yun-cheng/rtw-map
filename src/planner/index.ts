@@ -134,6 +134,24 @@ function allocItem(ctx: Ctx, stop: Stop, legIn: Leg | undefined, s: number): All
   }
 }
 
+/**
+ * Suggested days in a city for each pace, before travel time is taken into account: the same
+ * starting point the planner uses when it assigns nights. Includes the extra time for regions
+ * marked "Longer" (`longer` names that region).
+ */
+export function suggestedDays(ds: Dataset, input: TripInput, cityId: string): Record<Pace, number> & { longer: string | null } {
+  const city = ds.cities[cityId]
+  const group = input.groups.find((g) => g.longer && g.countries.some((c) => c.iso2 === city.iso2 && c.mode !== 'excluded'))
+  const w = group ? LONGER_MULT : 1
+  const days = (pace: Pace) => {
+    const mult = PACE_MULT[pace]
+    const lo = Math.max(1, Math.round(city.days.min * Math.min(1, mult)))
+    const hi = city.days.max * (pace === 'chill' ? 1.3 : 1) * w
+    return Math.max(1, Math.round(Math.min(hi, Math.max(lo, city.days.ideal * mult * w))))
+  }
+  return { chill: days('chill'), balanced: days('balanced'), fast: days('fast'), longer: group?.name ?? null }
+}
+
 const legsFor = (ctx: Ctx, stops: Stop[]) => stops.slice(1).map((s, i) => legBetween(ctx.graph, stops[i].cityId, s.cityId))
 
 function schedule(ctx: Ctx, stops: Stop[], legs: Leg[]): ScheduledStop[] {

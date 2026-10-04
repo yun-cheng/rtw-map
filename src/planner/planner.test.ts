@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
+import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, rebalance, suggestedDays, tapWater, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -238,5 +238,25 @@ describe('price levels and estimated costs', () => {
     const ratio = costSanity(ds, 'PL')!
     expect(ratio).toBeGreaterThan(0.8)
     expect(ratio).toBeLessThan(1.25)
+  })
+})
+
+describe('suggested days per pace', () => {
+  it('gives more days for a chill pace and fewer for fast, within the city limits', () => {
+    const input = { ...testTrip('US'), groups: [] }
+    for (const id of Object.keys(ds.cities)) {
+      const s = suggestedDays(ds, input, id)
+      expect(s.chill, id).toBeGreaterThanOrEqual(s.balanced)
+      expect(s.balanced, id).toBeGreaterThanOrEqual(s.fast)
+      expect(s.fast, id).toBeGreaterThanOrEqual(1)
+      expect(s.longer).toBeNull()
+    }
+  })
+
+  it('adds extra time when the region is marked "Longer"', () => {
+    const plain = suggestedDays(ds, { ...testTrip('US'), groups: [] }, 'krakow')
+    const longer = suggestedDays(ds, testTrip('US'), 'krakow') // Poland is "Longer" in the test case
+    expect(longer.longer).toBe('Poland')
+    expect(longer.balanced).toBeGreaterThan(plain.balanced)
   })
 })
