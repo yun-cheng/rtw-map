@@ -97,7 +97,7 @@ export function SetupPanel() {
               ))}
             </optgroup>
           </select>
-          <p className="text-[11px] text-muted">Click a country to cycle: must visit → optional → excluded. Countries with a do-not-travel advisory start excluded.</p>
+          <p className="text-[11px] text-muted">Click a country to cycle: must visit → optional → excluded. Countries in a region start optional (the planner picks the best ones, at least one per region); a country added on its own starts as must visit. Countries with a do-not-travel advisory start excluded.</p>
           <label className="flex items-center gap-2 text-[12px]">
             <input type="checkbox" checked={input.keepGroupOrder} onChange={(e) => setInput({ keepGroupOrder: e.target.checked })} />
             Visit the regions in this order

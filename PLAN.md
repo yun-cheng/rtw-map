@@ -46,7 +46,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Input | Options |
 |---|---|
 | Duration | Fixed dates · "~N days starting around <month>" · open-ended |
-| Where | Countries, regions ("Balkans") or specific cities, each marked *must* or *nice to have* |
+| Where | Countries, regions ("Balkans") or specific cities, each marked *must* or *nice to have*. Countries in a region start as nice to have (every region still gets at least one stop); a country added on its own starts as must |
 | Start / end | Start city; end city or "anywhere" |
 | Pace | 🐢 Chill · ⚖️ Balanced · 🐇 Fast |
 | Budget | Shoestring · Backpacker · Mid-range · Comfort |
@@ -418,6 +418,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **East & Southeast Asia, done:** 7 countries, 43 cities, all curated data (§3.1b). Weather and air for the new cities are still downloading.
 - **Schengen meter:** hidden in the header for trips without Schengen days.
 - **Austria, done:** Vienna, Salzburg, Hallstatt, Innsbruck and Graz with all curated data and 17 connections; the "Eastern Europe" region is now "Central & Eastern Europe" and includes Austria. Weather and air for Austria are still downloading.
+- **Country defaults:** countries added as part of a region start as optional (the planner picks the best ones, and every region gets at least one stop); a country added on its own starts as must visit.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

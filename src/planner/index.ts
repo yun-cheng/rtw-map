@@ -40,6 +40,7 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   const groupIndex = new Map<string, number>()
   const blocked: Ctx['blocked'] = []
   const mustCountries: string[] = []
+  const groupCountries: string[][] = input.groups.map(() => [])
   input.groups.forEach((g, gi) => {
     for (const c of g.countries) {
       if (c.mode === 'excluded' || groupIndex.has(c.iso2)) continue
@@ -48,6 +49,7 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
         continue
       }
       groupIndex.set(c.iso2, input.keepGroupOrder ? gi : 0)
+      groupCountries[gi].push(c.iso2)
       if (c.mode === 'must') mustCountries.push(c.iso2)
     }
   })
@@ -67,11 +69,14 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
     if (id && candidates.includes(id)) required.add(id)
   }
   const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked }
-  for (const iso2 of mustCountries) {
-    if ([...required].some((id) => ds.cities[id].iso2 === iso2)) continue
-    const best = candidates.filter((id) => ds.cities[id].iso2 === iso2).sort((a, b) => baseScore(ctx, b) - baseScore(ctx, a))[0]
+  const requireBestIn = (countries: string[]) => {
+    if ([...required].some((id) => countries.includes(ds.cities[id].iso2))) return
+    const best = candidates.filter((id) => countries.includes(ds.cities[id].iso2)).sort((a, b) => baseScore(ctx, b) - baseScore(ctx, a))[0]
     if (best) required.add(best)
   }
+  for (const iso2 of mustCountries) requireBestIn([iso2])
+  // Every region the user added is visited, even when all its countries are optional.
+  for (const countries of groupCountries) requireBestIn(countries)
   return ctx
 }
 

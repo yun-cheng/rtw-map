@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
+import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
@@ -85,6 +86,25 @@ describe('passport-specific rules', () => {
       expect(plan.stops.some((s) => iso(s.cityId) === 'MD')).toBe(false)
       expect(plan.warnings.some((w) => w.iso2 === 'MD' && w.title.includes('left out'))).toBe(true)
     }
+  })
+})
+
+describe('country defaults', () => {
+  it('starts region countries as optional, a single country as must-visit, and do-not-travel countries as excluded', () => {
+    const region = makeGroup(ds, 'Central & Eastern Europe', ['HU', 'AT', 'UA'])
+    expect(region.countries.map((c) => c.mode)).toEqual(['optional', 'optional', 'excluded'])
+    expect(makeGroup(ds, 'Poland', ['PL']).countries[0].mode).toBe('must')
+  })
+
+  it('still visits a region whose countries are all optional, even on a short trip', () => {
+    const plan = generatePlan(ds, testTrip('US', {
+      startDate: '2027-06-01',
+      endDate: '2027-06-10',
+      groups: [makeGroup(ds, 'Poland', ['PL']), makeGroup(ds, 'Baltic States', ['LT', 'LV', 'EE'])],
+    }))
+    const visited = plan.stops.map((s) => iso(s.cityId))
+    expect(visited).toContain('PL')
+    expect(visited.some((c) => ['LT', 'LV', 'EE'].includes(c))).toBe(true)
   })
 })
 

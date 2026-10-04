@@ -24,7 +24,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 
 ## What it does
 
-- **Setup**: dates, regions in visiting order (each country *must* / *optional* / *excluded*; "do not travel" countries start excluded), "longer stay" per region, start/end city, pace, budget, interests, passport, Schengen days already used.
+- **Setup**: dates, regions in visiting order (each country *must* / *optional* / *excluded*; countries in a region start optional and every region gets at least one stop, a country added on its own starts as must, and "do not travel" countries start excluded), "longer stay" per region, start/end city, pace, budget, interests, passport, Schengen days already used.
 - **Generated plan**: picks cities, orders the route, assigns nights, keeps Schengen days ≤ 90 in any 180-day window, estimates cost as a range. Ground transport wins unless a flight clearly saves time: flights count ~2½ h of airport time and their fare.
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
 - **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, air pollution, tap water, cash-only places and countries where foreign cards fail, pace, limited English, unreachable or estimated legs.
