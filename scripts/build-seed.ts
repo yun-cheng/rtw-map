@@ -36,3 +36,21 @@ writeJson(join(GEN, 'connections.json'), {
   _meta: { source: 'Seed estimates (Wikivoyage, operator sites); verify before booking', updatedAt: SEED_DATE, confidence: 'low' },
   connections,
 })
+
+// Local transport and taxis: every city and country must have an entry.
+type LocalTransport = { _meta: unknown; countries: Record<string, unknown>; cities: Record<string, { modes: string[] }> }
+const MODES = new Set(['metro', 'tram', 'trolleybus', 'bus', 'minibus', 'train', 'ferry', 'funicular', 'cablecar'])
+const lt = readJson<LocalTransport>(join(SEED, 'local-transport.json'))
+const cityIds = readCsv(join(SEED, 'cities.csv')).map((r) => r.id)
+const isoCodes = (countries.countries as { iso2: string }[]).map((c) => c.iso2)
+const problems = [
+  ...cityIds.filter((id) => !lt.cities[id]).map((id) => `missing city ${id}`),
+  ...Object.keys(lt.cities).filter((id) => !cityIds.includes(id)).map((id) => `unknown city ${id}`),
+  ...isoCodes.filter((c) => !lt.countries[c]).map((c) => `missing country ${c}`),
+  ...Object.entries(lt.cities).flatMap(([id, c]) => c.modes.filter((m) => !MODES.has(m)).map((m) => `${id}: unknown mode ${m}`)),
+]
+if (problems.length) {
+  console.error(`local-transport.json: ${problems.join('; ')}`)
+  process.exit(1)
+}
+writeJson(join(GEN, 'local-transport.json'), lt)

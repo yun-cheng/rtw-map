@@ -45,7 +45,10 @@ export function shortDate(iso: string): string {
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n)
 
-export const MODE_ICON: Record<string, string> = { train: '🚆', bus: '🚌', minibus: '🚐', ferry: '⛴️', flight: '✈️' }
+export const MODE_ICON: Record<string, string> = {
+  train: '🚆', bus: '🚌', minibus: '🚐', ferry: '⛴️', flight: '✈️',
+  metro: '🚇', tram: '🚊', trolleybus: '🚎', funicular: '🚞', cablecar: '🚡',
+}
 export const MODE_COLOR: Record<string, string> = { train: '#2563eb', bus: '#d97706', minibus: '#d97706', ferry: '#0891b2', flight: '#7c3aed' }
 
 export const cityName = (id: string) => ds.cities[id]?.name ?? id

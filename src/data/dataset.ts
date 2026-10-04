@@ -5,6 +5,7 @@ import connectionsJson from '../../data/gen/connections.json'
 import costsJson from '../../data/gen/costs.json'
 import countriesJson from '../../data/gen/countries.json'
 import fxJson from '../../data/gen/fx.json'
+import localTransportJson from '../../data/gen/local-transport.json'
 import noticesJson from '../../data/gen/notices.json'
 import populationJson from '../../data/gen/population.json'
 import roadsJson from '../../data/gen/roads.json'
@@ -25,6 +26,7 @@ export const dataset: Dataset = {
   fx: fxJson,
   notices: noticesJson.notices,
   population: populationJson.population,
+  localTransport: localTransportJson as unknown as Dataset['localTransport'],
   meta: {
     cities: citiesJson._meta,
     climate: climateJson._meta,
@@ -36,5 +38,6 @@ export const dataset: Dataset = {
     fx: fxJson._meta,
     countries: countriesJson._meta,
     population: populationJson._meta,
+    localTransport: localTransportJson._meta,
   },
 }

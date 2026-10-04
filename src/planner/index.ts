@@ -11,6 +11,7 @@ export * from './types'
 export { dailyCost, groceryDay } from './cost'
 export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
+export { TRANSIT_LABELS, taxiEstimate } from './transport'
 export { addDays, daysBetween, monthOf } from './dates'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }

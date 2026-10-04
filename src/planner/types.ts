@@ -88,6 +88,14 @@ export type Advisory = {
   us: { level: number; title: string; url: string; updatedAt: string } | null
 }
 
+export type TransitMode = 'metro' | 'tram' | 'trolleybus' | 'bus' | 'minibus' | 'train' | 'ferry' | 'funicular' | 'cablecar'
+
+/** Getting around a city: 1 = little or no public transport … 5 = excellent network. */
+export type CityTransport = { ease: number; modes: TransitMode[]; walkable: boolean; pay?: string; note?: string }
+
+/** Taxis in a country: ride-hailing apps travellers use and typical metered prices in EUR. */
+export type CountryTransport = { taxi: { apps: string[]; flagFall: number; perKm: number; tip: string } }
+
 export type Notice = { id: string; appliesTo: string; title: string; text: string; url: string }
 
 export type Dataset = {
@@ -102,6 +110,7 @@ export type Dataset = {
   fx: { base: string; display: string[]; rates: Record<string, number> }
   notices: Notice[]
   population: Record<string, { value: number; year: number }>
+  localTransport: { cities: Record<string, CityTransport>; countries: Record<string, CountryTransport> }
   meta: Record<string, Meta>
 }
 

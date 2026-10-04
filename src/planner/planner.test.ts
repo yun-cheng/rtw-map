@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { englishLevel, evaluatePlan, generatePlan, rebalance, type TripInput } from './index'
+import { englishLevel, evaluatePlan, generatePlan, rebalance, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -123,5 +123,19 @@ describe('english level', () => {
     expect(ru.warnings.find((w) => w.kind === 'language')?.title).toMatch(/Pskov/)
     const ee = evaluatePlan(ds, input, [stop('tallinn'), stop('tartu')])
     expect(ee.warnings.some((w) => w.kind === 'language')).toBe(false)
+  })
+})
+
+describe('local transport', () => {
+  it('has transport info for every city and taxi info for every country', () => {
+    for (const id of Object.keys(ds.cities)) expect(ds.localTransport.cities[id], id).toBeDefined()
+    for (const iso2 of Object.keys(ds.countries)) expect(ds.localTransport.countries[iso2], iso2).toBeDefined()
+  })
+
+  it('estimates a 5 km taxi ride from start fare and per-km price', () => {
+    const taxi = ds.localTransport.countries.PL.taxi
+    const est = taxiEstimate(ds, 'krakow')!
+    expect(est.min).toBeCloseTo(taxi.flagFall + 5 * taxi.perKm)
+    expect(est.max).toBeGreaterThan(est.min)
   })
 })

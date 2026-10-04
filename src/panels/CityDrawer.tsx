@@ -1,8 +1,8 @@
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, addDays, dailyCost, englishLevel, groceryDay, monthOf, type Budget, type VisaReq } from '../planner'
+import { ENGLISH_LABELS, TRANSIT_LABELS, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_ICON, compact, duration, flag, local, ramp, rateText, shortDate } from '../ui/format'
-import { Badge, Button, Row, Section, Source } from '../ui/kit'
+import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
+import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { ClimateChart } from './ClimateChart'
 
@@ -40,6 +40,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const passportName = ds.visa.passports.find((p) => p.code === input.passport)?.name
   const pop = ds.population[city.iso2]
   const english = englishLevel(ds, cityId)
+  const transit = ds.localTransport.cities[cityId]
+  const taxi = ds.localTransport.countries[city.iso2]?.taxi
+  const taxiRide = taxiEstimate(ds, cityId)
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
@@ -119,7 +122,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <Row label="Private room">{fmt(cost.privateRoom * city.costFactor)}</Row>
           <Row label="Cheap meal">{fmt(cost.mealCheap * city.costFactor)}</Row>
           <Row label="Mid-range dinner">{fmt(cost.mealMid * city.costFactor)}</Row>
-          <Row label="Local transport / day">{fmt(cost.localTransportDay)}</Row>
           <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket (cook it yourself)</div>
           {GROCERIES.map(([k, label]) => (
             <Row key={k} label={label}>
@@ -171,11 +173,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       <Section title="Language" aside={<Badge tone="warn">estimate</Badge>}>
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-muted">English</span>
-          <span className="flex gap-0.5" aria-label={`${english.level} out of 5`}>
-            {[1, 2, 3, 4, 5].map((n) => (
-              <span key={n} className="h-2 w-5 rounded-sm" style={{ background: n <= english.level ? ramp((english.level - 1) / 4) : 'var(--color-line)' }} />
-            ))}
-          </span>
+          <LevelBar level={english.level} label="English" />
           <b className="text-[13px]">{ENGLISH_LABELS[english.level].short}</b>
         </div>
         <p className="mt-1 text-[13px]">{ENGLISH_LABELS[english.level].long}.</p>
@@ -209,6 +207,47 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
         <Source>{ds.meta.population.source}; {ds.meta.countries.source}; {ds.meta.fx.source}</Source>
       </Section>
+
+      {transit && (
+        <Section title="Getting around" aside={<Badge tone="warn">estimate</Badge>}>
+          <div className="flex items-center gap-2">
+            <span className="text-[13px] text-muted">Public transport</span>
+            <LevelBar level={transit.ease} label="Public transport" />
+            <b className="text-[13px]">{TRANSIT_LABELS[transit.ease].short}</b>
+          </div>
+          <p className="mt-1 text-[13px]">{TRANSIT_LABELS[transit.ease].long}.{transit.walkable && ' The centre is walkable.'}</p>
+          {transit.modes.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {transit.modes.map((m) => (
+                <span key={m} className="rounded-full border border-line px-2 py-0.5 text-[12px] capitalize">{MODE_ICON[m]} {m === 'cablecar' ? 'cable car' : m}</span>
+              ))}
+            </div>
+          )}
+          <div className="mt-2">
+            {transit.pay && <Row label="How to pay">{transit.pay}</Row>}
+            <Row label="Local transport / day">{cost ? fmt(cost.localTransportDay) : '–'}</Row>
+          </div>
+          {transit.note && <p className="mt-1 text-[13px]">{transit.note}</p>}
+
+          {taxi && (
+            <>
+              <div className="mt-3 mb-1 text-[12px] font-semibold">Taxis</div>
+              <Row label="Apps travellers use">
+                {taxi.apps.length ? taxi.apps.join(', ') : <span className="font-normal text-muted">No Uber/Bolt-style apps: use local taxis</span>}
+              </Row>
+              {taxiRide && <Row label="5 km ride">{fmt(taxiRide.min)}–{fmt(taxiRide.max)}</Row>}
+              <Row label="Start fare + per km">{fmt(taxi.flagFall, true)} + {fmt(taxi.perKm, true)}/km</Row>
+              <p className="mt-1 text-[13px]">{taxi.tip}</p>
+            </>
+          )}
+          <Source>
+            {ds.meta.localTransport.source} Check{' '}
+            <a className="text-accent hover:underline" href={`https://en.wikivoyage.org/wiki/Special:Search?go=Go&search=${encodeURIComponent(city.name)}#Get_around`} target="_blank" rel="noreferrer">
+              Wikivoyage: {city.name} ↗
+            </a>
+          </Source>
+        </Section>
+      )}
 
       <Section title="Getting there & away">
         {connections.length ? (

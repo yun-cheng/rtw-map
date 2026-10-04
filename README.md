@@ -29,7 +29,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
 - **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, pace, limited English, unreachable or estimated legs.
 - **Map layers**: route, weather (by month), cost, English, Schengen, safety.
-- **City panel**: weather chart, costs by budget style incl. supermarket prices, visa, safety sections, language (English level, other useful languages, alphabet), people & practical info, connections. Every fact shows its source and date.
+- **City panel**: weather chart, costs by budget style incl. supermarket prices, visa, safety sections, language (English level, other useful languages, alphabet), getting around (public transport ease and kinds, how to pay, taxi apps and fares), people & practical info, connections. Every fact shows its source and date.
 - **Display currency**: pick EUR, USD, TWD, JPY, …; all prices convert (data is stored in EUR).
 - **Saving**: automatic (localStorage) plus JSON export/import. Esc closes the side panel.
 
@@ -57,7 +57,7 @@ All data lives in the repo. Hand-curated files are in `data/seed/`; scripts enri
 |---|---|---|
 | `build-cities.ts` | GeoNames cities500 (CC-BY) | `cities.json`: coordinates, population, timezone |
 | `build-boundaries.ts` | Natural Earth 1:50m (public domain) | `boundaries.json` |
-| `build-seed.ts` | `data/seed/*` | `countries`, `costs`, `connections`, `notices` |
+| `build-seed.ts` | `data/seed/*` | `countries`, `costs`, `connections`, `notices`, `local-transport` (validated: every city/country needs an entry) |
 | `build-roads.ts` | OSRM demo server (OpenStreetMap, ODbL) | `roads.json`: driving times for estimated legs |
 | `build-visa.ts` | Passport Index dataset (MIT) | `visa.json` |
 | `build-climate.ts` | Open-Meteo archive, ERA5 (CC-BY) | `climate.json`: monthly averages 2016–2025 |
@@ -72,4 +72,4 @@ npm run data:refresh   # fast-changing data only; also runs daily via .github/wo
 
 To add a city: add a row to `data/seed/cities.csv` (and connections to `data/seed/connections.csv`), then run `npm run data:build`.
 
-**Estimates:** costs, connections and English levels are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.
+**Estimates:** costs, connections, English levels, local transport and taxi data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.
