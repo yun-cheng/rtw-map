@@ -1,0 +1,34 @@
+{
+  "name": "rtw-map",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "data:build": "tsx scripts/build-cities.ts && tsx scripts/build-boundaries.ts && tsx scripts/build-seed.ts && tsx scripts/build-roads.ts && tsx scripts/build-visa.ts && tsx scripts/build-climate.ts",
+    "data:refresh": "tsx scripts/build-seed.ts && tsx scripts/fetch-population.ts && tsx scripts/fetch-advisories.ts && tsx scripts/fetch-fx.ts"
+  },
+  "dependencies": {
+    "maplibre-gl": "^6.12.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "oxlint": "^1.81.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.3"
+  }
+}
