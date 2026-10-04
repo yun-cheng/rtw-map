@@ -416,6 +416,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Weather colours, done:** temperature-style colours on the map layer, the timeline and the Overview: blue = cold, green = pleasant, orange/red = hot, grey = wet (same thresholds as the weather checks).
 - **Routing, improved:** leg costs count ~2½ h airport time per flight and the fare, so routes stop zig-zagging by plane; the search adds swap moves, a seeded shake-and-reoptimize loop, and re-orders the route after cities are added or dropped.
 - **East & Southeast Asia, done:** 7 countries, 43 cities, all curated data (§3.1b). Weather and air for the new cities are still downloading.
+- **Schengen meter:** hidden in the header for trips without Schengen days.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.

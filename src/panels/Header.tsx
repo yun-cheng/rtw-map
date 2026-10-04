@@ -36,7 +36,7 @@ export function Header() {
           <span title="Estimated total for your budget style, including transport between cities">
             <b>{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">(~{fmt(plan.cost.perDay)}/day)</span>
           </span>
-          {s?.applies && (
+          {s?.applies && (s.days > 0 || input.schengenDaysBefore > 0) && (
             <span className="flex items-center gap-2" title="Most Schengen days in any 180-day window during the trip">
               <span className="text-muted">Schengen</span>
               <span className="relative h-1.5 w-20 overflow-hidden rounded-full bg-line">
