@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
+import { airBand, cardLevel, englishLevel, evaluatePlan, generatePlan, rebalance, tapWater, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -185,5 +185,29 @@ describe('health checks', () => {
     expect(airBand(8).short).toBe('Good')
     expect(airBand(15).short).toBe('OK')
     expect(airBand(30).short).toBe('Poor')
+  })
+})
+
+describe('money & payments', () => {
+  const stop = (cityId: string, nights = 3) => ({ cityId, nights, locked: false, groupId: '' })
+
+  it('has payment info for every country', () => {
+    for (const iso2 of Object.keys(ds.countries)) expect(ds.payments.countries[iso2], iso2).toBeDefined()
+  })
+
+  it('rates card use per city: country level, city size, overrides, and countries where foreign cards fail', () => {
+    expect(cardLevel(ds, 'moscow').level).toBe(1) // foreign cards don't work, however big the city
+    expect(cardLevel(ds, 'theth').level).toBe(1) // city override: cash only
+    expect(cardLevel(ds, 'tirana').level).toBe(ds.payments.countries.AL.cardLevel + 1) // capital: easier
+    expect(cardLevel(ds, 'prague').level).toBe(5)
+  })
+
+  it('warns where foreign cards fail and lists cash-only stops', () => {
+    const plan = evaluatePlan(ds, testTrip('US'), [stop('theth'), stop('prague'), stop('stpetersburg')])
+    const money = plan.warnings.filter((w) => w.kind === 'money')
+    expect(money.some((w) => w.iso2 === 'RU' && w.severity === 'warn')).toBe(true)
+    const cash = money.find((w) => w.title.startsWith('Mostly cash'))
+    expect(cash?.title).toMatch(/Theth/)
+    expect(cash?.title).not.toMatch(/Prague|Saint Petersburg/)
   })
 })

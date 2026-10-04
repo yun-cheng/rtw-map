@@ -135,6 +135,16 @@ export type Amenities = {
 
 export type Shopping = { chains: string[]; lateNight?: string; sunday?: string }
 
+/** How you pay in a country: 1 = cash only … 5 = cards and phones everywhere. */
+export type CountryPayments = {
+  cardLevel: number
+  foreignCardsWork: boolean
+  mobilePay: 'common' | 'some' | 'none'
+  cashFor: string
+  atm: string
+  note?: string
+}
+
 export type Notice = { id: string; appliesTo: string; title: string; text: string; url: string }
 
 export type Dataset = {
@@ -154,6 +164,7 @@ export type Dataset = {
   air: { whoDaily: number; byCity: Record<string, AirMonth[]> }
   amenities: { radiusKm: number; byCity: Record<string, Amenities> }
   shopping: Record<string, Shopping>
+  payments: { tips: string[]; countries: Record<string, CountryPayments>; cities: Record<string, { cardLevel?: number; note?: string }> }
   meta: Record<string, Meta>
 }
 
@@ -223,7 +234,7 @@ export type Leg = {
 export type ScheduledStop = Stop & { arrive: string; depart: string }
 
 export type WarningKind =
-  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health'
+  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health' | 'money'
 
 export type PlanWarning = {
   kind: WarningKind

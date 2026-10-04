@@ -63,8 +63,8 @@ if (problems.length) {
 }
 writeJson(join(GEN, 'local-transport.json'), lt)
 
-// Health (tap water, vaccines, risks) and shopping (chains, opening hours): every country needs an entry.
-for (const name of ['health', 'shopping']) {
+// Health (tap water, vaccines, risks), shopping (chains, opening hours) and payments: every country needs an entry.
+for (const name of ['health', 'shopping', 'payments']) {
   const data = readJson<{ countries: Record<string, unknown> }>(join(SEED, `${name}.json`))
   const missing = isoCodes.filter((c) => !data.countries[c])
   if (missing.length) {

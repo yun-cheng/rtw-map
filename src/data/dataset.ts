@@ -10,6 +10,7 @@ import fxJson from '../../data/gen/fx.json'
 import healthJson from '../../data/gen/health.json'
 import localTransportJson from '../../data/gen/local-transport.json'
 import noticesJson from '../../data/gen/notices.json'
+import paymentsJson from '../../data/gen/payments.json'
 import populationJson from '../../data/gen/population.json'
 import roadsJson from '../../data/gen/roads.json'
 import shoppingJson from '../../data/gen/shopping.json'
@@ -35,6 +36,7 @@ export const dataset: Dataset = {
   air: { whoDaily: airJson.whoDaily, byCity: airJson.air as Dataset['air']['byCity'] },
   amenities: { radiusKm: amenitiesJson.radiusKm, byCity: amenitiesJson.amenities as Dataset['amenities']['byCity'] },
   shopping: shoppingJson.countries as Dataset['shopping'],
+  payments: paymentsJson as unknown as Dataset['payments'],
   meta: {
     cities: citiesJson._meta,
     climate: climateJson._meta,
@@ -51,5 +53,6 @@ export const dataset: Dataset = {
     air: airJson._meta,
     amenities: amenitiesJson._meta,
     shopping: shoppingJson._meta,
+    payments: paymentsJson._meta,
   },
 }

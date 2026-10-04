@@ -1,6 +1,6 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, englishLevel, groceryDay, monthOf, taxiEstimate, type Budget, type VisaReq } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
@@ -20,10 +20,10 @@ const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' 
   unknown: { label: 'Unknown: check official sources', tone: 'info' },
 }
 
-type SectionKey = 'around' | 'weather' | 'costs' | 'health' | 'services' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
+type SectionKey = 'around' | 'weather' | 'costs' | 'money' | 'health' | 'services' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
 
 /** Default order of the city panel sections, most useful first. */
-const SECTION_ORDER: SectionKey[] = ['around', 'weather', 'costs', 'health', 'services', 'gettingThere', 'safety', 'language', 'visa', 'people']
+const SECTION_ORDER: SectionKey[] = ['around', 'weather', 'costs', 'money', 'health', 'services', 'gettingThere', 'safety', 'language', 'visa', 'people']
 
 const BUDGETS: { value: Budget; label: string }[] = [
   { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' },
@@ -56,6 +56,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const air = ds.air.byCity[cityId]
   const services = ds.amenities.byCity[cityId]
   const shopping = ds.shopping[city.iso2]
+  const pay = ds.payments.countries[city.iso2]
+  const card = cardLevel(ds, cityId)
+  const payNote = ds.payments.cities[cityId]?.note
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
@@ -185,6 +188,34 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ))}
         <Row label="Groceries for a day of cooking">{fmt(groceryDay(cost), true)}</Row>
         <Source>{ds.meta.costs.source} ({ds.meta.costs.updatedAt}). City price level ×{city.costFactor}.</Source>
+      </Section>
+    ),
+    money: pay && (
+      <Section title="Money & payments" aside={<Badge tone="warn">estimate</Badge>}>
+        <div className="flex items-center gap-2">
+          <span className="text-[13px] text-muted">Paying by card</span>
+          <LevelBar level={card.level} label="Card acceptance" />
+          <b className="text-[13px]">{CARD_LABELS[card.level].short}</b>
+        </div>
+        <p className="mt-1 text-[13px]">{CARD_LABELS[card.level].long}.</p>
+        {card.reason && pay.foreignCardsWork && (
+          <p className="mt-1 text-[12px] text-muted">
+            {country.name} overall: {CARD_LABELS[card.countryLevel].short.toLowerCase()}; {card.level > card.countryLevel ? 'easier' : 'harder'} here ({card.reason}).
+          </p>
+        )}
+        {payNote && <p className="mt-1 text-[13px]">{payNote}</p>}
+        <div className="mt-2">
+          <Row label="Contactless & phone pay">{pay.mobilePay === 'common' ? 'Common' : pay.mobilePay === 'some' ? 'In bigger shops and cities' : 'Not for foreign cards'}</Row>
+          <Row label="Currency">{country.currency}{rateText(currency, country.currency) && ` · ${rateText(currency, country.currency)}`}</Row>
+          {services && <Row label={`ATMs within ${ds.amenities.radiusKm} km`}>{services.atm}</Row>}
+        </div>
+        <p className="mt-2 text-[13px]"><span className="text-muted">Cash needed for:</span> {pay.cashFor}</p>
+        <p className="mt-1 text-[13px]">🏧 {pay.atm}</p>
+        {pay.note && <p className="mt-1 text-[13px]">{pay.note}</p>}
+        <ul className="mt-2 flex flex-col gap-1">
+          {ds.payments.tips.map((t) => <li key={t} className="text-[12px] text-muted">💡 {t}</li>)}
+        </ul>
+        <Source>{ds.meta.payments.source}; {ds.meta.fx.source}</Source>
       </Section>
     ),
     health: health && (
@@ -354,7 +385,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {city.population && <Row label="City population">{compact(city.population)}</Row>}
         {pop && <Row label={`${country.name} population (${pop.year})`}>{compact(pop.value)}</Row>}
         <Row label="Religion">{country.religion}</Row>
-        <Row label="Currency">{country.currency}{rateText(currency, country.currency) && ` · ${rateText(currency, country.currency)}`}</Row>
         <Row label="Plugs">Type {country.plugs.join(' / ')} · 230V</Row>
         <Row label="Emergency">{country.emergency}</Row>
         {country.notes.length > 0 && (
@@ -367,10 +397,15 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
   }
 
-  // Visa or safety problems jump to the top; otherwise practical day-to-day info comes first.
+  // Visa, safety or payment problems jump to the top; otherwise practical day-to-day info comes first.
   const visaProblem = !!visa && ['visa_required', 'e_visa', 'eta', 'no_admission'].includes(visa.req)
   const safetyProblem = !!adv && (adv.excludedByDefault || adv.level >= 3)
-  const urgent: SectionKey[] = [...(visaProblem ? ['visa' as const] : []), ...(safetyProblem ? ['safety' as const] : [])]
+  const moneyProblem = !!pay && !pay.foreignCardsWork
+  const urgent: SectionKey[] = [
+    ...(visaProblem ? ['visa' as const] : []),
+    ...(safetyProblem ? ['safety' as const] : []),
+    ...(moneyProblem ? ['money' as const] : []),
+  ]
   const order = [...urgent, ...SECTION_ORDER.filter((k) => !urgent.includes(k))]
 
   return (

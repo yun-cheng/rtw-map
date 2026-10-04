@@ -4,6 +4,7 @@ import { addDays, daysBetween, monthOf } from './dates'
 import { buildGraph, legBetween, travelWeight, type Graph } from './graph'
 import { TAP_WATER_LABELS, airBand, tapWater } from './health'
 import { ENGLISH_LABELS, englishLevel } from './language'
+import { CARD_LABELS, cardLevel } from './payments'
 import { orderRoute } from './route'
 import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
 import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripInput } from './types'
@@ -14,6 +15,7 @@ export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
 export { TAP_WATER_LABELS, airBand, tapWater } from './health'
+export { CARD_LABELS, cardLevel } from './payments'
 export { addDays, daysBetween, monthOf } from './dates'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }
@@ -445,6 +447,21 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
         detail: `About ${Math.round(air.daysOverWho)} days that month above the WHO daily guideline. Consider a mask if you have asthma or heart/lung conditions.`,
       })
     }
+  }
+  // Money: countries where foreign cards don't work, and stops where you mostly need cash
+  for (const iso2 of countries) {
+    const pay = ds.payments.countries[iso2]
+    if (pay && !pay.foreignCardsWork) {
+      warnings.push({ kind: 'money', severity: 'warn', iso2, title: `${ds.countries[iso2].name}: foreign bank cards don't work`, detail: pay.atm })
+    }
+  }
+  const cashStops = sched.filter((s) => ds.payments.countries[ds.cities[s.cityId].iso2]?.foreignCardsWork !== false && cardLevel(ds, s.cityId).level <= 2)
+  if (cashStops.length) {
+    warnings.push({
+      kind: 'money', severity: 'info', cityId: cashStops[0].cityId,
+      title: `Mostly cash in ${cashStops.map((s) => ds.cities[s.cityId].name).join(', ')}`,
+      detail: CARD_LABELS[2].long + '.',
+    })
   }
   for (const b of ctx.blocked) {
     warnings.push({ kind: 'visa', severity: 'warn', iso2: b.iso2, title: `${ds.countries[b.iso2]?.name ?? b.iso2} left out: ${b.reason}` })

@@ -5,7 +5,7 @@ import type { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, Map as
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
-import { ENGLISH_LABELS, airBand, dailyCost, englishLevel } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, airBand, cardLevel, dailyCost, englishLevel } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, MONTHS, money, ramp } from '../ui/format'
 
@@ -164,6 +164,10 @@ export function MapView() {
       if (layer === 'cost') {
         const d = dailyCost(ds, cityId, input.budget)
         return { color: ramp(1 - Math.min(1, Math.max(0, (d - 20) / 60))), label: `~${money(d, currency)}/day (${input.budget})` }
+      }
+      if (layer === 'cards') {
+        const { level } = cardLevel(ds, cityId)
+        return { color: ramp((level - 1) / 4), label: `Cards: ${CARD_LABELS[level].short.toLowerCase()}` }
       }
       if (layer === 'english') {
         const { level } = englishLevel(ds, cityId)
