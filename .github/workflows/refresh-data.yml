@@ -1,0 +1,31 @@
+# Refreshes fast-changing data (advisories, exchange rates, population) daily and commits it.
+# Hosting (e.g. Cloudflare Pages) redeploys on the new commit.
+name: Refresh data
+
+on:
+  schedule:
+    - cron: '17 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run data:refresh
+      - run: npm test
+      - name: Commit changes
+        run: |
+          git config user.name "data-bot"
+          git config user.email "data-bot@users.noreply.github.com"
+          git add data/gen
+          git diff --cached --quiet || git commit -m "Refresh advisories, FX and population"
+          git push
