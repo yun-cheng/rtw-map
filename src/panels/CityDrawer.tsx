@@ -1,7 +1,7 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
-import { useTrip } from '../store/trip'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
+import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, compact, duration, flag, local, rateText, shortDate } from '../ui/format'
 import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
@@ -25,10 +25,26 @@ const PACES: { value: Pace; icon: string; label: string }[] = [
   { value: 'chill', icon: '🐢', label: 'Chill' }, { value: 'balanced', icon: '⚖️', label: 'Balanced' }, { value: 'fast', icon: '🐇', label: 'Fast' },
 ]
 
-type SectionKey = 'around' | 'weather' | 'costs' | 'money' | 'health' | 'services' | 'gettingThere' | 'safety' | 'language' | 'visa' | 'people'
+type SectionKey =
+  | 'around' | 'gettingThere' | 'weather' | 'air' | 'costs' | 'money' | 'health' | 'beforeYouGo'
+  | 'services' | 'safety' | 'language' | 'visa' | 'people'
 
-/** Default order of the city panel sections, most useful first. */
-const SECTION_ORDER: SectionKey[] = ['around', 'weather', 'costs', 'money', 'health', 'services', 'gettingThere', 'safety', 'language', 'visa', 'people']
+/** Tabs of the city panel and the sections each one shows, most useful first. */
+const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
+  { key: 'overview', label: 'Overview', sections: [] },
+  { key: 'transport', label: 'Transport', sections: ['around', 'gettingThere'] },
+  { key: 'weather', label: 'Weather', sections: ['weather', 'air'] },
+  { key: 'money', label: 'Money', sections: ['costs', 'money'] },
+  { key: 'daily', label: 'Daily life', sections: ['language', 'services', 'people'] },
+  { key: 'safety', label: 'Safety', sections: ['safety', 'health'] },
+  { key: 'entry', label: 'Entry', sections: ['visa', 'beforeYouGo'] },
+]
+
+type Tone = 'ok' | 'info' | 'warn' | 'error'
+const TONE_DOT: Record<Tone, string> = { ok: 'bg-green-600', info: 'bg-slate-400', warn: 'bg-amber-500', error: 'bg-red-600' }
+const toneOf = (level: number): Tone => (level >= 4 ? 'ok' : level === 3 ? 'info' : 'warn')
+const tabRank = (tab: CityTab) => TABS.findIndex((t) => t.key === tab)
+const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'money']
 
 const BUDGETS: { value: Budget; label: string }[] = [
   { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' },
@@ -41,7 +57,7 @@ const GROCERIES: [keyof (typeof ds.costs)[string]['groceries'], string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, removeStop } = useTrip()
+  const { plan, input, select, addCity, removeStop, cityTab, setCityTab } = useTrip()
   const { currency, fmt } = useMoney()
   const city = ds.cities[cityId]
   const country = ds.countries[city.iso2]
@@ -66,6 +82,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const pay = ds.payments.countries[city.iso2]
   const card = cardLevel(ds, cityId)
   const payNote = ds.payments.cities[cityId]?.note
+  const entryNotices = country.schengen && schengenApplies(ds, input.passport)
+    ? ds.notices.filter((n) => n.appliesTo === 'schengen-non-eu' || (n.appliesTo === 'schengen-visa-free' && visa?.req === 'visa_free'))
+    : []
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
@@ -232,7 +251,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     health: health && (
-      <Section title="Health & water">
+      <Section title="Health & emergencies">
         {water && (
           <>
             <div className="flex items-center gap-2">
@@ -242,11 +261,21 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <p className="mt-1 text-[13px]">{water.note}</p>
           </>
         )}
-
-        <div className="mt-3 mb-1 flex items-baseline justify-between">
-          <span className="text-[12px] font-semibold">Air pollution (PM2.5) by month</span>
-          <span className="text-[11px] text-muted">µg/m³</span>
+        <div className="mt-3 mb-1 text-[12px] font-semibold">Health risks</div>
+        <ul className="list-disc pl-4 text-[13px]">{health.risks.map((r) => <li key={r}>{r}</li>)}</ul>
+        <div className="mt-2 mb-1 text-[12px] font-semibold">Healthcare</div>
+        <p className="text-[13px]">{health.healthcare}</p>
+        <div className="mt-2">
+          <Row label="Emergency number">{country.emergency}</Row>
         </div>
+        <Source>
+          {ds.meta.health.source}{' '}
+          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
+        </Source>
+      </Section>
+    ),
+    air: (
+      <Section title="Air quality" aside={<span className="text-[11px] text-muted">PM2.5, µg/m³</span>}>
         {air ? (
           <>
             <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} />
@@ -267,17 +296,25 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <p className="text-[13px] text-muted">Air quality data not loaded yet.</p>
         )}
 
-        <div className="mt-3 mb-1 text-[12px] font-semibold">Vaccines to discuss with a travel clinic</div>
-        <ul className="list-disc pl-4 text-[13px]">{health.vaccines.map((v) => <li key={v}>{v}</li>)}</ul>
-        <div className="mt-2 mb-1 text-[12px] font-semibold">Health risks</div>
-        <ul className="list-disc pl-4 text-[13px]">{health.risks.map((r) => <li key={r}>{r}</li>)}</ul>
-        <div className="mt-2 mb-1 text-[12px] font-semibold">Healthcare</div>
-        <p className="text-[13px]">{health.healthcare}</p>
+        <Source>{ds.meta.air.source}</Source>
+      </Section>
+    ),
+    beforeYouGo: (
+      <Section title="Before you go">
+        {health && (
+          <>
+            <div className="mb-1 text-[12px] font-semibold">Vaccines to discuss with a travel clinic</div>
+            <ul className="list-disc pl-4 text-[13px]">{health.vaccines.map((v) => <li key={v}>{v}</li>)}</ul>
+          </>
+        )}
+        <div className="mt-2">
+          <Row label="Travel insurance">Strongly recommended</Row>
+          <Row label="Plugs">Type {country.plugs.join(' / ')} · 230V</Row>
+        </div>
+        {adv?.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
         <Source>
-          {ds.meta.health.source}{' '}
-          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
-          <br />
-          {ds.meta.air.source}
+          {ds.meta.health.source}
+          {health && <> <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a></>}
         </Source>
       </Section>
     ),
@@ -380,7 +417,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     visa: (
-      <Section title={`Visa · ${passportName ?? input.passport} passport`}>
+      <Section title={`Visa & entry · ${passportName ?? input.passport} passport`}>
         {visa && (
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={VISA_TEXT[visa.req].tone}>{VISA_TEXT[visa.req].label}</Badge>
@@ -390,40 +427,69 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {country.schengen && visa?.req !== 'free_movement' && (
           <p className="mt-2 text-[13px]">Part of the Schengen area: days here count toward the shared <b>90 days in any 180</b> limit.</p>
         )}
+        {entryNotices.map((n) => (
+          <div key={n.id} className="mt-2 rounded-md border border-line p-2 text-[13px]">
+            <b>{n.title}</b>
+            <p className="mt-0.5">{n.text}</p>
+            <a className="text-[12px] text-accent hover:underline" href={n.url} target="_blank" rel="noreferrer">Official site ↗</a>
+          </div>
+        ))}
         <Source>{ds.meta.visa.source} Always check the official government website before travelling.</Source>
       </Section>
     ),
     people: (
-      <Section title="People & practical">
+      <Section title="People & culture">
         {city.population && <Row label="City population">{compact(city.population)}</Row>}
         {pop && <Row label={`${country.name} population (${pop.year})`}>{compact(pop.value)}</Row>}
         <Row label="Religion">{country.religion}</Row>
-        <Row label="Plugs">Type {country.plugs.join(' / ')} · 230V</Row>
-        <Row label="Emergency">{country.emergency}</Row>
         {country.notes.length > 0 && (
-          <ul className="mt-2 list-disc pl-4 text-[13px]">
+          <>
+          <div className="mt-2 mb-1 text-[12px] font-semibold">Good to know</div>
+          <ul className="list-disc pl-4 text-[13px]">
             {country.notes.map((n) => <li key={n}>{n}</li>)}
           </ul>
+          </>
         )}
         <Source>{ds.meta.population.source}; {ds.meta.countries.source}; {ds.meta.fx.source}</Source>
       </Section>
     ),
   }
 
-  // Visa, safety or payment problems jump to the top; otherwise practical day-to-day info comes first.
+  // Problems that need attention before going: shown first on the Overview and as a dot on their tab.
   const visaProblem = !!visa && ['visa_required', 'e_visa', 'eta', 'no_admission'].includes(visa.req)
   const safetyProblem = !!adv && (adv.excludedByDefault || adv.level >= 3)
   const moneyProblem = !!pay && !pay.foreignCardsWork
-  const urgent: SectionKey[] = [
-    ...(visaProblem ? ['visa' as const] : []),
-    ...(safetyProblem ? ['safety' as const] : []),
-    ...(moneyProblem ? ['money' as const] : []),
-  ]
-  const order = [...urgent, ...SECTION_ORDER.filter((k) => !urgent.includes(k))]
+  const problemTabs = new Set<CityTab>([...(visaProblem ? ['entry' as const] : []), ...(safetyProblem ? ['safety' as const] : []), ...(moneyProblem ? ['money' as const] : [])])
+
+  // One line per topic for the Overview tab; each opens the tab with the details.
+  const month = [...stayMonths][0]
+  const monthName = new Date(2000, month - 1).toLocaleString('en', { month: 'short' })
+  const clim = climate?.[month - 1]
+  const airM = air?.[month - 1]
+  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; problem?: boolean }[] = [
+    ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tone: VISA_TEXT[visa.req].tone, tab: 'entry' as const, problem: visaProblem }] : []),
+    ...(adv ? [{
+      icon: '🛡', label: 'Safety', tab: 'safety' as const, problem: safetyProblem,
+      value: adv.excludedByDefault ? 'Do-not-travel advice' : adv.level >= 3 ? 'Avoid parts of the country' : adv.us && adv.us.level >= 2 ? adv.us.title.split(': ')[1] ?? 'Increased caution' : 'No travel restrictions',
+      tone: (adv.excludedByDefault ? 'error' : adv.level >= 3 ? 'warn' : adv.us && adv.us.level >= 2 ? 'info' : 'ok') as Tone,
+    }] : []),
+    ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
+    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${Math.round(clim.tLow)}–${Math.round(clim.tHigh)}°C, ~${Math.round(clim.rainDays)} rain days`, tone: (clim.comfort >= 0.6 ? 'ok' : clim.comfort >= 0.35 ? 'info' : 'warn') as Tone, tab: 'weather' as const }] : []),
+    ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
+    ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'safety' as const }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily budget', value: `${fmt(dailyCost(ds, cityId, input.budget))} (${BUDGETS.find((b) => b.value === input.budget)?.label.toLowerCase()})`, tone: 'info' as const, tab: 'money' as const }] : []),
+    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, problem: moneyProblem }] : []),
+    { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },
+  ].sort((a, b) =>
+    // Problems first, most serious first (can't get in, then don't go, then cash only); then in tab order.
+    Number(!!b.problem) - Number(!!a.problem) ||
+    (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
+
+  const tabInfo = TABS.find((t) => t.key === cityTab) ?? TABS[0]
 
   return (
     <div className="pb-8">
-      <div className="sticky top-0 z-10 border-b border-line bg-panel px-4 py-3">
+      <div className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-semibold">{city.name}</h2>
@@ -431,24 +497,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </div>
           <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
-        <p className="mt-2 text-[13px]">{city.blurb}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-1">
-          {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
-          <span className="text-muted">Suggested days:</span>
-          {PACES.map((p) => (
-            <span
-              key={p.value}
-              title={p.value === input.pace ? 'Your pace' : undefined}
-              className={`rounded-full border px-2 py-0.5 ${p.value === input.pace ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-muted'}`}
-            >
-              {p.icon} {p.label} <b>{suggested[p.value]}</b>
-            </span>
-          ))}
-        </div>
-        {suggested.longer && <p className="mt-1 text-[11px] text-muted">Includes extra time because {suggested.longer} is marked "Longer".</p>}
-        <div className="mt-3 flex items-center gap-2">
+        <div className="mt-2 flex items-center gap-2">
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
@@ -458,9 +507,63 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
           ) : null}
         </div>
+        <nav className="-mx-4 -mb-px mt-2 flex overflow-x-auto overflow-y-hidden px-2" role="tablist" aria-label="City information">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              role="tab"
+              aria-selected={t.key === tabInfo.key}
+              onClick={() => setCityTab(t.key)}
+              className={`relative shrink-0 border-b-2 px-1 py-1.5 text-[12px] font-medium whitespace-nowrap ${t.key === tabInfo.key ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+            >
+              {t.label}
+              {problemTabs.has(t.key) && <span className="absolute top-1 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
+            </button>
+          ))}
+        </nav>
       </div>
 
-      {order.map((k) => <Fragment key={k}>{sections[k]}</Fragment>)}
+      {tabInfo.key === 'overview' ? (
+        <div className="px-4 py-3">
+          <p className="text-[13px]">{city.blurb}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
+            <span className="text-muted">Suggested days:</span>
+            {PACES.map((p) => (
+              <span
+                key={p.value}
+                title={p.value === input.pace ? 'Your pace' : undefined}
+                className={`rounded-full border px-2 py-0.5 ${p.value === input.pace ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-muted'}`}
+              >
+                {p.icon} {p.label} <b>{suggested[p.value]}</b>
+              </span>
+            ))}
+          </div>
+          {suggested.longer && <p className="mt-1 text-[11px] text-muted">Includes extra time because {suggested.longer} is marked "Longer".</p>}
+
+          <h3 className="mt-4 mb-1 text-[11px] font-semibold tracking-wider text-muted uppercase">At a glance</h3>
+          <ul className="flex flex-col">
+            {glance.map((g) => (
+              <li key={g.label}>
+                <button
+                  onClick={() => setCityTab(g.tab)}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : ''}`}
+                >
+                  <span className={`h-2 w-2 shrink-0 rounded-full ${TONE_DOT[g.tone]}`} />
+                  <span className="w-5 shrink-0 text-center">{g.icon}</span>
+                  <span className="w-32 shrink-0 text-muted">{g.label}</span>
+                  <span className={`flex-1 font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>
+                  <span className="text-muted">›</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        tabInfo.sections.map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
+      )}
     </div>
   )
 }

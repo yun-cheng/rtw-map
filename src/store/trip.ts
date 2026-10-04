@@ -8,6 +8,7 @@ import {
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
+export type CityTab = 'overview' | 'entry' | 'transport' | 'weather' | 'money' | 'safety' | 'daily'
 export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'cards' | 'english' | 'schengen' | 'advisory'
 
 type State = {
@@ -23,6 +24,8 @@ type State = {
   currency: string
   /** Country to compare price levels with; null = guess from the display currency. */
   priceCompare: string | null
+  /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
+  cityTab: CityTab
 
   setInput: (patch: Partial<TripInput>) => void
   generate: () => void
@@ -40,6 +43,7 @@ type State = {
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
   setPriceCompare: (iso2: string) => void
+  setCityTab: (tab: CityTab) => void
   importTrip: (data: { input: TripInput; stops: Stop[] }) => void
 }
 
@@ -92,6 +96,7 @@ export const useTrip = create<State>()(
         fitRequest: 0,
         currency: 'EUR',
         priceCompare: null,
+        cityTab: 'overview',
 
         setInput: (patch) => {
           const input = { ...get().input, ...patch }
@@ -137,6 +142,7 @@ export const useTrip = create<State>()(
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
+        setCityTab: (cityTab) => set({ cityTab }),
         importTrip: ({ input, stops }) => {
           set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null, selected: null, fitRequest: get().fitRequest + 1 })
         },
@@ -146,7 +152,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, priceCompare: s.priceCompare }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, priceCompare: s.priceCompare, cityTab: s.cityTab }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         try {
