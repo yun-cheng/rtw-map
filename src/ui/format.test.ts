@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, money, rateText, weatherKind } from './format'
+import { WEATHER_STYLE, local, money, rateText, temp, tempBand, tempRange, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -44,5 +44,23 @@ describe('weatherKind', () => {
     expect(weatherKind({ tHigh: 29, rainDays: 3 })).toBe('warm')
     expect(weatherKind({ tHigh: 34, rainDays: 1 })).toBe('hot')
     expect(WEATHER_STYLE.cold.color).not.toBe(WEATHER_STYLE.hot.color)
+  })
+})
+
+describe('temperatures', () => {
+  it('shows °C data in either unit, rounded', () => {
+    expect(temp(24.9, 'C')).toBe('25°C')
+    expect(temp(24.9, 'F')).toBe('77°F')
+    expect(tempRange(-3.2, 4.6, 'F')).toBe('26–40°F')
+  })
+
+  it('labels the map classes by their range of average highs', () => {
+    expect(['cold', 'cool', 'pleasant', 'warm', 'hot'].map((k) => tempBand(k as 'cold', 'C'))).toEqual(['<12°C', '12–18°C', '18–28°C', '28–32°C', '32°C+'])
+    expect(tempBand('pleasant', 'F')).toBe('64–82°F')
+  })
+
+  it('adds the temperature to hot and cold warnings in the chosen unit', () => {
+    expect(warningTitle({ title: 'Athens: very hot', tempC: 33.4 }, 'F')).toBe('Athens: very hot (avg high 92°F)')
+    expect(warningTitle({ title: 'Visa needed' }, 'F')).toBe('Visa needed')
   })
 })

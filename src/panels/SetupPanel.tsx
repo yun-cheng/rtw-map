@@ -58,7 +58,7 @@ export function SetupPanel() {
           {input.groups.map((g, i) => (
             <div key={g.id} className="rounded-lg border border-line bg-panel p-2.5">
               <div className="mb-2 flex items-center gap-1">
-                <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-white">{i + 1}</span>
+                <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>
                 <span className="flex-1 font-semibold">{g.name}</span>
                 <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
                   <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />

@@ -1,8 +1,7 @@
-import { dataset as ds } from '../data/dataset'
 import { AIRPORT_MIN } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, cityName, duration, shortDate } from '../ui/format'
-import { Badge, Section, Source } from '../ui/kit'
+import { Badge, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 
 export function LegDrawer({ index }: { index: number }) {
@@ -60,7 +59,6 @@ export function LegDrawer({ index }: { index: number }) {
               </li>
             ))}
           </ol>
-          <Source>{leg.estimated ? ds.meta.roads.source : ds.meta.connections.source}</Source>
         </Section>
       )}
     </div>

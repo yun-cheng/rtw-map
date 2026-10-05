@@ -1,8 +1,10 @@
 import type { ClimateMonth } from '../planner'
 import { MONTHS } from '../ui/format'
+import { useTemp } from '../ui/useTemp'
 
 /** 12-month chart: rain-day bars plus high/low temperature lines; stay months highlighted. */
 export function ClimateChart({ data, highlight }: { data: ClimateMonth[]; highlight: Set<number> }) {
+  const { unit, t: temp } = useTemp()
   const W = 360
   const H = 150
   const pad = { l: 26, r: 22, t: 10, b: 20 }
@@ -19,12 +21,12 @@ export function ClimateChart({ data, highlight }: { data: ClimateMonth[]; highli
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Monthly climate">
       {data.map((_, i) => highlight.has(i + 1) && (
-        <rect key={`h${i}`} x={x(i) - iw / 24} y={pad.t} width={iw / 12} height={ih} fill="#ccfbf1" />
+        <rect key={`h${i}`} x={x(i) - iw / 24} y={pad.t} width={iw / 12} height={ih} style={{ fill: 'var(--color-accent-soft)' }} />
       ))}
       {ticks.map((t) => (
         <g key={t}>
-          <line x1={pad.l} x2={W - pad.r} y1={yT(t)} y2={yT(t)} stroke="#e7e5e4" strokeWidth={1} />
-          <text x={pad.l - 4} y={yT(t) + 3} textAnchor="end" fontSize={9} fill="#78716c">{t}°</text>
+          <line x1={pad.l} x2={W - pad.r} y1={yT(t)} y2={yT(t)} style={{ stroke: 'var(--color-line)' }} strokeWidth={1} />
+          <text x={pad.l - 4} y={yT(t) + 3} textAnchor="end" fontSize={9} style={{ fill: 'var(--color-muted)' }}>{unit === 'F' ? Math.round((t * 9) / 5 + 32) : t}°</text>
         </g>
       ))}
       {data.map((d, i) => (
@@ -36,9 +38,9 @@ export function ClimateChart({ data, highlight }: { data: ClimateMonth[]; highli
       <path d={line('tLow')} fill="none" stroke="#0284c7" strokeWidth={2} />
       {data.map((d, i) => (
         <g key={`p${i}`}>
-          <circle cx={x(i)} cy={yT(d.tHigh)} r={2.5} fill="#ea580c"><title>{`${MONTHS[i]} high ${d.tHigh}°C`}</title></circle>
-          <circle cx={x(i)} cy={yT(d.tLow)} r={2.5} fill="#0284c7"><title>{`${MONTHS[i]} low ${d.tLow}°C`}</title></circle>
-          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={9} fill={highlight.has(i + 1) ? '#0f766e' : '#78716c'} fontWeight={highlight.has(i + 1) ? 700 : 400}>{MONTHS[i][0]}</text>
+          <circle cx={x(i)} cy={yT(d.tHigh)} r={2.5} fill="#ea580c"><title>{`${MONTHS[i]} high ${temp(d.tHigh)}`}</title></circle>
+          <circle cx={x(i)} cy={yT(d.tLow)} r={2.5} fill="#0284c7"><title>{`${MONTHS[i]} low ${temp(d.tLow)}`}</title></circle>
+          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={9} style={{ fill: highlight.has(i + 1) ? 'var(--color-accent)' : 'var(--color-muted)' }} fontWeight={highlight.has(i + 1) ? 700 : 400}>{MONTHS[i][0]}</text>
         </g>
       ))}
       <text x={W - pad.r + 4} y={yR(20) + 3} fontSize={9} fill="#60a5fa">20d</text>

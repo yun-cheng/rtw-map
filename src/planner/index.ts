@@ -16,7 +16,7 @@ export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
 export { TAP_WATER_LABELS, airBand, tapWater } from './health'
 export { CARD_LABELS, cardLevel } from './payments'
-export { addDays, daysBetween, monthOf } from './dates'
+export { addDays, daysBetween, monthOf, tripDay } from './dates'
 export { AIRPORT_MIN } from './graph'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }
@@ -145,6 +145,35 @@ function allocItem(ctx: Ctx, stop: Stop, legIn: Leg | undefined, s: number): All
  * starting point the planner uses when it assigns nights. Includes the extra time for regions
  * marked "Longer" (`longer` names that region).
  */
+let everywhere: { ds: Dataset; graph: Graph } | null = null
+
+/** The best way between any two cities in the app, through any others (the planner's routing, without its region limits). */
+export function routeBetween(ds: Dataset, from: string, to: string): Leg {
+  if (everywhere?.ds !== ds) everywhere = { ds, graph: buildGraph(ds, new Set(Object.keys(ds.cities))) }
+  return legBetween(everywhere.graph, from, to)
+}
+
+/** The month a stop is mostly in: the month of the middle night (used for its weather). */
+export const stayMonth = (s: Pick<ScheduledStop, 'arrive' | 'nights'>) => monthOf(addDays(s.arrive, Math.floor(s.nights / 2)))
+
+/**
+ * The month you'd likely be at a city on this trip: its own stay if it's a stop, else the stay at the nearest stop
+ * (where you'd be when passing close by), else the trip's start month.
+ */
+export function likelyMonth(ds: Dataset, plan: Plan | null, input: Pick<TripInput, 'startDate'>, cityId: string): number {
+  const stops = plan?.stops ?? []
+  const own = stops.find((s) => s.cityId === cityId)
+  if (own) return stayMonth(own)
+  const c = ds.cities[cityId]
+  if (!c || !stops.length) return monthOf(input.startDate)
+  const dist = (id: string) => {
+    const o = ds.cities[id]
+    const dx = (o.lon - c.lon) * Math.cos((c.lat * Math.PI) / 180)
+    return dx * dx + (o.lat - c.lat) ** 2
+  }
+  return stayMonth(stops.reduce((best, s) => (dist(s.cityId) < dist(best.cityId) ? s : best)))
+}
+
 export function suggestedDays(ds: Dataset, input: TripInput, cityId: string): Record<Pace, number> & { longer: string | null } {
   const city = ds.cities[cityId]
   const group = input.groups.find((g) => g.longer && g.countries.some((c) => c.iso2 === city.iso2 && c.mode !== 'excluded'))
@@ -327,7 +356,7 @@ export function generatePlan(ds: Dataset, input: TripInput): Plan {
     const sched = schedule(ctx, result.stops, legsFor(ctx, result.stops))
     const byGroup = new Map<number, number>()
     for (const s of sched) {
-      const m = monthOf(addDays(s.arrive, Math.floor(s.nights / 2)))
+      const m = stayMonth(s)
       months.set(s.cityId, m)
       if (!byGroup.has(groupOf(ctx, s.cityId))) byGroup.set(groupOf(ctx, s.cityId), m)
     }
@@ -470,7 +499,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     }
   }
   for (const s of sched) {
-    const month = monthOf(addDays(s.arrive, Math.floor(s.nights / 2)))
+    const month = stayMonth(s)
     const air = ds.air.byCity[s.cityId]?.[month - 1]
     if (air && air.pm25 > 25) {
       warnings.push({
@@ -542,13 +571,13 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
 
   // Weather in the month of the stay
   for (const s of sched) {
-    const m = ds.climate[s.cityId]?.[monthOf(addDays(s.arrive, Math.floor(s.nights / 2))) - 1]
+    const m = ds.climate[s.cityId]?.[stayMonth(s) - 1]
     if (!m) continue
     const name = ds.cities[s.cityId].name
     if (m.tHigh >= 32) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: very hot (avg high ${m.tHigh}°C)` })
+      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: very hot`, tempC: m.tHigh })
     } else if (m.tHigh < 12) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold (avg high ${m.tHigh}°C)` })
+      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold`, tempC: m.tHigh })
     } else if (m.rainDays >= 14) {
       warnings.push({ kind: 'weather', severity: 'info', cityId: s.cityId, title: `${name}: often wet (~${Math.round(m.rainDays)} days with rain that month)`, detail: 'Counts days with at least 1 mm; in summer these are often short showers.' })
     }

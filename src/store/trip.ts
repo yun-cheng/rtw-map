@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
+import type { TempUnit } from '../ui/format'
 import {
-  addDays, addStop, evaluatePlan, generatePlan, monthOf, rebalance, reoptimize,
+  addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize,
   type Plan, type Stop, type TripInput,
 } from '../planner'
 
@@ -17,11 +18,14 @@ type State = {
   plan: Plan | null
   selected: Selection
   layer: MapLayer
+  /** Month shown by the weather and air layers; 0 = each place at the time of the trip (see likelyMonth). */
   layerMonth: number
   panel: 'setup' | 'itinerary' | 'assistant'
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
   currency: string
+  /** Temperatures in Celsius or Fahrenheit (data is stored in °C). */
+  tempUnit: TempUnit
   /** Country to compare price levels with; null = guess from the display currency. */
   priceCompare: string | null
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
@@ -42,10 +46,12 @@ type State = {
   setLayerMonth: (m: number) => void
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
+  setTempUnit: (u: TempUnit) => void
   setPriceCompare: (iso2: string) => void
   setCityTab: (tab: CityTab) => void
-  /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it. */
-  openTrip: (data: { input: TripInput; stops: Stop[] } | null) => void
+  /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
+   *  open panel, map layer month and map position instead (when reloading the trip that is already on screen). */
+  openTrip: (data: { input: TripInput; stops: Stop[] } | null, keepView?: boolean) => void
   /** Puts back an earlier trip (Undo for the assistant's changes); keeps the view as it is. */
   restore: (data: { input: TripInput; stops: Stop[] }) => void
 }
@@ -100,10 +106,11 @@ export const useTrip = create<State>()(
         plan: null,
         selected: null,
         layer: 'none',
-        layerMonth: monthOf(fresh.startDate),
+        layerMonth: 0,
         panel: 'setup',
         fitRequest: 0,
         currency: 'EUR',
+        tempUnit: 'C',
         priceCompare: null,
         cityTab: 'overview',
 
@@ -115,7 +122,7 @@ export const useTrip = create<State>()(
         generate: () => {
           const { input } = get()
           if (!input.groups.length) return
-          apply(generatePlan(ds, input), { panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: monthOf(input.startDate) })
+          apply(generatePlan(ds, input), { panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0 })
         },
         loadTestCase: () => {
           const input = testCaseInput(ds, get().input.passport === 'EU' ? 'TW' : get().input.passport)
@@ -150,9 +157,10 @@ export const useTrip = create<State>()(
         setLayerMonth: (layerMonth) => set({ layerMonth }),
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
+        setTempUnit: (tempUnit) => set({ tempUnit }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCityTab: (cityTab) => set({ cityTab }),
-        openTrip: (data) => {
+        openTrip: (data, keepView = false) => {
           const input = data ? { ...newTripInput(), ...data.input } : newTripInput()
           const stops = data?.stops ?? []
           let plan: Plan | null = null
@@ -160,10 +168,15 @@ export const useTrip = create<State>()(
             plan = stops.length ? evaluatePlan(ds, input, stops) : null
           } catch {
             // The trip refers to data that no longer exists: keep its setup, drop the itinerary.
-            set({ input, stops: [], plan: null, selected: null, panel: 'setup', layerMonth: monthOf(input.startDate), fitRequest: get().fitRequest + 1 })
+            set({ input, stops: [], plan: null, selected: null, panel: 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
             return
           }
-          set({ input, stops, plan, selected: null, panel: plan ? get().panel : 'setup', layerMonth: monthOf(input.startDate), fitRequest: get().fitRequest + 1 })
+          if (keepView) {
+            const { selected } = get()
+            set({ input, stops, plan, selected: selected?.type === 'leg' && !plan?.legs[selected.index] ? null : selected })
+            return
+          }
+          set({ input, stops, plan, selected: null, panel: plan ? get().panel : 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
         },
         restore: ({ input, stops }) => set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null }),
       }
@@ -172,12 +185,11 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, priceCompare: s.priceCompare, cityTab: s.cityTab }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, priceCompare: s.priceCompare, cityTab: s.cityTab }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         try {
           merged.plan = merged.stops.length ? evaluatePlan(ds, merged.input, merged.stops) : null
-          merged.layerMonth = monthOf(merged.input.startDate)
         } catch {
           // Saved trip refers to data that no longer exists; start fresh.
           return current

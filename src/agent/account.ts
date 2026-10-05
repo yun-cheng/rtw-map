@@ -1,6 +1,7 @@
 // Who is signed in for the trip assistant, and how many messages they have left today. The session itself is an
 // HttpOnly cookie set by the Worker; this only mirrors what /api/session reports.
 import { create } from 'zustand'
+import { useTheme } from '../ui/theme'
 
 export type User = { sub: string; name: string; picture?: string }
 export type Usage = { used: number; limit: number; remaining: number; resetsAt: string }
@@ -91,7 +92,7 @@ export async function renderGoogleButton(parent: HTMLElement, clientId: string, 
     initializedFor = clientId
   }
   id.renderButton(parent, {
-    type: 'standard', theme: 'outline', shape: 'pill', logo_alignment: 'left', locale: 'en',
+    type: 'standard', theme: useTheme.getState().theme === 'dark' ? 'filled_black' : 'outline', shape: 'pill', logo_alignment: 'left', locale: 'en',
     size: compact ? 'medium' : 'large', text: compact ? 'signin' : 'signin_with',
   })
 }

@@ -15,7 +15,8 @@ type SavedState = {
   activeId: string | null
   status: Status
   error: string | null
-  open: (id: string) => Promise<void>
+  /** `keepView`: the trip is already on screen (reloading it at sign-in), so keep the open panel and map position. */
+  open: (id: string, keepView?: boolean) => Promise<void>
   create: (name: string) => Promise<void>
   rename: (id: string, name: string) => Promise<void>
   remove: (id: string) => Promise<void>
@@ -68,9 +69,9 @@ let timer: ReturnType<typeof setTimeout> | undefined
 export const useSaved = create<SavedState>()((set, get) => {
   const upsert = (s: TripSummary) => set({ trips: [s, ...get().trips.filter((t) => t.id !== s.id)].sort((a, b) => b.updated - a.updated) })
 
-  const show = (id: string, data: { input: TripInput; stops: Stop[] } | null, chat: SavedChat | null) => {
+  const show = (id: string, data: { input: TripInput; stops: Stop[] } | null, chat: SavedChat | null, keepView = false) => {
     applying = true
-    useTrip.getState().openTrip(data)
+    useTrip.getState().openTrip(data, keepView)
     useChat.getState().load(chat)
     applying = false
     remember(id)
@@ -83,12 +84,12 @@ export const useSaved = create<SavedState>()((set, get) => {
     status: 'idle',
     error: null,
 
-    open: async (id) => {
+    open: async (id, keepView) => {
       await flush()
       set({ status: 'loading', error: null })
       try {
         const trip = await call('GET', `/api/trips/${id}`)
-        show(id, trip.data, trip.chat)
+        show(id, trip.data, trip.chat, keepView)
         set({ status: 'idle' })
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
@@ -193,7 +194,7 @@ async function signedIn() {
     const local = remembered()
     if (local && trips.some((t) => t.id === local)) {
       // This browser already shows a saved trip: keep it on screen (it may have unsaved edits) and refresh from the server.
-      await useSaved.getState().open(local)
+      await useSaved.getState().open(local, true)
     } else if (hasContent() || !trips.length) {
       // A trip planned while signed out (or a first sign-in): keep it as a new trip in the account.
       const created: TripSummary = await call('POST', '/api/trips', { name: 'My trip', data: tripData(), chat: chatData() })

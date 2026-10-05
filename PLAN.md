@@ -158,12 +158,12 @@ Every failed check becomes a bug or a data gap to fix. Results from the real tri
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────┐
-│ rtw-map   Trip: "2027 Europe"  153 days · €7.1k est.  Schengen 87/90 ✅ 💬│
+│ rtw-map  My trip ▾  1 May–30 Sep · 152 nights · €7.1k   EUR °C/°F ☾ (me) │
 ├───────────────────┬──────────────────────────────────────────────────────┤
 │ ITINERARY         │                                                      │
 │ 1 Tirana     3d   │                 MAP (MapLibre)                       │
-│   └ 🚌 3h €10     │     ● cities sized by days, routes colored by mode   │
-│ 2 Berat      2d   │     Schengen area shaded; layers: [Climate][Cost]    │
+│   └ 🚌 3h €10     │  ● stops numbered by arrival day, sized by nights    │
+│ 4 Berat      2d   │  views: [Route][Weather][Air][Cost]…[Schengen]       │
 │ ...               │                                                      │
 │ 14 Kraków    6d 🔒│                                                      │
 │ ⚠ 1 warning       │                                                      │
@@ -420,10 +420,10 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Money & payments, done:** city section with card acceptance (1–5), phone pay, cash needs, ATM tips, ATMs nearby, currency and rate; Cards map layer; checks for countries where foreign cards fail and for mostly-cash stops. The section jumps to the top in Russia.
 - **Price level & Big Mac, done:** price level with a plain-language comparison (user picks the country) and a "how to read" explainer; costs estimated from the price level for countries without hand-entered prices; a warning when our hand-entered costs differ a lot from the level (currently Croatia ~36% higher, Albania ~21% lower); Big Mac reference price.
 - **City panel tabs, done:** Overview (suggested days per pace + one line per topic, problems first) and tabs ordered by use: Transport, Weather, Money, Daily life, Safety, Entry. Red dots on tabs with a problem; the chosen tab stays when switching cities.
-- **Weather colours, done:** temperature-style colours on the map layer, the timeline and the Overview: blue = cold, green = pleasant, orange/red = hot, grey = wet (same thresholds as the weather checks).
+- **Weather colours, done:** temperature-style colours on the map layer, the timeline and the Overview: blue = cold, green = pleasant, orange/red = hot, grey = wet (same thresholds as the weather checks). On the map, rain is a ring around each stop (share of rainy days) and the legend shows the temperature ranges.
 - **Routing, improved:** leg costs count ~2½ h airport time per flight and the fare, so routes stop zig-zagging by plane; the search adds swap moves, a seeded shake-and-reoptimize loop, and re-orders the route after cities are added or dropped.
 - **East & Southeast Asia, done:** 7 countries, 43 cities, all curated data (§3.1b).
-- **Schengen meter:** hidden in the header for trips without Schengen days.
+- **Schengen:** the 90/180 counter moved from the header to the Schengen map view's legend; the Route view and the itinerary colour stops one colour instead of Schengen blue/amber (the timeline still shows Schengen).
 - **Austria, done:** Vienna, Salzburg, Hallstatt, Innsbruck and Graz with all curated data and 17 connections; the "Eastern Europe" region is now "Central & Eastern Europe" and includes Austria.
 - **Country defaults:** countries added as part of a region start as optional (the planner picks the best ones, and every region gets at least one stop); a country added on its own starts as must visit.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
@@ -431,6 +431,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Data out of git:** `data/` (hand-curated seed and generated files) lives in a private Cloudflare R2 bucket, synced with `npm run data:pull` / `data:push`; each push that changes seed data keeps a dated copy of it. The refresh workflow now runs weekly (Mondays; by hand after a big advisory change) and pulls, refreshes, tests and pushes instead of committing. Earlier versions remain in the public git history.
 - **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo. Needs Google sign-in; 20 messages per account per day, counted down.
 - **Saved trips, done:** signed-in users' trips (and each trip's chat) are saved to their account automatically; trip menu at the top left to switch, create, rename and delete; account menu at the top right with Sign out. Import/export removed.
+- **Display & map, done:** dark theme (with a recoloured dark base map), °C/°F, view state in the URL, map views default to the trip's dates, a legend for the Route view (travel modes, timetable vs estimated), stops numbered by arrival day, click priority for stops over route lines, the map brings a picked city into view. Source/date lines under each section were removed from the panels (sources stay in the README).
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 
 ---

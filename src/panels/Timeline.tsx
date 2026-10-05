@@ -1,10 +1,10 @@
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, monthOf } from '../planner'
 import { useTrip } from '../store/trip'
-import { MONTHS, WEATHER_STYLE, weatherKind } from '../ui/format'
+import { MONTHS, WEATHER_STYLE, tempBand, weatherKind, type WeatherKind } from '../ui/format'
 
 export function Timeline() {
-  const { plan, input, selected, select } = useTrip()
+  const { plan, input, selected, select, tempUnit: unit } = useTrip()
   if (!plan?.stops.length) return null
   const start = input.startDate
   const total = Math.max(1, daysBetween(start, input.endDate))
@@ -52,7 +52,7 @@ export function Timeline() {
         {plan.stops.map((s) => {
           const m = ds.climate[s.cityId]?.[monthOf(addDays(s.arrive, Math.floor(s.nights / 2))) - 1]
           return (
-            <div key={s.cityId} className="absolute top-0 h-1.5 rounded-full border-r-2 border-panel" style={{ left: pct(daysBetween(start, s.arrive)), width: pct(s.nights), background: m ? WEATHER_STYLE[weatherKind(m)].color : '#e7e5e4' }} />
+            <div key={s.cityId} className="absolute top-0 h-1.5 rounded-full border-r-2 border-panel" style={{ left: pct(daysBetween(start, s.arrive)), width: pct(s.nights), background: m ? WEATHER_STYLE[weatherKind(m)].color : 'var(--color-line)' }} />
           )
         })}
       </div>
@@ -61,10 +61,10 @@ export function Timeline() {
         <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-outside" />Outside Schengen</span>
         <span className="flex items-center gap-2">
           Weather:
-          {Object.values(WEATHER_STYLE).map((w) => (
-            <span key={w.label} className="flex items-center gap-1">
-              <span className="inline-block h-2 w-3 rounded-full" style={{ background: w.color }} />
-              {w.label.replace(/ \(.*\)/, '')}
+          {(Object.keys(WEATHER_STYLE) as WeatherKind[]).map((k) => (
+            <span key={k} className="flex items-center gap-1" title={k === 'wet' ? 'Mild but rainy: 14 or more rain days in the month' : 'Average daily high'}>
+              <span className="inline-block h-2 w-3 rounded-full" style={{ background: WEATHER_STYLE[k].color }} />
+              {k === 'wet' ? 'Wet' : tempBand(k, unit)}
             </span>
           ))}
         </span>

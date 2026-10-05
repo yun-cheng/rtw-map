@@ -10,6 +10,8 @@
   --color-canvas: #f5f5f4;
   --color-accent: #0f766e;
   --color-accent-soft: #ccfbf1;
+  --color-accent-strong: #115e59;
+  --color-on-accent: #ffffff;
   --color-schengen: #2563eb;
   --color-schengen-soft: #dbeafe;
   --color-outside: #d97706;
@@ -20,6 +22,34 @@
   --color-warn-soft: #fef3c7;
   --color-info: #475569;
   --color-info-soft: #f1f5f9;
+}
+
+:root {
+  color-scheme: light;
+}
+
+/* Dark theme: the same tokens, redefined (src/ui/theme.ts sets data-theme on <html>). */
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-ink: #e7e5e4;
+  --color-muted: #a8a29e;
+  --color-line: #3a3532;
+  --color-panel: #1c1917;
+  --color-canvas: #0f0d0c;
+  --color-accent: #2dd4bf;
+  --color-accent-soft: #123b38;
+  --color-accent-strong: #5eead4;
+  --color-on-accent: #042f2e;
+  --color-schengen: #60a5fa;
+  --color-schengen-soft: #1e2f4f;
+  --color-outside: #f59e0b;
+  --color-outside-soft: #3d2a0c;
+  --color-danger: #f87171;
+  --color-danger-soft: #3f1515;
+  --color-warn: #fbbf24;
+  --color-warn-soft: #3a2a0a;
+  --color-info: #94a3b8;
+  --color-info-soft: #1e2530;
 }
 
 html,
@@ -38,7 +68,25 @@ body {
 }
 
 .maplibregl-popup-content {
+  background: var(--color-panel);
+  color: var(--color-ink);
   border-radius: 8px;
   padding: 6px 10px;
   font: 500 12px var(--font-sans);
 }
+
+.maplibregl-popup-anchor-top .maplibregl-popup-tip { border-bottom-color: var(--color-panel); }
+.maplibregl-popup-anchor-bottom .maplibregl-popup-tip { border-top-color: var(--color-panel); }
+.maplibregl-popup-anchor-left .maplibregl-popup-tip { border-right-color: var(--color-panel); }
+.maplibregl-popup-anchor-right .maplibregl-popup-tip { border-left-color: var(--color-panel); }
+
+/* MapLibre's zoom buttons and attribution are white; darken them with the page. */
+:root[data-theme='dark'] .maplibregl-ctrl-group,
+:root[data-theme='dark'] .maplibregl-ctrl-attrib {
+  background: var(--color-panel);
+  color: var(--color-muted);
+}
+:root[data-theme='dark'] .maplibregl-ctrl-group button + button { border-top-color: var(--color-line); }
+:root[data-theme='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon,
+:root[data-theme='dark'] .maplibregl-ctrl-attrib-button { filter: invert(1); }
+:root[data-theme='dark'] .maplibregl-ctrl-attrib a { color: var(--color-ink); }

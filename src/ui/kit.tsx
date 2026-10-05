@@ -4,7 +4,7 @@ import { ramp } from './format'
 export function Button({ variant = 'default', className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary' | 'ghost' }) {
   const styles = {
     default: 'border border-line bg-panel hover:bg-canvas',
-    primary: 'bg-accent text-white hover:bg-teal-800 disabled:opacity-40',
+    primary: 'bg-accent text-on-accent hover:bg-accent-strong disabled:opacity-40',
     ghost: 'hover:bg-canvas',
   }[variant]
   return <button className={`inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed ${styles} ${className}`} {...props} />
@@ -22,7 +22,8 @@ export function Section({ title, children, aside }: { title: string; children: R
   )
 }
 
-export function Source({ children }: { children: ReactNode }) {
+/** A line of related links under a section (official pages and guides). */
+export function Links({ children }: { children: ReactNode }) {
   return <p className="mt-2 text-[11px] leading-snug text-muted">{children}</p>
 }
 

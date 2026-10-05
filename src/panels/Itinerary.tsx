@@ -1,13 +1,13 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
-import type { PlanWarning } from '../planner'
+import { tripDay, type PlanWarning } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_ICON, cityName, duration, flag, shortDate } from '../ui/format'
+import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
 import { Badge, Button } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 
 export function Itinerary() {
-  const { plan, selected, select, setNights, toggleLock, removeStop, moveStop, rebalance, reoptimize } = useTrip()
+  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, rebalance, reoptimize } = useTrip()
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
@@ -28,6 +28,7 @@ export function Itinerary() {
           const city = ds.cities[s.cityId]
           const leg = plan.legs[i]
           const isSel = selected?.type === 'city' && selected.id === s.cityId
+          const day = tripDay(input.startDate, s.arrive)
           return (
             <li key={s.cityId}>
               <div
@@ -41,11 +42,11 @@ export function Itinerary() {
                 className={`group flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 ${isSel ? 'bg-accent-soft' : 'hover:bg-canvas'} ${over === i && drag !== i ? 'ring-2 ring-accent' : ''} ${drag === i ? 'opacity-40' : ''}`}
               >
                 <span
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white"
-                  style={{ background: ds.countries[city.iso2]?.schengen ? 'var(--color-schengen)' : 'var(--color-outside)' }}
-                  title={ds.countries[city.iso2]?.schengen ? 'Schengen area' : 'Outside Schengen'}
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-semibold text-white tabular-nums ${day >= 100 ? 'text-[9.5px]' : 'text-[11px]'}`}
+                  style={{ background: STOP_COLOR }}
+                  title={`Arrive on day ${day} of the trip`}
                 >
-                  {i + 1}
+                  {day}
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="truncate font-medium">{flag(city.iso2)} {city.name}</div>
@@ -96,6 +97,7 @@ const ORDER = { error: 0, warn: 1, info: 2 }
 function Warnings({ warnings }: { warnings: PlanWarning[] }) {
   const [open, setOpen] = useState(true)
   const select = useTrip((s) => s.select)
+  const unit = useTrip((s) => s.tempUnit)
   if (!warnings.length) return null
   const sorted = [...warnings].sort((a, b) => ORDER[a.severity] - ORDER[b.severity])
   const counts = { error: 0, warn: 0, info: 0 }
@@ -118,7 +120,7 @@ function Warnings({ warnings }: { warnings: PlanWarning[] }) {
               </span>
               <div className="min-w-0 flex-1">
                 <button className="text-left font-medium hover:underline disabled:no-underline" disabled={!w.cityId} onClick={() => w.cityId && select({ type: 'city', id: w.cityId })}>
-                  {w.title}
+                  {warningTitle(w, unit)}
                 </button>
                 {w.detail && <div className="text-muted">{w.detail}</div>}
                 {w.url && <a href={w.url} target="_blank" rel="noreferrer" className="text-accent hover:underline">Official source ↗</a>}

@@ -248,6 +248,8 @@ export type PlanWarning = {
   kind: WarningKind
   severity: 'info' | 'warn' | 'error'
   title: string
+  /** Average high in °C for hot/cold warnings, shown in the user's unit after the title (see warningTitle). */
+  tempC?: number
   detail?: string
   cityId?: string
   iso2?: string

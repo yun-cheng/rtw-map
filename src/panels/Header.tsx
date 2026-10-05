@@ -3,14 +3,12 @@ import { dataset as ds } from '../data/dataset'
 import { shortDate } from '../ui/format'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
+import { ThemeMenu } from './ThemeMenu'
 import { TripSwitcher } from './TripSwitcher'
 
 export function Header() {
-  const { plan, input, setCurrency } = useTrip()
+  const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
   const { currency, fmt } = useMoney()
-
-  const s = plan?.schengen
-  const sOver = s && s.applies && s.maxInWindow > s.limit
 
   return (
     <header className="flex h-12 items-center gap-4 border-b border-line bg-panel px-4">
@@ -25,27 +23,31 @@ export function Header() {
           <span title="Estimated total for your budget style, including transport between cities">
             <b>{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">(~{fmt(plan.cost.perDay)}/day)</span>
           </span>
-          {s?.applies && (s.days > 0 || input.schengenDaysBefore > 0) && (
-            <span className="flex items-center gap-2" title="Most Schengen days in any 180-day window during the trip">
-              <span className="text-muted">Schengen</span>
-              <span className="relative h-1.5 w-20 overflow-hidden rounded-full bg-line">
-                <span className={`absolute inset-y-0 left-0 rounded-full ${sOver ? 'bg-danger' : 'bg-schengen'}`} style={{ width: `${Math.min(100, (s.maxInWindow / s.limit) * 100)}%` }} />
-              </span>
-              <b className={sOver ? 'text-danger' : ''}>{s.maxInWindow}/{s.limit}</b>
-            </span>
-          )}
         </div>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <select
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
-          title={`Show prices in this currency. ${ds.meta.fx.source}, ${ds.meta.fx.updatedAt}`}
+          title="Show prices in this currency"
           className="rounded-md border border-line bg-panel px-1.5 py-1 text-[13px] font-medium"
           aria-label="Display currency"
         >
           {ds.fx.display.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
+        <div className="flex rounded-md border border-line p-0.5 text-[12px] font-medium" role="group" aria-label="Temperature unit" title="Show temperatures in Celsius or Fahrenheit">
+          {(['C', 'F'] as const).map((u) => (
+            <button
+              key={u}
+              onClick={() => setTempUnit(u)}
+              aria-pressed={tempUnit === u}
+              className={`rounded px-1.5 py-0.5 ${tempUnit === u ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
+            >
+              °{u}
+            </button>
+          ))}
+        </div>
+        <ThemeMenu />
         <div className="ml-1.5"><AccountMenu /></div>
       </div>
     </header>

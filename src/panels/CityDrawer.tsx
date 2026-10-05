@@ -1,10 +1,11 @@
 import { Fragment, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, weatherKind } from '../ui/format'
-import { Badge, Button, LevelBar, Row, Section, Source } from '../ui/kit'
+import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { useTemp } from '../ui/useTemp'
 import { AirChart } from './AirChart'
 import { ClimateChart } from './ClimateChart'
 import { PriceLevel } from './PriceLevel'
@@ -59,6 +60,7 @@ const GROCERIES: [keyof (typeof ds.costs)[string]['groceries'], string][] = [
 export function CityDrawer({ cityId }: { cityId: string }) {
   const { plan, input, select, addCity, removeStop, cityTab, setCityTab } = useTrip()
   const { currency, fmt } = useMoney()
+  const { unit, range } = useTemp()
   const city = ds.cities[cityId]
   const country = ds.countries[city.iso2]
   const costInfo = costProfile(ds, city.iso2)
@@ -90,7 +92,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
 
   const stayMonths = new Set<number>()
   if (stop) for (let d = 0; d <= stop.nights; d++) stayMonths.add(monthOf(addDays(stop.arrive, d)))
-  else stayMonths.add(useTrip.getState().layerMonth)
+  else stayMonths.add(useTrip.getState().layerMonth || likelyMonth(ds, plan, input, cityId))
 
   const connections = ds.connections
     .filter((c) => c.from === cityId || c.to === cityId)
@@ -157,12 +159,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ) : (
           <p className="text-[13px] text-muted">{transit.rentalNote ?? 'No rentals to speak of here.'}</p>
         )}
-        <Source>
-          {ds.meta.localTransport.source} Check{' '}
+        <Links>
           <a className="text-accent hover:underline" href={`https://en.wikivoyage.org/wiki/Special:Search?go=Go&search=${encodeURIComponent(city.name)}#Get_around`} target="_blank" rel="noreferrer">
             Wikivoyage: {city.name} ↗
           </a>
-        </Source>
+        </Links>
       </Section>
     ),
     weather: (
@@ -171,8 +172,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <>
             <ClimateChart data={climate} highlight={stayMonths} />
             <div className="mt-1 flex gap-3 text-[11px] text-muted">
-              <span><span className="text-orange-600">●</span> High °C</span>
-              <span><span className="text-sky-600">●</span> Low °C</span>
+              <span><span className="text-orange-600">●</span> High °{unit}</span>
+              <span><span className="text-sky-600">●</span> Low °{unit}</span>
               <span><span className="text-blue-300">■</span> Rain days</span>
               <span className="text-accent">▮ {stop ? 'Your stay' : 'Selected month'}</span>
             </div>
@@ -180,7 +181,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               const c = climate[m - 1]
               return (
                 <p key={m} className="mt-1.5 text-[13px]">
-                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b> {c.tLow}–{c.tHigh}°C, {c.rainDays} rain days, {c.sunHours}h sun/day, {c.humidity}% humidity
+                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b> {range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.sunHours}h sun/day, {c.humidity}% humidity
                 </p>
               )
             })}
@@ -188,7 +189,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ) : (
           <p className="text-[13px] text-muted">Climate data not loaded yet.</p>
         )}
-        <Source>{ds.meta.climate.source}</Source>
       </Section>
     ),
     costs: cost && (
@@ -214,12 +214,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ))}
         <Row label="Groceries for a day of cooking">{fmt(groceryDay(cost), true)}</Row>
         <PriceLevel iso2={city.iso2} countryName={country.name} />
-        <Source>
-          {costInfo?.estimated
-            ? `No hand-checked prices for ${country.name} yet: estimated from its national price level and our other countries' prices.`
-            : `${ds.meta.costs.source} (${ds.meta.costs.updatedAt}).`}{' '}
-          City price factor ×{city.costFactor}.
-        </Source>
       </Section>
     ),
     money: pay && (
@@ -247,7 +241,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <ul className="mt-2 flex flex-col gap-1">
           {ds.payments.tips.map((t) => <li key={t} className="text-[12px] text-muted">💡 {t}</li>)}
         </ul>
-        <Source>{ds.meta.payments.source}; {ds.meta.fx.source}</Source>
       </Section>
     ),
     health: health && (
@@ -268,10 +261,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <div className="mt-2">
           <Row label="Emergency number">{country.emergency}</Row>
         </div>
-        <Source>
-          {ds.meta.health.source}{' '}
+        <Links>
           <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
-        </Source>
+        </Links>
       </Section>
     ),
     air: (
@@ -296,7 +288,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <p className="text-[13px] text-muted">Air quality data not loaded yet.</p>
         )}
 
-        <Source>{ds.meta.air.source}</Source>
       </Section>
     ),
     beforeYouGo: (
@@ -312,10 +303,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <Row label="Plugs">Type {country.plugs.join(' / ')} · {country.voltage}V</Row>
         </div>
         {adv?.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
-        <Source>
-          {ds.meta.health.source}
-          {health && <> <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a></>}
-        </Source>
+        {health && (
+          <Links>
+            <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
+          </Links>
+        )}
       </Section>
     ),
     services: (
@@ -346,7 +338,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             {shopping.lateNight && <p className="mt-1 text-[13px]">🌙 {shopping.lateNight}</p>}
           </div>
         )}
-        <Source>{ds.meta.amenities.source} {ds.meta.shopping.source.split('.')[0]}.</Source>
       </Section>
     ),
     gettingThere: (
@@ -366,7 +357,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         ) : (
           <p className="text-[13px] text-muted">No timetable data yet; travel times are estimated from road distance.</p>
         )}
-        <Source>{ds.meta.connections.source}</Source>
       </Section>
     ),
     safety: adv && (
@@ -386,10 +376,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             </details>
           ))}
         </div>
-        <Source>
-          <a className="text-accent hover:underline" href={adv.url} target="_blank" rel="noreferrer">UK FCDO advice ↗</a> (updated {adv.updatedAt.slice(0, 10)})
-          {adv.us && <> · <a className="text-accent hover:underline" href={adv.us.url} target="_blank" rel="noreferrer">US advisory ↗</a> (updated {adv.us.updatedAt.slice(0, 10)})</>}
-        </Source>
+        <Links>
+          <a className="text-accent hover:underline" href={adv.url} target="_blank" rel="noreferrer">UK FCDO advice ↗</a>
+          {adv.us && <> · <a className="text-accent hover:underline" href={adv.us.url} target="_blank" rel="noreferrer">US advisory ↗</a></>}
+        </Links>
       </Section>
     ),
     language: (
@@ -410,10 +400,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           {country.english.otherLanguages.length > 0 && <Row label="Also useful">{country.english.otherLanguages.join('; ')}</Row>}
           <Row label="Alphabet">{country.english.script}</Row>
         </div>
-        <Source>
-          Our estimate. Compare: <a className="text-accent hover:underline" href="https://www.ef.com/wwen/epi/" target="_blank" rel="noreferrer">EF English Proficiency Index ↗</a>
-          {country.eu && <> and the EU's Eurobarometer survey "Europeans and their languages"</>}
-        </Source>
       </Section>
     ),
     visa: (
@@ -434,7 +420,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <a className="text-[12px] text-accent hover:underline" href={n.url} target="_blank" rel="noreferrer">Official site ↗</a>
           </div>
         ))}
-        <Source>{ds.meta.visa.source} Always check the official government website before travelling.</Source>
       </Section>
     ),
     people: (
@@ -450,7 +435,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </ul>
           </>
         )}
-        <Source>{ds.meta.population.source}; {ds.meta.countries.source}; {ds.meta.fx.source}</Source>
       </Section>
     ),
   }
@@ -474,7 +458,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       tone: (adv.excludedByDefault ? 'error' : adv.level >= 3 ? 'warn' : adv.us && adv.us.level >= 2 ? 'info' : 'ok') as Tone,
     }] : []),
     ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
-    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${Math.round(clim.tLow)}–${Math.round(clim.tHigh)}°C, ~${Math.round(clim.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind(clim)].color, tab: 'weather' as const }] : []),
+    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${range(clim.tLow, clim.tHigh)}, ~${Math.round(clim.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind(clim)].color, tab: 'weather' as const }] : []),
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'safety' as const }] : []),
     ...(cost ? [{ icon: '💶', label: 'Daily budget', value: `${fmt(dailyCost(ds, cityId, input.budget))} (${BUDGETS.find((b) => b.value === input.budget)?.label.toLowerCase()})`, tone: 'info' as const, tab: 'money' as const }] : []),

@@ -49,7 +49,9 @@ export const MODE_ICON: Record<string, string> = {
   train: '🚆', bus: '🚌', minibus: '🚐', ferry: '⛴️', flight: '✈️',
   metro: '🚇', tram: '🚊', trolleybus: '🚎', funicular: '🚞', cablecar: '🚡',
 }
-export const MODE_COLOR: Record<string, string> = { train: '#2563eb', bus: '#d97706', minibus: '#d97706', ferry: '#0891b2', flight: '#7c3aed' }
+/** Colour of the stops on the map and in the itinerary list (other map views colour them by their own measure). */
+export const STOP_COLOR = '#0f766e'
+export const MODE_COLOR: Record<string, string> = { train: '#7c3aed', bus: '#d97706', minibus: '#d97706', ferry: '#0891b2', flight: '#db2777' }
 
 export const cityName = (id: string) => ds.cities[id]?.name ?? id
 
@@ -79,20 +81,49 @@ export function rateText(from: string, to: string): string | null {
 export type WeatherKind = 'cold' | 'cool' | 'pleasant' | 'warm' | 'hot' | 'wet'
 
 /** Temperature-style colours: blue for cold, green for pleasant, orange/red for heat, grey for rainy months. */
-export const WEATHER_STYLE: Record<WeatherKind, { color: string; label: string }> = {
-  cold: { color: '#1d4ed8', label: 'Cold (<12°C)' },
-  cool: { color: '#38bdf8', label: 'Cool' },
-  pleasant: { color: '#16a34a', label: 'Pleasant' },
-  warm: { color: '#f59e0b', label: 'Warm' },
-  hot: { color: '#dc2626', label: 'Very hot (32°C+)' },
-  wet: { color: '#94a3b8', label: 'Wet' },
+export const WEATHER_STYLE: Record<WeatherKind, { color: string }> = {
+  cold: { color: '#1d4ed8' },
+  cool: { color: '#38bdf8' },
+  pleasant: { color: '#16a34a' },
+  warm: { color: '#f59e0b' },
+  hot: { color: '#dc2626' },
+  wet: { color: '#94a3b8' },
 }
+
+export type TempUnit = 'C' | 'F'
+
+/** A temperature (the data is in °C) as a whole number in the user's unit. */
+export const tempValue = (c: number, unit: TempUnit) => Math.round(unit === 'F' ? (c * 9) / 5 + 32 : c)
+/** "25°C" / "77°F". */
+export const temp = (c: number, unit: TempUnit) => `${tempValue(c, unit)}°${unit}`
+/** "12–25°C" / "54–77°F". */
+export const tempRange = (lo: number, hi: number, unit: TempUnit) => `${tempValue(lo, unit)}–${tempValue(hi, unit)}°${unit}`
+
+/** Each temperature class as its range of average daily highs, e.g. "18–28°C" (thresholds as in temperatureKind). */
+export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
+  const t = (c: number) => tempValue(c, unit)
+  const u = `°${unit}`
+  return { cold: `<${t(12)}${u}`, cool: `${t(12)}–${t(18)}${u}`, pleasant: `${t(18)}–${t(28)}${u}`, warm: `${t(28)}–${t(32)}${u}`, hot: `${t(32)}${u}+` }[kind]
+}
+
+/** A warning's text, with the temperature (hot/cold warnings) in the given unit. */
+export const warningTitle = (w: { title: string; tempC?: number }, unit: TempUnit) =>
+  w.tempC === undefined ? w.title : `${w.title} (avg high ${temp(w.tempC, unit)})`
 
 /** Classifies a month by its average high, using the same thresholds as the weather warnings. */
 export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {
+  const t = temperatureKind(m)
+  return t === 'pleasant' && m.rainDays >= 14 ? 'wet' : t
+}
+
+/** The same classes by temperature alone, for the map, where rain is shown separately (a ring around each stop). */
+export function temperatureKind(m: { tHigh: number }): Exclude<WeatherKind, 'wet'> {
   if (m.tHigh < 12) return 'cold'
   if (m.tHigh < 18) return 'cool'
   if (m.tHigh >= 32) return 'hot'
   if (m.tHigh >= 28) return 'warm'
-  return m.rainDays >= 14 ? 'wet' : 'pleasant'
+  return 'pleasant'
 }
+
+/** Share of the days in a month (1–12) with rain, 0–1. */
+export const rainShare = (rainDays: number, month: number) => Math.min(1, Math.max(0, rainDays / new Date(Date.UTC(2027, month, 0)).getUTCDate()))

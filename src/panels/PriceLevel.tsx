@@ -92,9 +92,6 @@ export function PriceLevel({ iso2, countryName }: { iso2: string; countryName: s
           <Row label="🍔 Big Mac"><span className="font-normal text-muted">Not in the index here</span></Row>
         )}
       </div>
-      <p className="mt-1.5 text-[11px] leading-snug text-muted">
-        {here && `${here.source} ${here.year}. `}{ds.meta.priceLevels.source}. {ds.meta.bigMac.source}.
-      </p>
     </div>
   )
 }

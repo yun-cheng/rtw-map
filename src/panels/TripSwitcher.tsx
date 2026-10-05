@@ -103,7 +103,7 @@ export function TripSwitcher() {
                   placeholder={editing === 'new' ? 'Name of the new trip' : 'Trip name'}
                   className="min-w-0 flex-1 rounded-md border border-line px-2 py-1 text-[13px] outline-none focus:border-accent"
                 />
-                <button type="submit" className="rounded-md bg-accent px-2 py-1 text-[12px] font-medium text-white">{editing === 'new' ? 'Create' : 'Rename'}</button>
+                <button type="submit" className="rounded-md bg-accent px-2 py-1 text-[12px] font-medium text-on-accent">{editing === 'new' ? 'Create' : 'Rename'}</button>
               </form>
             ) : (
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] font-medium">

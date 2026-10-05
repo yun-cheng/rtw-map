@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, rebalance, suggestedDays, tapWater, taxiEstimate, type TripInput } from './index'
+import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -174,6 +174,28 @@ describe('weather checks', () => {
     const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-20' }
     const plan = evaluatePlan(ds, input, [{ cityId: 'athens', nights: 10, locked: false, groupId: '' }])
     expect(plan.warnings.some((w) => w.kind === 'weather' && w.title.includes('hot'))).toBe(true)
+  })
+})
+
+describe('month for the weather map', () => {
+  const input = testTrip('US')
+  const plan = generatePlan(ds, input)
+  const nearest = (cityId: string) => {
+    const c = ds.cities[cityId]
+    const d = (id: string) => (ds.cities[id].lat - c.lat) ** 2 + ((ds.cities[id].lon - c.lon) * Math.cos((c.lat * Math.PI) / 180)) ** 2
+    return plan.stops.reduce((a, b) => (d(b.cityId) < d(a.cityId) ? b : a))
+  }
+
+  it('uses the month of the middle night of a stop', () => {
+    expect(stayMonth({ arrive: '2027-06-28', nights: 6 })).toBe(7)
+    expect(stayMonth({ arrive: '2027-06-20', nights: 6 })).toBe(6)
+    for (const s of plan.stops) expect(likelyMonth(ds, plan, input, s.cityId)).toBe(stayMonth(s))
+  })
+
+  it('gives a city off the route the month of the nearest stop, or the start month without a plan', () => {
+    const off = Object.keys(ds.cities).find((id) => !plan.stops.some((s) => s.cityId === id))!
+    expect(likelyMonth(ds, plan, input, off)).toBe(stayMonth(nearest(off)))
+    expect(likelyMonth(ds, null, input, off)).toBe(Number(input.startDate.slice(5, 7)))
   })
 })
 
