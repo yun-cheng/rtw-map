@@ -31,6 +31,12 @@ export function parseChatRequest(raw: unknown): ChatRequest | string {
   return { contents: contents as Content[], context, think: think === true }
 }
 
+/** Whether the conversation ends with new text from the user (a new message), rather than tool results. */
+export function isNewMessage(contents: Content[]): boolean {
+  const last = contents[contents.length - 1]
+  return last.role === 'user' && last.parts.some((p) => typeof p.text === 'string') && !last.parts.some((p) => 'functionResponse' in p)
+}
+
 export function geminiRequest(req: ChatRequest, today: string) {
   return {
     systemInstruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\nToday is ${today}.\n\nThe trip when the user sent their latest message:\n${req.context}` }] },

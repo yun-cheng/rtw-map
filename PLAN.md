@@ -289,7 +289,9 @@ Uses **Google Gemini** (paid tier, so chats aren't used for training) through th
 | **Grounded Q&A** | Answers only from our data + advisory text, with citations and dates. If we have no data, it says so |
 | **Data building (offline, run by me)** | Extract connections, costs and tips from Wikivoyage text into the data files; I review the diff before committing |
 
-The API key lives in the site's Cloudflare Worker (`/api/chat`, a secret), never in the browser. The Worker adds the instructions and tools itself (so the endpoint only works as the trip assistant), checks every request (roles, part types, size, length), allows same-site calls only, and limits each visitor to 20 model calls a minute. A daily request quota on the Google Cloud project is the hard spending cap.
+The API key lives in the site's Cloudflare Worker (`/api/chat`, a secret), never in the browser. The Worker adds the instructions and tools itself (so the endpoint only works as the trip assistant), checks every request (roles, part types, size, length) and allows same-site calls only.
+
+**Sign-in and limits.** The assistant needs **Sign in with Google** (the rest of the app doesn't). The Worker verifies Google's ID token, then keeps the user signed in with its own signed, HttpOnly session cookie (30 days). Each Google account gets **20 messages a day** (UTC), shown as a countdown in the Assistant tab and the account menu (top right, with Sign out). Only a new message counts, not the tool-result rounds inside it; a hidden cap of 160 model calls a day bounds those, and there's a 20-calls-a-minute burst limit. Counts live in a Durable Object per account, keyed by Google's account ID; no email is stored. A daily request quota on the Google Cloud project is the hard spending cap.
 
 ---
 
@@ -341,7 +343,7 @@ data/
   gen/            generated JSON imported by the app
                   (data/ is not in git: synced with a private Cloudflare R2 bucket, dated copies of seed/)
 scripts/          data pipeline (build-*, fetch-*)
-worker/           the site's Worker: static files + /api/chat (Gemini)
+worker/           the site's Worker: static files, Google sign-in, per-user limits, /api/chat (Gemini)
 src/agent/        trip assistant: instructions + tools (schema.ts), tool runner, chat loop
 ```
 See README.md for the script → source → output table.
@@ -427,7 +429,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Data out of git:** `data/` (hand-curated seed and generated files) lives in a private Cloudflare R2 bucket, synced with `npm run data:pull` / `data:push`; each push that changes seed data keeps a dated copy of it. The refresh workflow now runs weekly (Mondays; by hand after a big advisory change) and pulls, refreshes, tests and pushes instead of committing. Earlier versions remain in the public git history.
-- **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo.
+- **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo. Needs Google sign-in; 20 messages per account per day, counted down; account menu (top right) with Sign out.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 
 ---

@@ -4,6 +4,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useTrip } from '../store/trip'
+import { useAccount } from './account'
 import { WRITE_TOOLS } from './schema'
 import { describeChanges, runTool, snapshot, tripContext, type TripSnapshot } from './tools'
 
@@ -48,6 +49,8 @@ async function callModel(contents: Content[], context: string, think: boolean): 
     body: JSON.stringify({ contents, context, think }),
   })
   const data = await res.json().catch(() => null)
+  if (data?.usage) useAccount.getState().setUsage(data.usage)
+  if (res.status === 401 && data?.signIn) useAccount.getState().signedOut()
   if (!res.ok || !data?.content) throw new Error(data?.error ?? `The assistant isn't reachable (${res.status}).`)
   return data.content as Content
 }

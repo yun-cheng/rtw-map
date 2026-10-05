@@ -4,6 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { shortDate } from '../ui/format'
 import { Button } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { AccountMenu } from './AccountMenu'
 
 export function Header() {
   const { plan, input, importTrip, setCurrency } = useTrip()
@@ -60,6 +61,7 @@ export function Header() {
         <Button variant="ghost" onClick={() => file.current?.click()}>Import</Button>
         <Button variant="ghost" onClick={exportTrip} disabled={!plan}>Export</Button>
         <input ref={file} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { onImport(e.target.files?.[0]); e.target.value = '' }} />
+        <div className="ml-1.5"><AccountMenu /></div>
       </div>
     </header>
   )
