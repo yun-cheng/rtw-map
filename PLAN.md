@@ -112,7 +112,7 @@ Countries with "do not travel" advisories (e.g. Ukraine, Belarus) are **excluded
 Taiwan (Taipei, Taichung, Tainan, Kaohsiung, Hualien), Japan (Tokyo, Hakone, Kyoto, Nara, Osaka, Hiroshima, Kanazawa, Takayama, Fukuoka, Sapporo), Thailand (Bangkok, Ayutthaya, Kanchanaburi, Chiang Mai, Pai, Chiang Rai, Krabi, Phuket, Koh Samui), Vietnam (Hanoi, Sa Pa, Ha Long, Ninh Binh, Hue, Hoi An, Da Nang, Da Lat, Ho Chi Minh City), Malaysia (Kuala Lumpur, George Town, Melaka, Cameron Highlands, Langkawi), Singapore, Cambodia (Phnom Penh, Siem Reap, Battambang, Kampot). All curated data types are filled in. What this region added:
 - **Flights** as a connection mode (islands, and long distances where buses make no sense), with ~2½ h airport time per flight and a fare term in route costs, so cheap ground routes still win when they're reasonable. Ground routes where they're good: shinkansen, Taiwan HSR, Vietnam sleeper trains, border buses (Thailand–Cambodia, Vietnam–Cambodia, Malaysia–Singapore).
 - **Voltage per country** (Japan 100V, Taiwan 110V; was assumed 230V).
-- **Population fallback to the IMF** (Taiwan isn't in World Bank data).
+- **Population from national statistics where the World Bank has none:** Taiwan's comes from the Ministry of the Interior household registration open data (was the IMF).
 - **Test trip:** Taiwan → Japan → Southeast Asia (Oct–Dec 2027) in `planner.test.ts`.
 
 ### 3.2 Features this region forces into the MVP

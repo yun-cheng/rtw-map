@@ -67,7 +67,7 @@ Hand-curated files are in `data/seed/`; scripts enrich them from open sources in
 | `fetch-amenities.ts` | OpenStreetMap via Overpass (ODbL) | `amenities.json`: shops, pharmacies, clinics near the centre; nearest hospital |
 | `fetch-advisories.ts` | UK FCDO (OGL) + US State Dept | `advisories.json` |
 | `fetch-fx.ts` | ExchangeRate-API open endpoint | `fx.json` |
-| `fetch-population.ts` | World Bank (CC-BY); IMF where missing (e.g. Taiwan) | `population.json` |
+| `fetch-population.ts` | World Bank (CC-BY); national statistics where missing (Taiwan: Ministry of the Interior household registration) | `population.json` |
 | `fetch-price-levels.ts` | World Bank PPP (IMF where missing) ÷ our exchange rates | `price-levels.json`: US = 1.00; also used to estimate costs where we have none |
 | `fetch-big-mac.ts` | The Economist's Big Mac index (MIT) | `big-mac.json` |
 
