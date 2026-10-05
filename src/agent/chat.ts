@@ -7,13 +7,15 @@ import { useTrip } from '../store/trip'
 import { useAccount } from './account'
 import { WRITE_TOOLS } from './schema'
 import { describeChanges, runTool, snapshot, tripContext, type TripSnapshot } from './tools'
+import { setSharedView, viewText, type ViewItem } from './view'
 
 type Part = { text?: string; thought?: boolean; thoughtSignature?: string; functionCall?: { name: string; args?: Record<string, unknown>; id?: string }; functionResponse?: unknown }
 type Content = { role: 'user' | 'model'; parts: Part[] }
 
 export type ToolStep = { name: string; ok: boolean; summary: string }
 export type ChatMessage =
-  | { role: 'user'; text: string }
+  /** `view`: the labels of what the user shared from the screen with this message. */
+  | { role: 'user'; text: string; view?: string[] }
   | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string }
 
 type ChatState = {
@@ -24,7 +26,8 @@ type ChatState = {
   note: string | null
   think: boolean
   busy: boolean
-  send: (text: string) => Promise<void>
+  /** Sends a message, with the parts of the current view the user chose to share. */
+  send: (text: string, view?: ViewItem[]) => Promise<void>
   undo: (index: number) => void
   setThink: (think: boolean) => void
   clear: () => void
@@ -69,15 +72,16 @@ export const useChat = create<ChatState>()(
       think: false,
       busy: false,
 
-      send: async (text) => {
+      send: async (text, view = []) => {
         if (get().busy || !text.trim()) return
         const before = snapshot()
-        // The trip as it was when the user asked, kept the same for every step of this reply.
-        const context = tripContext()
+        // The trip (and view) as it was when the user asked, kept the same for every step of this reply.
+        const context = [tripContext(), viewText(view)].filter(Boolean).join('\n\n')
+        setSharedView(view)
         const prefix = get().note ? `[${get().note}]\n` : ''
         let contents = trim([...get().contents, { role: 'user', parts: [{ text: prefix + text.trim() }] }])
         const reply: Extract<ChatMessage, { role: 'assistant' }> = { role: 'assistant', text: '', steps: [], changes: [] }
-        set({ busy: true, note: null, messages: [...get().messages, { role: 'user', text: text.trim() }] })
+        set({ busy: true, note: null, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
 
         try {
           for (let round = 0; round < MAX_ROUNDS; round++) {

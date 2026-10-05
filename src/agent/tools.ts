@@ -4,9 +4,11 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costProfile, dailyCost, englishLevel,
-  monthOf, suggestedDays, tapWater, type Budget, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, routeBetween, schengenApplies, suggestedDays, tapWater, type Budget, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTrip, type CityTab } from '../store/trip'
+import { rainShare, warningTitle } from '../ui/format'
+import { sharedView, type ViewRef } from './view'
 
 type Args = Record<string, unknown>
 export type ToolResult = Record<string, unknown>
@@ -58,6 +60,9 @@ export function tripContext(): string {
     `Visit regions in order: ${input.keepGroupOrder ? 'yes' : 'no'}.${input.startCityId ? ` Start: ${cityName(input.startCityId)}.` : ''}${input.endCityId ? ` End: ${cityName(input.endCityId)}.` : ''}`,
     `Regions:\n${regionsText(input)}`,
   ]
+  const { currency, tempUnit } = useTrip.getState()
+  const rate = currency === 'EUR' ? null : ds.fx.rates[currency]
+  lines.push(`The user's units: prices in ${currency}${rate ? ` (1 EUR ≈ ${rate.toFixed(rate < 10 ? 3 : 1)} ${currency})` : ''}, temperatures in °${tempUnit}.`)
   if (!plan) {
     lines.push('Itinerary: not generated yet.')
   } else {
@@ -70,7 +75,7 @@ export function tripContext(): string {
     lines.push(`Cost estimate: €${Math.round(plan.cost.min)}–€${Math.round(plan.cost.max)} (≈€${Math.round(plan.cost.perDay)}/day).`)
     if (plan.schengen.applies) lines.push(`Schengen: ${plan.schengen.maxInWindow} of ${plan.schengen.limit} days used in the worst 180-day window.`)
     const warnings = plan.warnings.filter((w) => w.severity !== 'info')
-    if (warnings.length) lines.push(`Problems:\n${warnings.slice(0, 15).map((w) => `- ${w.title}`).join('\n')}`)
+    if (warnings.length) lines.push(`Problems:\n${warnings.slice(0, 15).map((w) => `- ${warningTitle(w, 'C')}`).join('\n')}`)
   }
   return lines.join('\n')
 }
@@ -93,7 +98,7 @@ function tripDetails(): ToolResult {
       nights: { total: plan.totalNights, assigned: plan.assignedNights },
       cost_eur: { min: Math.round(plan.cost.min), max: Math.round(plan.cost.max), per_day: Math.round(plan.cost.perDay) },
       schengen: plan.schengen,
-      warnings: plan.warnings.map((w) => ({ severity: w.severity, title: w.title, detail: w.detail, city: w.cityId && cityName(w.cityId) })),
+      warnings: plan.warnings.map((w) => ({ severity: w.severity, title: warningTitle(w, 'C'), detail: w.detail, city: w.cityId && cityName(w.cityId) })),
     },
   }
 }
@@ -118,12 +123,13 @@ function findCities(args: Args): ToolResult {
 }
 
 function cityInfo(args: Args): ToolResult {
+  if (Array.isArray(args.sections) && args.sections.length) return citySections(cityId(args.city), args.sections.map(String))
   const id = cityId(args.city)
   const { input, plan } = useTrip.getState()
   const city = ds.cities[id]
   const country = ds.countries[city.iso2]
   const stop = plan?.stops.find((s) => s.cityId === id)
-  const month = Number(args.month) >= 1 && Number(args.month) <= 12 ? Number(args.month) : monthOf(stop?.arrive ?? input.startDate)
+  const month = Number(args.month) >= 1 && Number(args.month) <= 12 ? Number(args.month) : likelyMonth(ds, plan, input, id)
   const clim = ds.climate[id]
   const air = ds.air.byCity[id]?.[month - 1]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
@@ -158,6 +164,236 @@ function cityInfo(args: Args): ToolResult {
       .filter((c) => c.from === id || c.to === id)
       .map((c) => ({ to: cityName(c.from === id ? c.to : c.from), mode: c.mode, hours: Math.round(c.durationMin / 6) / 10, price_eur: [c.priceMin, c.priceMax], frequency: c.frequency, overnight: c.overnight })),
   }
+}
+
+const BUDGETS: Budget[] = ['shoestring', 'backpacker', 'midrange', 'comfort']
+export const CITY_SECTIONS = ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] as const
+
+/** Everything the app has about a city, by section (get_city_info with `sections`). */
+function citySections(id: string, sections: string[]): ToolResult {
+  const unknown = sections.filter((s) => !(CITY_SECTIONS as readonly string[]).includes(s))
+  if (unknown.length) throw new ToolError(`Unknown section ${unknown.join(', ')}; use ${CITY_SECTIONS.join(', ')}`)
+  const { input, plan } = useTrip.getState()
+  const city = ds.cities[id]
+  const country = ds.countries[city.iso2]
+  const stop = plan?.stops.find((s) => s.cityId === id)
+  const out: ToolResult = {
+    name: city.name, country: country.name,
+    in_itinerary: stop ? { arrive: stop.arrive, depart: stop.depart, nights: stop.nights } : false,
+    likely_month: monthName(likelyMonth(ds, plan, input, id)),
+  }
+  const amen = ds.amenities.byCity[id]
+  for (const section of sections) {
+    if (section === 'weather') {
+      const air = ds.air.byCity[id]
+      out.weather = {
+        months: (ds.climate[id] ?? []).map((m, i) => ({
+          month: monthName(m.month), high_c: m.tHigh, low_c: m.tLow, rain_days: m.rainDays, rain_mm: m.rainMm, sun_hours: m.sunHours, humidity_pct: m.humidity,
+          ...(air?.[i] && { pm25: air[i].pm25, air: airBand(air[i].pm25).short, days_over_who: air[i].daysOverWho }),
+        })),
+        who_daily_pm25: ds.air.whoDaily,
+      }
+    }
+    if (section === 'costs') {
+      const cost = costProfile(ds, city.iso2)
+      const big = ds.bigMac.prices[city.iso2]
+      out.costs = {
+        currency: country.currency,
+        daily_cost_eur: Object.fromEntries(BUDGETS.map((b) => [b, Math.round(dailyCost(ds, id, b))])),
+        prices_eur: cost && { ...cost.profile, groceries_for_a_day: Math.round(groceryDay(cost.profile) * 10) / 10, estimated_from_price_level: cost.estimated },
+        price_level_vs_us: ds.priceLevels.levels[city.iso2]?.level,
+        big_mac: big && { local_price: big.localPrice, currency: big.currency },
+        shopping: ds.shopping[city.iso2],
+        payments: ds.payments.countries[city.iso2] && { ...ds.payments.countries[city.iso2], city_note: ds.payments.cities[id]?.note },
+        tips: ds.payments.tips,
+      }
+    }
+    if (section === 'entry') {
+      const visa = ds.visa.rules[input.passport]?.[city.iso2]
+      const limit = country.schengen && schengenApplies(ds, input.passport)
+      out.entry = {
+        passport: input.passport, visa: visa ?? 'unknown', schengen: country.schengen, eu: country.eu,
+        schengen_90_180_limit_applies: limit,
+        notices: limit
+          ? ds.notices.filter((n) => n.appliesTo === 'schengen-non-eu' || (n.appliesTo === 'schengen-visa-free' && visa?.req === 'visa_free')).map((n) => ({ title: n.title, text: n.text, url: n.url }))
+          : [],
+      }
+    }
+    if (section === 'safety') {
+      const adv = ds.advisories[city.iso2]
+      out.safety = adv && {
+        uk_level: adv.level, do_not_travel: adv.excludedByDefault, alerts: adv.alertStatus, summary: adv.summary, warnings: adv.warnings,
+        details: adv.safety, uk_url: adv.url, updated: adv.updatedAt, us: adv.us, emergency_number: country.emergency,
+      }
+    }
+    if (section === 'health') {
+      const h = ds.health.countries[city.iso2]
+      out.health = {
+        tap_water: tapWater(ds, id) ?? undefined, vaccines: h?.vaccines, risks: h?.risks, healthcare: h?.healthcare,
+        nearby: amen && { pharmacies: amen.pharmacy, clinics: amen.clinic, nearest_hospital_km: amen.nearestHospitalKm, within_km: ds.amenities.radiusKm },
+      }
+    }
+    if (section === 'transport') {
+      const t = ds.localTransport.countries[city.iso2]
+      out.transport = {
+        public_transport: ds.localTransport.cities[id], taxi: t?.taxi, rentals: t?.rentals,
+        connections: ds.connections.filter((c) => c.from === id || c.to === id).map((c) => ({
+          to: cityName(c.from === id ? c.to : c.from), mode: c.mode, hours: Math.round(c.durationMin / 6) / 10, price_eur: [c.priceMin, c.priceMax],
+          frequency: c.frequency, overnight: c.overnight, note: c.note,
+        })),
+      }
+    }
+    if (section === 'daily') {
+      out.daily = {
+        english: { level: ENGLISH_LABELS[englishLevel(ds, id).level]?.short, other_languages: country.english.otherLanguages, script: country.english.script },
+        languages: country.languages, religion: country.religion, plugs: country.plugs, voltage: country.voltage, emergency_number: country.emergency,
+        notes: country.notes, timezone: city.timezone, population: city.population,
+        nearby: amen && { supermarkets: amen.supermarket, convenience_stores: amen.convenience, atms: amen.atm, within_km: ds.amenities.radiusKm },
+      }
+    }
+  }
+  return out
+}
+
+export const COMPARE_FIELDS = ['weather', 'air', 'daily_cost', 'english', 'cards', 'travel_advice', 'tap_water', 'suggested_days', 'population'] as const
+const MAX_ROWS = 80
+
+/** One row per city with the chosen fields, for questions across many cities. */
+function compareCities(args: Args): ToolResult {
+  const { input, plan } = useTrip.getState()
+  const fields = (Array.isArray(args.fields) ? args.fields.map(String) : []).filter((f) => (COMPARE_FIELDS as readonly string[]).includes(f))
+  if (!fields.length) throw new ToolError(`Give fields: ${COMPARE_FIELDS.join(', ')}`)
+  const ids = new Set<string>()
+  for (const c of Array.isArray(args.cities) ? args.cities : []) ids.add(cityId(c))
+  for (const ref of Array.isArray(args.countries) ? args.countries : []) {
+    const iso2 = countryCode(ref)
+    Object.values(ds.cities).filter((c) => c.iso2 === iso2).forEach((c) => ids.add(c.id))
+  }
+  if (args.in_trip) plan?.stops.forEach((s) => ids.add(s.cityId))
+  if (!ids.size) throw new ToolError('Give cities, countries or in_trip: true')
+  const month = Number(args.month) >= 1 && Number(args.month) <= 12 ? Number(args.month) : 0
+  const rows = [...ids].slice(0, MAX_ROWS).map((id) => {
+    const c = ds.cities[id]
+    const i = plan?.stops.findIndex((s) => s.cityId === id) ?? -1
+    const m = month || likelyMonth(ds, plan, input, id)
+    const row: Record<string, unknown> = { city: c.name, country: countryName(c.iso2), stop: i >= 0 ? i + 1 : null }
+    if (fields.includes('weather') || fields.includes('air')) row.month = monthName(m)
+    for (const f of fields) {
+      if (f === 'weather') {
+        const w = ds.climate[id]?.[m - 1]
+        if (w) Object.assign(row, { high_c: w.tHigh, low_c: w.tLow, rain_days: w.rainDays, sun_hours: w.sunHours })
+      }
+      if (f === 'air') {
+        const a = ds.air.byCity[id]?.[m - 1]
+        if (a) Object.assign(row, { pm25: a.pm25, air: airBand(a.pm25).short })
+      }
+      if (f === 'daily_cost') row.daily_cost_eur = Math.round(dailyCost(ds, id, input.budget))
+      if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id).level]?.short
+      if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id).level]?.short
+      if (f === 'travel_advice') row.uk_advice_level = ds.advisories[c.iso2]?.level
+      if (f === 'tap_water') row.tap_water = TAP_WATER_LABELS[tapWater(ds, id)?.level ?? '']?.short
+      if (f === 'suggested_days') row.suggested_days = suggestedDays(ds, input, id)[input.pace]
+      if (f === 'population') row.population = c.population
+    }
+    return row
+  })
+  return {
+    month: month ? monthName(month) : 'each city in the month the user would be there',
+    ...(fields.includes('daily_cost') && { budget: input.budget }),
+    rows,
+    ...(ids.size > MAX_ROWS && { note: `Showing ${MAX_ROWS} of ${ids.size} cities; narrow the request.` }),
+  }
+}
+
+const legResult = (leg: Leg): ToolResult => ({
+  from: cityName(leg.from), to: cityName(leg.to), reachable: leg.reachable,
+  ...(leg.reachable && {
+    total_hours: Math.round(leg.durationMin / 6) / 10, price_eur: [leg.priceMin, leg.priceMax], overnight: leg.overnight, estimated: leg.estimated,
+    parts: leg.hops.map((h) => ({
+      from: cityName(h.from), to: cityName(h.to), mode: h.mode, hours: Math.round(h.durationMin / 6) / 10, price_eur: [h.priceMin, h.priceMax],
+      overnight: h.overnight, estimated: h.estimated, frequency: h.frequency, note: h.note,
+    })),
+  }),
+})
+
+/** The best way between any two cities in the app (not only stops of the trip). */
+function routeTool(args: Args): ToolResult {
+  const from = cityId(args.from)
+  const to = cityId(args.to)
+  if (from === to) throw new ToolError('from and to are the same city')
+  return legResult(routeBetween(ds, from, to))
+}
+
+/** Which parts of get_city_info each tab of the city panel shows. */
+const TAB_FIELDS: Record<CityTab, string[] | null> = {
+  overview: null, // a summary of everything
+  transport: ['public_transport', 'taxi_apps', 'connections'],
+  weather: ['weather', 'air_quality'],
+  money: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
+  daily: ['english', 'public_transport', 'tap_water'],
+  safety: ['travel_advice', 'tap_water'],
+  entry: ['schengen', 'visa'],
+}
+
+/** The values on screen for one shared item. */
+function viewDetails(ref: ViewRef): ToolResult {
+  const { plan, input } = useTrip.getState()
+  if (ref.kind === 'city') {
+    const info = cityInfo({ city: ref.id })
+    const fields = TAB_FIELDS[ref.tab]
+    return {
+      open: `${info.name} details, ${ref.tab} tab`,
+      ...(fields ? { name: info.name, country: info.country, in_itinerary: info.in_itinerary, ...Object.fromEntries(fields.map((f) => [f, info[f]])) } : info),
+    }
+  }
+  if (ref.kind === 'journey') {
+    const i = plan?.legs.findIndex((l) => l.from === ref.from && l.to === ref.to) ?? -1
+    const leg = i >= 0 ? plan!.legs[i] : null
+    if (!leg) return { open: `Journey ${cityName(ref.from)} → ${cityName(ref.to)}`, error: 'This journey is no longer in the trip.' }
+    return { open: `Journey ${cityName(leg.from)} → ${cityName(leg.to)}`, ...legResult(leg) }
+  }
+  // The map: the value it shows for each stop (other cities are coloured too; get_city_info has their details).
+  const value = (cityId: string): Record<string, unknown> => {
+    const iso2 = ds.cities[cityId].iso2
+    const month = ref.month || likelyMonth(ds, plan, input, cityId)
+    switch (ref.layer) {
+      case 'none': return {}
+      case 'climate': {
+        const m = ds.climate[cityId]?.[month - 1]
+        return m ? { month: monthName(month), high_c: m.tHigh, rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
+      }
+      case 'air': {
+        const a = ds.air.byCity[cityId]?.[month - 1]
+        return a ? { month: monthName(month), pm25: a.pm25, level: airBand(a.pm25).short } : {}
+      }
+      case 'cost': return { daily_cost_eur: Math.round(dailyCost(ds, cityId, input.budget)), budget: input.budget }
+      case 'cards': return { cards: CARD_LABELS[cardLevel(ds, cityId).level]?.short }
+      case 'english': return { english: ENGLISH_LABELS[englishLevel(ds, cityId).level]?.short }
+      case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
+      case 'advisory': return { uk_advice_level: ds.advisories[iso2]?.level, do_not_travel: !!ds.advisories[iso2]?.excludedByDefault }
+    }
+  }
+  // The Route view: each stop with its dates and how you get there (line colour = mode, dashed = estimated).
+  const arrival = (i: number) => {
+    const leg = i > 0 ? plan?.legs[i - 1] : null
+    if (!leg) return {}
+    return { travel_in: leg.reachable ? { modes: leg.hops.map((h) => h.mode), hours: Math.round(leg.durationMin / 6) / 10, estimated: leg.estimated } : 'no route found' }
+  }
+  return {
+    open: `Map, ${ref.layer === 'none' ? 'route' : ref.layer} view${ref.month ? ` for ${monthName(ref.month)}` : ''}`,
+    stops: (plan?.stops ?? []).map((s, i) => ({
+      stop: i + 1, city: cityName(s.cityId),
+      ...(ref.layer === 'none' ? { arrive: s.arrive, nights: s.nights, ...arrival(i) } : value(s.cityId)),
+    })),
+  }
+}
+
+function sharedViewTool(args: Args): ToolResult {
+  const items = sharedView().filter((v) => !args.item || v.ref.kind === args.item)
+  if (!items.length) {
+    return { error: args.item ? `The user didn't share a ${args.item} view with this message.` : 'The user didn\'t share anything they are looking at with this message.' }
+  }
+  return { items: items.map((v) => viewDetails(v.ref)) }
 }
 
 function options(): ToolResult {
@@ -296,6 +532,9 @@ function run(name: string, args: Args): string | ToolResult {
     case 'find_cities': return findCities(args)
     case 'get_city_info': return cityInfo(args)
     case 'get_options': return options()
+    case 'get_shared_view': return sharedViewTool(args)
+    case 'compare_cities': return compareCities(args)
+    case 'get_route': return routeTool(args)
     case 'update_settings': return updateSettings(args)
     case 'add_region': return addRegion(args)
     case 'update_region': return updateRegion(args)

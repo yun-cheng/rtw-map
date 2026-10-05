@@ -1,7 +1,10 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { renderGoogleButton, useAccount, type Usage } from '../agent/account'
 import { useChat, type ChatMessage } from '../agent/chat'
+import { viewItems, type ViewItem } from '../agent/view'
+import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
+import { useTheme } from '../ui/theme'
 
 const EXAMPLES = [
   'Plan 3 weeks in the Balkans in May, I like food and hiking',
@@ -70,9 +73,10 @@ function SignIn() {
   const { clientId, error } = useAccount()
   const button = useRef<HTMLDivElement>(null)
   const [failed, setFailed] = useState(false)
+  const theme = useTheme((s) => s.theme)
   useEffect(() => {
     if (clientId && button.current) renderGoogleButton(button.current, clientId).catch(() => setFailed(true))
-  }, [clientId])
+  }, [clientId, theme])
   return (
     <div className="px-4 py-4 text-[13px]">
       <p className="font-medium">Plan and change your trip by chatting with the assistant.</p>
@@ -108,6 +112,10 @@ function Chat() {
   const { messages, busy, think, send, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const end = useRef<HTMLDivElement>(null)
+  const view = useViewItems()
+  // Items the user chose not to share; keyed by item, so something newly opened is shared again.
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set())
+  const shared = view.filter((v) => !hidden.has(v.key))
   // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after).
   const lastChange = messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
 
@@ -118,7 +126,7 @@ function Chat() {
   const submit = (text = draft) => {
     if (!text.trim() || busy || outOfMessages) return
     setDraft('')
-    void send(text)
+    void send(text, shared)
   }
 
   return (
@@ -139,7 +147,10 @@ function Chat() {
           <div className="flex flex-col gap-3">
             {messages.map((m, i) =>
               m.role === 'user' ? (
-                <div key={i} className="ml-8 self-end rounded-lg bg-accent px-3 py-2 text-[13px] whitespace-pre-wrap text-white">{m.text}</div>
+                <div key={i} className="ml-8 flex flex-col items-end gap-0.5 self-end">
+                  <div className="rounded-lg bg-accent px-3 py-2 text-[13px] whitespace-pre-wrap text-on-accent">{m.text}</div>
+                  {m.view && <div className="text-[11px] text-muted" title="What you were looking at, sent with this message">Context: {m.view.join(', ')}</div>}
+                </div>
               ) : (
                 <AssistantMessage key={i} msg={m} index={i} canUndo={i === lastChange} />
               ),
@@ -155,6 +166,17 @@ function Chat() {
           <p className="mb-1.5 rounded-md bg-warn-soft px-2 py-1.5 text-[12px] text-warn">
             You've used today's {usage.limit} messages. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.
           </p>
+        )}
+        {view.length > 0 && (
+          <ViewChips
+            items={view}
+            hidden={hidden}
+            toggle={(key) => setHidden((h) => {
+              const next = new Set(h)
+              if (!next.delete(key)) next.add(key)
+              return next
+            })}
+          />
         )}
         <textarea
           value={draft}
@@ -178,8 +200,42 @@ function Chat() {
           {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
           <Button variant="primary" className="ml-auto" disabled={busy || !draft.trim() || outOfMessages} onClick={() => submit()}>Send</Button>
         </div>
-        <p className="mt-1 text-[10px] leading-snug text-muted">Messages and your trip are sent to Google Gemini to answer. Don't share personal details. The assistant can make mistakes; check visa and safety information with official sources.</p>
       </div>
+    </div>
+  )
+}
+
+/** The parts of the current view (open city or journey, map view) that can be shared; updates as the view changes. */
+function useViewItems(): ViewItem[] {
+  // Re-render on the parts of the state the items are built from.
+  useTrip((s) => s.selected)
+  useTrip((s) => s.cityTab)
+  useTrip((s) => s.layer)
+  useTrip((s) => s.layerMonth)
+  useTrip((s) => s.plan)
+  return viewItems()
+}
+
+/** What will be shared with the next message; each chip can be left out (and added back). */
+function ViewChips({ items, hidden, toggle }: { items: ViewItem[]; hidden: Set<string>; toggle: (key: string) => void }) {
+  return (
+    <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
+      <span className="text-muted" title="What you're looking at, sent with your next message so the assistant knows what &quot;here&quot; or &quot;this city&quot; means">Context:</span>
+      {items.map((v) => {
+        const off = hidden.has(v.key)
+        return (
+          <button
+            key={v.key}
+            onClick={() => toggle(v.key)}
+            title={off ? 'Not shared: click to share it with your next message' : 'Click to leave this out of your next message'}
+            aria-pressed={!off}
+            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${off ? 'border-dashed border-muted/50 text-muted' : 'border-accent bg-accent-soft text-ink'}`}
+          >
+            <span aria-hidden className={`w-2.5 text-center font-semibold ${off ? '' : 'text-accent'}`}>{off ? '+' : '✓'}</span>
+            {v.label}
+          </button>
+        )
+      })}
     </div>
   )
 }

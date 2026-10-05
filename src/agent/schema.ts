@@ -8,14 +8,21 @@ How to work:
 - The trip as it was when the user sent their latest message is described at the end of these instructions.
   Tool results after each change show the trip after that change. Requests like "2 more days" count from the trip
   as it was when the user asked, not from the state after your own earlier changes.
+- After the trip comes what the user was looking at when they asked (an open city or journey, the map view), if
+  they shared it. Use it for "here", "this city", "this month" and the like; if it isn't there, ask which they mean.
+- Tool results give prices in EUR and temperatures in °C; quote them in the user's units given with the trip.
 - Use tools for facts about cities (weather, costs, visas, transport, safety) and for which cities exist in the app.
+  You can look up any city, not only the trip's or what the user is looking at: get_city_info (sections for full
+  detail), compare_cities for questions across many cities, get_route for travel between any two cities.
   The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
 - When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
   Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
 - Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
 - If a request is unclear or would remove a lot, ask one short question first.
 - Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
-- You can't book anything. Keep answers short and practical. Reply in the user's language.
+- You can't book anything. Keep answers short and practical.
+- Reply in English, the app's language, unless the user's latest message is written in another language: then
+  reply in that language. Never pick a language from their passport, currency or destinations.
 - Only help with planning trips in this app; politely decline unrelated requests.`
 
 type JsonSchema = { type: string; description?: string; enum?: string[]; items?: JsonSchema; properties?: Record<string, JsonSchema>; required?: string[] }
@@ -43,8 +50,36 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_city_info',
-    description: 'Details for one city: weather by month, daily cost, visa for the traveller\'s passport, travel advice, public transport, English, card payments, tap water, air quality, connections to other cities.',
-    parametersJsonSchema: obj({ city: CITY, month: { type: 'integer', description: 'Month 1–12 for weather and air; default: the month of the stay or of the trip start' } }, ['city']),
+    description: 'One city. Without sections: a summary (weather, daily cost, visa for the traveller\'s passport, travel advice, public transport, English, card payments, tap water, air quality, connections). With sections: everything the app has on those topics.',
+    parametersJsonSchema: obj({
+      city: CITY,
+      month: { type: 'integer', description: 'Month 1–12 for the summary\'s weather and air; default: when the user would be there' },
+      sections: {
+        type: 'array', items: { type: 'string', enum: ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] },
+        description: 'Full detail instead of the summary: weather (12 months incl. sun, humidity, air), costs (all prices, groceries, price level, Big Mac, shops, payments), entry (visa, Schengen, notices), safety (full travel advice), health (vaccines, risks, healthcare, pharmacies, hospital), transport (local, taxi, rentals, connections), daily (English, languages, plugs, emergency number, shops, ATMs)',
+      },
+    }, ['city']),
+  },
+  {
+    name: 'get_shared_view',
+    description: 'The values shown in the parts of the app the user shared with their latest message (listed after the trip): an open city tab, an open journey, or the map view (its value for each stop). Prices in EUR, temperatures in °C.',
+    parametersJsonSchema: obj({ item: { type: 'string', enum: ['city', 'journey', 'map'], description: 'Only this item; default: all shared items' } }),
+  },
+  {
+    name: 'compare_cities',
+    description: 'A table of many cities at once, for questions like "warmest Balkan cities in May" or "cheapest stops": pick cities, whole countries and/or the trip\'s stops, and the fields to show. Prices in EUR, temperatures in °C.',
+    parametersJsonSchema: obj({
+      cities: { type: 'array', items: CITY },
+      countries: { type: 'array', items: str('Country name or code'), description: 'All the app\'s cities in these countries' },
+      in_trip: { type: 'boolean', description: 'Include the stops of the trip' },
+      fields: { type: 'array', items: { type: 'string', enum: ['weather', 'air', 'daily_cost', 'english', 'cards', 'travel_advice', 'tap_water', 'suggested_days', 'population'] } },
+      month: { type: 'integer', description: 'Month 1–12 for weather and air; default: when the user would be at each city' },
+    }, ['fields']),
+  },
+  {
+    name: 'get_route',
+    description: 'The best way to travel between any two cities in the app (also ones not in the trip): each part with mode, hours, price in EUR, and whether it is estimated from road distance.',
+    parametersJsonSchema: obj({ from: CITY, to: CITY }, ['from', 'to']),
   },
   {
     name: 'get_options',

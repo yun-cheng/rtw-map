@@ -5,6 +5,7 @@ import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
 import { describeChanges, runTool, snapshot, tripContext } from './tools'
+import { setSharedView, viewItems, viewText } from './view'
 
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
 
@@ -109,5 +110,100 @@ describe('chat endpoint checks', () => {
     expect(parseChatRequest({ contents: [user('a'), { role: 'model', parts: [{ text: 'b' }] }], context: '' })).toBeTypeOf('string')
     expect(parseChatRequest({ contents: Array(81).fill(user('a')), context: '' })).toBeTypeOf('string')
     expect(parseChatRequest({ contents: [user('a')], context: 'x'.repeat(30_001) })).toBeTypeOf('string')
+  })
+})
+
+describe('what the user is looking at', () => {
+  it('describes the open city with its tab and stay, and the map view', () => {
+    const krakow = useTrip.getState().plan!.stops.findIndex((s) => s.cityId === 'krakow')
+    useTrip.setState({ selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
+    const items = viewItems()
+    expect(items.map((v) => v.label)).toEqual(['Kraków · Weather', 'Weather map · trip dates'])
+    expect(items[0].text).toContain(`stop ${krakow + 1} of the trip`)
+    expect(items[1].text).toContain('at the time of the trip')
+    expect(viewText(items)).toMatch(/^What the user was looking at/)
+  })
+
+  it('names a city off the route, a journey, a chosen month, and the Route map (only with a plan)', () => {
+    useTrip.setState({ selected: { type: 'city', id: 'atlantis' }, layer: 'none' })
+    expect(viewItems().map((v) => v.label)).toEqual(['Route map'])
+    const plan = useTrip.getState().plan
+    useTrip.setState({ plan: null })
+    expect(viewItems()).toEqual([])
+    useTrip.setState({ plan })
+    expect(viewText([])).toBe('')
+    const off = Object.keys(ds.cities).find((id) => !useTrip.getState().stops.some((s) => s.cityId === id))!
+    useTrip.setState({ selected: { type: 'city', id: off }, cityTab: 'money', layer: 'air', layerMonth: 7 })
+    const [city, map] = viewItems()
+    expect(city.text).toContain('not in the trip')
+    expect(map.label).toBe('Air map · Jul')
+    useTrip.setState({ selected: { type: 'leg', index: 0 }, layer: 'none' })
+    expect(viewItems()[0].label).toMatch(/ → /)
+  })
+})
+
+describe('get_shared_view', () => {
+  it('returns the values on the shared city tab and the map, and only what was shared', () => {
+    useTrip.setState({ selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
+    const [city, map] = viewItems()
+    setSharedView([city, map])
+    const both = runTool('get_shared_view', {}).result.items as Record<string, unknown>[]
+    expect(both[0]).toMatchObject({ name: 'Kraków', weather: expect.any(Object), air_quality: expect.any(Object) })
+    expect(both[0]).not.toHaveProperty('daily_cost_eur')
+    const stops = both[1].stops as Record<string, unknown>[]
+    expect(stops).toHaveLength(useTrip.getState().stops.length)
+    expect(stops[0]).toMatchObject({ stop: 1, high_c: expect.any(Number), rainy_share_pct: expect.any(Number) })
+
+    // The user left the map out: the assistant can't read it.
+    setSharedView([city])
+    expect(runTool('get_shared_view', { item: 'map' }).result.error).toMatch(/didn't share/)
+    setSharedView([])
+    expect(runTool('get_shared_view', {}).result.error).toMatch(/didn't share/)
+  })
+
+  it('returns the stops and travel of the Route map', () => {
+    useTrip.setState({ selected: null, layer: 'none' })
+    setSharedView(viewItems())
+    const [map] = runTool('get_shared_view', { item: 'map' }).result.items as { stops: Record<string, unknown>[] }[]
+    expect(map.stops[0]).toMatchObject({ stop: 1, arrive: expect.any(String), nights: expect.any(Number) })
+    expect(map.stops[1]).toHaveProperty('travel_in.modes')
+  })
+
+  it('returns each part of an open journey', () => {
+    useTrip.setState({ selected: { type: 'leg', index: 0 }, layer: 'none' })
+    setSharedView(viewItems())
+    const [journey] = runTool('get_shared_view', { item: 'journey' }).result.items as Record<string, unknown>[]
+    expect(journey.open).toMatch(/^Journey /)
+    expect((journey.parts as unknown[]).length).toBeGreaterThan(0)
+  })
+})
+
+describe('looking up any data', () => {
+  it('gives full detail by section for any city, and rejects unknown sections', () => {
+    const r = runTool('get_city_info', { city: 'Tirana', sections: ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] })
+    expect(r.ok).toBe(true)
+    const weather = r.result.weather as { months: Record<string, unknown>[] }
+    expect(weather.months).toHaveLength(12)
+    expect(weather.months[0]).toMatchObject({ high_c: expect.any(Number), humidity_pct: expect.any(Number) })
+    expect(r.result).toHaveProperty('costs.prices_eur.groceries')
+    expect(JSON.stringify(r.result).length).toBeLessThan(30_000)
+    expect(runTool('get_city_info', { city: 'Tirana', sections: ['nope'] }).result.error).toMatch(/Unknown section/)
+  })
+
+  it('compares many cities in one call', () => {
+    const r = runTool('compare_cities', { countries: ['Albania', 'Montenegro'], fields: ['weather', 'daily_cost'], month: 5 })
+    const rows = r.result.rows as Record<string, unknown>[]
+    expect(rows.length).toBe(Object.values(ds.cities).filter((c) => c.iso2 === 'AL' || c.iso2 === 'ME').length)
+    expect(rows[0]).toMatchObject({ month: 'May', high_c: expect.any(Number), daily_cost_eur: expect.any(Number) })
+    const trip = runTool('compare_cities', { in_trip: true, fields: ['english'] }).result.rows as unknown[]
+    expect(trip).toHaveLength(useTrip.getState().stops.length)
+    expect(runTool('compare_cities', { fields: ['weather'] }).ok).toBe(false)
+  })
+
+  it('routes between any two cities, also ones not in the trip', () => {
+    const r = runTool('get_route', { from: 'Tirana', to: 'Kraków' })
+    expect(r.result).toMatchObject({ from: 'Tirana', to: 'Kraków', reachable: true })
+    expect((r.result.parts as unknown[]).length).toBeGreaterThan(0)
+    expect(runTool('get_route', { from: 'Tirana', to: 'Tirana' }).ok).toBe(false)
   })
 })
