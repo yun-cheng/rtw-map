@@ -301,6 +301,7 @@ The API key lives in a small serverless proxy, never in the browser. The proxy i
 | Data | JSON/CSV files in the repo, bundled at build time | No database to run | $0 |
 | Scripts | TypeScript (run with `tsx`) for fetching/building data | One language for everything | $0 |
 | Hosting | **Cloudflare Pages** (static) + one **Pages Function / Worker** for the AI proxy | Generous free tier | $0 |
+| Data storage | **Cloudflare R2** private bucket for `data/` (seed + generated), not git; dated copies of seed data. The site build pulls it first | Free up to 10 GB, no download fees | $0 |
 | Scheduled refresh | GitHub Actions cron: fetch advisories + FX → commit → auto-deploy | Free | $0 |
 | AI | Anthropic API (Phase 2) | | a few $/month |
 | Domain | Optional | | ~$10/yr |
@@ -335,7 +336,8 @@ src/
   ui/             formatting, small UI kit
 data/
   seed/           hand-curated CSV/JSON (countries, cities, costs, connections, notices)
-  gen/            generated JSON imported by the app (committed)
+  gen/            generated JSON imported by the app
+                  (data/ is not in git: synced with a private Cloudflare R2 bucket, dated copies of seed/)
 scripts/          data pipeline (build-*, fetch-*)
 functions/        ai-proxy (Phase 2, not built yet)
 ```
@@ -421,6 +423,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Country defaults:** countries added as part of a region start as optional (the planner picks the best ones, and every region gets at least one stop); a country added on its own starts as must visit.
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
+- **Data out of git:** `data/` (hand-curated seed and generated files) lives in a private Cloudflare R2 bucket, synced with `npm run data:pull` / `data:push`; each push that changes seed data keeps a dated copy of it. The refresh workflow now runs weekly (Mondays; by hand after a big advisory change) and pulls, refreshes, tests and pushes instead of committing. Earlier versions remain in the public git history.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
 
 ---
