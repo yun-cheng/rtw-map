@@ -18,7 +18,7 @@ type State = {
   selected: Selection
   layer: MapLayer
   layerMonth: number
-  panel: 'setup' | 'itinerary'
+  panel: 'setup' | 'itinerary' | 'assistant'
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
   currency: string
@@ -45,6 +45,8 @@ type State = {
   setPriceCompare: (iso2: string) => void
   setCityTab: (tab: CityTab) => void
   importTrip: (data: { input: TripInput; stops: Stop[] }) => void
+  /** Puts back an earlier trip (Undo for the assistant's changes); keeps the view as it is. */
+  restore: (data: { input: TripInput; stops: Stop[] }) => void
 }
 
 const today = new Date().toISOString().slice(0, 10)
@@ -146,6 +148,7 @@ export const useTrip = create<State>()(
         importTrip: ({ input, stops }) => {
           set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null, selected: null, fitRequest: get().fitRequest + 1 })
         },
+        restore: ({ input, stops }) => set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null }),
       }
     },
     {

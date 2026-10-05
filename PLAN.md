@@ -277,7 +277,9 @@ Driving is a **per-leg mode**, not a separate kind of trip. Consecutive car legs
 
 ## 7. AI layer (Phase 2)
 
-Uses Claude via the Anthropic API, with a cheap model by default and a hard monthly spending limit set in the Anthropic console. At ~10 users this should cost a few USD/month.
+Uses **Google Gemini** (paid tier, so chats aren't used for training) through the Gemini API directly: **Gemini 3.8 Flash**, with a "Think harder" switch (thinking level low → high). OpenRouter was considered; direct is cheaper (no fee), keeps the extra party out, and fully supports Gemini's thinking and tool calling. Roughly 1–3 US cents per chat message.
+
+**Built: the trip assistant** (Assistant tab). The user chats; Gemini answers and changes the trip with 16 tools (read: trip, cities, city details, options; change: settings, regions, country modes, re-plan, add/remove/move stop, nights, lock, optimise route, re-fit nights). The tools run in the browser on the same store actions as the app's buttons, so manual and AI edits stay in sync. Changes apply right away; each reply that changed the trip lists the changes with **Undo**. The trip as it was when the user asked is sent with every step of a reply, so relative requests ("2 more days") count from that state.
 
 | Use | How |
 |---|---|
@@ -287,7 +289,7 @@ Uses Claude via the Anthropic API, with a cheap model by default and a hard mont
 | **Grounded Q&A** | Answers only from our data + advisory text, with citations and dates. If we have no data, it says so |
 | **Data building (offline, run by me)** | Extract connections, costs and tips from Wikivoyage text into the data files; I review the diff before committing |
 
-The API key lives in a small serverless proxy, never in the browser. The proxy is protected with a simple secret plus rate limiting, since it's personal use.
+The API key lives in the site's Cloudflare Worker (`/api/chat`, a secret), never in the browser. The Worker adds the instructions and tools itself (so the endpoint only works as the trip assistant), checks every request (roles, part types, size, length), allows same-site calls only, and limits each visitor to 20 model calls a minute. A daily request quota on the Google Cloud project is the hard spending cap.
 
 ---
 
@@ -300,10 +302,10 @@ The API key lives in a small serverless proxy, never in the browser. The proxy i
 | Charts | Small custom SVG components (no chart library) | Only one chart type needed so far | $0 |
 | Data | JSON/CSV files in the repo, bundled at build time | No database to run | $0 |
 | Scripts | TypeScript (run with `tsx`) for fetching/building data | One language for everything | $0 |
-| Hosting | **Cloudflare Worker serving static files** (`wrangler.jsonc`), published by GitHub Actions on each push and after the weekly data refresh; later one Worker for the AI proxy | Free tier, unlimited static requests | $0 |
+| Hosting | **Cloudflare Worker** (`wrangler.jsonc`): static files plus `/api/chat` for the trip assistant; published by GitHub Actions on each push and after the weekly data refresh | Free tier, unlimited static requests | $0 |
 | Data storage | **Cloudflare R2** private bucket for `data/` (seed + generated), not git; dated copies of seed data. The site build pulls it first | Free up to 10 GB, no download fees | $0 |
 | Scheduled refresh | GitHub Actions cron: fetch advisories + FX → commit → auto-deploy | Free | $0 |
-| AI | Anthropic API (Phase 2) | | a few $/month |
+| AI | Google Gemini API, Gemini 3.8 Flash (paid tier) | Tool calling, thinking levels, cheap | ~1–3 ¢ per message |
 | Domain | Optional | | ~$10/yr |
 
 **Why MapLibre instead of Mapbox:**
@@ -339,7 +341,8 @@ data/
   gen/            generated JSON imported by the app
                   (data/ is not in git: synced with a private Cloudflare R2 bucket, dated copies of seed/)
 scripts/          data pipeline (build-*, fetch-*)
-functions/        ai-proxy (Phase 2, not built yet)
+worker/           the site's Worker: static files + /api/chat (Gemini)
+src/agent/        trip assistant: instructions + tools (schema.ts), tool runner, chat loop
 ```
 See README.md for the script → source → output table.
 
@@ -424,7 +427,8 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Data out of git:** `data/` (hand-curated seed and generated files) lives in a private Cloudflare R2 bucket, synced with `npm run data:pull` / `data:push`; each push that changes seed data keeps a dated copy of it. The refresh workflow now runs weekly (Mondays; by hand after a big advisory change) and pulls, refreshes, tests and pushes instead of committing. Earlier versions remain in the public git history.
-- **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3). The AI copilot (Phase 2) comes after the data is solid.
+- **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo.
+- **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 
 ---
 

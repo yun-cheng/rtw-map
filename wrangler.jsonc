@@ -1,11 +1,25 @@
-// Cloudflare Worker that serves the built site (dist/) as static files; no server code.
-// Build first: npm run data:pull && npm run build
+// Cloudflare Worker for the site: serves the built app (dist/) as static files, and /api/* from worker/index.ts
+// (the trip assistant, which calls Gemini). Build first: npm run data:pull && npm run build
+// Secret (not in this file): GEMINI_API_KEY, set with `wrangler secret put GEMINI_API_KEY`.
+// Local development: npm run dev:api (reads .env.local) next to npm run dev, which forwards /api to it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "rtw-map",
+  "main": "worker/index.ts",
   "compatibility_date": "2026-10-01",
   "assets": {
     "directory": "./dist",
-    "not_found_handling": "single-page-application"
-  }
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "vars": {
+    "GEMINI_MODEL": "gemini-3.8-flash"
+  },
+  // Requests to Gemini per visitor (IP) per minute; one chat message can take a few requests.
+  "ratelimits": [
+    { "name": "CHAT_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } }
+  ],
+  "workers_dev": true,
+  "preview_urls": false
 }

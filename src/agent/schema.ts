@@ -1,0 +1,138 @@
+// What the trip assistant is told and which tools it may call. Shared by the Worker (which sends it to Gemini, so
+// clients can't change it) and the browser (which runs the tools on the trip).
+
+export const SYSTEM_PROMPT = `You are the trip assistant of rtw-map, a planner for long multi-country trips.
+The user plans a trip in the app; you help by answering questions and by changing their trip with the tools.
+
+How to work:
+- The trip as it was when the user sent their latest message is described at the end of these instructions.
+  Tool results after each change show the trip after that change. Requests like "2 more days" count from the trip
+  as it was when the user asked, not from the state after your own earlier changes.
+- Use tools for facts about cities (weather, costs, visas, transport, safety) and for which cities exist in the app.
+  The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
+- When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
+  Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
+- Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
+- If a request is unclear or would remove a lot, ask one short question first.
+- Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
+- You can't book anything. Keep answers short and practical. Reply in the user's language.
+- Only help with planning trips in this app; politely decline unrelated requests.`
+
+type JsonSchema = { type: string; description?: string; enum?: string[]; items?: JsonSchema; properties?: Record<string, JsonSchema>; required?: string[] }
+export type FunctionDeclaration = { name: string; description: string; parametersJsonSchema: JsonSchema }
+
+const obj = (properties: Record<string, JsonSchema> = {}, required: string[] = []): JsonSchema => ({ type: 'object', properties, required })
+const str = (description: string, extra: Partial<JsonSchema> = {}): JsonSchema => ({ type: 'string', description, ...extra })
+const CITY = str('City name or id as shown in the trip or by find_cities, e.g. "Kraków" or "krakow"')
+
+export const TOOLS: FunctionDeclaration[] = [
+  // ---- read
+  {
+    name: 'get_trip',
+    description: 'The current trip in full: settings, regions, every stop with dates and nights, legs between stops, cost and all warnings.',
+    parametersJsonSchema: obj(),
+  },
+  {
+    name: 'find_cities',
+    description: 'Cities the app has data for, with suggested days and tags. Filter by country, tag or name.',
+    parametersJsonSchema: obj({
+      country: str('Country name or ISO code, e.g. "Poland" or "PL"'),
+      tag: str('One of: history, culture, food, nature, hiking, beach, city, nightlife'),
+      query: str('Part of a city name'),
+    }),
+  },
+  {
+    name: 'get_city_info',
+    description: 'Details for one city: weather by month, daily cost, visa for the traveller\'s passport, travel advice, public transport, English, card payments, tap water, air quality, connections to other cities.',
+    parametersJsonSchema: obj({ city: CITY, month: { type: 'integer', description: 'Month 1–12 for weather and air; default: the month of the stay or of the trip start' } }, ['city']),
+  },
+  {
+    name: 'get_options',
+    description: 'Region presets, countries in the app, interests, passports, paces and budgets that the settings accept.',
+    parametersJsonSchema: obj(),
+  },
+  // ---- change the setup
+  {
+    name: 'update_settings',
+    description: 'Change trip settings. Changing dates re-fits the nights of an existing itinerary.',
+    parametersJsonSchema: obj({
+      start_date: str('YYYY-MM-DD'),
+      end_date: str('YYYY-MM-DD, the day the trip ends'),
+      pace: str('Travel pace', { enum: ['chill', 'balanced', 'fast'] }),
+      budget: str('Budget level', { enum: ['shoestring', 'backpacker', 'midrange', 'comfort'] }),
+      interests: { type: 'array', items: str('Interest'), description: 'Replaces the interests; see get_options' },
+      passport: str('Passport code from get_options, e.g. "TW", "US", "EU"'),
+      keep_region_order: { type: 'boolean', description: 'Visit the regions in the listed order' },
+      start_city: str('City to start in, or "" for any'),
+      end_city: str('City to end in, or "" for any'),
+      schengen_days_before: { type: 'integer', description: 'Days already spent in the Schengen area in the 180 days before the trip' },
+    }),
+  },
+  {
+    name: 'add_region',
+    description: 'Add a region to the trip setup, from a preset name or a list of countries. Countries in a region start optional; a single country starts as must-visit.',
+    parametersJsonSchema: obj({
+      preset: str('Preset name from get_options, e.g. "Balkans"'),
+      countries: { type: 'array', items: str('Country name or ISO code'), description: 'Countries, if not using a preset' },
+      name: str('Region name, if not using a preset'),
+      longer: { type: 'boolean', description: 'Spend longer in this region' },
+    }),
+  },
+  {
+    name: 'update_region',
+    description: 'Change a region: spend longer there, or remove it.',
+    parametersJsonSchema: obj({ region: str('Region name'), longer: { type: 'boolean' }, remove: { type: 'boolean' } }, ['region']),
+  },
+  {
+    name: 'set_country_mode',
+    description: 'Whether a country must be visited, may be visited, or is left out. Applies when the plan is generated.',
+    parametersJsonSchema: obj({ country: str('Country name or ISO code'), mode: str('Mode', { enum: ['must', 'optional', 'excluded'] }) }, ['country', 'mode']),
+  },
+  {
+    name: 'generate_plan',
+    description: 'Create a new itinerary from the setup (regions, dates, pace…). Replaces the current itinerary, including locked stops.',
+    parametersJsonSchema: obj(),
+  },
+  // ---- change the itinerary
+  {
+    name: 'add_stop',
+    description: 'Add a city to the itinerary. Without "after", it goes where it fits the route best.',
+    parametersJsonSchema: obj({ city: CITY, after: str('City to put it after, or "start" for the beginning'), nights: { type: 'integer', description: 'Nights to stay (locks the stop)' } }, ['city']),
+  },
+  {
+    name: 'remove_stop',
+    description: 'Remove a city from the itinerary; its nights go to the other unlocked stops.',
+    parametersJsonSchema: obj({ city: CITY }, ['city']),
+  },
+  {
+    name: 'set_nights',
+    description: 'Set the nights at a stop. The stop gets locked; unlocked stops are re-fitted so the trip still fills the dates.',
+    parametersJsonSchema: obj({ city: CITY, nights: { type: 'integer', description: 'At least 1' } }, ['city', 'nights']),
+  },
+  {
+    name: 'set_locked',
+    description: 'Lock or unlock a stop. Locked stops keep their nights when the plan is re-fitted.',
+    parametersJsonSchema: obj({ city: CITY, locked: { type: 'boolean' } }, ['city', 'locked']),
+  },
+  {
+    name: 'move_stop',
+    description: 'Move a stop to another place in the route.',
+    parametersJsonSchema: obj({ city: CITY, after: str('City to put it after, or "start" for the beginning') }, ['city', 'after']),
+  },
+  {
+    name: 'optimize_route',
+    description: 'Re-order the stops for the shortest travel, keeping the region order if set.',
+    parametersJsonSchema: obj(),
+  },
+  {
+    name: 'refit_nights',
+    description: 'Re-share the nights among unlocked stops so the trip fills the dates exactly.',
+    parametersJsonSchema: obj(),
+  },
+]
+
+/** Names of tools that change the trip (the rest only read). */
+export const WRITE_TOOLS = new Set([
+  'update_settings', 'add_region', 'update_region', 'set_country_mode', 'generate_plan',
+  'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'optimize_route', 'refit_nights',
+])

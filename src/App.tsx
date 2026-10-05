@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { MapControls } from './map/MapControls'
 import { MapView } from './map/MapView'
+import { AssistantPanel } from './panels/AssistantPanel'
 import { CityDrawer } from './panels/CityDrawer'
 import { Header } from './panels/Header'
 import { Itinerary } from './panels/Itinerary'
@@ -11,7 +12,7 @@ import { useTrip } from './store/trip'
 
 export default function App() {
   const { panel, setPanel, plan, selected, select } = useTrip()
-  const tab = plan ? panel : 'setup'
+  const tab = plan || panel === 'assistant' ? panel : 'setup'
 
   // Esc closes the city/leg panel.
   useEffect(() => {
@@ -26,7 +27,7 @@ export default function App() {
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-[380px] shrink-0 flex-col border-r border-line bg-panel">
           <nav className="flex border-b border-line px-2">
-            {(['setup', 'itinerary'] as const).map((t) => (
+            {(['setup', 'itinerary', 'assistant'] as const).map((t) => (
               <button
                 key={t}
                 disabled={t === 'itinerary' && !plan}
@@ -37,7 +38,11 @@ export default function App() {
               </button>
             ))}
           </nav>
-          <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : <Itinerary />}</div>
+          {tab === 'assistant' ? (
+            <div className="min-h-0 flex-1"><AssistantPanel /></div>
+          ) : (
+            <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : <Itinerary />}</div>
+          )}
         </aside>
         <main className="relative min-w-0 flex-1">
           <MapView />

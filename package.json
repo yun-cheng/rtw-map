@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:api": "wrangler dev --port 8787 --env-file .env.local",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
@@ -23,6 +24,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261005.1",
     "@tailwindcss/vite": "^4.3.3",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.18",
