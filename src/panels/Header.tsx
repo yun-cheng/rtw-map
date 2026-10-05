@@ -1,26 +1,13 @@
-import { useRef } from 'react'
-import { exportTrip, useTrip } from '../store/trip'
+import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
 import { shortDate } from '../ui/format'
-import { Button } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
+import { TripSwitcher } from './TripSwitcher'
 
 export function Header() {
-  const { plan, input, importTrip, setCurrency } = useTrip()
+  const { plan, input, setCurrency } = useTrip()
   const { currency, fmt } = useMoney()
-  const file = useRef<HTMLInputElement>(null)
-
-  const onImport = async (f: File | undefined) => {
-    if (!f) return
-    try {
-      const data = JSON.parse(await f.text())
-      if (data?.app !== 'rtw-map' || !data.input || !Array.isArray(data.stops)) throw new Error('Not an rtw-map trip file')
-      importTrip(data)
-    } catch (e) {
-      alert(`Could not import: ${(e as Error).message}`)
-    }
-  }
 
   const s = plan?.schengen
   const sOver = s && s.applies && s.maxInWindow > s.limit
@@ -31,6 +18,7 @@ export function Header() {
         <img src="/favicon.svg" alt="" className="h-5 w-5" />
         rtw-map
       </div>
+      <TripSwitcher />
       {plan && (
         <div className="flex min-w-0 items-center gap-4 overflow-hidden text-[13px] whitespace-nowrap">
           <span>{shortDate(input.startDate)} – {shortDate(input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
@@ -58,9 +46,6 @@ export function Header() {
         >
           {ds.fx.display.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
-        <Button variant="ghost" onClick={() => file.current?.click()}>Import</Button>
-        <Button variant="ghost" onClick={exportTrip} disabled={!plan}>Export</Button>
-        <input ref={file} type="file" accept="application/json,.json" className="hidden" onChange={(e) => { onImport(e.target.files?.[0]); e.target.value = '' }} />
         <div className="ml-1.5"><AccountMenu /></div>
       </div>
     </header>

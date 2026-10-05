@@ -15,7 +15,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Platform | Desktop-first web app; a simple read-only phone view for use on the road |
 | Team & budget | Solo developer, lowest possible budget, ~10 daily users |
 | Type | Side project, no SEO, so **no SSR**: a plain single-page app |
-| Accounts | None. Save locally + export/import JSON; optional share link |
+| Accounts | Optional **Sign in with Google**: saves trips to the account (several trips, any device) and unlocks the trip assistant. Signed out, one trip is kept in the browser. No import/export |
 | Name | rtw-map (working name) |
 | Target | Test case runs end-to-end by ~Jan 2027 so there's time to fix bugs; phone/offline view ready by May 2027 for the field test |
 | "Do not travel" countries | Excluded from routes by default (e.g. Ukraine, Belarus) |
@@ -73,7 +73,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 - **Month slider + map layers**: climate quality, Schengen vs. non-Schengen, cost level, safety advisory level, **driving** (road safety per country, driving difficulty per city).
 
 ### ⑤ Save / export
-- Auto-save to localStorage. Export/import a JSON file (doubles as a backup).
+- Auto-save: signed in, to the account (Cloudflare Durable Object per user, SQLite) a moment after each change; signed out, to localStorage. Several trips per account, with a trip menu to switch, create, rename and delete.
 - Optional share link: the trip compressed into the URL, so no server is needed.
 - Print/PDF view. `.ics` calendar export later.
 
@@ -134,7 +134,7 @@ The website itself plans this trip. We use it as the main end-to-end test to fin
 - [ ] Has a realistic transport option for every leg, including the Baltics → Russia border crossing
 - [ ] Estimates the total cost as a range
 - [ ] Re-plans correctly after manual edits (lock a stop, change days, reorder, change pace)
-- [ ] Survives a reload (localStorage) and a JSON export/import
+- [ ] Survives a reload, and (signed in) opens the same trip on another device
 - [ ] Phone view works offline during the trip
 
 **Driving variant of the test case** (same input + "I drive", to test §6.4):
@@ -291,7 +291,7 @@ Uses **Google Gemini** (paid tier, so chats aren't used for training) through th
 
 The API key lives in the site's Cloudflare Worker (`/api/chat`, a secret), never in the browser. The Worker adds the instructions and tools itself (so the endpoint only works as the trip assistant), checks every request (roles, part types, size, length) and allows same-site calls only.
 
-**Sign-in and limits.** The assistant needs **Sign in with Google** (the rest of the app doesn't). The Worker verifies Google's ID token, then keeps the user signed in with its own signed, HttpOnly session cookie (30 days). Each Google account gets **20 messages a day** (UTC), shown as a countdown in the Assistant tab and the account menu (top right, with Sign out). Only a new message counts, not the tool-result rounds inside it; a hidden cap of 160 model calls a day bounds those, and there's a 20-calls-a-minute burst limit. Counts live in a Durable Object per account, keyed by Google's account ID; no email is stored. A daily request quota on the Google Cloud project is the hard spending cap.
+**Sign-in and limits.** The assistant needs **Sign in with Google** (the rest of the app doesn't). The Worker verifies Google's ID token, then keeps the user signed in with its own signed, HttpOnly session cookie (30 days). Each Google account gets **20 messages a day** (UTC), shown as a countdown in the Assistant tab and the account menu (top right, with Sign out). Only a new message counts, not the tool-result rounds inside it; a hidden cap of 160 model calls a day bounds those, and there's a 20-calls-a-minute burst limit. Counts live in the account's Durable Object (with its saved trips), keyed by Google's account ID; no email is stored. A daily request quota on the Google Cloud project is the hard spending cap.
 
 ---
 
@@ -343,7 +343,7 @@ data/
   gen/            generated JSON imported by the app
                   (data/ is not in git: synced with a private Cloudflare R2 bucket, dated copies of seed/)
 scripts/          data pipeline (build-*, fetch-*)
-worker/           the site's Worker: static files, Google sign-in, per-user limits, /api/chat (Gemini)
+worker/           the site's Worker: static files, Google sign-in, per-user data (saved trips, limits), /api/chat (Gemini)
 src/agent/        trip assistant: instructions + tools (schema.ts), tool runner, chat loop
 ```
 See README.md for the script → source → output table.
@@ -429,7 +429,8 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Test case:** runs end to end (`npm test`, plus manually in the browser). All automated acceptance checks pass for TW, US and EU passports.
 - **Known data issue:** air quality comes from Copernicus CAMS models, which cover the whole world (a more detailed European model inside Europe, a global model everywhere else). Model values can be far off in big cities: Moscow reads ~26 µg/m³ on the European model vs ~16 on the global one, and Tokyo ~28 on the global model, while city stations usually report much lower. Plan: use station measurements (e.g. OpenAQ) where available and fall back to the model elsewhere.
 - **Data out of git:** `data/` (hand-curated seed and generated files) lives in a private Cloudflare R2 bucket, synced with `npm run data:pull` / `data:push`; each push that changes seed data keeps a dated copy of it. The refresh workflow now runs weekly (Mondays; by hand after a big advisory change) and pulls, refreshes, tests and pushes instead of committing. Earlier versions remain in the public git history.
-- **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo. Needs Google sign-in; 20 messages per account per day, counted down; account menu (top right) with Sign out.
+- **Trip assistant, done:** chat with Gemini 3.8 Flash in the Assistant tab to ask about or change the trip (see §7); changes apply right away with Undo. Needs Google sign-in; 20 messages per account per day, counted down.
+- **Saved trips, done:** signed-in users' trips (and each trip's chat) are saved to their account automatically; trip menu at the top left to switch, create, rename and delete; account menu at the top right with Sign out. Import/export removed.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 
 ---

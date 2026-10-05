@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { isNewMessage } from './chat'
 import { current, DAILY_CALLS, DAILY_MESSAGES, refund, resetsAt, take, today } from './limits'
+import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)))
@@ -101,5 +102,28 @@ describe('daily limits', () => {
     const now = Date.parse('2026-10-05T23:30:00Z')
     expect(today(now)).toBe('2026-10-05')
     expect(resetsAt(now)).toBe('2026-10-06T00:00:00.000Z')
+  })
+})
+
+describe('saved trips', () => {
+  it('accepts a name, trip data and chat, keeping only the trip fields', () => {
+    const patch = parseTripPatch({ name: '  Balkans  ', data: { input: { startDate: '2027-05-01' }, stops: [], extra: 1 }, chat: { messages: [] } })
+    expect(patch).toEqual({ name: 'Balkans', data: '{"input":{"startDate":"2027-05-01"},"stops":[]}', chat: '{"messages":[]}' })
+  })
+
+  it('rejects empty names, malformed trips and oversized data', () => {
+    expect(parseTripPatch({ name: '   ' })).toBeTypeOf('string')
+    expect(parseTripPatch({ data: { input: {}, stops: 'x' } })).toBeTypeOf('string')
+    expect(parseTripPatch({ data: { stops: [] } })).toBeTypeOf('string')
+    expect(parseTripPatch({ data: { input: {}, stops: Array(TRIP_LIMITS.dataBytes).fill(1) } })).toBeTypeOf('string')
+    expect(parseTripPatch({ chat: 'x'.repeat(TRIP_LIMITS.chatBytes) })).toBeTypeOf('string')
+    expect(parseTripPatch(null)).toBeTypeOf('string')
+    expect((parseTripPatch({ name: 'x'.repeat(200) }) as { name: string }).name).toHaveLength(TRIP_LIMITS.nameChars)
+  })
+
+  it('summarizes a trip for the list', () => {
+    expect(summarize('{"input":{"startDate":"2027-05-01","endDate":"2027-09-30"},"stops":[1,2,3]}')).toEqual({ startDate: '2027-05-01', endDate: '2027-09-30', stops: 3 })
+    expect(summarize(null)).toEqual({ startDate: null, endDate: null, stops: 0 })
+    expect(summarize('not json')).toEqual({ startDate: null, endDate: null, stops: 0 })
   })
 })

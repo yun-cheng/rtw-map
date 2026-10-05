@@ -1,19 +1,24 @@
-// The site's Worker: serves the built app (static files) and the trip assistant's API:
-//   GET  /api/session      who is signed in, and today's usage
-//   POST /api/auth/google  sign in with a Google ID token (sets our session cookie)
-//   POST /api/auth/logout  sign out
-//   POST /api/chat         forward the conversation to Gemini (signed-in users, 20 messages a day)
+// The site's Worker: serves the built app (static files) and the API for signed-in users:
+//   GET  /api/session              who is signed in, and today's assistant usage
+//   POST /api/auth/google          sign in with a Google ID token (sets our session cookie)
+//   POST /api/auth/logout          sign out
+//   GET  /api/trips                the user's saved trips (summaries) and the one opened last
+//   POST /api/trips                create a trip
+//   GET|PUT|DELETE /api/trips/:id  open, save or delete a trip
+//   POST /api/chat                 forward the assistant conversation to Gemini (20 messages a day)
 // Everything else goes to the static files.
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession, type User } from './auth'
 import { geminiRequest, isNewMessage, LIMITS, parseChatRequest } from './chat'
 import { DAILY_MESSAGES, resetsAt, today, type Count } from './limits'
 import { Account } from './account'
+import { parseTripPatch } from './trips'
 
 export { Account }
 
 type Env = {
   ASSETS: Fetcher
   CHAT_LIMIT: RateLimit
+  SAVE_LIMIT: RateLimit
   ACCOUNT: DurableObjectNamespace<Account>
   GEMINI_API_KEY?: string
   GEMINI_MODEL: string
@@ -106,7 +111,44 @@ async function chat(request: Request, env: Env): Promise<Response> {
 
 const signInFirst = () => json({ error: 'Please sign in with Google.', signIn: true }, 401)
 
+async function trips(request: Request, env: Env, id: string | undefined): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  const { method } = request
+  if (method === 'GET') {
+    if (!id) return json(await store.listTrips())
+    const trip = await store.getTrip(id)
+    return trip ? json(trip) : json({ error: 'Trip not found' }, 404)
+  }
+  if (method === 'DELETE' && id) return (await store.deleteTrip(id)) ? json({ ok: true }) : json({ error: 'Trip not found' }, 404)
+  if ((method === 'POST' && !id) || (method === 'PUT' && id)) {
+    if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+    const text = await request.text()
+    let raw: unknown
+    try {
+      raw = JSON.parse(text)
+    } catch {
+      return json({ error: 'Invalid request' }, 400)
+    }
+    const patch = parseTripPatch(raw)
+    if (typeof patch === 'string') return json({ error: patch }, 400)
+    if (!id) {
+      const created = await store.createTrip(patch)
+      return typeof created === 'string' ? json({ error: created }, 409) : json(created, 201)
+    }
+    const saved = await store.saveTrip(id, patch)
+    return saved ? json(saved) : json({ error: 'Trip not found' }, 404)
+  }
+  return json({ error: 'Not found' }, 404)
+}
+
 async function api(request: Request, env: Env, pathname: string): Promise<Response> {
+  const tripPath = pathname.match(/^\/api\/trips(?:\/([\w-]{1,64}))?$/)
+  if (tripPath) {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return trips(request, env, tripPath[1])
+  }
   if (request.method === 'GET' && pathname === '/api/session') return json(await session(request, env))
   if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
   if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)

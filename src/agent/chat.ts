@@ -28,7 +28,12 @@ type ChatState = {
   undo: (index: number) => void
   setThink: (think: boolean) => void
   clear: () => void
+  /** Shows the chat saved with a trip (or an empty one). */
+  load: (saved: SavedChat | null) => void
 }
+
+/** The part of the chat saved with each trip. */
+export type SavedChat = { messages: ChatMessage[]; contents: Content[]; note: string | null }
 
 /** Model calls per user message (each tool round is one call). */
 const MAX_ROUNDS = 8
@@ -114,6 +119,12 @@ export const useChat = create<ChatState>()(
 
       setThink: (think) => set({ think }),
       clear: () => set({ messages: [], contents: [], note: null }),
+      load: (saved) => set({
+        messages: Array.isArray(saved?.messages) ? saved.messages : [],
+        contents: Array.isArray(saved?.contents) ? saved.contents : [],
+        note: saved?.note ?? null,
+        busy: false,
+      }),
     }),
     {
       name: 'rtw-map-chat',

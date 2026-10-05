@@ -44,15 +44,21 @@ type State = {
   setCurrency: (c: string) => void
   setPriceCompare: (iso2: string) => void
   setCityTab: (tab: CityTab) => void
-  importTrip: (data: { input: TripInput; stops: Stop[] }) => void
+  /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it. */
+  openTrip: (data: { input: TripInput; stops: Stop[] } | null) => void
   /** Puts back an earlier trip (Undo for the assistant's changes); keeps the view as it is. */
   restore: (data: { input: TripInput; stops: Stop[] }) => void
 }
 
-const today = new Date().toISOString().slice(0, 10)
+/** Setup of a new trip: no regions yet, starting in two months. */
+export const newTripInput = (): TripInput => {
+  const today = new Date().toISOString().slice(0, 10)
+  return { ...emptyInput, startDate: addDays(today, 60), endDate: addDays(today, 120) }
+}
+
 const emptyInput: TripInput = {
-  startDate: addDays(today, 60),
-  endDate: addDays(today, 120),
+  startDate: '',
+  endDate: '',
   groups: [],
   keepGroupOrder: true,
   startCityId: null,
@@ -87,13 +93,14 @@ export const useTrip = create<State>()(
         const { input, stops } = get()
         apply(rebalance(ds, input, fn(stops.map((s) => ({ ...s })))))
       }
+      const fresh = newTripInput()
       return {
-        input: emptyInput,
+        input: fresh,
         stops: [],
         plan: null,
         selected: null,
         layer: 'none',
-        layerMonth: monthOf(emptyInput.startDate),
+        layerMonth: monthOf(fresh.startDate),
         panel: 'setup',
         fitRequest: 0,
         currency: 'EUR',
@@ -145,8 +152,18 @@ export const useTrip = create<State>()(
         setCurrency: (currency) => set({ currency }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCityTab: (cityTab) => set({ cityTab }),
-        importTrip: ({ input, stops }) => {
-          set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null, selected: null, fitRequest: get().fitRequest + 1 })
+        openTrip: (data) => {
+          const input = data ? { ...newTripInput(), ...data.input } : newTripInput()
+          const stops = data?.stops ?? []
+          let plan: Plan | null = null
+          try {
+            plan = stops.length ? evaluatePlan(ds, input, stops) : null
+          } catch {
+            // The trip refers to data that no longer exists: keep its setup, drop the itinerary.
+            set({ input, stops: [], plan: null, selected: null, panel: 'setup', layerMonth: monthOf(input.startDate), fitRequest: get().fitRequest + 1 })
+            return
+          }
+          set({ input, stops, plan, selected: null, panel: plan ? get().panel : 'setup', layerMonth: monthOf(input.startDate), fitRequest: get().fitRequest + 1 })
         },
         restore: ({ input, stops }) => set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null }),
       }
@@ -170,14 +187,3 @@ export const useTrip = create<State>()(
     },
   ),
 )
-
-/** Downloads the trip as a JSON file (also a backup). */
-export function exportTrip() {
-  const { input, stops } = useTrip.getState()
-  const blob = new Blob([JSON.stringify({ app: 'rtw-map', version: 1, input, stops }, null, 2)], { type: 'application/json' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `trip-${input.startDate}.json`
-  a.click()
-  URL.revokeObjectURL(a.href)
-}
