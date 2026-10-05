@@ -1,6 +1,7 @@
 # Refreshes fast-changing data (advisories, exchange rates, population, price levels) weekly, on Mondays.
 # Start it by hand (Actions tab, or `gh workflow run "Refresh data"`) after a big advisory change.
 # The data lives in a private Cloudflare R2 bucket, not in git: pull it, refresh, test, upload the result.
+# Then the site is rebuilt and published with the new data (deploy.yml).
 # Needs repository secrets R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET.
 name: Refresh data
 
@@ -31,3 +32,8 @@ jobs:
       - run: npm run data:refresh
       - run: npm test
       - run: npm run data:push
+
+  deploy:
+    needs: refresh
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit

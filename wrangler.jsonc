@@ -1,0 +1,11 @@
+// Cloudflare Worker that serves the built site (dist/) as static files; no server code.
+// Build first: npm run data:pull && npm run build
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rtw-map",
+  "compatibility_date": "2026-10-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}

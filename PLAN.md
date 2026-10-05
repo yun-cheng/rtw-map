@@ -300,7 +300,7 @@ The API key lives in a small serverless proxy, never in the browser. The proxy i
 | Charts | Small custom SVG components (no chart library) | Only one chart type needed so far | $0 |
 | Data | JSON/CSV files in the repo, bundled at build time | No database to run | $0 |
 | Scripts | TypeScript (run with `tsx`) for fetching/building data | One language for everything | $0 |
-| Hosting | **Cloudflare Pages** (static) + one **Pages Function / Worker** for the AI proxy | Generous free tier | $0 |
+| Hosting | **Cloudflare Worker serving static files** (`wrangler.jsonc`), published by GitHub Actions on each push and after the weekly data refresh; later one Worker for the AI proxy | Free tier, unlimited static requests | $0 |
 | Data storage | **Cloudflare R2** private bucket for `data/` (seed + generated), not git; dated copies of seed data. The site build pulls it first | Free up to 10 GB, no download fees | $0 |
 | Scheduled refresh | GitHub Actions cron: fetch advisories + FX → commit → auto-deploy | Free | $0 |
 | AI | Anthropic API (Phase 2) | | a few $/month |

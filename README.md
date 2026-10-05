@@ -21,7 +21,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 | `npm run dev` | Dev server |
 | `npm test` | Planner and formatting tests (Vitest) |
 | `npm run lint` | oxlint |
-| `npm run build` | Type-check + production build into `dist/` (static, deployable to Cloudflare Pages) |
+| `npm run build` | Type-check + production build into `dist/` (static files) |
 
 ## What it does
 
@@ -77,6 +77,10 @@ npm run data:refresh   # fast-changing data only; also runs weekly (Mondays) via
 ```
 
 To add a city: add a row to `data/seed/cities.csv` (and connections to `data/seed/connections.csv`), then run `npm run data:build`, then `npm run data:push`.
+
+### Publishing
+
+The site is published as static files on a Cloudflare Worker (`rtw-map`, configured in `wrangler.jsonc`) by `.github/workflows/deploy.yml`: on every push to `main`, by hand, and after the weekly data refresh. It pulls the data from R2, runs the tests, builds and runs `wrangler deploy`. Repository secrets: the four `R2_*` settings, `CLOUDFLARE_API_TOKEN` (permissions: Workers Scripts Edit, Account Settings Read, User Details Read, Memberships Read) and `CLOUDFLARE_ACCOUNT_ID`.
 
 ### Data storage
 
