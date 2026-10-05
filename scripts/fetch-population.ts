@@ -1,7 +1,8 @@
 // Country population from the World Bank API (CC-BY 4.0), latest available year;
 // IMF World Economic Outlook where the World Bank has none (e.g. Taiwan).
 import { join } from 'node:path'
-import { GEN, SEED, readJson, today, writeJson } from './lib.ts'
+import { existsSync } from 'node:fs'
+import { GEN, SEED, fetchImf, readJson, today, writeJson } from './lib.ts'
 
 const { countries } = readJson<{ countries: { iso2: string }[] }>(join(SEED, 'countries.json'))
 const codes = countries.map((c) => c.iso2).join(';')
@@ -16,11 +17,14 @@ const population: Record<string, { value: number; year: number; source?: string 
 const missing = countries.map((c) => c.iso2).filter((c) => !population[c])
 if (missing.length) {
   const ISO3: Record<string, string> = { TW: 'TWN' }
-  const imf = (await (await fetch('https://www.imf.org/external/datamapper/api/v1/LP')).json()).values.LP as Record<string, Record<string, number>>
+  const imf = await fetchImf('LP')
+  const outPath = join(GEN, 'population.json')
+  const previous = existsSync(outPath) ? readJson<{ population: typeof population }>(outPath).population : {}
   const year = String(new Date().getFullYear() - 1)
   for (const iso2 of missing) {
-    const millions = imf[ISO3[iso2]]?.[year]
+    const millions = imf?.[ISO3[iso2]]?.[year]
     if (millions) population[iso2] = { value: Math.round(millions * 1e6), year: Number(year), source: 'IMF' }
+    else if (previous[iso2]) population[iso2] = previous[iso2]
     else console.error(`no population for ${iso2}`)
   }
 }

@@ -52,6 +52,21 @@ export async function fetchCached(url: string, cacheName: string): Promise<strin
   return text
 }
 
+/**
+ * One indicator from the IMF DataMapper API (country ISO3 → year → value), or null when the IMF can't be reached.
+ * The IMF blocks some cloud servers (e.g. GitHub Actions) with an HTML "access denied" page; callers then keep
+ * their previous values, which change only once a year.
+ */
+export async function fetchImf(indicator: string): Promise<Record<string, Record<string, number>> | null> {
+  try {
+    const res = await fetch(`https://www.imf.org/external/datamapper/api/v1/${indicator}`)
+    return ((await res.json()) as { values: Record<string, Record<string, Record<string, number>>> }).values[indicator]
+  } catch (e) {
+    console.warn(`IMF ${indicator} unavailable (${(e as Error).message.slice(0, 80)}); keeping previous values`)
+    return null
+  }
+}
+
 export const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 export const today = () => new Date().toISOString().slice(0, 10)

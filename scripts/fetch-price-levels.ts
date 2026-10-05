@@ -3,7 +3,8 @@
 // PPP from the World Bank (CC-BY 4.0, indicator PA.NUS.PPP); IMF (PPPEX) only where the World Bank has no value
 // (e.g. Taiwan). Market rates come from our own fx.json, so currencies always match (e.g. Bulgaria now in euros).
 import { join } from 'node:path'
-import { GEN, SEED, readJson, today, writeJson } from './lib.ts'
+import { existsSync } from 'node:fs'
+import { GEN, SEED, fetchImf, readJson, today, writeJson } from './lib.ts'
 
 /** Countries a user can compare prices with ("about 35% cheaper than …"). */
 const COMPARE: { iso2: string; name: string; currency: string }[] = [
@@ -33,7 +34,9 @@ const wb = (await (await fetch('https://api.worldbank.org/v2/country/all/indicat
   { countryiso3code: string; country: { id: string }; date: string; value: number | null }[]
 const wbPpp = new Map(wb.filter((r) => r.value).map((r) => [r.country.id, { value: r.value!, year: Number(r.date) }]))
 
-const imf = (await (await fetch('https://www.imf.org/external/datamapper/api/v1/PPPEX')).json()).values.PPPEX as Record<string, Record<string, number>>
+const imf = await fetchImf('PPPEX')
+const outPath = join(GEN, 'price-levels.json')
+const previous = existsSync(outPath) ? readJson<{ levels: Record<string, { level: number; year: number; source: string }> }>(outPath).levels : {}
 const imfYear = String(new Date().getFullYear() - 1)
 
 const usdPer = (currency: string) => (fx.rates[currency] ?? (currency === 'EUR' ? 1 : NaN)) / fx.rates.USD
@@ -43,14 +46,15 @@ for (const { iso2, currency } of wanted) {
   if (levels[iso2]) continue
   const lcuPerUsd = usdPer(currency)
   const fromWb = wbPpp.get(iso2)
-  const fromImf = imf[iso3[iso2]]?.[imfYear]
+  const fromImf = imf?.[iso3[iso2]]?.[imfYear]
   const ppp = fromWb ? { value: fromWb.value, year: fromWb.year, source: 'World Bank' } : fromImf ? { value: fromImf, year: Number(imfYear), source: 'IMF' } : null
+  if (!ppp && !imf && previous[iso2]) { levels[iso2] = previous[iso2]; continue } // IMF unreachable: keep last year's figure
   if (!ppp || !lcuPerUsd) { console.error(`no price level for ${iso2}`); continue }
   levels[iso2] = { level: Math.round((ppp.value / lcuPerUsd) * 100) / 100, year: ppp.year, source: ppp.source }
   console.log(`${iso2} ${levels[iso2].level} (${ppp.source} ${ppp.year})`)
 }
 
-writeJson(join(GEN, 'price-levels.json'), {
+writeJson(outPath, {
   _meta: {
     source: 'World Bank PPP conversion factors (CC-BY 4.0), IMF where missing; divided by market exchange rates. United States = 1.00',
     updatedAt: today(),
