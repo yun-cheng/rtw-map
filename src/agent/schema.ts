@@ -56,7 +56,7 @@ export const TOOLS: FunctionDeclaration[] = [
       month: { type: 'integer', description: 'Month 1–12 for the summary\'s weather and air; default: when the user would be there' },
       sections: {
         type: 'array', items: { type: 'string', enum: ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] },
-        description: 'Full detail instead of the summary: weather (12 months incl. sun, humidity, air), costs (all prices, groceries, price level, Big Mac, shops, payments), entry (visa, Schengen, notices), safety (full travel advice), health (vaccines, risks, healthcare, pharmacies, hospital), transport (local, taxi, rentals, connections), daily (English, languages, plugs, emergency number, shops, ATMs)',
+        description: 'Full detail instead of the summary: weather (12 months incl. sun, humidity, air), costs (all prices, groceries, price level, Big Mac, shops, payments), entry (visa, Schengen, notices), safety (full travel advice), health (vaccines, risks, healthcare, pharmacies, hospital), transport (local, taxi, rentals, connections), daily (English, languages, plugs, emergency number, mobile internet, shops, ATMs)',
       },
     }, ['city']),
   },
@@ -72,7 +72,7 @@ export const TOOLS: FunctionDeclaration[] = [
       cities: { type: 'array', items: CITY },
       countries: { type: 'array', items: str('Country name or code'), description: 'All the app\'s cities in these countries' },
       in_trip: { type: 'boolean', description: 'Include the stops of the trip' },
-      fields: { type: 'array', items: { type: 'string', enum: ['weather', 'air', 'daily_cost', 'english', 'cards', 'travel_advice', 'tap_water', 'suggested_days', 'population'] } },
+      fields: { type: 'array', items: { type: 'string', enum: ['weather', 'air', 'daily_cost', 'english', 'cards', 'mobile_internet', 'travel_advice', 'tap_water', 'suggested_days', 'population'] } },
       month: { type: 'integer', description: 'Month 1–12 for weather and air; default: when the user would be at each city' },
     }, ['fields']),
   },

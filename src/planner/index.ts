@@ -14,7 +14,9 @@ export { comparePrices, costProfile, costSanity, dailyCost, estimatedCosts, groc
 export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
-export { TAP_WATER_LABELS, airBand, tapWater } from './health'
+export { AIR_BANDS, TAP_WATER_LABELS, airBand, tapWater, vaccinesFor } from './health'
+export { MOBILE_BANDS, mobileInternet } from './mobile'
+export { NEARBY_BANDS, nearby, nearbyLevel, roughCount, roughKm } from './nearby'
 export { CARD_LABELS, cardLevel } from './payments'
 export { addDays, daysBetween, monthOf, tripDay } from './dates'
 export { AIRPORT_MIN } from './graph'
@@ -496,6 +498,16 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     const worst = water.find((w) => w?.level === 'bottled') ?? water.find((w) => w?.level === 'boil')
     if (worst) {
       warnings.push({ kind: 'health', severity: 'info', iso2, title: `${ds.countries[iso2].name}: ${TAP_WATER_LABELS[worst.level].short.toLowerCase()}`, detail: worst.note })
+    }
+  }
+  // Malaria medicine has to be prescribed before the trip, so it's worth a reminder.
+  for (const iso2 of countries) {
+    if (ds.cdc[iso2]?.malaria) {
+      warnings.push({
+        kind: 'health', severity: 'info', iso2, url: ds.cdc[iso2].url,
+        title: `${ds.countries[iso2].name}: malaria medicine for some areas`,
+        detail: 'CDC recommends prescription medicine to prevent malaria in certain areas. See a travel clinic 4–6 weeks before going.',
+      })
     }
   }
   for (const s of sched) {

@@ -90,3 +90,9 @@ body {
 :root[data-theme='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon,
 :root[data-theme='dark'] .maplibregl-ctrl-attrib-button { filter: invert(1); }
 :root[data-theme='dark'] .maplibregl-ctrl-attrib a { color: var(--color-ink); }
+
+/* Sideways-scrolling bars (the city panel's tabs) without a visible scrollbar. */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}

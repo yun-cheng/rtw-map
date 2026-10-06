@@ -59,15 +59,15 @@ export const cityName = (id: string) => ds.cities[id]?.name ?? id
 export const flag = (iso2: string) =>
   iso2 === 'XK' ? '🇽🇰' : String.fromCodePoint(...[...iso2.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)))
 
-/** 0 = bad (red) … 1 = good (green). */
-export function ramp(v: number): string {
-  const stops = [[0, [220, 38, 38]], [0.5, [234, 179, 8]], [1, [22, 163, 74]]] as const
-  const x = Math.max(0, Math.min(1, v))
-  const [a, b] = x <= 0.5 ? [stops[0], stops[1]] : [stops[1], stops[2]]
-  const t = (x - a[0]) / (b[0] - a[0])
-  const c = a[1].map((av, i) => Math.round(av + (b[1][i] - av) * t))
-  return `rgb(${c.join(',')})`
-}
+/**
+ * Colours of the five-level scales (air, mobile internet, cost, nearby places, card and English level bars), worst
+ * first: red, orange, yellow, light green, dark green. Fixed steps rather than a blend, with the two greens far
+ * apart in lightness, so neighbouring levels are easy to tell apart on the map.
+ */
+export const LEVEL_COLORS = ['#dc2626', '#f97316', '#eab308', '#84cc16', '#15803d'] as const
+
+/** Colour of a level from 1 (worst) to 5 (best). */
+export const levelColor = (level: number) => LEVEL_COLORS[Math.max(1, Math.min(5, Math.round(level))) - 1]
 
 /** Exchange rate between two currencies, written so the number is ≥ 1, e.g. "1 EUR = 117.48 RSD". */
 export function rateText(from: string, to: string): string | null {
@@ -107,8 +107,27 @@ export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): str
 }
 
 /** A warning's text, with the temperature (hot/cold warnings) in the given unit. */
-export const warningTitle = (w: { title: string; tempC?: number }, unit: TempUnit) =>
-  w.tempC === undefined ? w.title : `${w.title} (avg high ${temp(w.tempC, unit)})`
+export const warningTitle = (w: { title: string; tempC?: number; tempIsLow?: boolean }, unit: TempUnit) =>
+  w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
+
+/**
+ * The same five classes for nights, by the average daily low: near freezing, cool, comfortable for sleeping, warm,
+ * and hot nights (hard to sleep in without air conditioning).
+ */
+export function lowKind(m: { tLow: number }): Exclude<WeatherKind, 'wet'> {
+  if (m.tLow < 2) return 'cold'
+  if (m.tLow < 10) return 'cool'
+  if (m.tLow >= 23) return 'hot'
+  if (m.tLow >= 18) return 'warm'
+  return 'pleasant'
+}
+
+/** Each night class as its range of average lows, e.g. "10–18°C" (thresholds as in lowKind). */
+export function lowBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
+  const t = (c: number) => tempValue(c, unit)
+  const u = `°${unit}`
+  return { cold: `<${t(2)}${u}`, cool: `${t(2)}–${t(10)}${u}`, pleasant: `${t(10)}–${t(18)}${u}`, warm: `${t(18)}–${t(23)}${u}`, hot: `${t(23)}${u}+` }[kind]
+}
 
 /** Classifies a month by its average high, using the same thresholds as the weather warnings. */
 export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {

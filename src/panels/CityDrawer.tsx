@@ -1,6 +1,6 @@
-import { Fragment, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, weatherKind } from '../ui/format'
 import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
@@ -27,8 +27,8 @@ const PACES: { value: Pace; icon: string; label: string }[] = [
 ]
 
 type SectionKey =
-  | 'around' | 'gettingThere' | 'weather' | 'air' | 'costs' | 'money' | 'health' | 'beforeYouGo'
-  | 'services' | 'safety' | 'language' | 'visa' | 'people'
+  | 'around' | 'gettingThere' | 'weather' | 'air' | 'costs' | 'money' | 'language' | 'phone' | 'services' | 'people'
+  | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
 
 /** Tabs of the city panel and the sections each one shows, most useful first. */
 const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
@@ -36,10 +36,50 @@ const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
   { key: 'transport', label: 'Transport', sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', sections: ['weather', 'air'] },
   { key: 'money', label: 'Money', sections: ['costs', 'money'] },
-  { key: 'daily', label: 'Daily life', sections: ['language', 'services', 'people'] },
-  { key: 'safety', label: 'Safety', sections: ['safety', 'health'] },
-  { key: 'entry', label: 'Entry', sections: ['visa', 'beforeYouGo'] },
+  { key: 'daily', label: 'Daily life', sections: ['language', 'phone', 'services', 'people'] },
+  { key: 'health', label: 'Health', sections: ['vaccines', 'health', 'medical'] },
+  { key: 'safety', label: 'Safety', sections: ['safety'] },
+  { key: 'entry', label: 'Entry', sections: ['visa'] },
 ]
+
+/**
+ * For a bar that scrolls sideways: the mouse wheel scrolls it sideways too, and the edge fades where more is
+ * hidden, so it's clear there's more to see.
+ */
+function useSideScroll() {
+  const ref = useRef<HTMLElement>(null)
+  const [edges, setEdges] = useState({ left: false, right: false })
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 })
+    const onWheel = (e: WheelEvent) => {
+      if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
+      e.preventDefault()
+      el.scrollLeft += e.deltaY
+    }
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    el.addEventListener('wheel', onWheel, { passive: false })
+    const resize = new ResizeObserver(update)
+    resize.observe(el)
+    return () => {
+      el.removeEventListener('scroll', update)
+      el.removeEventListener('wheel', onWheel)
+      resize.disconnect()
+    }
+  }, [])
+  const fade = `linear-gradient(to right, ${edges.left ? 'transparent, #000 24px' : '#000'}, ${edges.right ? '#000 calc(100% - 24px), transparent' : '#000'})`
+  return { ref, mask: { maskImage: fade, WebkitMaskImage: fade } }
+}
+
+/** A number with a label underneath, in the grids of shops and medical help. */
+const Tile = ({ value, label }: { value: string; label: string }) => (
+  <div className="rounded-md border border-line px-1 py-1.5">
+    <div className="text-[15px] font-semibold">{value}</div>
+    <div className="text-[10px] text-muted">{label}</div>
+  </div>
+)
 
 type Tone = 'ok' | 'info' | 'warn' | 'error'
 const TONE_DOT: Record<Tone, string> = { ok: 'bg-green-600', info: 'bg-slate-400', warn: 'bg-amber-500', error: 'bg-red-600' }
@@ -77,9 +117,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const taxiRide = taxiEstimate(ds, cityId)
   const rentals = ds.localTransport.countries[city.iso2]?.rentals
   const health = ds.health.countries[city.iso2]
+  const vaccines = vaccinesFor(ds, city.iso2)
+  const mobile = mobileInternet(ds, cityId)
   const water = tapWater(ds, cityId)
   const air = ds.air.byCity[cityId]
-  const services = ds.amenities.byCity[cityId]
+  const services = nearby(ds, cityId)
   const shopping = ds.shopping[city.iso2]
   const pay = ds.payments.countries[city.iso2]
   const card = cardLevel(ds, cityId)
@@ -102,7 +144,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   // Sections, built once and rendered in order of importance (see `order` below).
   const sections: Record<SectionKey, ReactNode> = {
     around: transit && (
-      <Section title="Getting around" aside={<Badge tone="warn">estimate</Badge>}>
+      <Section title="In the city" aside={<Badge tone="warn">estimate</Badge>}>
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-muted">Public transport</span>
           <LevelBar level={transit.ease} label="Public transport" />
@@ -217,7 +259,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     money: pay && (
-      <Section title="Money & payments" aside={<Badge tone="warn">estimate</Badge>}>
+      <Section title="Paying & cash" aside={<Badge tone="warn">estimate</Badge>}>
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-muted">Paying by card</span>
           <LevelBar level={card.level} label="Card acceptance" />
@@ -233,7 +275,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <div className="mt-2">
           <Row label="Contactless & phone pay">{pay.mobilePay === 'common' ? 'Common' : pay.mobilePay === 'some' ? 'In bigger shops and cities' : 'Not for foreign cards'}</Row>
           <Row label="Currency">{country.currency}{rateText(currency, country.currency) && ` · ${rateText(currency, country.currency)}`}</Row>
-          {services && <Row label={`ATMs within ${ds.amenities.radiusKm} km`}>{services.atm}</Row>}
+          {services && <Row label={`ATMs within ${ds.amenities.radiusKm} km`}>{roughCount(services.atm)}</Row>}
         </div>
         <p className="mt-2 text-[13px]"><span className="text-muted">Cash needed for:</span> {pay.cashFor}</p>
         <p className="mt-1 text-[13px]">🏧 {pay.atm}</p>
@@ -244,7 +286,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     health: health && (
-      <Section title="Health & emergencies">
+      <Section title="Health">
         {water && (
           <>
             <div className="flex items-center gap-2">
@@ -258,12 +300,27 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <ul className="list-disc pl-4 text-[13px]">{health.risks.map((r) => <li key={r}>{r}</li>)}</ul>
         <div className="mt-2 mb-1 text-[12px] font-semibold">Healthcare</div>
         <p className="text-[13px]">{health.healthcare}</p>
+      </Section>
+    ),
+    medical: (
+      <Section title="Medical help nearby">
+        {services ? (
+          <>
+            <p className="mb-1 text-[12px] text-muted">Roughly how many within {ds.amenities.radiusKm} km of the centre:</p>
+            <div className="grid grid-cols-3 gap-1 text-center">
+              {([['pharmacy', '💊', 'Pharmacies'], ['clinic', '🩺', 'Clinics & doctors']] as const).map(([k, icon, label]) => (
+                <Tile key={k} value={`${icon} ${roughCount(services[k])}`} label={label} />
+              ))}
+              {services.nearestHospitalKm !== undefined && <Tile value={`🏥 ${roughKm(services.nearestHospitalKm)}`} label="Nearest hospital" />}
+              {services.hospitalWithin && <Tile value={`🏥 <${services.hospitalWithin} km`} label="Nearest hospital" />}
+            </div>
+          </>
+        ) : (
+          <p className="text-[13px] text-muted">No data for {city.name} yet.</p>
+        )}
         <div className="mt-2">
           <Row label="Emergency number">{country.emergency}</Row>
         </div>
-        <Links>
-          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
-        </Links>
       </Section>
     ),
     air: (
@@ -290,46 +347,55 @@ export function CityDrawer({ cityId }: { cityId: string }) {
 
       </Section>
     ),
-    beforeYouGo: (
-      <Section title="Before you go">
-        {health && (
-          <>
-            <div className="mb-1 text-[12px] font-semibold">Vaccines to discuss with a travel clinic</div>
-            <ul className="list-disc pl-4 text-[13px]">{health.vaccines.map((v) => <li key={v}>{v}</li>)}</ul>
-          </>
+    vaccines: health && (
+      <Section title="Vaccines & medicines">
+        <p className="mb-1 text-[12px] text-muted">To discuss with a travel clinic, ideally 4–6 weeks before going.</p>
+        <ul className="list-disc space-y-0.5 pl-4 text-[13px]">
+              <li>Routine vaccines up to date, including measles (MMR)</li>
+              {vaccines.items.map((v) => (
+                <li key={v.name}>
+                  <b className="font-medium">{v.name}</b>
+                  {vaccines.source === 'cdc' && <span className={v.advice === 'recommended' ? ' text-ink' : ' text-muted'}>{v.advice === 'recommended' ? ' · recommended' : ' · consider'}</span>}
+                  {v.note && <span className="text-muted">: {v.note}</span>}
+                </li>
+              ))}
+        </ul>
+        <Links>
+          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
+        </Links>
+      </Section>
+    ),
+    phone: (
+      <Section title="Phone & power">
+        {mobile ? (
+          <div className="flex items-center gap-2" title={mobile.long}>
+            <span className="text-[13px] text-muted">Mobile internet</span>
+            <LevelBar level={mobile.level} label="Mobile internet" />
+            <b className="text-[13px]">{mobile.short}</b>
+            <span className="text-[12px] text-muted">~{mobile.downMbps} Mbps</span>
+          </div>
+        ) : (
+          <p className="text-[13px] text-muted">No mobile internet speeds for {country.name}.</p>
         )}
+        {mobile && <p className="mt-1 text-[13px]">{mobile.long}.</p>}
         <div className="mt-2">
-          <Row label="Travel insurance">Strongly recommended</Row>
           <Row label="Plugs">Type {country.plugs.join(' / ')} · {country.voltage}V</Row>
         </div>
-        {adv?.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
-        {health && (
-          <Links>
-            <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
-          </Links>
-        )}
       </Section>
     ),
     services: (
-      <Section title="Shops & services">
+      <Section title="Shops">
         {services ? (
           <>
-            <p className="mb-1 text-[12px] text-muted">Within {ds.amenities.radiusKm} km of the centre:</p>
+            <p className="mb-1 text-[12px] text-muted">Roughly how many within {ds.amenities.radiusKm} km of the centre:</p>
             <div className="grid grid-cols-3 gap-1 text-center">
-              {([['supermarket', '🛒', 'Supermarkets'], ['convenience', '🏪', 'Convenience'], ['pharmacy', '💊', 'Pharmacies'], ['clinic', '🩺', 'Clinics & doctors'], ['atm', '🏧', 'ATMs']] as const).map(([k, icon, label]) => (
-                <div key={k} className="rounded-md border border-line px-1 py-1.5">
-                  <div className="text-[15px] font-semibold">{icon} {services[k]}</div>
-                  <div className="text-[10px] text-muted">{label}</div>
-                </div>
+              {([['supermarket', '🛒', 'Supermarkets'], ['convenience', '🏪', 'Convenience'], ['atm', '🏧', 'ATMs']] as const).map(([k, icon, label]) => (
+                <Tile key={k} value={`${icon} ${roughCount(services[k])}`} label={label} />
               ))}
-              <div className="rounded-md border border-line px-1 py-1.5">
-                <div className="text-[15px] font-semibold">🏥 {services.nearestHospitalKm == null ? '>40' : services.nearestHospitalKm < 1 ? '<1' : Math.round(services.nearestHospitalKm)} km</div>
-                <div className="text-[10px] text-muted">Nearest hospital</div>
-              </div>
             </div>
           </>
         ) : (
-          <p className="text-[13px] text-muted">Service counts not loaded yet.</p>
+          <p className="text-[13px] text-muted">No data for {city.name} yet.</p>
         )}
         {shopping && (
           <div className="mt-2">
@@ -341,7 +407,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     gettingThere: (
-      <Section title="Getting there & away">
+      <Section title="To other cities">
         {connections.length ? (
           <ul className="flex flex-col">
             {connections.map((c) => (
@@ -360,7 +426,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     safety: adv && (
-      <Section title="Safety">
+      <Section title="Travel advice">
         <div className="flex flex-wrap gap-1.5">
           <Badge tone={adv.alertStatus.includes('avoid_all_travel_to_whole_country') ? 'error' : adv.alertStatus.length ? 'warn' : 'ok'}>
             UK: {adv.alertStatus.includes('avoid_all_travel_to_whole_country') ? 'Do not travel' : adv.alertStatus.length ? 'Avoid parts' : 'No travel restrictions'}
@@ -376,6 +442,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             </details>
           ))}
         </div>
+        <div className="mt-2">
+          <Row label="Emergency number">{country.emergency}</Row>
+          <Row label="Travel insurance">Strongly recommended</Row>
+        </div>
+        {adv.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
         <Links>
           <a className="text-accent hover:underline" href={adv.url} target="_blank" rel="noreferrer">UK FCDO advice ↗</a>
           {adv.us && <> · <a className="text-accent hover:underline" href={adv.us.url} target="_blank" rel="noreferrer">US advisory ↗</a></>}
@@ -450,6 +521,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const monthName = new Date(2000, month - 1).toLocaleString('en', { month: 'short' })
   const clim = climate?.[month - 1]
   const airM = air?.[month - 1]
+  const recommended = vaccines.items.filter((v) => v.advice === 'recommended').map((v) => v.name)
+  const vaccineSummary = vaccines.source === 'cdc'
+    ? recommended.length ? `Routine + ${recommended.join(', ')}` : 'Routine vaccines only'
+    : `Routine + ${vaccines.items.length} to discuss`
   const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; problem?: boolean; color?: string }[] = [
     ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tone: VISA_TEXT[visa.req].tone, tab: 'entry' as const, problem: visaProblem }] : []),
     ...(adv ? [{
@@ -460,9 +535,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
     ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${range(clim.tLow, clim.tHigh)}, ~${Math.round(clim.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind(clim)].color, tab: 'weather' as const }] : []),
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
-    ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'safety' as const }] : []),
+    ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
+    ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),
     ...(cost ? [{ icon: '💶', label: 'Daily budget', value: `${fmt(dailyCost(ds, cityId, input.budget))} (${BUDGETS.find((b) => b.value === input.budget)?.label.toLowerCase()})`, tone: 'info' as const, tab: 'money' as const }] : []),
     ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, problem: moneyProblem }] : []),
+    ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tone: toneOf(mobile.level), tab: 'daily' as const }] : []),
     { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },
   ].sort((a, b) =>
     // Problems first, most serious first (can't get in, then don't go, then cash only); then in tab order.
@@ -470,6 +547,12 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
   const tabInfo = TABS.find((t) => t.key === cityTab) ?? TABS[0]
+  // Keep the open tab in view when the tab bar scrolls sideways.
+  const activeTab = useRef<HTMLButtonElement>(null)
+  useEffect(() => {
+    activeTab.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  }, [tabInfo.key])
+  const tabBar = useSideScroll()
 
   return (
     <div className="pb-8">
@@ -491,14 +574,15 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
           ) : null}
         </div>
-        <nav className="-mx-4 -mb-px mt-2 flex overflow-x-auto overflow-y-hidden px-2" role="tablist" aria-label="City information">
+        <nav ref={tabBar.ref} style={tabBar.mask} className="no-scrollbar -mx-4 -mb-px mt-2 flex gap-1 overflow-x-auto overflow-y-hidden scroll-px-4 px-3" role="tablist" aria-label="City information">
           {TABS.map((t) => (
             <button
               key={t.key}
+              ref={t.key === tabInfo.key ? activeTab : undefined}
               role="tab"
               aria-selected={t.key === tabInfo.key}
               onClick={() => setCityTab(t.key)}
-              className={`relative shrink-0 border-b-2 px-1 py-1.5 text-[12px] font-medium whitespace-nowrap ${t.key === tabInfo.key ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              className={`relative shrink-0 border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap ${t.key === tabInfo.key ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
               {t.label}
               {problemTabs.has(t.key) && <span className="absolute top-1 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}

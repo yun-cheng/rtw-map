@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, type TripInput } from './index'
+import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -174,6 +174,57 @@ describe('weather checks', () => {
     const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-20' }
     const plan = evaluatePlan(ds, input, [{ cityId: 'athens', nights: 10, locked: false, groupId: '' }])
     expect(plan.warnings.some((w) => w.kind === 'weather' && w.title.includes('hot'))).toBe(true)
+  })
+})
+
+describe('vaccines and medicines', () => {
+  it("uses CDC's advice, recommended first, and leaves out what CDC doesn't recommend", () => {
+    const th = vaccinesFor(ds, 'TH')
+    expect(th.source).toBe('cdc')
+    expect(th.items.map((v) => v.name)).toContain('Malaria')
+    expect(th.items.findIndex((v) => v.advice === 'consider')).toBeGreaterThan(th.items.findLastIndex((v) => v.advice === 'recommended'))
+    expect(vaccinesFor(ds, 'AT').items.map((v) => v.name)).not.toContain('Yellow Fever')
+  })
+
+  it('falls back to our own list without CDC data', () => {
+    const v = vaccinesFor({ ...ds, cdc: {} }, 'TH')
+    expect(v.source).toBe('ours')
+    expect(v.items.some((x) => x.name.startsWith('Malaria'))).toBe(true)
+  })
+
+  it('reminds about malaria medicine for a stop in Thailand', () => {
+    const input = { ...testTrip('US'), startDate: '2027-01-10', endDate: '2027-01-15' }
+    const plan = evaluatePlan(ds, input, [{ cityId: 'bangkok', nights: 5, locked: false, groupId: '' }])
+    expect(plan.warnings.some((w) => w.kind === 'health' && w.title.includes('malaria'))).toBe(true)
+  })
+})
+
+describe('mobile internet', () => {
+  it('puts each city with data in a speed band, and has none where there are no measurements', () => {
+    const z = mobileInternet(ds, 'zagreb')!
+    expect(z.downMbps).toBeGreaterThan(0)
+    expect(z.short).toBe(z.downMbps >= 200 ? 'Very fast' : z.downMbps >= 100 ? 'Fast' : z.downMbps >= 50 ? 'Good' : z.downMbps >= 25 ? 'OK' : 'Slow')
+    expect(mobileInternet(ds, 'moscow')).toBeNull()
+    expect(Object.keys(ds.mobile).length).toBeGreaterThan(100)
+  })
+})
+
+describe('places near the centre', () => {
+  it('shows counts as a rough scale', () => {
+    expect([0, 3, 7, 12, 30, 250].map(roughCount)).toEqual(['None found', '1–4', '5+', '5+', '20+', '50+'])
+    expect([null, 0.4, 2.6].map(roughKm)).toEqual(['>40 km', '<1 km', '~3 km'])
+  })
+
+  it('takes the higher count of the two sources', () => {
+    const osm = { supermarket: 1, convenience: 0, pharmacy: 2, clinic: 0, atm: 30, nearestHospitalKm: 1.2 }
+    const listed = { supermarket: 9, convenience: 4, pharmacy: 1, clinic: 3, atm: 2 }
+    const n = nearby({ ...ds, amenities: { radiusKm: 1.5, byCity: { x: osm } }, businesses: { x: listed } }, 'x')
+    expect(n).toEqual({ supermarket: 9, convenience: 4, pharmacy: 2, clinic: 3, atm: 30, nearestHospitalKm: 1.2 })
+    // Without OpenStreetMap, the listings only tell whether there's a hospital within the radius.
+    const listedOnly = { ...ds, amenities: { radiusKm: 1.5, byCity: {} }, businesses: { x: { ...listed, hospital: 2 }, y: listed } }
+    expect(nearby(listedOnly, 'x')).toMatchObject({ hospitalWithin: 1.5 })
+    expect(nearby(listedOnly, 'y')).not.toHaveProperty('nearestHospitalKm')
+    expect(nearby({ ...ds, amenities: { radiusKm: 1.5, byCity: {} }, businesses: {} }, 'x')).toBeNull()
   })
 })
 

@@ -9,8 +9,12 @@ import {
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type CityTab = 'overview' | 'entry' | 'transport' | 'weather' | 'money' | 'safety' | 'daily'
-export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'cards' | 'english' | 'schengen' | 'advisory'
+export type CityTab = 'overview' | 'transport' | 'weather' | 'money' | 'daily' | 'health' | 'safety' | 'entry'
+export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen'
+export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen']
+/** The kinds of place the Nearby map view can show. */
+export type NearbyKind = 'supermarket' | 'pharmacy' | 'clinic' | 'atm'
+export const NEARBY_KINDS: NearbyKind[] = ['supermarket', 'pharmacy', 'clinic', 'atm']
 
 type State = {
   input: TripInput
@@ -20,6 +24,10 @@ type State = {
   layer: MapLayer
   /** Month shown by the weather and air layers; 0 = each place at the time of the trip (see likelyMonth). */
   layerMonth: number
+  /** Kind of place shown by the Nearby layer. */
+  nearbyKind: NearbyKind
+  /** What the Weather layer colours by: the average daily high or low. */
+  weatherBy: 'high' | 'low'
   panel: 'setup' | 'itinerary' | 'assistant'
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
@@ -44,6 +52,8 @@ type State = {
   select: (s: Selection) => void
   setLayer: (l: MapLayer) => void
   setLayerMonth: (m: number) => void
+  setNearbyKind: (k: NearbyKind) => void
+  setWeatherBy: (by: 'high' | 'low') => void
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
   setTempUnit: (u: TempUnit) => void
@@ -107,6 +117,8 @@ export const useTrip = create<State>()(
         selected: null,
         layer: 'none',
         layerMonth: 0,
+        nearbyKind: 'pharmacy',
+        weatherBy: 'high',
         panel: 'setup',
         fitRequest: 0,
         currency: 'EUR',
@@ -155,6 +167,8 @@ export const useTrip = create<State>()(
         select: (selected) => set({ selected }),
         setLayer: (layer) => set({ layer }),
         setLayerMonth: (layerMonth) => set({ layerMonth }),
+        setNearbyKind: (nearbyKind) => set({ nearbyKind }),
+        setWeatherBy: (weatherBy) => set({ weatherBy }),
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
@@ -188,6 +202,8 @@ export const useTrip = create<State>()(
       partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, priceCompare: s.priceCompare, cityTab: s.cityTab }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
+        // A map view that has since been removed (Cards, English, Safety).
+        if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
         try {
           merged.plan = merged.stops.length ? evaluatePlan(ds, merged.input, merged.stops) : null
         } catch {

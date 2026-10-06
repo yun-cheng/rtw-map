@@ -35,10 +35,26 @@ describe('address bar state', () => {
     expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=climate')
   })
 
+  it('keeps whether the weather layer shows highs or lows', () => {
+    readUrl('?layer=climate&temp=low')
+    expect(useTrip.getState().weatherBy).toBe('low')
+    expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=climate&temp=low')
+    readUrl('?layer=climate')
+    expect(useTrip.getState().weatherBy).toBe('high')
+  })
+
+  it('keeps the kind of place shown by the Nearby layer', () => {
+    readUrl('?layer=nearby&kind=atm')
+    expect(useTrip.getState().nearbyKind).toBe('atm')
+    expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=nearby&kind=atm')
+  })
+
   it('opens a journey only if the plan has it, and ignores unknown values', () => {
     readUrl('?leg=1')
     expect(useTrip.getState().selected).toEqual({ type: 'leg', index: 1 })
     expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&leg=1')
+    readUrl('?layer=cards')
+    expect(useTrip.getState().layer).toBe('none')
     readUrl('?leg=999&tab=nope&layer=nope&panel=nope&city=atlantis')
     const s = useTrip.getState()
     expect(s.selected).toBeNull()

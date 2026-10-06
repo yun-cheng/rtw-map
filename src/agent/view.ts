@@ -4,14 +4,14 @@
 // its message; for the values shown it calls get_shared_view (tools.ts), which only returns the shared items.
 import { dataset as ds } from '../data/dataset'
 import { likelyMonth, stayMonth } from '../planner'
-import { useTrip, type CityTab, type MapLayer } from '../store/trip'
+import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
 import { MONTHS, shortDate } from '../ui/format'
 
 /** What a view item points at, for get_shared_view. */
 export type ViewRef =
   | { kind: 'city'; id: string; tab: CityTab }
   | { kind: 'journey'; from: string; to: string; index: number }
-  | { kind: 'map'; layer: MapLayer; month: number }
+  | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; weatherBy?: 'high' | 'low' }
 
 export type ViewItem = {
   /** Changes when the view changes, so a chip the user removed comes back for something new. */
@@ -26,32 +26,33 @@ export type ViewItem = {
 /** What each city tab shows (the values come from get_shared_view). */
 const TAB_SHOWS: Record<CityTab, string> = {
   overview: 'a summary of everything below and any problems',
-  transport: 'public transport, taxi apps and direct connections to other cities',
+  transport: 'public transport, taxis and rentals in the city, and direct connections to other cities',
   weather: 'monthly highs and lows, rainy days, sunshine and air quality, with the stay months highlighted',
-  money: 'daily costs per budget, sample prices and how widely cards are accepted',
-  daily: 'how easy English is, getting around and tap water',
-  safety: 'government travel advice and health notes',
-  entry: 'the visa rule for their passport and things to arrange before going',
+  money: 'daily costs per budget, sample prices, how widely cards are accepted and when cash is needed',
+  daily: 'how easy English is, mobile internet speed, plugs, shops and people & culture',
+  health: 'vaccines and medicines (CDC advice), tap water, health risks, healthcare, and pharmacies, clinics and the nearest hospital',
+  safety: 'government travel advice, the emergency number and travel insurance',
+  entry: 'the visa rule for their passport, Schengen days and entry notices',
 }
 
 const TAB_NAMES: Record<CityTab, string> = {
-  overview: 'Overview', transport: 'Transport', weather: 'Weather', money: 'Money', daily: 'Daily life', safety: 'Safety', entry: 'Entry',
+  overview: 'Overview', transport: 'Transport', weather: 'Weather', money: 'Money', daily: 'Daily life', health: 'Health', safety: 'Safety', entry: 'Entry',
 }
 const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
-  none: { name: 'Route', about: 'the trip: its stops in order, joined by lines coloured by travel mode (dashed where times are estimated)' },
-  climate: { name: 'Weather', about: 'average daily high and share of rainy days' },
-  air: { name: 'Air', about: 'air pollution (PM2.5)' },
-  cost: { name: 'Cost', about: 'daily cost for their budget' },
-  cards: { name: 'Cards', about: 'how widely cards are accepted' },
-  english: { name: 'English', about: 'how easy it is to get by in English' },
+  none: { name: 'Route', about: 'the trip: its stops in order, numbered by the trip day they arrive, joined by lines coloured by travel mode (dashed where times are estimated)' },
+  climate: { name: 'Weather', about: 'average daily high (the number on each stop) and share of rainy days' },
+  air: { name: 'Air', about: 'air pollution: monthly average PM2.5 in µg/m³ (the number on each stop)' },
+  nearby: { name: 'Nearby', about: 'roughly how many places of one kind are within 1.5 km of the centre (from map data and business listings, both incomplete): none found, 1–4, 5+, 10+, 20+ or 50+' },
+  mobile: { name: 'Mobile', about: 'mobile internet: typical download speed on phones, in Mbps (the number on each stop), in five bands from slow (under 25) to very fast (200+)' },
+  cost: { name: 'Cost', about: 'daily cost for their budget, in five bands of about a fifth of all cities each' },
   schengen: { name: 'Schengen', about: 'which countries are in the Schengen area' },
-  advisory: { name: 'Safety', about: 'government travel advice' },
 }
+const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
 const MONTH_NAMES = MONTHS.map((_, i) => new Date(2000, i).toLocaleString('en', { month: 'long' }))
 
 /** The parts of the current view worth sharing: the open city or journey, and the map view (Route only with a plan). */
 export function viewItems(): ViewItem[] {
-  const { selected, cityTab, layer, layerMonth, plan, input } = useTrip.getState()
+  const { selected, cityTab, layer, layerMonth, nearbyKind, weatherBy, plan, input } = useTrip.getState()
   const items: ViewItem[] = []
 
   if (selected?.type === 'city' && ds.cities[selected.id]) {
@@ -81,13 +82,15 @@ export function viewItems(): ViewItem[] {
   }
 
   if (layer !== 'none' || plan) {
-    const l = LAYER_NAMES[layer]
+    const l = layer === 'climate' && weatherBy === 'low'
+      ? { name: 'Weather (lows)', about: 'average daily low, how the nights feel (the number on each stop), and share of rainy days' }
+      : LAYER_NAMES[layer]
     const monthly = layer === 'climate' || layer === 'air'
-    const when = !monthly ? '' : layerMonth ? ` in ${MONTH_NAMES[layerMonth - 1]}` : ' for each place at the time of the trip'
+    const when = layer === 'nearby' ? ` (${NEARBY_NAMES[nearbyKind]})` : !monthly ? '' : layerMonth ? ` in ${MONTH_NAMES[layerMonth - 1]}` : ' for each place at the time of the trip'
     items.push({
-      key: `map:${layer}:${monthly ? layerMonth : ''}`,
-      ref: { kind: 'map', layer, month: monthly ? layerMonth : 0 },
-      label: `${l.name} map${monthly ? ` · ${layerMonth ? MONTHS[layerMonth - 1] : 'trip dates'}` : ''}`,
+      key: `map:${layer}:${monthly ? layerMonth : ''}${layer === 'nearby' ? nearbyKind : ''}${layer === 'climate' ? weatherBy : ''}`,
+      ref: { kind: 'map', layer, month: monthly ? layerMonth : 0, ...(layer === 'nearby' && { nearbyKind }), ...(layer === 'climate' && { weatherBy }) },
+      label: `${l.name} map${monthly ? ` · ${layerMonth ? MONTHS[layerMonth - 1] : 'trip dates'}` : layer === 'nearby' ? ` · ${NEARBY_NAMES[nearbyKind]}` : ''}`,
       text: layer === 'none'
         ? `The map shows the ${l.name} view: ${l.about}.`
         : `The map shows the ${l.name} view, colouring each stop and city by ${l.about}${when}.`,

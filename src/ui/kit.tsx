@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { ramp } from './format'
+import { levelColor } from './format'
 
 export function Button({ variant = 'default', className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary' | 'ghost' }) {
   const styles = {
@@ -67,7 +67,7 @@ export function LevelBar({ level, label }: { level: number; label: string }) {
   return (
     <span className="flex gap-0.5" role="img" aria-label={`${label}: ${level} out of 5`}>
       {[1, 2, 3, 4, 5].map((n) => (
-        <span key={n} className="h-2 w-5 rounded-sm" style={{ background: n <= level ? ramp((level - 1) / 4) : 'var(--color-line)' }} />
+        <span key={n} className="h-2 w-5 rounded-sm" style={{ background: n <= level ? levelColor(level) : 'var(--color-line)' }} />
       ))}
     </span>
   )

@@ -121,6 +121,13 @@ export type CountryHealth = {
   cdcSlug: string
 }
 
+/** A vaccine or medicine for a country, from CDC (scripts/fetch-health.ts): recommended for most travellers, or worth
+ *  considering depending on the trip, with a short note on who it's for. */
+export type VaccineAdvice = { name: string; advice: 'recommended' | 'consider'; note: string }
+
+/** Mobile internet measured on phones in a city: average download and upload speed, latency and how many tests. */
+export type MobileSpeed = { downMbps: number; upMbps: number; latencyMs: number; tests: number }
+
 /** Monthly fine-particle pollution: average PM2.5 (µg/m³) and days per month above the WHO 24-hour guideline. */
 export type AirMonth = { month: number; pm25: number; daysOverWho: number }
 
@@ -167,8 +174,12 @@ export type Dataset = {
   population: Record<string, { value: number; year: number }>
   localTransport: { cities: Record<string, CityTransport>; countries: Record<string, CountryTransport> }
   health: { countries: Record<string, CountryHealth>; cities: Record<string, { tapWater?: CountryHealth['tapWater'] }> }
+  cdc: Record<string, { url: string; items: VaccineAdvice[]; malaria: boolean }>
+  mobile: Record<string, MobileSpeed>
   air: { whoDaily: number; byCity: Record<string, AirMonth[]> }
   amenities: { radiusKm: number; byCity: Record<string, Amenities> }
+  /** Business listings near each city centre (scripts/build-places.ts), same radius as amenities. */
+  businesses: Record<string, Omit<Amenities, 'nearestHospitalKm'> & { hospital?: number }>
   shopping: Record<string, Shopping>
   priceLevels: { compare: { iso2: string; name: string; currency: string }[]; levels: Record<string, PriceLevel> }
   bigMac: { date: string; euroArea: BigMac | null; prices: Record<string, BigMac> }

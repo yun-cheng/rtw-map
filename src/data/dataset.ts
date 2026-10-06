@@ -1,5 +1,6 @@
 import advisoriesJson from '../../data/gen/advisories.json'
 import bigMacJson from '../../data/gen/big-mac.json'
+import cdcJson from '../../data/gen/cdc.json'
 import airJson from '../../data/gen/air.json'
 import amenitiesJson from '../../data/gen/amenities.json'
 import citiesJson from '../../data/gen/cities.json'
@@ -10,6 +11,8 @@ import countriesJson from '../../data/gen/countries.json'
 import fxJson from '../../data/gen/fx.json'
 import healthJson from '../../data/gen/health.json'
 import localTransportJson from '../../data/gen/local-transport.json'
+import mobileJson from '../../data/gen/mobile.json'
+import overtureJson from '../../data/gen/overture.json'
 import noticesJson from '../../data/gen/notices.json'
 import paymentsJson from '../../data/gen/payments.json'
 import populationJson from '../../data/gen/population.json'
@@ -35,6 +38,9 @@ export const dataset: Dataset = {
   population: populationJson.population,
   localTransport: localTransportJson as unknown as Dataset['localTransport'],
   health: healthJson as unknown as Dataset['health'],
+  cdc: cdcJson.countries as Dataset['cdc'],
+  mobile: mobileJson.mobile,
+  businesses: overtureJson.places as Dataset['businesses'],
   air: { whoDaily: airJson.whoDaily, byCity: airJson.air as Dataset['air']['byCity'] },
   amenities: { radiusKm: amenitiesJson.radiusKm, byCity: amenitiesJson.amenities as Dataset['amenities']['byCity'] },
   shopping: shoppingJson.countries as Dataset['shopping'],
@@ -54,6 +60,9 @@ export const dataset: Dataset = {
     population: populationJson._meta,
     localTransport: localTransportJson._meta,
     health: healthJson._meta,
+    cdc: cdcJson._meta,
+    mobile: mobileJson._meta,
+    businesses: overtureJson._meta,
     air: airJson._meta,
     amenities: amenitiesJson._meta,
     shopping: shoppingJson._meta,

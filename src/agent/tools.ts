@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costProfile, dailyCost, englishLevel,
-  groceryDay, likelyMonth, routeBetween, schengenApplies, suggestedDays, tapWater, type Budget, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, mobileInternet, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -160,6 +160,8 @@ function cityInfo(args: Args): ToolResult {
     english: ENGLISH_LABELS[englishLevel(ds, id).level]?.short,
     cards: pay && { level: CARD_LABELS[cardLevel(ds, id).level]?.short, foreign_cards_work: pay.foreignCardsWork, cash_for: pay.cashFor },
     tap_water: water && TAP_WATER_LABELS[water.level]?.short,
+    vaccines: vaccinesFor(ds, city.iso2).items.map((v) => `${v.name} (${v.advice})`),
+    mobile_internet: mobileView(id),
     connections: ds.connections
       .filter((c) => c.from === id || c.to === id)
       .map((c) => ({ to: cityName(c.from === id ? c.to : c.from), mode: c.mode, hours: Math.round(c.durationMin / 6) / 10, price_eur: [c.priceMin, c.priceMax], frequency: c.frequency, overnight: c.overnight })),
@@ -182,7 +184,7 @@ function citySections(id: string, sections: string[]): ToolResult {
     in_itinerary: stop ? { arrive: stop.arrive, depart: stop.depart, nights: stop.nights } : false,
     likely_month: monthName(likelyMonth(ds, plan, input, id)),
   }
-  const amen = ds.amenities.byCity[id]
+  const amen = nearby(ds, id)
   for (const section of sections) {
     if (section === 'weather') {
       const air = ds.air.byCity[id]
@@ -229,8 +231,8 @@ function citySections(id: string, sections: string[]): ToolResult {
     if (section === 'health') {
       const h = ds.health.countries[city.iso2]
       out.health = {
-        tap_water: tapWater(ds, id) ?? undefined, vaccines: h?.vaccines, risks: h?.risks, healthcare: h?.healthcare,
-        nearby: amen && { pharmacies: amen.pharmacy, clinics: amen.clinic, nearest_hospital_km: amen.nearestHospitalKm, within_km: ds.amenities.radiusKm },
+        tap_water: tapWater(ds, id) ?? undefined, vaccines: vaccinesFor(ds, city.iso2), routine_vaccines: 'up to date, incl. measles (MMR)', risks: h?.risks, healthcare: h?.healthcare,
+        nearby: amen && { pharmacies: amen.pharmacy, clinics: amen.clinic, nearest_hospital_km: amen.nearestHospitalKm, within_km: ds.amenities.radiusKm, note: 'rough counts: map data misses places' },
       }
     }
     if (section === 'transport') {
@@ -247,15 +249,21 @@ function citySections(id: string, sections: string[]): ToolResult {
       out.daily = {
         english: { level: ENGLISH_LABELS[englishLevel(ds, id).level]?.short, other_languages: country.english.otherLanguages, script: country.english.script },
         languages: country.languages, religion: country.religion, plugs: country.plugs, voltage: country.voltage, emergency_number: country.emergency,
-        notes: country.notes, timezone: city.timezone, population: city.population,
-        nearby: amen && { supermarkets: amen.supermarket, convenience_stores: amen.convenience, atms: amen.atm, within_km: ds.amenities.radiusKm },
+        notes: country.notes, timezone: city.timezone, population: city.population, mobile_internet: mobileView(id),
+        nearby: amen && { supermarkets: amen.supermarket, convenience_stores: amen.convenience, atms: amen.atm, within_km: ds.amenities.radiusKm, note: 'rough counts: map data misses places' },
       }
     }
   }
   return out
 }
 
-export const COMPARE_FIELDS = ['weather', 'air', 'daily_cost', 'english', 'cards', 'travel_advice', 'tap_water', 'suggested_days', 'population'] as const
+/** Mobile internet in a city for the assistant: its band and typical speeds. */
+function mobileView(id: string) {
+  const m = mobileInternet(ds, id)
+  return m ? { level: m.short, meaning: m.long, download_mbps: m.downMbps, upload_mbps: m.upMbps, latency_ms: m.latencyMs } : 'no data'
+}
+
+export const COMPARE_FIELDS = ['weather', 'air', 'daily_cost', 'english', 'cards', 'mobile_internet', 'travel_advice', 'tap_water', 'suggested_days', 'population'] as const
 const MAX_ROWS = 80
 
 /** One row per city with the chosen fields, for questions across many cities. */
@@ -290,6 +298,7 @@ function compareCities(args: Args): ToolResult {
       if (f === 'daily_cost') row.daily_cost_eur = Math.round(dailyCost(ds, id, input.budget))
       if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id).level]?.short
       if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id).level]?.short
+      if (f === 'mobile_internet') row.mobile_internet = mobileView(id)
       if (f === 'travel_advice') row.uk_advice_level = ds.advisories[c.iso2]?.level
       if (f === 'tap_water') row.tap_water = TAP_WATER_LABELS[tapWater(ds, id)?.level ?? '']?.short
       if (f === 'suggested_days') row.suggested_days = suggestedDays(ds, input, id)[input.pace]
@@ -330,8 +339,9 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
   transport: ['public_transport', 'taxi_apps', 'connections'],
   weather: ['weather', 'air_quality'],
   money: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
-  daily: ['english', 'public_transport', 'tap_water'],
-  safety: ['travel_advice', 'tap_water'],
+  daily: ['english', 'mobile_internet'],
+  health: ['vaccines', 'tap_water'],
+  safety: ['travel_advice'],
   entry: ['schengen', 'visa'],
 }
 
@@ -360,17 +370,19 @@ function viewDetails(ref: ViewRef): ToolResult {
       case 'none': return {}
       case 'climate': {
         const m = ds.climate[cityId]?.[month - 1]
-        return m ? { month: monthName(month), high_c: m.tHigh, rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
+        return m ? { month: monthName(month), high_c: m.tHigh, low_c: m.tLow, coloured_by: ref.weatherBy ?? 'high', rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
       }
       case 'air': {
         const a = ds.air.byCity[cityId]?.[month - 1]
         return a ? { month: monthName(month), pm25: a.pm25, level: airBand(a.pm25).short } : {}
       }
+      case 'mobile': return { mobile_internet: mobileView(cityId) }
+      case 'nearby': {
+        const kind = ref.nearbyKind ?? 'pharmacy'
+        return { [`${kind}_within_${ds.amenities.radiusKm}_km`]: nearby(ds, cityId)?.[kind] ?? 'no data', note: 'rough counts: map data misses places' }
+      }
       case 'cost': return { daily_cost_eur: Math.round(dailyCost(ds, cityId, input.budget)), budget: input.budget }
-      case 'cards': return { cards: CARD_LABELS[cardLevel(ds, cityId).level]?.short }
-      case 'english': return { english: ENGLISH_LABELS[englishLevel(ds, cityId).level]?.short }
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
-      case 'advisory': return { uk_advice_level: ds.advisories[iso2]?.level, do_not_travel: !!ds.advisories[iso2]?.excludedByDefault }
     }
   }
   // The Route view: each stop with its dates and how you get there (line colour = mode, dashed = estimated).

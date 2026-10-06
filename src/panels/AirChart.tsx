@@ -1,5 +1,5 @@
 import { airBand, type AirMonth } from '../planner'
-import { MONTHS, ramp } from '../ui/format'
+import { MONTHS, levelColor } from '../ui/format'
 
 /** 12 monthly PM2.5 bars coloured by band, with the WHO 24-hour guideline as a dashed line; stay months highlighted. */
 export function AirChart({ data, highlight, who }: { data: AirMonth[]; highlight: Set<number>; who: number }) {
@@ -24,7 +24,7 @@ export function AirChart({ data, highlight, who }: { data: AirMonth[]; highlight
         </g>
       ))}
       {data.map((d, i) => (
-        <rect key={i} x={x(i) - 7} y={y(d.pm25)} width={14} height={pad.t + ih - y(d.pm25)} rx={2} fill={ramp((airBand(d.pm25).level - 1) / 4)}
+        <rect key={i} x={x(i) - 7} y={y(d.pm25)} width={14} height={pad.t + ih - y(d.pm25)} rx={2} fill={levelColor(airBand(d.pm25).level)}
           style={{ stroke: highlight.has(i + 1) ? 'var(--color-accent)' : 'none' }} strokeWidth={1.5}>
           <title>{`${MONTHS[i]}: PM2.5 ${d.pm25} µg/m³, ~${d.daysOverWho} days above WHO guideline`}</title>
         </rect>

@@ -2,7 +2,7 @@
 
 A map-based planner for long, multi-country trips. It's built for cities worldwide; detailed data currently covers the Balkans, Central & Eastern Europe (incl. Austria), Poland, the Baltic States and Russia, plus Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore and Cambodia (more regions to follow).
 You choose regions, dates, pace and budget. It suggests a route with nights per city, enforces the Schengen 90/180 rule,
-checks visas and travel advisories, and shows weather, costs, English level and transport for every stop.
+checks visas and travel advisories, and shows weather, costs, health advice, mobile internet and transport for every stop.
 
 See [PLAN.md](PLAN.md) for the product plan, decisions and roadmap.
 
@@ -31,21 +31,22 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 - **Generated plan**: picks cities, orders the route, assigns nights, keeps Schengen days ≤ 90 in any 180-day window, estimates cost as a range. Ground transport wins unless a flight clearly saves time: flights count ~2½ h of airport time and their fare.
 - **Editing**: ± nights (auto-locks that stop and rebalances the rest), lock, remove, drag to reorder, add a city from the map, re-order for the shortest route.
 - **Checks**: Schengen, visas per passport, travel advisories (UK FCDO + US State Dept), Kosovo → Serbia border, weather, air pollution, tap water, cash-only places and countries where foreign cards fail, pace, limited English, unreachable or estimated legs.
-- **Map views**: **Route** (stops numbered by the trip day you arrive; lines coloured by travel mode, dashed where times are estimated from road distance; legend), **Weather** (fill = average high in ranges, e.g. 18–28°C; a ring around each stop fills with the share of rainy days), **Air**, **Cost**, **Cards**, **English**, **Schengen** (inside/outside colours and the 90/180 day counter) and **Safety**. Weather and air show each place at the time of the trip by default (a stop in the month of its stay, other cities in the month you're at the nearest stop), or any month you pick. Outside the Route view the route is drawn plainly. Clicking a city anywhere (map, itinerary, timeline, another city) brings it into view if it's off screen or under the panel; a click on a stop picks the stop, not the route line under it.
-- **City panel**, in tabs ordered by how often you need them: **Overview** (description, suggested days per pace, one line per topic at a glance; problems come first in red, most serious first: visa needed, do-not-travel advice, foreign cards not working), **Transport** (getting around: public transport, how to pay, taxis, rentals; getting there & away), **Weather** (weather chart; air quality by month), **Money** (costs incl. supermarket prices, price level vs a country you pick with a how-to-read explainer, Big Mac reference; money & payments), **Daily life** (language, shops & services, people & culture), **Safety** (advisories; health & emergencies: tap water, risks, healthcare, emergency number) and **Entry** (visa & entry incl. Schengen 90/180 and EU entry-system notices; before you go: vaccines, travel insurance, plugs). Tabs with a problem get a red dot, and the chosen tab stays when you switch cities. Links to official advice, health and travel pages sit under their sections; data sources are listed under "Data" below.
+- **Map views**: **Route** (stops numbered by the trip day you arrive and sized by the nights there; elsewhere all stops are one size; lines coloured by travel mode, dashed where times are estimated from road distance; legend), **Weather** (fill = average high in ranges, e.g. 18–28°C, with the high written on each stop, or with **Low** in the legend the average low in night ranges: <2, 2–10, 10–18, 18–23, 23°C+ for nights too hot to sleep without air conditioning; hovering shows both; a ring around each stop fills with the share of rainy days), **Air** (five PM2.5 bands at the WHO's interim targets, 10/15/25/35 µg/m³, with the monthly average on each stop), **Cost** (daily cost for your budget in five bands of about a fifth of all cities each, in your currency), **Mobile** (mobile internet in five bands by download speed, from slow under 25 Mbps to very fast 200+, with the speed on each stop), **Nearby** (roughly how many supermarkets, pharmacies, clinics & doctors or ATMs are within 1.5 km of the centre, picked with buttons like the month; coloured from none found to 50+) and **Schengen** (inside/outside colours and the 90/180 day counter). Weather and air show each place at the time of the trip by default (a stop in the month of its stay, other cities in the month you're at the nearest stop), or any month you pick. Outside the Route view the route is drawn plainly. Clicking a city anywhere (map, itinerary, timeline, another city) brings it into view if it's off screen or under the panel; a click on a stop picks the stop, not the route line under it.
+- **City panel**, in tabs (the tab bar scrolls sideways; the mouse wheel scrolls it too): **Overview** (description, suggested days per pace, one line per topic at a glance; problems come first in red, most serious first: visa needed, do-not-travel advice, foreign cards not working), **Transport** (in the city: public transport, how to pay, taxis, rentals; to other cities), **Weather** (weather chart; air quality by month), **Money** (costs incl. supermarket prices, price level vs a country you pick with a how-to-read explainer, Big Mac reference; paying & cash), **Daily life** (language; phone & power: mobile internet, plugs; shops; people & culture), **Health** (vaccines & medicines from CDC; tap water, risks, healthcare; pharmacies, clinics and the nearest hospital), **Safety** (travel advice, emergency number, travel insurance) and **Entry** (visa & entry incl. Schengen 90/180 and EU entry-system notices). Tabs with a problem get a red dot, and the chosen tab stays when you switch cities. Links to official advice, health and travel pages sit under their sections; data sources are listed under "Data" below.
 - **Display settings** (top bar): currency (EUR, USD, TWD, JPY, …; data is stored in EUR), °C / °F, and light / dark / same-as-device theme (the map switches to a recoloured dark base map).
-- **Address bar**: the map position, open city or journey and its tab, left tab, map view and month are kept in the URL, so a refresh (or a shared link) comes back to the same view.
+- **Address bar**: the map position, open city or journey and its tab, left tab, map view, its month, the Nearby kind and Weather high/low are kept in the URL, so a refresh (or a shared link) comes back to the same view.
 - **Saving & trips**: signed out, one trip is kept in this browser. Signed in with Google, trips are saved to your account automatically a moment after each change (with each trip's assistant chat), so they work on any device; the trip menu (top left) switches between trips and creates, renames or deletes them (up to 50). Signing in adds the trip planned while signed out to the account; signing out clears the browser. Esc closes the side panel.
 
 ## Project layout
 
 ```
 src/
-  planner/     planning engine (pure TS, no UI) + tests: graph, route, allocate, schengen, cost, language
+  planner/     planning engine (pure TS, no UI) + tests: graph, route, allocate, schengen, cost, language, health,
+               mobile internet, places nearby
   data/        dataset loader, region presets, the test-case input
   agent/       trip assistant: instructions + tool list (schema.ts, shared with the Worker), tool runner, chat loop
   store/       Zustand trip state + localStorage persistence, saved trips, view state in the URL (url.ts)
-  map/         MapLibre map and layer controls
+  map/         MapLibre map, layer controls, and the colour scales shared by the map and its legends (scales.ts)
   panels/      setup, itinerary, assistant chat, city/leg drawers, timeline, header
   ui/          formatting (money, dates, temperatures), theme, small UI kit
 data/
@@ -69,8 +70,11 @@ Hand-curated files are in `data/seed/`; scripts enrich them from open sources in
 | `build-visa.ts` | Passport Index dataset (MIT) | `visa.json` |
 | `build-climate.ts` | Open-Meteo archive, ERA5 (CC-BY) | `climate.json`: monthly averages 2016–2025 |
 | `build-air.ts` | Open-Meteo Air Quality, CAMS model (CC-BY) | `air.json`: monthly PM2.5 2023–2024 |
-| `fetch-amenities.ts` | OpenStreetMap via Overpass (ODbL) | `amenities.json`: shops, pharmacies, clinics near the centre; nearest hospital |
+| `build-mobile.ts` | Ookla Speedtest open data, mobile tiles (CC BY-NC-SA 4.0, non-commercial) | `mobile.json`: typical mobile download/upload speed and latency within 3–8 km of each city centre, newest quarter (no data for Russia and Belarus) |
+| `fetch-amenities.ts` | OpenStreetMap via Overpass (ODbL) | `amenities.json`: shops, pharmacies, clinics and ATMs within 1.5 km of the centre; nearest hospital. One request per city, switching between four public Overpass servers when one is busy; resumes from `.cache/amenities` and saves after every city |
+| `build-places.ts` | Overture Maps Places (business listings from Meta, Microsoft and Foursquare) | `overture.json`: the same counts from business listings, read straight from Overture's cloud files (only the parts covering each centre; ~6 min for all cities). The app shows the higher of the two counts, as a rough scale (none found, 1–4, 5+, 20+, 50+) |
 | `fetch-advisories.ts` | UK FCDO (OGL) + US State Dept | `advisories.json` |
+| `fetch-health.ts` | CDC Travelers' Health destination pages (public domain) | `cdc.json`: vaccines and medicines per country, recommended or to consider, with a note; malaria areas. Rows in an unknown form are kept and reported |
 | `fetch-fx.ts` | ExchangeRate-API open endpoint | `fx.json` |
 | `fetch-population.ts` | World Bank (CC-BY); national statistics where missing (Taiwan: Ministry of the Interior household registration) | `population.json` |
 | `fetch-price-levels.ts` | World Bank PPP (IMF where missing) ÷ our exchange rates | `price-levels.json`: US = 1.00; also used to estimate costs where we have none |
@@ -114,4 +118,4 @@ Setup (once):
    ```
 4. Add the same four values as GitHub repository secrets, for the weekly refresh workflow (pull → refresh → test → push).
 
-**Estimates:** costs, connections, English levels, local transport, taxi, rental, health, shopping and payment data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.
+**Estimates:** costs, connections, English levels, local transport, taxi, rental, health (tap water, risks, healthcare; vaccines only where CDC data is missing), shopping and payment data are hand-made seed estimates and are labelled as such in the UI. Visa and safety information always links to official sources; verify before travelling.

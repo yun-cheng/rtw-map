@@ -1,16 +1,15 @@
 // Keeps what's on screen in the address bar, so a refresh (or a copied link) comes back to the same view:
 //   ?panel=itinerary&city=krakow&tab=weather&layer=climate&month=7&map=5.20/50.061/19.937
-// (or leg=3 for an open journey; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
+// (or leg=3 for an open journey; kind=atm for the Nearby layer; temp=low for the Weather layer by night temperatures; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
 // weather and air layers show each place at the time of the trip).
 // The address is replaced, not pushed, so moving around doesn't fill the browser's history.
 import { dataset as ds } from '../data/dataset'
-import { useTrip, type CityTab, type MapLayer, type Selection } from './trip'
+import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
 const PANELS = ['setup', 'itinerary', 'assistant'] as const
-const TABS: CityTab[] = ['overview', 'entry', 'transport', 'weather', 'money', 'safety', 'daily']
-const LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'cards', 'english', 'schengen', 'advisory']
+const TABS: CityTab[] = ['overview', 'transport', 'weather', 'money', 'daily', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
 
@@ -46,10 +45,13 @@ export function readUrl(search = window.location.search) {
   if (TABS.includes(tab)) patch.cityTab = tab
 
   const layer = q.get('layer') as MapLayer
-  if (LAYERS.includes(layer)) patch.layer = layer
+  if (MAP_LAYERS.includes(layer)) patch.layer = layer
   else if (q.size) patch.layer = 'none'
   const month = Number(q.get('month'))
   patch.layerMonth = Number.isInteger(month) && month >= 1 && month <= 12 ? month : 0
+  const kind = q.get('kind') as NearbyKind
+  if (NEARBY_KINDS.includes(kind)) patch.nearbyKind = kind
+  patch.weatherBy = q.get('temp') === 'low' ? 'low' : 'high'
 
   useTrip.setState(patch)
   initialMapView = mapView = parseMapView(q.get('map'))
@@ -65,6 +67,8 @@ export function buildSearch(s: ReturnType<typeof useTrip.getState>, view: MapVie
   } else if (s.selected?.type === 'leg') q.set('leg', String(s.selected.index))
   if (s.layer !== 'none') q.set('layer', s.layer)
   if (MONTHLY.includes(s.layer) && s.layerMonth) q.set('month', String(s.layerMonth))
+  if (s.layer === 'nearby') q.set('kind', s.nearbyKind)
+  if (s.layer === 'climate' && s.weatherBy === 'low') q.set('temp', 'low')
   if (view) q.set('map', formatMapView(view))
   // Keep slashes readable.
   return `?${q.toString().replaceAll('%2F', '/')}`
@@ -86,6 +90,6 @@ export function syncUrl() {
   readUrl()
   writeUrl()
   useTrip.subscribe((s, prev) => {
-    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth) writeUrl()
+    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.weatherBy !== prev.weatherBy) writeUrl()
   })
 }

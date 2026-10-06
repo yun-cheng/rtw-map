@@ -1,12 +1,22 @@
 // Shops and health services near each city centre, counted from OpenStreetMap via the Overpass API (ODbL).
-// Cached per city in .cache/amenities, so it can resume.
+// One request per city (counts and the hospitals within 15 km together; a wider search only if there are none).
+// The public servers are shared and refuse requests when busy, so a busy server is skipped for the next mirror.
+// Cached per city in .cache/amenities, and the output is rewritten after every city, so a stopped run resumes and
+// still leaves the cities it got.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CACHE, GEN, readJson, sleep, today, writeJson } from './lib.ts'
 
 const RADIUS_M = 1500
 const HOSPITAL_SEARCH_M = [15_000, 50_000]
-const ENDPOINT = 'https://overpass-api.de/api/interpreter'
+/** Public Overpass servers with the same data, tried in turn when one is busy. */
+const ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.private.coffee/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+]
+let endpoint = 0
 
 const COUNTS = {
   supermarket: 'nwr["shop"="supermarket"]',
@@ -29,38 +39,43 @@ function km(aLat: number, aLon: number, bLat: number, bLon: number) {
   return 2 * 6371 * Math.asin(Math.sqrt(h))
 }
 
-async function query(q: string) {
-  for (let attempt = 0; ; attempt++) {
-    const res = await fetch(ENDPOINT, {
+type Element = { type: string; tags?: Record<string, string>; lat?: number; lon?: number; center?: { lat: number; lon: number } }
+
+async function query(q: string): Promise<Element[]> {
+  for (let attempt = 1; ; attempt++) {
+    const url = ENDPOINTS[endpoint]
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'User-Agent': 'rtw-map/0.1 (personal trip planner)', 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ data: q }),
-    })
-    if ((res.status === 429 || res.status === 504) && attempt < 30) {
-      console.log(`  Overpass busy (${res.status}), retrying in 60s`)
-      await sleep(60_000)
-      continue
-    }
-    if (!res.ok) throw new Error(`Overpass ${res.status}: ${(await res.text()).slice(0, 200)}`)
-    return (await res.json()).elements as { type: string; tags?: Record<string, string>; lat?: number; lon?: number; center?: { lat: number; lon: number } }[]
+      signal: AbortSignal.timeout(90_000),
+    }).catch(() => null)
+    // Some servers answer a busy moment with an HTML page instead of an error status.
+    const data = res?.ok ? await res.json().catch(() => null) : null
+    if (data) return data.elements
+    if (attempt >= 4 * ENDPOINTS.length) throw new Error(`Overpass: no server answered (last: ${res?.status ?? 'no response'})`)
+    console.log(`  ${new URL(url).host} ${res ? `busy (${res.status})` : 'not answering'}; trying the next server`)
+    endpoint = (endpoint + 1) % ENDPOINTS.length
+    // After every server has been tried once, wait a little before going round again.
+    if (attempt % ENDPOINTS.length === 0) await sleep(30_000)
   }
 }
 
 async function fetchCity(c: City): Promise<Result> {
   const path = join(dir, `${c.id}.json`)
   if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf8'))
-  // Light query first: one "out count" per category near the centre.
+  // One "out count" per category near the centre, then the hospitals close by; a wider search only if there are
+  // none. OSM sometimes tags dental practices as hospitals; leave those out.
   const around = `(around:${RADIUS_M},${c.lat},${c.lon})`
-  const countEls = await query(`[out:json][timeout:60];${Object.values(COUNTS).map((sel) => `${sel}${around};out count;`).join('')}`)
-  const counts = countEls.filter((e) => e.type === 'count').map((e) => Number(e.tags?.total ?? 0))
+  const hospitalsWithin = (radius: number) => `nwr["amenity"="hospital"](around:${radius},${c.lat},${c.lon});out tags center;`
+  const els = await query(`[out:json][timeout:90];${Object.values(COUNTS).map((sel) => `${sel}${around};out count;`).join('')}${hospitalsWithin(HOSPITAL_SEARCH_M[0])}`)
+  const counts = els.filter((e) => e.type === 'count').map((e) => Number(e.tags?.total ?? 0))
 
-  // Then the nearest hospital: search close by first, widen only if nothing is found.
-  // OSM sometimes tags dental practices as hospitals; leave those out.
   const isDental = (t: Record<string, string> = {}) => t.healthcare === 'dentist' || /dent|stomat/i.test(t.name ?? '')
   let hospitals: number[] = []
-  for (const radius of HOSPITAL_SEARCH_M) {
-    const els = await query(`[out:json][timeout:60];nwr["amenity"="hospital"](around:${radius},${c.lat},${c.lon});out center;`)
-    hospitals = els
+  for (const [i, radius] of HOSPITAL_SEARCH_M.entries()) {
+    const found = i === 0 ? els.filter((e) => e.type !== 'count') : await query(`[out:json][timeout:90];${hospitalsWithin(radius)}`)
+    hospitals = found
       .filter((e) => !isDental(e.tags))
       .map((e) => (e.center ?? (e.lat != null ? { lat: e.lat, lon: e.lon! } : null)))
       .filter((p): p is { lat: number; lon: number } => !!p)
@@ -70,21 +85,35 @@ async function fetchCity(c: City): Promise<Result> {
   const result = Object.fromEntries(Object.keys(COUNTS).map((k, i) => [k, counts[i] ?? 0])) as Result
   result.nearestHospitalKm = hospitals.length ? Math.round(Math.min(...hospitals) * 10) / 10 : null
   writeFileSync(path, JSON.stringify(result))
-  await sleep(10_000)
+  await sleep(2_000)
   return result
 }
 
-const amenities: Record<string, Result> = {}
-for (const [i, c] of cities.entries()) {
-  console.log(`[${i + 1}/${cities.length}] ${c.id}`)
-  amenities[c.id] = await fetchCity(c)
-}
+const save = (amenities: Record<string, Result>) =>
+  writeJson(join(GEN, 'amenities.json'), {
+    _meta: {
+      source: `OpenStreetMap contributors (ODbL), via Overpass API. Counts within ${RADIUS_M / 1000} km of the city centre; nearest hospital within ${HOSPITAL_SEARCH_M.at(-1)! / 1000} km.`,
+      updatedAt: today(),
+    },
+    radiusKm: RADIUS_M / 1000,
+    amenities,
+  })
 
-writeJson(join(GEN, 'amenities.json'), {
-  _meta: {
-    source: `OpenStreetMap contributors (ODbL), via Overpass API. Counts within ${RADIUS_M / 1000} km of the city centre; nearest hospital within ${HOSPITAL_SEARCH_M.at(-1)! / 1000} km.`,
-    updatedAt: today(),
-  },
-  radiusKm: RADIUS_M / 1000,
-  amenities,
-})
+const amenities: Record<string, Result> = {}
+const failed: string[] = []
+for (const [i, c] of cities.entries()) {
+  const cached = existsSync(join(dir, `${c.id}.json`))
+  if (!cached) console.log(`[${i + 1}/${cities.length}] ${c.id}`)
+  try {
+    amenities[c.id] = await fetchCity(c)
+    if (!cached) save(amenities)
+  } catch (e) {
+    console.error(`  ${c.id}: ${(e as Error).message}`)
+    failed.push(c.id)
+  }
+}
+save(amenities)
+if (failed.length) {
+  console.error(`No data for ${failed.join(', ')}: run again to retry them.`)
+  process.exitCode = 1
+}

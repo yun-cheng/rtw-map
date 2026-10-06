@@ -1,30 +1,28 @@
 import type { SchengenSummary } from '../planner'
-import { useTrip, type MapLayer } from '../store/trip'
-import { MODE_COLOR, MONTHS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
+import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
+import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, lowBand, tempBand, type TempUnit } from '../ui/format'
+import { NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
   { value: 'climate', label: 'Weather' },
   { value: 'air', label: 'Air' },
   { value: 'cost', label: 'Cost' },
-  { value: 'cards', label: 'Cards' },
-  { value: 'english', label: 'English' },
+  { value: 'mobile', label: 'Mobile' },
+  { value: 'nearby', label: 'Nearby' },
   { value: 'schengen', label: 'Schengen' },
-  { value: 'advisory', label: 'Safety' },
 ]
 
-const LEGENDS: Partial<Record<MapLayer, { color: string; label: string }[]>> = {
-  air: [{ color: '#16a34a', label: 'Clean' }, { color: '#eab308', label: 'Moderate' }, { color: '#dc2626', label: 'Polluted' }],
-  cost: [{ color: '#16a34a', label: 'Cheap' }, { color: '#eab308', label: 'Medium' }, { color: '#dc2626', label: 'Expensive' }],
-  cards: [{ color: '#16a34a', label: 'Cards everywhere' }, { color: '#eab308', label: 'Mixed' }, { color: '#dc2626', label: 'Cash only' }],
-  english: [{ color: '#16a34a', label: 'Easy' }, { color: '#eab308', label: 'Mixed' }, { color: '#dc2626', label: 'Hard' }],
+const LEGENDS: Partial<Record<MapLayer, LegendItem[]>> = {
+  air: airLegend(),
+  mobile: mobileLegend(),
+  nearby: nearbyLegend(),
   schengen: [{ color: '#2563eb', label: 'Schengen area' }, { color: '#d97706', label: 'Outside Schengen' }],
-  advisory: [{ color: '#16a34a', label: 'Normal' }, { color: '#eab308', label: 'Increased caution' }, { color: '#f97316', label: 'Avoid parts' }, { color: '#dc2626', label: 'Do not travel' }],
 }
 
 /** Weather legend: the temperature classes as ranges of the average daily high (rain is the ring, see RainRing). */
-const temperatureLegend = (unit: TempUnit) =>
-  (['cold', 'cool', 'pleasant', 'warm', 'hot'] as const).map((k) => ({ color: WEATHER_STYLE[k].color, label: tempBand(k, unit) }))
+const temperatureLegend = (unit: TempUnit, by: 'high' | 'low'): LegendItem[] =>
+  (['cold', 'cool', 'pleasant', 'warm', 'hot'] as const).map((k) => ({ color: WEATHER_STYLE[k].color, label: by === 'low' ? lowBand(k, unit) : tempBand(k, unit) }))
 
 /** Travel modes in the Route view's legend; minibuses share the bus colour. */
 const MODES = [
@@ -35,8 +33,16 @@ const MODES = [
 ]
 
 export function MapControls() {
-  const { layer, setLayer, layerMonth, setLayerMonth, plan, tempUnit } = useTrip()
-  const legend = layer === 'climate' ? temperatureLegend(tempUnit) : LEGENDS[layer]
+  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency } = useTrip()
+  const legend = layer === 'climate' ? temperatureLegend(tempUnit, weatherBy) : layer === 'cost' ? costScale(input.budget, currency).legend : LEGENDS[layer]
+  // What the numbers in the legend measure.
+  const lead = {
+    climate: { text: 'High', title: 'Average daily high in the month; the number on each stop' },
+    air: { text: 'PM2.5 µg/m³', title: "Monthly average of fine particles (PM2.5), the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day." },
+    nearby: { text: 'Within 1.5 km', title: `Roughly how many ${NEARBY_LABELS[nearbyKind].toLowerCase()} within 1.5 km of the centre, from map data and business listings; both miss places, so treat it as a rough guide` },
+    mobile: { text: 'Mobile Mbps', title: 'Typical download speed of mobile internet on phones in the city; the number on each stop' },
+    cost: { text: `Per day (${input.budget})`, title: 'Typical daily spending on your budget: a bed, food and local transport. Each colour holds about a fifth of all cities.' },
+  }[layer as string]
   return (
     <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2">
       <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
@@ -50,6 +56,19 @@ export function MapControls() {
           </button>
         ))}
       </div>
+      {layer === 'nearby' && (
+        <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+          {NEARBY_KINDS.map((k) => (
+            <button
+              key={k}
+              onClick={() => setNearbyKind(k)}
+              className={`rounded-md px-2 py-1 text-[11px] font-medium ${nearbyKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+            >
+              {NEARBY_LABELS[k]}
+            </button>
+          ))}
+        </div>
+      )}
       {(layer === 'climate' || layer === 'air') && (
         <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
           <button
@@ -72,10 +91,24 @@ export function MapControls() {
       )}
       {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} />}
       {legend && (
-        <div className="pointer-events-auto flex gap-3 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
-          {layer === 'climate' && <span className="text-muted" title="Average daily high in the month">High</span>}
+        <div className="pointer-events-auto flex max-w-[34rem] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
+          {layer === 'climate' ? (
+            // Days or nights: the colours, legend and numbers follow.
+            <span className="flex rounded-md border border-line p-px" role="group" aria-label="Colour by">
+              {(['high', 'low'] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setWeatherBy(b)}
+                  title={b === 'high' ? 'Average daily high: how the days feel' : 'Average daily low: how the nights feel'}
+                  className={`rounded px-1.5 text-[11px] ${weatherBy === b ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
+                >
+                  {b === 'high' ? 'High' : 'Low'}
+                </button>
+              ))}
+            </span>
+          ) : lead && <span className="text-muted" title={lead.title}>{lead.text}</span>}
           {legend.map((l) => (
-            <span key={l.label} className="flex items-center gap-1.5">
+            <span key={l.label} className="flex items-center gap-1.5" title={l.title}>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
               {l.label}
             </span>
@@ -122,6 +155,13 @@ function RouteLegend({ modes }: { modes: Set<string> }) {
       ))}
       <span className="flex items-center gap-1.5 border-l border-line pl-3" title="Times and prices from timetable data"><Line color="var(--color-muted)" />Timetable</span>
       <span className="flex items-center gap-1.5" title="No timetable data yet: a bus is assumed, with time and price estimated from the road distance"><Line color="var(--color-muted)" dashed />Estimated</span>
+      <span className="flex items-center gap-1.5 border-l border-line pl-3" title="The number in each stop is the trip day you arrive; longer stays get bigger circles">
+        <svg viewBox="0 0 22 14" className="h-3.5 w-[22px]" aria-hidden>
+          <circle cx="4" cy="7" r="3" fill={STOP_COLOR} />
+          <circle cx="15" cy="7" r="6" fill={STOP_COLOR} />
+        </svg>
+        Bigger = longer stay
+      </span>
     </div>
   )
 }

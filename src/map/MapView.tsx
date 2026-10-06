@@ -5,12 +5,13 @@ import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMous
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, airBand, cardLevel, dailyCost, englishLevel, likelyMonth, tripDay } from '../planner'
+import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, money, rainShare, ramp, temp, temperatureKind } from '../ui/format'
+import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, lowKind, money, rainShare, temp, temperatureKind, tempValue } from '../ui/format'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
+import { NEARBY_LABELS, costScale, nearbyColor } from './scales'
 
 // Vite bundles MapLibre's worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
@@ -25,8 +26,13 @@ const INK: Record<Theme, { text: string; halo: string; border: string; dot: stri
   dark: { text: '#f5f5f4', halo: '#24201d', border: '#a39a92', dot: '#c4bcb5', outline: '#24201d', tint: 1.6, rain: '#60a5fa', route: '#8a827b' },
 }
 
-/** Radius of a stop's circle: bigger for longer stays, at least 10px so a three-digit day number fits. */
-const stopRadius = (day: number, nights: number) => Math.round(Math.max(day >= 100 ? 10 : 0, 7 + 1.2 * Math.sqrt(nights)) * 2) / 2
+/** Font size of the number in a stop: smaller from three characters ("104", "-12"). */
+const textSize = (text: string) => (text.length >= 3 ? 9.5 : 11)
+/** The smallest radius that fits a stop's number. */
+const fitRadius = (text: string) => [...text].reduce((w, ch) => w + (/\d/.test(ch) ? 0.6 : 0.4), 0) * textSize(text) / 2 + 1.5
+const half = (r: number) => Math.round(r * 2) / 2
+/** Base radius of a stop: in the Route view bigger for longer stays (legend in MapControls); elsewhere all the same. */
+const SAME_RADIUS = 9
 
 // Weather layer: the stop's white outline becomes a progress ring, blue clockwise from 12 o'clock for the share of
 // rainy days in the month, white for the rest. Each one is drawn as an image named
@@ -80,7 +86,7 @@ export function MapView() {
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, selected, fitRequest, currency, tempUnit } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, fitRequest, currency, tempUnit } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -98,6 +104,8 @@ export function MapView() {
     })
     map.on('style.load', () => {
       const ink = INK[shownTheme.current]
+      // 2×2 transparent pixels, scaled to a stop's diameter by the names layer.
+      map.addImage('stop-box', { width: 2, height: 2, data: new Uint8Array(16) })
       map.addSource('countries', { type: 'geojson', data: boundaries as unknown as FC })
       map.addSource('cities', { type: 'geojson', data: empty() })
       map.addSource('route', { type: 'geojson', data: empty() })
@@ -141,17 +149,25 @@ export function MapView() {
       })
       map.addLayer({
         id: 'stop-numbers', type: 'symbol', source: 'stops',
-        // The trip day of arrival (day 1 = start date); three-digit days get a smaller font.
-        layout: { 'text-field': ['to-string', ['get', 'day']], 'text-font': FONT, 'text-size': ['case', ['>=', ['get', 'day'], 100], 9.5, 11], 'text-allow-overlap': true },
+        // The view's number for the stop: the trip day of arrival, the average high or PM2.5 (see stopText).
+        layout: { 'text-field': ['get', 'text'], 'text-font': FONT, 'text-size': ['get', 'textSize'], 'text-allow-overlap': true },
         paint: { 'text-color': '#fff' },
       })
       map.addLayer({
         id: 'stop-names', type: 'symbol', source: 'stops',
         layout: {
-          'text-field': ['concat', ['get', 'name'], ' · ', ['to-string', ['get', 'nights']], 'n'],
-          'text-font': FONT, 'text-size': 12, 'text-offset': [0, 1.5], 'text-anchor': 'top', 'text-optional': true,
+          // Each name tries the sides of its stop in turn (away from its route lines first, see labelAnchors) and
+          // takes the first that's free of stops and other names.
+          'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': NAME_SIZE,
+          'text-variable-anchor-offset': ['get', 'anchors'], 'text-justify': 'auto', 'text-optional': true,
         },
         paint: { 'text-color': ink.text, 'text-halo-color': ink.halo, 'text-halo-width': 1.5 },
+      })
+      // An invisible box the size of each circle, so names (ours and the base map's) keep off the stops. Labels are
+      // placed from the top layer down, so these go above the names to be in place before any name.
+      map.addLayer({
+        id: 'stop-boxes', type: 'symbol', source: 'stops',
+        layout: { 'icon-image': 'stop-box', 'icon-size': ['get', 'radius'], 'icon-allow-overlap': true },
       })
       loaded.current = true
       refresh.current?.()
@@ -208,16 +224,31 @@ export function MapView() {
         })
       ;(map.getSource('cities') as GeoJSONSource).setData({ type: 'FeatureCollection', features: cityFeatures })
 
-      const stopFeatures = (plan?.stops ?? []).map((s) => {
-        const c = ds.cities[s.cityId]
-        const { color, label, rain } = metric(c.id)
+      // The Route view numbers the stops by the day you arrive (day 1 = start date) and sizes them by the nights
+      // there; the weather, air and mobile views show their value; the others leave the circle plain. Outside the Route
+      // view all stops are one size, big enough for the longest number.
+      const stops = (plan?.stops ?? []).map((s) => {
+        const metrics = metric(s.cityId)
         const day = tripDay(input.startDate, s.arrive)
-        const radius = stopRadius(day, s.nights)
+        return { s, day, metrics, text: layer === 'none' ? String(day) : metrics.value ?? '' }
+      })
+      const sameRadius = half(Math.max(SAME_RADIUS, ...stops.map((x) => fitRadius(x.text))))
+      // For each stop, the places its route lines lead to (the first or last hop of the journeys either side).
+      const routeEnds = new Map<string, [number, number][]>()
+      for (const h of plan?.legs.flatMap((l) => l.hops) ?? []) {
+        for (const [a, b] of [[h.from, h.to], [h.to, h.from]]) {
+          routeEnds.set(a, [...(routeEnds.get(a) ?? []), [ds.cities[b].lon, ds.cities[b].lat]])
+        }
+      }
+      const stopFeatures = stops.map(({ s, day, metrics: { color, label, rain }, text }) => {
+        const c = ds.cities[s.cityId]
+        const radius = layer === 'none' ? half(Math.max(fitRadius(text), 7 + 1.2 * Math.sqrt(s.nights))) : sameRadius
         const isSelected = selected?.type === 'city' && selected.id === c.id
         return point([c.lon, c.lat], {
           ...(color ? { color } : {}),
           ...(rain !== undefined ? { ring: ringId(rain, radius, isSelected) } : {}),
-          id: c.id, name: c.name, day, nights: s.nights, radius,
+          id: c.id, name: c.name, text, textSize: textSize(text), nights: s.nights, radius,
+          anchors: labelAnchors(c.id, radius, routeEnds),
           selected: isSelected,
           label: `Day ${day}: ${c.name} · ${s.nights} nights${label ? ` · ${label}` : ''}`,
         })
@@ -248,25 +279,32 @@ export function MapView() {
 
       map.setPaintProperty('country-fill', 'fill-color', countryFill(layer, tripCountries))
       // Country tints need a little more strength to show on the dark map.
-      map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' || layer === 'advisory' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
+      map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
     }
+
+    const costs = costScale(input.budget, currency)
 
     /** Month for the weather and air layers: the chosen one, or (by default) when you're there on this trip. */
     function monthFor(cityId: string): number {
       return layerMonth || likelyMonth(ds, plan, input, cityId)
     }
 
-    /** Colour (and hover text) of a city for the map layer; for weather also the share of rainy days. */
-    function metric(cityId: string): { color?: string; label?: string; rain?: number } {
+    /**
+     * Colour (and hover text) of a city for the map layer; for weather also the share of rainy days, and for
+     * weather and air the number shown in the stop's circle.
+     */
+    function metric(cityId: string): { color?: string; label?: string; rain?: number; value?: string } {
       if (layer === 'climate') {
         const month = monthFor(cityId)
         const m = ds.climate[cityId]?.[month - 1]
         if (!m) return {}
-        const kind = temperatureKind(m)
+        // Coloured and numbered by the high (days) or the low (nights), as picked in the legend.
+        const low = weatherBy === 'low'
+        const kind = low ? lowKind(m) : temperatureKind(m)
         const rain = rainShare(m.rainDays, month)
         return {
-          color: WEATHER_STYLE[kind].color, rain,
-          label: `${MONTHS[month - 1]}: high ${temp(m.tHigh, tempUnit)}, rain on ${Math.round(m.rainDays)} days`,
+          color: WEATHER_STYLE[kind].color, rain, value: String(tempValue(low ? m.tLow : m.tHigh, tempUnit)),
+          label: `${MONTHS[month - 1]}: ${tempValue(m.tHigh, tempUnit)}° / ${temp(m.tLow, tempUnit)} (high / low), rain on ${Math.round(m.rainDays)} days`,
         }
       }
       if (layer === 'air') {
@@ -274,30 +312,35 @@ export function MapView() {
         const a = ds.air.byCity[cityId]?.[month - 1]
         if (!a) return {}
         const band = airBand(a.pm25)
-        return { color: ramp((band.level - 1) / 4), label: `${MONTHS[month - 1]} air: ${band.short.toLowerCase()} (PM2.5 ${a.pm25})` }
+        return {
+          color: levelColor(band.level), value: String(Math.round(a.pm25)),
+          label: `${MONTHS[month - 1]} air: ${band.short.toLowerCase()} (PM2.5 ${a.pm25} µg/m³)`,
+        }
       }
       if (layer === 'schengen') {
         const inside = !!ds.countries[ds.cities[cityId]?.iso2]?.schengen
         return { color: inside ? '#2563eb' : '#d97706', label: inside ? 'Schengen area' : 'Outside Schengen' }
       }
+      if (layer === 'mobile') {
+        const m = mobileInternet(ds, cityId)
+        if (!m) return { color: NO_DATA, label: 'Mobile internet: no data' }
+        return { color: levelColor(m.level), value: String(m.downMbps), label: `Mobile internet: ${m.short.toLowerCase()} (~${m.downMbps} Mbps)` }
+      }
+      if (layer === 'nearby') {
+        const n = nearby(ds, cityId)?.[nearbyKind]
+        if (n === undefined) return { color: NO_DATA, label: `${NEARBY_LABELS[nearbyKind]}: no data` }
+        return { color: nearbyColor(nearbyLevel(n)), label: `${NEARBY_LABELS[nearbyKind]} within ${ds.amenities.radiusKm} km: ${roughCount(n)}` }
+      }
       if (layer === 'cost') {
         const d = dailyCost(ds, cityId, input.budget)
-        return { color: ramp(1 - Math.min(1, Math.max(0, (d - 20) / 60))), label: `~${money(d, currency)}/day (${input.budget})` }
-      }
-      if (layer === 'cards') {
-        const { level } = cardLevel(ds, cityId)
-        return { color: ramp((level - 1) / 4), label: `Cards: ${CARD_LABELS[level].short.toLowerCase()}` }
-      }
-      if (layer === 'english') {
-        const { level } = englishLevel(ds, cityId)
-        return { color: ramp((level - 1) / 4), label: `English: ${ENGLISH_LABELS[level].short.toLowerCase()}` }
+        return { color: costs.color(d), label: `~${money(d, currency)}/day (${input.budget})` }
       }
       return {}
     }
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, selected, currency, tempUnit])
+  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, currency, tempUnit])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).
@@ -329,6 +372,41 @@ export function MapView() {
   )
 }
 
+const NAME_SIZE = 12
+/** A city's colour on a map view that has no data for it. */
+const NO_DATA = '#a8a29e'
+/** Where a name can go around its stop: the side, and the direction from the stop towards it on screen. */
+const SIDES: { anchor: string; dir: [number, number] }[] = [
+  // The anchor is the side of the text nearest the stop: 'top' puts the name below.
+  { anchor: 'top', dir: [0, 1] }, { anchor: 'right', dir: [-1, 0] }, { anchor: 'left', dir: [1, 0] }, { anchor: 'bottom', dir: [0, -1] },
+  { anchor: 'top-left', dir: [Math.SQRT1_2, Math.SQRT1_2] }, { anchor: 'top-right', dir: [-Math.SQRT1_2, Math.SQRT1_2] },
+  { anchor: 'bottom-left', dir: [Math.SQRT1_2, -Math.SQRT1_2] }, { anchor: 'bottom-right', dir: [-Math.SQRT1_2, -Math.SQRT1_2] },
+]
+const mercatorY = (lat: number) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360))
+
+/**
+ * The sides of a stop to try for its name, in order: the ones furthest (in angle) from its route lines first,
+ * then below, right, left and above as before. Each with the offset that clears the circle, for
+ * text-variable-anchor-offset.
+ */
+function labelAnchors(cityId: string, radius: number, routeEnds: Map<string, [number, number][]>): (string | [number, number])[] {
+  const c = ds.cities[cityId]
+  // Directions on screen (y down) of the lines leaving the stop.
+  const lines = (routeEnds.get(cityId) ?? []).map(([lon, lat]) => {
+    const dx = lon - c.lon
+    const dy = -(mercatorY(lat) - mercatorY(c.lat)) * (180 / Math.PI)
+    const len = Math.hypot(dx, dy) || 1
+    return [dx / len, dy / len]
+  })
+  // How close a side comes to a line: the largest cosine between them (1 = right on it).
+  const clash = (dir: [number, number]) => Math.max(-1, ...lines.map(([x, y]) => x * dir[0] + y * dir[1]))
+  const gap = (radius + 3) / NAME_SIZE // ems
+  return SIDES
+    .map((side, i) => ({ side, score: clash(side.dir) + i * 0.01 }))
+    .sort((a, b) => a.score - b.score)
+    .flatMap(({ side: { anchor, dir } }) => [anchor, [dir[0] * gap, dir[1] * gap] as [number, number]])
+}
+
 const empty = (): FC => ({ type: 'FeatureCollection', features: [] })
 const point = (coordinates: number[], properties: Record<string, unknown>) => ({
   type: 'Feature' as const, properties, geometry: { type: 'Point' as const, coordinates },
@@ -338,10 +416,7 @@ function countryFill(layer: string, tripCountries: Set<string>): ExpressionSpeci
   const entries = Object.values(ds.countries).flatMap((c) => {
     let color = 'transparent'
     if (layer === 'schengen') color = c.schengen ? '#2563eb' : '#d97706'
-    else if (layer === 'advisory') {
-      const lvl = ds.advisories[c.iso2]?.excludedByDefault ? 4 : ds.advisories[c.iso2]?.level ?? 1
-      color = ['#16a34a', '#16a34a', '#eab308', '#f97316', '#dc2626'][lvl]
-    } else if (tripCountries.has(c.iso2)) color = '#0f766e'
+    else if (tripCountries.has(c.iso2)) color = '#0f766e'
     return [c.iso2, color]
   })
   return ['match', ['get', 'iso2'], ...entries, 'transparent'] as unknown as ExpressionSpecification
