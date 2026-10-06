@@ -88,7 +88,7 @@ const tabRank = (tab: CityTab) => TABS.findIndex((t) => t.key === tab)
 const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'money']
 
 const BUDGETS: { value: Budget; label: string }[] = [
-  { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' },
+  { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' }, { value: 'private', label: 'Private' },
   { value: 'midrange', label: 'Mid-range' }, { value: 'comfort', label: 'Comfort' },
 ]
 
@@ -235,7 +235,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     costs: cost && (
       <Section title="Costs" aside={<Badge tone="warn">{costInfo?.estimated ? 'estimated from price level' : 'estimates'}</Badge>}>
-        <div className="mb-3 grid grid-cols-4 gap-1 text-center">
+        <div className="mb-3 grid grid-cols-5 gap-1 text-center">
           {BUDGETS.map((b) => (
             <div key={b.value} className={`rounded-md border px-1 py-1.5 ${b.value === input.budget ? 'border-accent bg-accent-soft' : 'border-line'}`}>
               <div className="text-[10px] text-muted">{b.label}</div>

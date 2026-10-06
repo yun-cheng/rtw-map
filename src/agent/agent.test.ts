@@ -10,7 +10,7 @@ import { setSharedView, viewItems, viewText } from './view'
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
 
 beforeEach(() => {
-  useTrip.setState({ input: testCaseInput(ds, 'US'), stops: [], plan: null })
+  useTrip.getState().openTrip({ input: testCaseInput(ds, 'US'), stops: [] })
   useTrip.getState().generate()
 })
 
@@ -56,6 +56,66 @@ describe('assistant tools', () => {
     expect(plan!.assignedNights).toBe(plan!.totalNights)
     expect(runTool('update_settings', { end_date: '2027-04-01' }).ok).toBe(false)
     expect(runTool('update_settings', { interests: ['surfing'] }).ok).toBe(false)
+  })
+
+  it('changes any preference, lists the changes, and keeps the itinerary until it is regenerated', () => {
+    const before = snapshot()
+    const stops = stopIds()
+    const r = runTool('update_preferences', { travellers: 2, room: 'hotel', hotel_stars: '3', focus: 'countries', max_high_c: 'none', min_low_c: 0, daily_budget_eur: 70 })
+    expect(r.ok).toBe(true)
+    expect(r.summary).toContain('generate_plan')
+    expect(useTrip.getState().input.prefs).toMatchObject({ travellers: 2, room: 'hotel', hotelStars: 3, focus: 'countries', maxHeatC: null, minLowC: 0, dailyBudget: 70 })
+    expect(stopIds()).toEqual(stops)
+    expect(describeChanges(before, snapshot())).toEqual(expect.arrayContaining(['Travellers: 1 → 2', 'Trip goal: balanced → countries', 'Daily budget (EUR): no limit → 70']))
+    expect(tripContext()).toContain('as many countries as fit')
+    expect(runTool('update_preferences', { room: 'castle' }).ok).toBe(false)
+    expect(runTool('update_preferences', {}).ok).toBe(false)
+  })
+
+  it("gets the user's wishes with the trip, and can update them", () => {
+    expect(tripContext()).not.toContain('wishes')
+    const before = snapshot()
+    expect(runTool('update_settings', { wishes: 'A beach week in July' }).ok).toBe(true)
+    expect(tripContext()).toContain('"A beach week in July"')
+    expect(describeChanges(before, snapshot())).toContain('Wishes updated')
+  })
+
+  it('lists a new travel style once, not each preference it resets', () => {
+    const before = snapshot()
+    runTool('update_settings', { budget: 'comfort' })
+    expect(describeChanges(before, snapshot())).toEqual(['Travel style: backpacker → comfort'])
+  })
+
+  it('reverses the whole trip in one step, with the regions and the start and end city', () => {
+    useTrip.getState().setInput({ startCityId: 'tirana', endCityId: null })
+    const stops = stopIds()
+    const regions = useTrip.getState().input.groups.map((g) => g.name)
+    expect(runTool('reorder_stops', { reverse: true }).ok).toBe(true)
+    const { input, plan } = useTrip.getState()
+    expect(stopIds()).toEqual([...stops].reverse())
+    expect(input.groups.map((g) => g.name)).toEqual([...regions].reverse())
+    expect(input).toMatchObject({ startCityId: null, endCityId: 'tirana' })
+    expect(plan!.assignedNights).toBe(plan!.totalNights)
+    // A full new order: every stop once.
+    expect(runTool('reorder_stops', { order: stops.slice(1) }).ok).toBe(false)
+    expect(runTool('reorder_stops', { order: stops }).ok).toBe(true)
+    expect(stopIds()).toEqual(stops)
+  })
+
+  it('tries a change on a new plan, can switch back, and undoes plan changes', () => {
+    const stops = stopIds()
+    const before = snapshot()
+    expect(runTool('new_plan', { name: 'Without Russia' }).ok).toBe(true)
+    expect(runTool('set_country_mode', { country: 'Russia', mode: 'excluded' }).ok).toBe(true)
+    expect(tripContext()).toContain('Without Russia (active')
+    expect(describeChanges(before, snapshot())).toContain('Added plan Without Russia')
+    expect(runTool('switch_plan', { plan: 'plan a' }).ok).toBe(true)
+    expect(stopIds()).toEqual(stops)
+    expect(runTool('switch_plan', { plan: 'Nope' }).ok).toBe(false)
+    // Undo puts the trip back with one plan.
+    useTrip.getState().restore(before)
+    expect(useTrip.getState().plans).toHaveLength(1)
+    expect(runTool('delete_plan', { plan: 'Plan A' }).ok).toBe(false)
   })
 
   it('edits regions and country modes', () => {

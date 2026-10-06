@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { tripDay, type PlanWarning } from '../planner'
+import { tripDay, type Leg, type PlanWarning } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
 import { Badge, Button } from '../ui/kit'
@@ -24,6 +24,7 @@ export function Itinerary() {
       <Warnings warnings={plan.warnings} />
 
       <ol className="px-2 pb-6">
+        {plan.home.out && <HomeRow leg={plan.home.out} label={`From ${cityName(plan.home.out.from)}`} when={`to arrive ${shortDate(input.startDate)}`} />}
         {plan.stops.map((s, i) => {
           const city = ds.cities[s.cityId]
           const leg = plan.legs[i]
@@ -84,8 +85,26 @@ export function Itinerary() {
             </li>
           )
         })}
+        {plan.home.back && <HomeRow leg={plan.home.back} label={`Back to ${cityName(plan.home.back.to)}`} when={`leaving ${shortDate(input.endDate)}`} />}
       </ol>
     </div>
+  )
+}
+
+/** Getting from home to the first stop, or from the last stop back home (set in Preferences; not a stop). */
+function HomeRow({ leg, label, when }: { leg: Leg; label: string; when: string }) {
+  const { fmt } = useMoney()
+  return (
+    <li className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-[12px] text-muted">
+      <span className="flex h-6 w-6 shrink-0 items-center justify-center text-[14px]" aria-hidden>🏠</span>
+      <div className="min-w-0 flex-1">
+        <div className="font-medium text-ink">{label} <span className="font-normal text-muted">· {when}</span></div>
+        <div title={leg.estimated ? 'Estimated: long flights are not in the timetable data' : undefined}>
+          {leg.hops.map((h) => MODE_ICON[h.mode] ?? '•').join(' ')} {leg.estimated && '≈'}{duration(leg.durationMin)} · {fmt(leg.priceMin)}–{fmt(leg.priceMax)}
+          {leg.hops.some((h) => h.note) && <> · {leg.hops.find((h) => h.note)!.note!.toLowerCase()}</>}
+        </div>
+      </div>
+    </li>
   )
 }
 

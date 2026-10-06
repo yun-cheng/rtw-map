@@ -4,8 +4,8 @@
 import { create } from 'zustand'
 import { useAccount } from '../agent/account'
 import { useChat, type SavedChat } from '../agent/chat'
-import type { Stop, TripInput } from '../planner'
-import { newTripInput, useTrip } from './trip'
+import type { TripInput } from '../planner'
+import { newTripInput, tripPlans, useTrip, type TripData } from './trip'
 
 export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number }
 type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
@@ -34,9 +34,10 @@ const call = async (method: string, url: string, body?: unknown) => {
   return data
 }
 
-const tripData = () => {
-  const { input, stops } = useTrip.getState()
-  return { input, stops }
+/** The open trip as saved: the active plan's setup and stops, and all of its plans. */
+const tripData = (): TripData => {
+  const s = useTrip.getState()
+  return { input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId }
 }
 const chatData = (): SavedChat => {
   const { messages, contents, note } = useChat.getState()
@@ -69,7 +70,7 @@ let timer: ReturnType<typeof setTimeout> | undefined
 export const useSaved = create<SavedState>()((set, get) => {
   const upsert = (s: TripSummary) => set({ trips: [s, ...get().trips.filter((t) => t.id !== s.id)].sort((a, b) => b.updated - a.updated) })
 
-  const show = (id: string, data: { input: TripInput; stops: Stop[] } | null, chat: SavedChat | null, keepView = false) => {
+  const show = (id: string, data: TripData | null, chat: SavedChat | null, keepView = false) => {
     applying = true
     useTrip.getState().openTrip(data, keepView)
     useChat.getState().load(chat)
@@ -99,7 +100,7 @@ export const useSaved = create<SavedState>()((set, get) => {
     create: async (name) => {
       await flush()
       try {
-        const data = { input: newSetup(), stops: [] }
+        const data: TripData = { input: newSetup(), stops: [] }
         const created: TripSummary = await call('POST', '/api/trips', { name, data })
         upsert(created)
         show(created.id, data, null)
@@ -133,10 +134,10 @@ export const useSaved = create<SavedState>()((set, get) => {
   }
 })
 
-/** A new trip's setup: empty, keeping the user's passport and travel style. */
+/** A new trip's setup: empty, keeping the user's preferences (passport, pace, interests, travel style and the rest). */
 function newSetup(): TripInput {
-  const { passport, pace, budget, interests } = useTrip.getState().input
-  return { ...newTripInput(), passport, pace, budget, interests }
+  const { passport, pace, budget, prefs, interests } = useTrip.getState().input
+  return { ...newTripInput(), passport, pace, budget, prefs, interests }
 }
 
 /** Saves the open trip now (used before switching trips and after the save delay). */
@@ -167,7 +168,7 @@ function changed() {
 
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
-  if (s.input !== prev.input || s.stops !== prev.stops) changed()
+  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId) changed()
 })
 useChat.subscribe((s, prev) => {
   if (!s.busy && (s.messages !== prev.messages || s.contents !== prev.contents)) changed()

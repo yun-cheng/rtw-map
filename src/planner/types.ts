@@ -190,7 +190,43 @@ export type Dataset = {
 // ---------- Trip input ----------
 
 export type Pace = 'chill' | 'balanced' | 'fast'
-export type Budget = 'shoestring' | 'backpacker' | 'midrange' | 'comfort'
+/** Travel style: a preset of preferences, and the price level used for daily costs. */
+export type Budget = 'shoestring' | 'backpacker' | 'private' | 'midrange' | 'comfort'
+
+/**
+ * How someone likes to travel (the Preferences tab). A travel style (input.budget) fills in the style fields;
+ * the rest are the traveller's own. Amounts are in EUR, like all prices.
+ */
+export type TravelPrefs = {
+  travellers: 1 | 2 | 4
+  /** Where the traveller starts from (and returns to, with returnHome); not a stop of the trip. */
+  homeCityId: string | null
+  returnHome: boolean
+  room: 'dorm' | 'shared_bath' | 'own_bath' | 'hotel' | 'apartment'
+  hotelStars: 2 | 3 | 4
+  maxPerNight: number | null
+  cooking: 'mostly' | 'half' | 'rarely'
+  eatingOut: 'street' | 'casual' | 'nice'
+  coffee: boolean
+  alcohol: 'none' | 'some' | 'most'
+  cityTransport: 'public' | 'taxi_sometimes' | 'taxi_often'
+  betweenCities: 'cheapest' | 'balanced' | 'fastest'
+  overnight: boolean
+  maxTravelHours: 3 | 5 | 8 | null
+  sights: 'few' | 'daily' | 'lots'
+  /** What the planner favours: a balance, as many countries as fit, or the most popular places. */
+  focus: 'balanced' | 'countries' | 'highlights'
+  /** Expensive places (well above the trip's typical daily cost): no change, shorter stays, or skipped where optional. */
+  expensive: 'ignore' | 'shorter' | 'skip'
+  /** The comfortable range of daily highs and of nightly lows, in °C (null: no limit on that side). */
+  maxHeatC: number | null
+  minHighC: number | null
+  maxLowC: number | null
+  minLowC: number | null
+  avoidRain: boolean
+  needInternet: boolean
+  dailyBudget: number | null
+}
 export type CountryMode = 'must' | 'optional' | 'excluded'
 
 /** An ordered part of the trip, e.g. "Western Balkans" then "Poland". */
@@ -211,7 +247,13 @@ export type TripInput = {
   mustCities: string[]
   pace: Pace
   budget: Budget
+  prefs: TravelPrefs
   interests: string[]
+  /** How many stops the plan should have (each optional); the planner keeps within them where the trip allows. */
+  minStops?: number | null
+  maxStops?: number | null
+  /** Free-text wishes for the assistant ("Plan with AI"), e.g. fixed dates or places to avoid. */
+  wishes?: string
   passport: string
   schengenDaysBefore: number
 }
@@ -259,8 +301,9 @@ export type PlanWarning = {
   kind: WarningKind
   severity: 'info' | 'warn' | 'error'
   title: string
-  /** Average high in °C for hot/cold warnings, shown in the user's unit after the title (see warningTitle). */
+  /** Average high (or, with tempIsLow, the low) in °C for weather warnings, shown in the user's unit after the title (see warningTitle). */
   tempC?: number
+  tempIsLow?: boolean
   detail?: string
   cityId?: string
   iso2?: string
@@ -281,6 +324,8 @@ export type Plan = {
   warnings: PlanWarning[]
   schengen: SchengenSummary
   cost: { min: number; max: number; perDay: number }
+  /** Getting from home to the first stop, and from the last stop back home (null without a home city). */
+  home: { out: Leg | null; back: Leg | null }
   totalNights: number
   assignedNights: number
   dropped: string[]

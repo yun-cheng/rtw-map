@@ -52,6 +52,7 @@ export function dailyCost(ds: Dataset, cityId: string, budget: Budget): number {
   switch (budget) {
     case 'shoestring': return c.dormBed * f + groceryDay(c) + c.localTransportDay * 0.5 + 3
     case 'backpacker': return c.dormBed * f + groceryDay(c) * 0.5 + c.mealCheap * f * 1.5 + c.localTransportDay + 8
+    case 'private': return c.privateRoom * f * 0.75 + c.mealCheap * f * 2 + groceryDay(c) * 0.3 + c.localTransportDay + 10
     case 'midrange': return c.privateRoom * f + (c.mealCheap + c.mealMid) * f + c.localTransportDay + 15
     case 'comfort': return c.privateRoom * f * 2 + c.mealMid * f * 2.5 + c.localTransportDay * 2 + 30
   }

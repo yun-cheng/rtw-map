@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
-import { daysBetween, type CountryMode, type TripGroup } from '../planner'
+import { REGION_PRESETS, makeGroup } from '../data/presets'
+import { STYLES, daysBetween, type CountryMode, type TripGroup } from '../planner'
+import { useAccount } from '../agent/account'
+import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
 import { flag } from '../ui/format'
-import { Button, Segmented } from '../ui/kit'
+import { Button } from '../ui/kit'
 
 const MODE_STYLE: Record<CountryMode, string> = {
   must: 'border-accent bg-accent-soft text-accent',
@@ -14,7 +16,20 @@ const MODE_STYLE: Record<CountryMode, string> = {
 const NEXT_MODE: Record<CountryMode, CountryMode> = { must: 'optional', optional: 'excluded', excluded: 'must' }
 
 export function SetupPanel() {
-  const { input, setInput, generate, loadTestCase, stops } = useTrip()
+  const { input, setInput, setPanel, generate, loadTestCase, stops } = useTrip()
+  const user = useAccount((s) => s.user)
+  const busy = useChat((s) => s.busy)
+  const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
+  // The planner makes the plan; the assistant then adjusts it with its usual tools (so the app's rules still hold),
+  // thinking harder, since fitting several wishes into a trip takes planning.
+  const planWithAi = () => {
+    generate()
+    setPanel('assistant')
+    const wishes = input.wishes?.trim()
+    void useChat.getState().send(wishes
+      ? `Adjust the plan I just generated to my wishes: ${wishes}`
+      : 'Check the plan I just generated against my preferences and interests, and improve it where it helps.', [], { think: true })
+  }
   const nights = daysBetween(input.startDate, input.endDate)
   const [adding, setAdding] = useState('')
 
@@ -40,7 +55,7 @@ export function SetupPanel() {
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-[15px] font-semibold">Trip setup</h2>
+        <h2 className="text-[15px] font-semibold">Trip</h2>
         <Button variant="ghost" onClick={loadTestCase} title="Fill in the Balkans → Russia test trip">Load test case</Button>
       </div>
 
@@ -120,46 +135,72 @@ export function SetupPanel() {
         </Field>
       </div>
 
-      <Field label="Pace">
-        <Segmented value={input.pace} onChange={(pace) => setInput({ pace })} options={[{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]} />
-      </Field>
-      <Field label="Budget">
-        <Segmented value={input.budget} onChange={(budget) => setInput({ budget })} options={[{ value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' }, { value: 'midrange', label: 'Mid-range' }, { value: 'comfort', label: 'Comfort' }]} />
-      </Field>
-      <Field label="Interests">
-        <div className="flex flex-wrap gap-1">
-          {INTERESTS.map((t) => {
-            const on = input.interests.includes(t)
-            return (
-              <button key={t} onClick={() => setInput({ interests: on ? input.interests.filter((x) => x !== t) : [...input.interests, t] })}
-                className={`rounded-full border px-2 py-0.5 text-[12px] capitalize ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:text-ink'}`}>
-                {t}
-              </button>
-            )
-          })}
+      <Field label="Number of stops (optional)">
+        <div className="flex items-center gap-2">
+          <StopsInput value={input.minStops} placeholder="Any" label="Fewest stops" onChange={(minStops) => setInput({ minStops })} />
+          <span className="text-muted">to</span>
+          <StopsInput value={input.maxStops} placeholder="Any" label="Most stops" onChange={(maxStops) => setInput({ maxStops })} />
+          {stops.length > 0 && <span className="text-[12px] text-muted">now {stops.length}</span>}
         </div>
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Passport">
-          <select value={input.passport} onChange={(e) => setInput({ passport: e.target.value })} className={inputCls}>
-            {ds.visa.passports.map((p) => <option key={p.code} value={p.code}>{p.name}</option>)}
-          </select>
-        </Field>
-        <Field label="Schengen days used before">
-          <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={inputCls} title="Days spent in the Schengen area in the 180 days before the trip" />
-        </Field>
-      </div>
+      <Field label="Schengen days used before">
+        <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-[8rem]`} title="Days spent in the Schengen area in the 180 days before the trip" />
+      </Field>
 
-      <Button variant="primary" className="py-2 text-[14px]" disabled={!input.groups.length || nights < 1} onClick={generate}>
-        {stops.length ? 'Regenerate plan' : 'Generate plan'}
-      </Button>
-      {stops.length > 0 && <p className="-mt-2 text-[11px] text-muted">Regenerating replaces your current stops and edits.</p>}
+      <p className="text-[12px] text-muted">
+        Passport, pace, interests and travel style ({STYLES.find((s) => s.value === input.budget)?.label}):{' '}
+        <button onClick={() => setPanel('prefs')} className="text-accent hover:underline">Preferences</button>
+      </p>
+
+      <Field label="Anything else? (optional)">
+        <textarea
+          value={input.wishes ?? ''}
+          onChange={(e) => setInput({ wishes: e.target.value })}
+          rows={3}
+          maxLength={1000}
+          placeholder="Wishes for Plan with AI, e.g. a beach week in July, meeting a friend in Vienna 12–15 June, fewer capitals"
+          className={`${inputCls} resize-y`}
+        />
+      </Field>
+
+      <div className="flex gap-2">
+        <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!canPlan} onClick={generate}>
+          {stops.length ? 'Regenerate plan' : 'Generate plan'}
+        </Button>
+        <Button
+          className="flex-1 py-2 text-[14px]"
+          disabled={!canPlan || !user || busy}
+          title={user ? 'Generate the plan, then let the assistant adjust it to your wishes and preferences' : 'Sign in to use the assistant'}
+          onClick={planWithAi}
+        >
+          ✨ Plan with AI
+        </Button>
+      </div>
+      <p className="-mt-2 text-[11px] text-muted">
+        {stops.length ? 'Both replace your current stops and edits. ' : ''}
+        Plan with AI starts from the same plan, then the assistant adjusts it to your wishes{user ? '' : ' (sign in to use it)'}.
+      </p>
     </div>
   )
 }
 
 const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
+
+/** An optional whole number of stops; empty means no limit. */
+function StopsInput({ value, placeholder, label, onChange }: { value?: number | null; placeholder: string; label: string; onChange: (n: number | null) => void }) {
+  return (
+    <input
+      type="number" min={1} max={200} inputMode="numeric" aria-label={label} placeholder={placeholder}
+      value={value ?? ''}
+      onChange={(e) => {
+        const n = Math.round(Number(e.target.value))
+        onChange(e.target.value.trim() && n > 0 ? Math.min(200, n) : null)
+      }}
+      className={`${inputCls} w-20`}
+    />
+  )
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (

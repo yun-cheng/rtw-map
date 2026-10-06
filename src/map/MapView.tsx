@@ -186,12 +186,12 @@ export function MapView() {
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
     map.on('click', (e: MapMouseEvent) => {
       const f = hit(e.point)
-      if (!f) return
+      if (!f || (!isCity(f) && Number(f.properties.leg) < 0)) return
       useTrip.getState().select(isCity(f) ? { type: 'city', id: String(f.properties.id) } : { type: 'leg', index: Number(f.properties.leg) })
     })
     map.on('mousemove', (e: MapMouseEvent) => {
       const f = hit(e.point)
-      map.getCanvas().style.cursor = f ? 'pointer' : ''
+      map.getCanvas().style.cursor = f && (isCity(f) || Number(f.properties.leg) >= 0) ? 'pointer' : ''
       if (f && isCity(f)) popup.setLngLat((f.geometry as Point).coordinates as [number, number]).setText(String(f.properties.label ?? f.properties.name)).addTo(map)
       else popup.remove()
     })
@@ -275,7 +275,13 @@ export function MapView() {
           geometry: { type: 'LineString' as const, coordinates: [[ds.cities[h.from].lon, ds.cities[h.from].lat], [ds.cities[h.to].lon, ds.cities[h.to].lat]] },
         })),
       )
-      ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: routeFeatures })
+      // From home and back (set in Preferences): drawn dashed, not clickable (leg -1), and left out when fitting the map.
+      const homeFeatures = [plan?.home.out, plan?.home.back].flatMap((leg) => (leg ? leg.hops : [])).map((h) => ({
+        type: 'Feature' as const,
+        properties: { leg: -1, selected: false, color: INK[shownTheme.current].route, estimated: true },
+        geometry: { type: 'LineString' as const, coordinates: [[ds.cities[h.from].lon, ds.cities[h.from].lat], [ds.cities[h.to].lon, ds.cities[h.to].lat]] },
+      }))
+      ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [...homeFeatures, ...routeFeatures] })
 
       map.setPaintProperty('country-fill', 'fill-color', countryFill(layer, tripCountries))
       // Country tints need a little more strength to show on the dark map.

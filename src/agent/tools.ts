@@ -4,9 +4,9 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costProfile, dailyCost, englishLevel,
-  groceryDay, likelyMonth, mobileInternet, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, mobileInternet, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
-import { useTrip, type CityTab } from '../store/trip'
+import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
 import { sharedView, type ViewRef } from './view'
 
@@ -52,11 +52,33 @@ function regionsText(input: TripInput): string {
 }
 
 /** A compact description of the trip, sent with every message so the assistant knows the current state. */
+/** The traveller's preferences in a line, for the assistant (amounts in EUR). */
+function prefsText(p: TravelPrefs): string {
+  return [
+    ...(p.homeCityId ? [`home: ${cityName(p.homeCityId)} (starts there${p.returnHome ? ' and returns' : ', one way'}; not a stop)`] : []),
+    `${p.travellers === 1 ? 'solo' : p.travellers === 2 ? 'two sharing a room' : '3–4 people'}`,
+    `room: ${p.room.replace('_', ' ')}${p.room === 'hotel' ? ` ~${p.hotelStars}★` : ''}${p.maxPerNight ? ` up to €${p.maxPerNight}/night` : ''}`,
+    `cooking: ${p.cooking}, eating out: ${p.eatingOut}, alcohol: ${p.alcohol}${p.coffee ? ', coffee out daily' : ''}`,
+    `in cities: ${p.cityTransport.replace('_', ' ')}; between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
+    `paid sights: ${p.sights}`,
+    `planner focus: ${p.focus === 'countries' ? 'as many countries as fit' : p.focus === 'highlights' ? 'the most popular places' : 'balanced'}`,
+    ...(p.expensive !== 'ignore' ? [`expensive places: ${p.expensive === 'shorter' ? 'shorter stays' : 'skip where optional'}`] : []),
+    ...(p.minHighC != null || p.maxHeatC != null ? [`comfortable daily highs: ${p.minHighC ?? 'any'} to ${p.maxHeatC ?? 'any'}°C`] : []),
+    ...(p.minLowC != null || p.maxLowC != null ? [`comfortable nightly lows: ${p.minLowC ?? 'any'} to ${p.maxLowC ?? 'any'}°C`] : []),
+    ...(p.avoidRain ? ['avoid rainy months'] : []),
+    ...(p.needInternet ? ['needs fast internet'] : []),
+    ...(p.dailyBudget ? [`daily budget €${p.dailyBudget} per person`] : []),
+  ].join('; ')
+}
+
 export function tripContext(): string {
   const { input, plan } = useTrip.getState()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
-    `Dates: ${input.startDate} to ${input.endDate}. Pace: ${input.pace}. Budget: ${input.budget}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    `Dates: ${input.startDate} to ${input.endDate}. Pace: ${input.pace}. Travel style: ${input.budget}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    ...(useTrip.getState().plans.length > 1 ? [`Plans in this trip: ${useTrip.getState().plans.map((p) => `${p.name}${p.id === useTrip.getState().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
+    ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${input.minStops ?? 'any'} to ${input.maxStops ?? 'any'} (the planner keeps to this when it makes a plan).`] : []),
+    ...(input.wishes?.trim() ? [`The user's wishes for this trip, in their words: "${input.wishes.trim()}"`] : []),
     `Visit regions in order: ${input.keepGroupOrder ? 'yes' : 'no'}.${input.startCityId ? ` Start: ${cityName(input.startCityId)}.` : ''}${input.endCityId ? ` End: ${cityName(input.endCityId)}.` : ''}`,
     `Regions:\n${regionsText(input)}`,
   ]
@@ -95,8 +117,12 @@ function tripDetails(): ToolResult {
         from: cityName(l.from), to: cityName(l.to), reachable: l.reachable, hours: Math.round(l.durationMin / 6) / 10,
         modes: l.hops.map((h) => h.mode), price_eur: [l.priceMin, l.priceMax], overnight: l.overnight, estimated: l.estimated,
       })),
+      home: {
+        from_home: plan.home.out && { to: cityName(plan.home.out.to), hours: Math.round(plan.home.out.durationMin / 6) / 10, modes: plan.home.out.hops.map((h) => h.mode), price_eur: [plan.home.out.priceMin, plan.home.out.priceMax], estimated: plan.home.out.estimated },
+        back_home: plan.home.back && { from: cityName(plan.home.back.from), hours: Math.round(plan.home.back.durationMin / 6) / 10, modes: plan.home.back.hops.map((h) => h.mode), price_eur: [plan.home.back.priceMin, plan.home.back.priceMax], estimated: plan.home.back.estimated },
+      },
       nights: { total: plan.totalNights, assigned: plan.assignedNights },
-      cost_eur: { min: Math.round(plan.cost.min), max: Math.round(plan.cost.max), per_day: Math.round(plan.cost.perDay) },
+      cost_eur: { min: Math.round(plan.cost.min), max: Math.round(plan.cost.max), per_day: Math.round(plan.cost.perDay), includes: 'stays, travel between stops and from/to home' },
       schengen: plan.schengen,
       warnings: plan.warnings.map((w) => ({ severity: w.severity, title: warningTitle(w, 'C'), detail: w.detail, city: w.cityId && cityName(w.cityId) })),
     },
@@ -148,7 +174,7 @@ function cityInfo(args: Args): ToolResult {
       all_months: clim.map((m) => `${monthName(m.month)} ${Math.round(m.tLow)}–${Math.round(m.tHigh)}°C, ${Math.round(m.rainDays)} rain days`),
     },
     air_quality: air && { month: monthName(month), pm25: air.pm25, level: airBand(air.pm25).short },
-    daily_cost_eur: Object.fromEntries((['shoestring', 'backpacker', 'midrange', 'comfort'] as Budget[]).map((b) => [b, Math.round(dailyCost(ds, id, b))])),
+    daily_cost_eur: Object.fromEntries((['shoestring', 'backpacker', 'private', 'midrange', 'comfort'] as Budget[]).map((b) => [b, Math.round(dailyCost(ds, id, b))])),
     prices_eur: cost && { dorm_bed: cost.profile.dormBed, private_room: cost.profile.privateRoom, cheap_meal: cost.profile.mealCheap, estimated: cost.estimated },
     visa: visa ? { passport: input.passport, requirement: visa.req, days: visa.days } : 'unknown',
     travel_advice: adv && {
@@ -168,7 +194,7 @@ function cityInfo(args: Args): ToolResult {
   }
 }
 
-const BUDGETS: Budget[] = ['shoestring', 'backpacker', 'midrange', 'comfort']
+const BUDGETS: Budget[] = ['shoestring', 'backpacker', 'private', 'midrange', 'comfort']
 export const CITY_SECTIONS = ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] as const
 
 /** Everything the app has about a city, by section (get_city_info with `sections`). */
@@ -415,7 +441,7 @@ function options(): ToolResult {
     interests: INTERESTS,
     passports: ds.visa.passports,
     paces: ['chill', 'balanced', 'fast'],
-    budgets: ['shoestring', 'backpacker', 'midrange', 'comfort'],
+    budgets: ['shoestring', 'backpacker', 'private', 'midrange', 'comfort'],
   }
 }
 
@@ -440,8 +466,9 @@ function updateSettings(args: Args): string {
     patch.pace = args.pace as Pace
   }
   if (args.budget !== undefined) {
-    if (!['shoestring', 'backpacker', 'midrange', 'comfort'].includes(String(args.budget))) throw new ToolError('Unknown budget')
+    if (!BUDGETS.includes(args.budget as Budget)) throw new ToolError('Unknown budget')
     patch.budget = args.budget as Budget
+    patch.prefs = stylePrefs(patch.budget, t.input.prefs)
   }
   if (args.interests !== undefined) {
     const list = (Array.isArray(args.interests) ? args.interests : []).map((x) => String(x).toLowerCase())
@@ -457,6 +484,9 @@ function updateSettings(args: Args): string {
   if (args.keep_region_order !== undefined) patch.keepGroupOrder = Boolean(args.keep_region_order)
   if (args.start_city !== undefined) patch.startCityId = args.start_city ? cityId(args.start_city) : null
   if (args.end_city !== undefined) patch.endCityId = args.end_city ? cityId(args.end_city) : null
+  if (args.min_stops !== undefined) patch.minStops = Number(args.min_stops) > 0 ? Math.round(Number(args.min_stops)) : null
+  if (args.max_stops !== undefined) patch.maxStops = Number(args.max_stops) > 0 ? Math.round(Number(args.max_stops)) : null
+  if (args.wishes !== undefined) patch.wishes = String(args.wishes).slice(0, 1000)
   if (args.schengen_days_before !== undefined) patch.schengenDaysBefore = Math.max(0, Math.min(90, Math.round(Number(args.schengen_days_before) || 0)))
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   t.setInput(patch)
@@ -548,6 +578,30 @@ function run(name: string, args: Args): string | ToolResult {
     case 'compare_cities': return compareCities(args)
     case 'get_route': return routeTool(args)
     case 'update_settings': return updateSettings(args)
+    case 'update_preferences': return updatePreferences(args)
+    case 'new_plan': {
+      const id = t.addPlan({ name: args.name ? String(args.name) : undefined, activate: args.switch_to !== false })
+      if (!id) throw new ToolError(`A trip can have up to ${MAX_PLANS} plans: delete one first`)
+      const added = useTrip.getState().plans.find((p) => p.id === id)!
+      return `Added ${added.name}, a copy of ${planName(t.activePlanId)}${args.switch_to !== false ? `; now on ${added.name}` : ''}`
+    }
+    case 'switch_plan': {
+      const p = findPlan(args.plan)
+      t.switchPlan(p.id)
+      return `Switched to ${p.name}`
+    }
+    case 'rename_plan': {
+      const p = findPlan(args.plan)
+      if (!String(args.name ?? '').trim()) throw new ToolError('Give a name')
+      t.renamePlan(p.id, String(args.name))
+      return `Renamed ${p.name} to ${String(args.name).trim()}`
+    }
+    case 'delete_plan': {
+      const p = findPlan(args.plan)
+      if (t.plans.length <= 1) throw new ToolError('A trip needs at least one plan')
+      t.deletePlan(p.id)
+      return `Deleted ${p.name}; now on ${planName(useTrip.getState().activePlanId)}`
+    }
     case 'add_region': return addRegion(args)
     case 'update_region': return updateRegion(args)
     case 'set_country_mode': return setCountryMode(args)
@@ -578,6 +632,21 @@ function run(name: string, args: Args): string | ToolResult {
       t.moveStop(from, targetIndex(from, args.after))
       return `Moved ${cityName(t.stops[from].cityId)}`
     }
+    case 'reorder_stops': {
+      if (!t.stops.length) throw new ToolError('There is no itinerary yet')
+      if (args.reverse) {
+        // Backwards: the regions in reverse order too, and the start and end city swapped, so a new plan agrees.
+        t.setInput({ groups: [...t.input.groups].reverse(), startCityId: t.input.endCityId, endCityId: t.input.startCityId })
+        t.reorderStops(t.stops.map((_, i) => t.stops.length - 1 - i))
+        return `Reversed the trip: it now starts in ${cityName(useTrip.getState().stops[0].cityId)}`
+      }
+      const order = (Array.isArray(args.order) ? args.order : []).map((c) => stopIndex(c))
+      if (order.length !== t.stops.length || new Set(order).size !== order.length) {
+        throw new ToolError(`Give every stop of the trip once (${t.stops.length} stops), or reverse: true`)
+      }
+      t.reorderStops(order)
+      return 'Re-ordered the stops'
+    }
     case 'optimize_route':
       if (!t.plan) throw new ToolError('There is no itinerary yet')
       t.reoptimize()
@@ -603,25 +672,121 @@ export function runTool(name: string, args: Args = {}): { result: ToolResult; ok
   }
 }
 
+/** The preferences the assistant can change: argument name, preference, and the values allowed (null = no limit). */
+const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknown[]; amount?: true; flag?: true; temp?: true }[] = [
+  { arg: 'return_home', key: 'returnHome', flag: true },
+  { arg: 'travellers', key: 'travellers', values: [1, 2, 4] },
+  { arg: 'room', key: 'room', values: ['dorm', 'shared_bath', 'own_bath', 'hotel', 'apartment'] },
+  { arg: 'hotel_stars', key: 'hotelStars', values: [2, 3, 4] },
+  { arg: 'max_per_night_eur', key: 'maxPerNight', amount: true },
+  { arg: 'cooking', key: 'cooking', values: ['mostly', 'half', 'rarely'] },
+  { arg: 'eating_out', key: 'eatingOut', values: ['street', 'casual', 'nice'] },
+  { arg: 'coffee', key: 'coffee', flag: true },
+  { arg: 'alcohol', key: 'alcohol', values: ['none', 'some', 'most'] },
+  { arg: 'city_transport', key: 'cityTransport', values: ['public', 'taxi_sometimes', 'taxi_often'] },
+  { arg: 'between_cities', key: 'betweenCities', values: ['cheapest', 'balanced', 'fastest'] },
+  { arg: 'overnight', key: 'overnight', flag: true },
+  { arg: 'max_travel_hours', key: 'maxTravelHours', values: [3, 5, 8, null] },
+  { arg: 'sights', key: 'sights', values: ['few', 'daily', 'lots'] },
+  { arg: 'focus', key: 'focus', values: ['balanced', 'countries', 'highlights'] },
+  { arg: 'expensive', key: 'expensive', values: ['ignore', 'shorter', 'skip'] },
+  { arg: 'max_high_c', key: 'maxHeatC', temp: true },
+  { arg: 'min_high_c', key: 'minHighC', temp: true },
+  { arg: 'max_low_c', key: 'maxLowC', temp: true },
+  { arg: 'min_low_c', key: 'minLowC', temp: true },
+  { arg: 'avoid_rain', key: 'avoidRain', flag: true },
+  { arg: 'need_internet', key: 'needInternet', flag: true },
+  { arg: 'daily_budget_eur', key: 'dailyBudget', amount: true },
+]
+
+const planName = (id: string) => useTrip.getState().plans.find((p) => p.id === id)?.name ?? 'the plan'
+/** A plan of the trip by name (or id). */
+function findPlan(ref: unknown): TripPlan {
+  const plans = useTrip.getState().plans
+  const p = plans.find((x) => key(x.name) === key(String(ref ?? '')) || x.id === ref)
+  if (!p) throw new ToolError(`No plan called "${ref}". Plans: ${plans.map((x) => x.name).join(', ')}`)
+  return p
+}
+
+/** Names of the preferences in the list of changes under a reply. */
+const PREF_NAMES: Record<keyof TravelPrefs, string> = {
+  homeCityId: 'Home city', returnHome: 'Return home at the end', travellers: 'Travellers', room: 'Room', hotelStars: 'Hotel level', maxPerNight: 'Most per night (EUR)', cooking: 'Cooking',
+  eatingOut: 'Eating out', coffee: 'Coffee out daily', alcohol: 'Alcohol', cityTransport: 'In cities', betweenCities: 'Between cities',
+  overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', sights: 'Paid sights', focus: 'Trip goal',
+  expensive: 'Expensive places', maxHeatC: 'Highest comfortable high (°C)', minHighC: 'Lowest comfortable high (°C)', maxLowC: 'Warmest comfortable night (°C)', minLowC: 'Coldest comfortable night (°C)', avoidRain: 'Avoid rainy months',
+  needInternet: 'Needs fast internet', dailyBudget: 'Daily budget (EUR)',
+}
+const prefValue = (v: unknown) => (v === null ? 'no limit' : v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '))
+
+function updatePreferences(args: Args): string {
+  const patch: Partial<TravelPrefs> = {}
+  for (const p of PREF_ARGS) {
+    const raw = args[p.arg]
+    if (raw === undefined) continue
+    let value: unknown
+    if (p.temp) {
+      // A temperature in °C, or "none" (or null) for no limit; 0 is a real temperature here.
+      value = raw === null || /^(none|any|no limit)?$/i.test(String(raw).trim()) ? null : Math.round(Number(raw))
+      if (value !== null && (!Number.isFinite(value) || (value as number) < -30 || (value as number) > 50)) throw new ToolError(`${p.arg} must be a temperature in °C, or "none"`)
+    } else if (p.flag) value = Boolean(raw)
+    else if (p.amount) value = Number(raw) > 0 ? Math.round(Number(raw)) : null
+    else {
+      // Numbers may come as strings; 0 means "no limit" where there's one.
+      value = typeof p.values![0] === 'number' ? (Number(raw) || null) : String(raw)
+      if (!p.values!.includes(value)) throw new ToolError(`${p.arg} must be one of: ${p.values!.map((v) => v ?? 0).join(', ')}`)
+    }
+    Object.assign(patch, { [p.key]: value })
+  }
+  // Home: any city the app knows, or "" for none; it is where the trip starts from, not a stop.
+  if (args.home_city !== undefined) patch.homeCityId = String(args.home_city).trim() ? cityId(args.home_city) : null
+  if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
+  useTrip.getState().setPrefs(patch)
+  const shapesPlan = ['focus', 'expensive', 'maxHeatC', 'minHighC', 'maxLowC', 'minLowC', 'avoidRain'].some((k) => k in patch)
+  return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && useTrip.getState().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
+}
+
 // ---------------------------------------------------------------- what changed (shown under the reply, with Undo)
 
-export type TripSnapshot = { input: TripInput; stops: Stop[] }
+export type TripSnapshot = TripData
 
 export const snapshot = (): TripSnapshot => {
-  const { input, stops } = useTrip.getState()
-  return structuredClone({ input, stops })
+  const s = useTrip.getState()
+  return structuredClone({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
 }
 
 /** Plain-language list of differences between two versions of the trip. */
 export function describeChanges(before: TripSnapshot, after: TripSnapshot): string[] {
   const out: string[] = []
+  // The trip's plans: added, removed, renamed, and which one is active.
+  const name = (snap: TripSnapshot, id?: string) => snap.plans?.find((p) => p.id === id)?.name ?? 'Plan A'
+  for (const p of after.plans ?? []) {
+    const old = before.plans?.find((x) => x.id === p.id)
+    if (!old && before.plans) out.push(`Added plan ${p.name}`)
+    else if (old && old.name !== p.name) out.push(`Renamed plan ${old.name} to ${p.name}`)
+  }
+  for (const p of before.plans ?? []) if (after.plans && !after.plans.some((x) => x.id === p.id)) out.push(`Deleted plan ${p.name}`)
+  if (before.activePlanId !== after.activePlanId) {
+    // Another plan is shown: comparing its setup and stops with the previous plan's would only list their differences.
+    out.push(`Switched to ${name(after, after.activePlanId)}`)
+    return out
+  }
   const a = before.input
   const b = after.input
   if (a.startDate !== b.startDate || a.endDate !== b.endDate) out.push(`Dates: ${a.startDate} – ${a.endDate} → ${b.startDate} – ${b.endDate}`)
   if (a.pace !== b.pace) out.push(`Pace: ${a.pace} → ${b.pace}`)
-  if (a.budget !== b.budget) out.push(`Budget: ${a.budget} → ${b.budget}`)
+  if (a.budget !== b.budget) out.push(`Travel style: ${a.budget} → ${b.budget}`)
   if (a.passport !== b.passport) out.push(`Passport: ${a.passport} → ${b.passport}`)
   if (a.interests.join() !== b.interests.join()) out.push(`Interests: ${b.interests.join(', ') || 'none'}`)
+  if ((a.wishes ?? '') !== (b.wishes ?? '')) out.push('Wishes updated')
+  if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null)) out.push(`Number of stops: ${b.minStops ?? 'any'} to ${b.maxStops ?? 'any'}`)
+  // A new travel style resets its own preferences; those aren't listed one by one.
+  const styleKeys = a.budget !== b.budget ? Object.keys(STYLES[0].prefs) : []
+  for (const { key } of PREF_ARGS) {
+    if (styleKeys.includes(key)) continue
+    const [was, now] = [a.prefs[key], b.prefs[key]]
+    if (was !== now) out.push(`${PREF_NAMES[key]}: ${prefValue(was)} → ${prefValue(now)}`)
+  }
+  if (a.prefs.homeCityId !== b.prefs.homeCityId) out.push(`Home city: ${b.prefs.homeCityId ? cityName(b.prefs.homeCityId) : 'none'}`)
   if (a.startCityId !== b.startCityId) out.push(`Start city: ${b.startCityId ? cityName(b.startCityId) : 'any'}`)
   if (a.endCityId !== b.endCityId) out.push(`End city: ${b.endCityId ? cityName(b.endCityId) : 'any'}`)
   if (a.keepGroupOrder !== b.keepGroupOrder) out.push(`Visit regions in order: ${b.keepGroupOrder ? 'yes' : 'no'}`)

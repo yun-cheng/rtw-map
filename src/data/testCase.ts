@@ -1,3 +1,4 @@
+import { DEFAULT_PREFS } from '../planner/prefs'
 import type { Dataset, TripInput } from '../planner/types'
 import { REGION_PRESETS, makeGroup } from './presets'
 
@@ -26,6 +27,7 @@ export function testCaseInput(ds: Dataset, passport = 'TW'): TripInput {
     mustCities: [],
     pace: 'balanced',
     budget: 'backpacker',
+    prefs: DEFAULT_PREFS,
     interests: [],
     passport,
     schengenDaysBefore: 0,

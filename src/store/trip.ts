@@ -4,8 +4,8 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import type { TempUnit } from '../ui/format'
 import {
-  addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize,
-  type Plan, type Stop, type TripInput,
+  DEFAULT_PREFS, addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize, stylePrefs, withPrefs,
+  type Budget, type Plan, type Stop, type TravelPrefs, type TripInput,
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
@@ -16,9 +16,32 @@ export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile
 export type NearbyKind = 'supermarket' | 'pharmacy' | 'clinic' | 'atm'
 export const NEARBY_KINDS: NearbyKind[] = ['supermarket', 'pharmacy', 'clinic', 'atm']
 
+/** One version of a trip's itinerary, with the setup and preferences it was made with. */
+export type TripPlan = { id: string; name: string; input: TripInput; stops: Stop[] }
+/** A trip as saved: the active plan's setup and stops (what the trip list reads), and all of its plans. */
+export type TripData = { input: TripInput; stops: Stop[]; plans?: TripPlan[]; activePlanId?: string }
+export const MAX_PLANS = 8
+
+const planId = () => Math.random().toString(36).slice(2, 10)
+/** "Plan A", "Plan B", …: the first name not in use. */
+export function nextPlanName(plans: { name: string }[]): string {
+  for (let i = 0; i < 26; i++) {
+    const name = `Plan ${String.fromCharCode(65 + i)}`
+    if (!plans.some((p) => p.name === name)) return name
+  }
+  return `Plan ${plans.length + 1}`
+}
+
+/** All plans of the trip, with the active one up to date (its setup and stops live in `input` and `stops`). */
+export const tripPlans = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[] }): TripPlan[] =>
+  s.plans.map((p) => (p.id === s.activePlanId ? { ...p, input: s.input, stops: s.stops } : p))
+
 type State = {
+  /** The active plan's setup and stops; the other plans are in `plans`. */
   input: TripInput
   stops: Stop[]
+  plans: TripPlan[]
+  activePlanId: string
   plan: Plan | null
   selected: Selection
   layer: MapLayer
@@ -28,7 +51,7 @@ type State = {
   nearbyKind: NearbyKind
   /** What the Weather layer colours by: the average daily high or low. */
   weatherBy: 'high' | 'low'
-  panel: 'setup' | 'itinerary' | 'assistant'
+  panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
   currency: string
@@ -40,12 +63,17 @@ type State = {
   cityTab: CityTab
 
   setInput: (patch: Partial<TripInput>) => void
+  /** Picks a travel style: its preferences replace the style fields, and daily costs use its price level. */
+  setStyle: (style: Budget) => void
+  setPrefs: (patch: Partial<TravelPrefs>) => void
   generate: () => void
   loadTestCase: () => void
   setNights: (index: number, nights: number) => void
   toggleLock: (index: number) => void
   removeStop: (index: number) => void
   moveStop: (from: number, to: number) => void
+  /** Puts the stops in a new order (indexes into the current stops); nights are re-fitted. */
+  reorderStops: (order: number[]) => void
   addCity: (cityId: string) => void
   rebalance: () => void
   reoptimize: () => void
@@ -61,9 +89,16 @@ type State = {
   setCityTab: (tab: CityTab) => void
   /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
    *  open panel, map layer month and map position instead (when reloading the trip that is already on screen). */
-  openTrip: (data: { input: TripInput; stops: Stop[] } | null, keepView?: boolean) => void
+  openTrip: (data: TripData | null, keepView?: boolean) => void
   /** Puts back an earlier trip (Undo for the assistant's changes); keeps the view as it is. */
-  restore: (data: { input: TripInput; stops: Stop[] }) => void
+  restore: (data: TripData) => void
+  /** Adds a plan, by default a copy of the active one, and switches to it unless `activate` is false. Returns its id,
+   *  or null when the trip already has the most plans allowed. */
+  addPlan: (options?: { name?: string; from?: { input: TripInput; stops: Stop[] }; activate?: boolean }) => string | null
+  switchPlan: (id: string) => void
+  renamePlan: (id: string, name: string) => void
+  /** Deletes a plan (never the last one); deleting the active plan switches to another. */
+  deletePlan: (id: string) => void
 }
 
 /** Setup of a new trip: no regions yet, starting in two months. */
@@ -82,6 +117,7 @@ const emptyInput: TripInput = {
   mustCities: [],
   pace: 'balanced',
   budget: 'backpacker',
+  prefs: DEFAULT_PREFS,
   interests: [],
   passport: 'EU',
   schengenDaysBefore: 0,
@@ -110,9 +146,20 @@ export const useTrip = create<State>()(
         apply(rebalance(ds, input, fn(stops.map((s) => ({ ...s })))))
       }
       const fresh = newTripInput()
+      const firstPlan = planId()
+      /** The itinerary for a setup and stops, or none if the stops refer to data that no longer exists. */
+      const planFor = (input: TripInput, stops: Stop[]): Plan | null => {
+        try {
+          return stops.length ? evaluatePlan(ds, input, stops) : null
+        } catch {
+          return null
+        }
+      }
       return {
         input: fresh,
         stops: [],
+        plans: [{ id: firstPlan, name: 'Plan A', input: fresh, stops: [] }],
+        activePlanId: firstPlan,
         plan: null,
         selected: null,
         layer: 'none',
@@ -131,6 +178,8 @@ export const useTrip = create<State>()(
           set({ input })
           if (get().stops.length) set({ plan: evaluatePlan(ds, input, get().stops) })
         },
+        setStyle: (budget) => get().setInput({ budget, prefs: stylePrefs(budget, get().input.prefs) }),
+        setPrefs: (patch) => get().setInput({ prefs: { ...get().input.prefs, ...patch } }),
         generate: () => {
           const { input } = get()
           if (!input.groups.length) return
@@ -154,6 +203,7 @@ export const useTrip = create<State>()(
           stops.splice(to, 0, s)
           return stops
         }),
+        reorderStops: (order) => edit((stops) => order.map((i) => stops[i])),
         addCity: (cityId) => {
           const { input, stops } = get()
           if (stops.some((s) => s.cityId === cityId)) return
@@ -175,36 +225,74 @@ export const useTrip = create<State>()(
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCityTab: (cityTab) => set({ cityTab }),
         openTrip: (data, keepView = false) => {
-          const input = data ? { ...newTripInput(), ...data.input } : newTripInput()
-          const stops = data?.stops ?? []
-          let plan: Plan | null = null
-          try {
-            plan = stops.length ? evaluatePlan(ds, input, stops) : null
-          } catch {
+          const norm = (x: { input: TripInput; stops?: Stop[] }) => ({ input: { ...newTripInput(), ...withPrefs(x.input) }, stops: x.stops ?? [] })
+          // Trips saved before plans existed have one plan.
+          const plans: TripPlan[] = data?.plans?.length
+            ? data.plans.map((p) => ({ ...p, ...norm(p) }))
+            : [{ id: planId(), name: 'Plan A', ...(data ? norm(data) : { input: newTripInput(), stops: [] }) }]
+          const activePlanId = plans.some((p) => p.id === data?.activePlanId) ? data!.activePlanId! : plans[0].id
+          // The saved setup and stops at the top are the active plan's latest.
+          const { input, stops } = data && data.plans?.length ? norm(data) : plans.find((p) => p.id === activePlanId)!
+          const plan = planFor(input, stops)
+          if (stops.length && !plan) {
             // The trip refers to data that no longer exists: keep its setup, drop the itinerary.
-            set({ input, stops: [], plan: null, selected: null, panel: 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
+            set({ input, stops: [], plan: null, plans, activePlanId, selected: null, panel: 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
             return
           }
           if (keepView) {
             const { selected } = get()
-            set({ input, stops, plan, selected: selected?.type === 'leg' && !plan?.legs[selected.index] ? null : selected })
+            set({ input, stops, plan, plans, activePlanId, selected: selected?.type === 'leg' && !plan?.legs[selected.index] ? null : selected })
             return
           }
-          set({ input, stops, plan, selected: null, panel: plan ? get().panel : 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
+          set({ input, stops, plan, plans, activePlanId, selected: null, panel: plan ? get().panel : 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
         },
-        restore: ({ input, stops }) => set({ input, stops, plan: stops.length ? evaluatePlan(ds, input, stops) : null }),
+        restore: ({ input, stops, plans, activePlanId }) =>
+          set({ input, stops, plan: planFor(input, stops), ...(plans?.length && activePlanId && { plans, activePlanId }) }),
+        addPlan: ({ name, from, activate = true } = {}) => {
+          const s = get()
+          const plans = tripPlans(s)
+          if (plans.length >= MAX_PLANS) return null
+          const source = from ?? { input: s.input, stops: s.stops }
+          const added: TripPlan = { id: planId(), name: name?.trim().slice(0, 40) || nextPlanName(plans), ...structuredClone(source) }
+          set({ plans: [...plans, added] })
+          if (activate) get().switchPlan(added.id)
+          return added.id
+        },
+        switchPlan: (id) => {
+          const s = get()
+          const plans = tripPlans(s)
+          const target = plans.find((p) => p.id === id)
+          if (!target || id === s.activePlanId) return
+          const plan = planFor(target.input, target.stops)
+          set({ plans, activePlanId: id, input: target.input, stops: plan ? target.stops : [], plan, selected: null })
+        },
+        renamePlan: (id, name) => {
+          if (!name.trim()) return
+          set({ plans: get().plans.map((p) => (p.id === id ? { ...p, name: name.trim().slice(0, 40) } : p)) })
+        },
+        deletePlan: (id) => {
+          const { plans, activePlanId } = get()
+          if (plans.length <= 1 || !plans.some((p) => p.id === id)) return
+          if (id === activePlanId) get().switchPlan(plans.find((p) => p.id !== id)!.id)
+          set({ plans: get().plans.filter((p) => p.id !== id) })
+        },
       }
     },
     {
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, priceCompare: s.priceCompare, cityTab: s.cityTab }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, priceCompare: s.priceCompare, cityTab: s.cityTab }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         // A map view that has since been removed (Cards, English, Safety).
         if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
         try {
+          merged.input = withPrefs(merged.input)
+          // Trips saved before plans existed: one plan, the trip itself.
+          if (!merged.plans?.length) merged.plans = [{ id: merged.activePlanId, name: 'Plan A', input: merged.input, stops: merged.stops }]
+          else if (!merged.plans.some((p) => p.id === merged.activePlanId)) merged.activePlanId = merged.plans[0].id
+          merged.plans = merged.plans.map((p) => ({ ...p, input: withPrefs(p.input) }))
           merged.plan = merged.stops.length ? evaluatePlan(ds, merged.input, merged.stops) : null
         } catch {
           // Saved trip refers to data that no longer exists; start fresh.

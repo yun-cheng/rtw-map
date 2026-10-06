@@ -1,0 +1,87 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { dataset as ds } from '../data/dataset'
+import { testCaseInput } from '../data/testCase'
+import { useTrip } from '../store/trip'
+import { useChat } from './chat'
+
+const reply = (text: string) => ({ status: 200, body: { content: { role: 'model', parts: [{ text }] } } })
+const toolCall = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'get_options', args: {} } }] } } }
+const busy = { status: 429, body: { error: 'Too many requests: wait a minute and try again.' } }
+const outForToday = { status: 429, body: { error: "You have used all of today's assistant messages.", usage: { used: 20, limit: 20, remaining: 0, resetsAt: '' } } }
+
+/** Answers /api/chat with the given responses in turn. */
+function serve(...responses: { status: number; body: unknown }[]) {
+  const fetch = vi.fn(async () => {
+    const r = responses.shift() ?? reply('Done')
+    return new Response(JSON.stringify(r.body), { status: r.status })
+  })
+  vi.stubGlobal('fetch', fetch)
+  return fetch
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  useTrip.setState({ input: testCaseInput(ds, 'US'), stops: [], plan: null })
+  useChat.getState().clear()
+})
+afterEach(() => {
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
+
+const lastReply = () => useChat.getState().messages.at(-1) as { text: string; error?: string }
+
+describe('assistant chat', () => {
+  it('waits and tries again when the per-minute limit is hit', async () => {
+    const fetch = serve(busy, reply('All set'))
+    const sent = useChat.getState().send('hello')
+    await vi.runAllTimersAsync()
+    await sent
+    expect(fetch).toHaveBeenCalledTimes(2)
+    expect(lastReply().text).toBe('All set')
+  })
+
+  it("stops at once when today's limit is used up", async () => {
+    const fetch = serve(outForToday)
+    await useChat.getState().send('hello')
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(lastReply().error).toMatch(/today/)
+  })
+
+  it('keeps long conversations and long runs of changes within the request limits', async () => {
+    // A long earlier conversation, and a reply that makes many changes in a row.
+    const filler = 'x'.repeat(6_000)
+    useChat.setState({
+      contents: Array.from({ length: 70 }, (_, i) => ({ role: i % 2 ? 'model' : 'user', parts: [{ text: `${i} ${filler}` }] })) as never,
+    })
+    useTrip.getState().generate()
+    const change = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_locked', args: { city: useTrip.getState().stops[0].cityId, locked: true } } }] } } }
+    const fetch = serve(...Array(20).fill(change), reply('Done'))
+    await useChat.getState().send('lock it', [], { rounds: 24 })
+    for (const [, init] of fetch.mock.calls as unknown as [string, RequestInit][]) {
+      const body = String(init.body)
+      expect(body.length).toBeLessThan(200_000)
+      expect(JSON.parse(body).contents.length).toBeLessThanOrEqual(80)
+    }
+    expect(lastReply().text).toBe('Done')
+    // Only the latest change result still carries the whole trip.
+    const lastBody = JSON.parse(String((fetch.mock.calls.at(-1) as unknown as [string, RequestInit])[1].body))
+    const withTrip = lastBody.contents.filter((c: { parts: { functionResponse?: { response?: { trip?: string } } }[] }) => c.parts.some((p) => p.functionResponse?.response?.trip))
+    expect(withTrip).toHaveLength(1)
+  })
+
+  it('allows more tool rounds when asked (Plan with AI)', async () => {
+    const fetch = serve(...Array(10).fill(toolCall), reply('Finished'))
+    await useChat.getState().send('plan', [], { rounds: 24 })
+    expect(fetch).toHaveBeenCalledTimes(11)
+    expect(lastReply().text).toBe('Finished')
+    // A chat message stops after 8 rounds; with "Think harder" on, it gets as many as Plan with AI.
+    serve(...Array(10).fill(toolCall))
+    await useChat.getState().send('chat')
+    expect(lastReply().text).toMatch(/stopped before finishing/)
+    useChat.getState().setThink(true)
+    serve(...Array(10).fill(toolCall), reply('Thought it through'))
+    await useChat.getState().send('chat')
+    expect(lastReply().text).toBe('Thought it through')
+  })
+})

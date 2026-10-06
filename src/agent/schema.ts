@@ -17,6 +17,18 @@ How to work:
   The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
 - When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
   Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
+  For many moves at once (reverse the trip, a new order), use reorder_stops in one call instead of many move_stop calls.
+- A trip can have several plans (versions of the itinerary). Your changes apply to the active plan. To try a big
+  change ("what if we skip Russia?") without losing the current plan, make a new_plan first, then change it, and
+  tell the user they can switch back or compare the plans (Compare, above the itinerary).
+- The user's preferences (travel style, room, food, transport, trip goals, weather limits, budgets) come with the trip.
+  Take them into account in suggestions; when the user states a new one ("we're two", "no night buses"), save it
+  with update_preferences.
+- "Plan with AI": when asked to adjust a freshly generated plan to the user's wishes, keep that plan and change it with
+  small edits (add, remove or move stops, set and lock nights around fixed dates); the plan must still fill the dates.
+  Don't call generate_plan for this. Work in few steps: look up what you need together, then make several changes at
+  once (call several tools in one step). Then list what you changed for which wish, and which wishes you couldn't
+  meet and why.
 - Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
 - If a request is unclear or would remove a lot, ask one short question first.
 - Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
@@ -94,13 +106,46 @@ export const TOOLS: FunctionDeclaration[] = [
       start_date: str('YYYY-MM-DD'),
       end_date: str('YYYY-MM-DD, the day the trip ends'),
       pace: str('Travel pace', { enum: ['chill', 'balanced', 'fast'] }),
-      budget: str('Budget level', { enum: ['shoestring', 'backpacker', 'midrange', 'comfort'] }),
+      budget: str('Travel style (also resets the style preferences: room, food, transport, sights)', { enum: ['shoestring', 'backpacker', 'private', 'midrange', 'comfort'] }),
       interests: { type: 'array', items: str('Interest'), description: 'Replaces the interests; see get_options' },
       passport: str('Passport code from get_options, e.g. "TW", "US", "EU"'),
       keep_region_order: { type: 'boolean', description: 'Visit the regions in the listed order' },
       start_city: str('City to start in, or "" for any'),
       end_city: str('City to end in, or "" for any'),
       schengen_days_before: { type: 'integer', description: 'Days already spent in the Schengen area in the 180 days before the trip' },
+      wishes: str('The user\'s free-text wishes for the trip (replaces them)'),
+      min_stops: { type: 'integer', description: 'Fewest stops the plan should have; 0 for no minimum' },
+      max_stops: { type: 'integer', description: 'Most stops the plan should have; 0 for no maximum' },
+    }),
+  },
+  {
+    name: 'update_preferences',
+    description: 'Change how the user likes to travel (the Preferences tab); give only what changes. Trip goals and the heat, cold and rain limits shape the plan the next time it is made: after changing them, offer generate_plan (which replaces the itinerary), or run it if the user asked for the plan to change. To change the travel style itself, use update_settings budget.',
+    parametersJsonSchema: obj({
+      home_city: str('Home city the trip starts from (and returns to): any city find_cities knows, or "" for none; it is not a stop'),
+      return_home: { type: 'boolean', description: 'Return home at the end (false: one way)' },
+      travellers: { type: 'integer', description: '1 solo, 2 for two sharing a room, 4 for 3–4 people' },
+      room: str('Where they sleep', { enum: ['dorm', 'shared_bath', 'own_bath', 'hotel', 'apartment'] }),
+      hotel_stars: { type: 'integer', description: 'Hotel level when room is hotel: 2, 3 or 4' },
+      max_per_night_eur: { type: 'number', description: 'Most they would pay for a room per night, in EUR; 0 for no limit' },
+      cooking: str('Cooking vs eating out', { enum: ['mostly', 'half', 'rarely'] }),
+      eating_out: str('Where they eat out', { enum: ['street', 'casual', 'nice'] }),
+      coffee: { type: 'boolean', description: 'A coffee out every day' },
+      alcohol: str('How often they drink', { enum: ['none', 'some', 'most'] }),
+      city_transport: str('Getting around in cities', { enum: ['public', 'taxi_sometimes', 'taxi_often'] }),
+      between_cities: str('Travel between cities (fastest allows flights)', { enum: ['cheapest', 'balanced', 'fastest'] }),
+      overnight: { type: 'boolean', description: 'Overnight buses and trains are OK' },
+      max_travel_hours: { type: 'integer', description: 'Longest travel day in hours: 3, 5 or 8; 0 for no limit' },
+      sights: str('Paid sights and tours', { enum: ['few', 'daily', 'lots'] }),
+      focus: str('Trip goal: a balance, as many countries as fit, or the most popular places', { enum: ['balanced', 'countries', 'highlights'] }),
+      expensive: str('Expensive places: no change, shorter stays, or skip where optional', { enum: ['ignore', 'shorter', 'skip'] }),
+      min_high_c: str('Lowest comfortable daily high in °C, e.g. "12", or "none"'),
+      max_high_c: str('Highest comfortable daily high in °C, e.g. "30", or "none"'),
+      min_low_c: str('Coldest comfortable night (daily low) in °C, e.g. "5" for camping, or "none"'),
+      max_low_c: str('Warmest comfortable night (daily low) in °C, e.g. "20" without air conditioning, or "none"'),
+      avoid_rain: { type: 'boolean', description: 'Avoid rainy months' },
+      need_internet: { type: 'boolean', description: 'Needs fast mobile internet (working on the road)' },
+      daily_budget_eur: { type: 'number', description: 'Daily budget per person in EUR; 0 for none' },
     }),
   },
   {
@@ -155,6 +200,37 @@ export const TOOLS: FunctionDeclaration[] = [
     parametersJsonSchema: obj({ city: CITY, after: str('City to put it after, or "start" for the beginning') }, ['city', 'after']),
   },
   {
+    name: 'new_plan',
+    description: 'Add a plan to the trip (another version of the itinerary, with its own setup and preferences): a copy of the active plan, so a change can be tried without losing the current one. Switches to it unless switch_to is false; later changes then apply to the new plan.',
+    parametersJsonSchema: obj({
+      name: str('Short name, e.g. "Without Russia"; default Plan B, C, …'),
+      switch_to: { type: 'boolean', description: 'Switch to the new plan (default true)' },
+    }),
+  },
+  {
+    name: 'switch_plan',
+    description: "Make another of the trip's plans the active one (the one shown and edited).",
+    parametersJsonSchema: obj({ plan: str('Plan name') }, ['plan']),
+  },
+  {
+    name: 'rename_plan',
+    description: 'Rename one of the trip\'s plans.',
+    parametersJsonSchema: obj({ plan: str('Plan name'), name: str('New name') }, ['plan', 'name']),
+  },
+  {
+    name: 'delete_plan',
+    description: "Delete one of the trip's plans (never the last one). Only when the user asks.",
+    parametersJsonSchema: obj({ plan: str('Plan name') }, ['plan']),
+  },
+  {
+    name: 'reorder_stops',
+    description: 'Put all stops in a new order in one step: reverse: true for the whole trip backwards (also reverses the region order and swaps the start and end city), or order with every stop of the trip, each once. Nights stay; unlocked stops are re-fitted.',
+    parametersJsonSchema: obj({
+      reverse: { type: 'boolean', description: 'Travel the whole trip in the opposite direction' },
+      order: { type: 'array', items: CITY, description: 'Every stop of the trip in the new order' },
+    }),
+  },
+  {
     name: 'optimize_route',
     description: 'Re-order the stops for the shortest travel, keeping the region order if set.',
     parametersJsonSchema: obj(),
@@ -168,6 +244,6 @@ export const TOOLS: FunctionDeclaration[] = [
 
 /** Names of tools that change the trip (the rest only read). */
 export const WRITE_TOOLS = new Set([
-  'update_settings', 'add_region', 'update_region', 'set_country_mode', 'generate_plan',
-  'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'optimize_route', 'refit_nights',
+  'update_settings', 'update_preferences', 'new_plan', 'switch_plan', 'rename_plan', 'delete_plan', 'add_region', 'update_region', 'set_country_mode', 'generate_plan',
+  'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'reorder_stops', 'optimize_route', 'refit_nights',
 ])

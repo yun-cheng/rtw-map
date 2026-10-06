@@ -6,13 +6,17 @@ import { CityDrawer } from './panels/CityDrawer'
 import { Header } from './panels/Header'
 import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
+import { PlanBar } from './panels/PlanBar'
+import { PrefsPanel } from './panels/PrefsPanel'
 import { SetupPanel } from './panels/SetupPanel'
 import { Timeline } from './panels/Timeline'
 import { useTrip } from './store/trip'
 
+const TAB_LABELS = { setup: 'Trip', prefs: 'Preferences', itinerary: 'Itinerary', assistant: 'Assistant' }
+
 export default function App() {
   const { panel, setPanel, plan, selected, select } = useTrip()
-  const tab = plan || panel === 'assistant' ? panel : 'setup'
+  const tab = plan || panel === 'assistant' || panel === 'prefs' ? panel : 'setup'
 
   // Esc closes the city/leg panel.
   useEffect(() => {
@@ -27,21 +31,22 @@ export default function App() {
       <div className="flex min-h-0 flex-1">
         <aside className="flex w-[380px] shrink-0 flex-col border-r border-line bg-panel">
           <nav className="flex border-b border-line px-2">
-            {(['setup', 'itinerary', 'assistant'] as const).map((t) => (
+            {(['setup', 'prefs', 'itinerary', 'assistant'] as const).map((t) => (
               <button
                 key={t}
                 disabled={t === 'itinerary' && !plan}
                 onClick={() => setPanel(t)}
-                className={`-mb-px border-b-2 px-3 py-2 text-[13px] font-medium capitalize disabled:opacity-40 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                className={`-mb-px border-b-2 px-3 py-2 text-[13px] font-medium disabled:opacity-40 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
               >
-                {t}
+                {TAB_LABELS[t]}
               </button>
             ))}
           </nav>
+          <PlanBar />
           {tab === 'assistant' ? (
             <div className="min-h-0 flex-1"><AssistantPanel /></div>
           ) : (
-            <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : <Itinerary />}</div>
+            <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : tab === 'prefs' ? <PrefsPanel /> : <Itinerary />}</div>
           )}
         </aside>
         <main className="relative min-w-0 flex-1">

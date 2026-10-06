@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, type TripInput } from './index'
+import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -225,6 +225,118 @@ describe('places near the centre', () => {
     expect(nearby(listedOnly, 'x')).toMatchObject({ hospitalWithin: 1.5 })
     expect(nearby(listedOnly, 'y')).not.toHaveProperty('nearestHospitalKm')
     expect(nearby({ ...ds, amenities: { radiusKm: 1.5, byCity: {} }, businesses: {} }, 'x')).toBeNull()
+  })
+})
+
+describe('travel preferences', () => {
+  it("fills in a travel style's preferences and keeps the traveller's own", () => {
+    const p = stylePrefs('comfort', { ...stylePrefs('backpacker'), travellers: 2, dailyBudget: 80 })
+    expect(p).toMatchObject({ room: 'hotel', hotelStars: 4, travellers: 2, dailyBudget: 80 })
+    expect(matchesStyle(p, 'comfort')).toBe(true)
+    expect(matchesStyle({ ...p, cooking: 'mostly' }, 'comfort')).toBe(false)
+  })
+
+  it("gives trips saved before preferences existed those of their travel style", () => {
+    const { prefs: _, ...old } = { ...testTrip('US'), budget: 'midrange' as const }
+    expect(withPrefs(old).prefs).toMatchObject({ room: 'hotel', hotelStars: 3, travellers: 1 })
+  })
+
+  it('costs the new budget private style between backpacker and mid-range', () => {
+    const [b, p, m] = (['backpacker', 'private', 'midrange'] as const).map((x) => dailyCost(ds, 'krakow', x))
+    expect(p).toBeGreaterThan(b)
+    expect(p).toBeLessThan(m)
+  })
+})
+
+describe('trip goals', () => {
+  const plan = (prefs: Partial<TripInput['prefs']>) => {
+    const input = testTrip('US')
+    return generatePlan(ds, { ...input, prefs: { ...input.prefs, ...prefs } })
+  }
+  const balanced = plan({})
+  const countries = (p: ReturnType<typeof plan>) => new Set(p.stops.map((s) => iso(s.cityId))).size
+  const daily = (id: string) => dailyCost(ds, id, 'backpacker')
+  const median = [...balanced.stops.map((s) => daily(s.cityId))].sort((a, b) => a - b)[balanced.stops.length >> 1]
+  const pricey = (p: ReturnType<typeof plan>) => p.stops.filter((s) => daily(s.cityId) > 1.3 * median)
+
+  it('"more countries" visits at least as many countries, in more places', () => {
+    const p = plan({ focus: 'countries' })
+    expect(countries(p)).toBeGreaterThanOrEqual(countries(balanced))
+    expect(p.stops.length).toBeGreaterThan(balanced.stops.length)
+  })
+
+  it('"top highlights" leaves out lesser-known places', () => {
+    expect(plan({ focus: 'highlights' }).stops.filter((s) => ds.cities[s.cityId].popularity <= 3)).toHaveLength(0)
+  })
+
+  it('skips expensive places, or stays there for less time', () => {
+    expect(pricey(plan({ expensive: 'skip' })).length).toBeLessThan(pricey(balanced).length)
+    const nights = (p: ReturnType<typeof plan>) => pricey(p).reduce((n, s) => n + s.nights, 0)
+    expect(nights(plan({ expensive: 'shorter' }))).toBeLessThan(nights(balanced))
+  })
+
+  it("warns about cold below the traveller's own limit", () => {
+    const input = { ...testTrip('US'), startDate: '2027-04-01', endDate: '2027-04-05' }
+    const stay = [{ cityId: 'krakow', nights: 4, locked: false, groupId: '' }]
+    const cold = (minHighC: 10 | 15 | null) => evaluatePlan(ds, { ...input, prefs: { ...input.prefs, minHighC } }, stay).warnings.some((w) => w.title.includes('cold'))
+    expect(cold(null)).toBe(false)
+    expect(cold(15)).toBe(true)
+  })
+
+  it('warns about nights outside the comfortable range', () => {
+    const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-14' }
+    const stay = [{ cityId: 'athens', nights: 4, locked: false, groupId: '' }]
+    const nights = (maxLowC: number | null) => evaluatePlan(ds, { ...input, prefs: { ...input.prefs, maxHeatC: 40, maxLowC } }, stay).warnings.some((w) => w.title.includes('warm nights'))
+    expect(nights(null)).toBe(false)
+    expect(nights(18)).toBe(true)
+  })
+})
+
+describe('number of stops', () => {
+  const plan = (minStops: number | null, maxStops: number | null) => generatePlan(ds, { ...testTrip('US'), minStops, maxStops })
+
+  it('keeps to the maximum, giving the nights to fewer places', () => {
+    const p = plan(null, 20)
+    expect(p.stops.length).toBeLessThanOrEqual(20)
+    expect(p.assignedNights).toBe(p.totalNights)
+    expect(p.warnings.some((w) => w.title.includes('outside your range'))).toBe(false)
+  })
+
+  it('adds places to reach the minimum, with shorter stays', () => {
+    const p = plan(55, null)
+    expect(p.stops.length).toBeGreaterThanOrEqual(55)
+    expect(p.assignedNights).toBe(p.totalNights)
+  })
+
+  it('says so when the plan ends up outside the range', () => {
+    const input = { ...testTrip('US'), maxStops: 1 }
+    const p = evaluatePlan(ds, input, [{ cityId: 'krakow', nights: 3, locked: false, groupId: '' }, { cityId: 'warsaw', nights: 3, locked: false, groupId: '' }])
+    expect(p.warnings.some((w) => w.title === '2 stops, outside your range (at most 1)')).toBe(true)
+  })
+})
+
+describe('home city', () => {
+  const stops = [{ cityId: 'athens', nights: 4, locked: false, groupId: '' }, { cityId: 'sofia', nights: 3, locked: false, groupId: '' }]
+  const withHome = (homeCityId: string | null, returnHome = true) => {
+    const input = testTrip('TW')
+    return evaluatePlan(ds, { ...input, prefs: { ...input.prefs, homeCityId, returnHome } }, stops)
+  }
+
+  it('adds the flight from home and back, with its cost, without making home a stop', () => {
+    const none = withHome(null)
+    const p = withHome('taipei')
+    expect(p.stops.map((s) => s.cityId)).toEqual(['athens', 'sofia'])
+    expect(p.home.out).toMatchObject({ from: 'taipei', to: 'athens', estimated: true })
+    expect(p.home.back).toMatchObject({ from: 'sofia', to: 'taipei' })
+    expect(p.home.out!.durationMin / 60).toBeGreaterThan(12)
+    expect(p.cost.min).toBe(none.cost.min + p.home.out!.priceMin + p.home.back!.priceMin)
+    expect(withHome('taipei', false).home.back).toBeNull()
+    expect(none.home).toEqual({ out: null, back: null })
+  })
+
+  it("uses the app's own routes when home is near", () => {
+    expect(homeLeg(ds, 'taipei', 'tokyo').estimated).toBe(false)
+    expect(homeLeg(ds, 'taipei', 'athens').hops[0].note).toMatch(/one change/)
   })
 })
 

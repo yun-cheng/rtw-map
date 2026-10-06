@@ -111,6 +111,14 @@ describe('saved trips', () => {
     expect(patch).toEqual({ name: 'Balkans', data: '{"input":{"startDate":"2027-05-01"},"stops":[]}', chat: '{"messages":[]}' })
   })
 
+  it("keeps a trip's plans, and rejects malformed or too many", () => {
+    const plan = (id: string) => ({ id, name: `Plan ${id}`, input: {}, stops: [] })
+    const patch = parseTripPatch({ data: { input: {}, stops: [], plans: [plan('a'), plan('b')], activePlanId: 'b' } }) as { data: string }
+    expect(JSON.parse(patch.data)).toMatchObject({ plans: [{ id: 'a' }, { id: 'b' }], activePlanId: 'b' })
+    expect(parseTripPatch({ data: { input: {}, stops: [], plans: [{ id: 'a' }] } })).toBeTypeOf('string')
+    expect(parseTripPatch({ data: { input: {}, stops: [], plans: Array.from({ length: TRIP_LIMITS.plans + 1 }, (_, i) => plan(String(i))) } })).toBeTypeOf('string')
+  })
+
   it('rejects empty names, malformed trips and oversized data', () => {
     expect(parseTripPatch({ name: '   ' })).toBeTypeOf('string')
     expect(parseTripPatch({ data: { input: {}, stops: 'x' } })).toBeTypeOf('string')
