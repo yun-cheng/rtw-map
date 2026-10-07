@@ -2,7 +2,8 @@ import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode }
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, weatherKind } from '../ui/format'
+import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
+import { FeelsToggle } from '../ui/FeelsToggle'
 import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
@@ -104,6 +105,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const { plan, input, select, addCity, removeStop, cityTab, setCityTab, layer, layerMonth } = useTrip()
   const { currency, fmt } = useMoney()
   const { range } = useTemp()
+  // Temperatures as they feel or as measured: one setting for the whole app.
+  const feels = useTrip((s) => s.tempFeels)
   // The month under the pointer in each chart: its details replace the shown months' under that chart.
   const [hover, setHover] = useState<{ chart: 'weather' | 'sun' | 'air'; month: number } | null>(null)
   const hoverFor = (chart: 'weather' | 'sun' | 'air') => (month: number | null) => setHover(month ? { chart, month } : null)
@@ -221,7 +224,15 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     weather: (
-      <Section title="Weather" aside={<span className="text-[11px] text-muted">avg 2016–2025</span>}>
+      <Section
+        title="Weather"
+        aside={
+          <span className="flex items-center gap-2 text-[11px] text-muted">
+            {climate?.every((c) => c.feelsHigh !== undefined) && <FeelsToggle />}
+            avg 2016–2025
+          </span>
+        }
+      >
         {climate ? (
           <>
             <Suspense fallback={<div className="h-[180px]" />}>
@@ -232,7 +243,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               return (
                 <p key={m} className="mt-1.5 text-[13px]">
                   <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b>{' '}
-                  {range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.humidity}% humidity
+                  {shownTemps(c, feels).feels ? `feels like ${range(c.feelsLow!, c.feelsHigh!)}` : range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.humidity}% humidity
                 </p>
               )
             })}
@@ -540,6 +551,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const month = [...stayMonths][0]
   const monthName = new Date(2000, month - 1).toLocaleString('en', { month: 'short' })
   const clim = climate?.[month - 1]
+  const climShown = clim && shownTemps(clim, feels)
   const airM = air?.[month - 1]
   const recommended = vaccines.items.filter((v) => v.advice === 'recommended').map((v) => v.name)
   const vaccineSummary = vaccines.source === 'cdc'
@@ -553,7 +565,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       tone: (adv.excludedByDefault ? 'error' : adv.level >= 3 ? 'warn' : adv.us && adv.us.level >= 2 ? 'info' : 'ok') as Tone,
     }] : []),
     ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
-    ...(clim ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${range(clim.tLow, clim.tHigh)}, ~${Math.round(clim.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind(clim)].color, tab: 'weather' as const }] : []),
+    ...(climShown ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${climShown.feels ? 'feels like ' : ''}${range(climShown.low, climShown.high)}, ~${Math.round(clim!.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind({ tHigh: climShown.high, rainDays: clim!.rainDays })].color, tab: 'weather' as const }] : []),
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
     ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),

@@ -7,7 +7,7 @@ import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
 import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, money, rainShare, temp, tempKind, tempValue } from '../ui/format'
+import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, temp, tempKind, tempValue } from '../ui/format'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
@@ -86,7 +86,7 @@ export function MapView() {
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, fitRequest, currency, tempUnit } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -304,13 +304,14 @@ export function MapView() {
         const month = monthFor(cityId)
         const m = ds.climate[cityId]?.[month - 1]
         if (!m) return {}
-        // Coloured and numbered by the high (days) or the low (nights), as picked in the legend.
-        const low = weatherBy === 'low'
-        const kind = tempKind(low ? m.tLow : m.tHigh)
+        // Coloured and numbered by the high (days) or the low (nights), as picked in the legend, as it feels or as
+        // measured (the shared setting).
+        const shown = shownTemps(m, tempFeels)
+        const t = weatherBy === 'low' ? shown.low : shown.high
         const rain = rainShare(m.rainDays, month)
         return {
-          color: WEATHER_STYLE[kind].color, rain, value: String(tempValue(low ? m.tLow : m.tHigh, tempUnit)),
-          label: `${MONTHS[month - 1]}: ${tempValue(m.tHigh, tempUnit)}° / ${temp(m.tLow, tempUnit)} (high / low), rain on ${Math.round(m.rainDays)} days`,
+          color: WEATHER_STYLE[tempKind(t)].color, rain, value: String(tempValue(t, tempUnit)),
+          label: `${MONTHS[month - 1]}: ${shown.feels ? 'feels like ' : ''}${tempValue(shown.high, tempUnit)}° / ${temp(shown.low, tempUnit)} (high / low)${shown.feels ? `, real ${tempValue(m.tHigh, tempUnit)}° / ${temp(m.tLow, tempUnit)}` : ''}, rain on ${Math.round(m.rainDays)} days`,
         }
       }
       if (layer === 'air') {
@@ -346,7 +347,7 @@ export function MapView() {
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, currency, tempUnit])
+  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, currency, tempUnit, tempFeels])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).

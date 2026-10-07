@@ -82,9 +82,9 @@ export function tripContext(): string {
     `Visit regions in order: ${input.keepGroupOrder ? 'yes' : 'no'}.${input.startCityId ? ` Start: ${cityName(input.startCityId)}.` : ''}${input.endCityId ? ` End: ${cityName(input.endCityId)}.` : ''}`,
     `Regions:\n${regionsText(input)}`,
   ]
-  const { currency, tempUnit } = useTrip.getState()
+  const { currency, tempUnit, tempFeels } = useTrip.getState()
   const rate = currency === 'EUR' ? null : ds.fx.rates[currency]
-  lines.push(`The user's units: prices in ${currency}${rate ? ` (1 EUR ≈ ${rate.toFixed(rate < 10 ? 3 : 1)} ${currency})` : ''}, temperatures in °${tempUnit}.`)
+  lines.push(`The user's units: prices in ${currency}${rate ? ` (1 EUR ≈ ${rate.toFixed(rate < 10 ? 3 : 1)} ${currency})` : ''}, temperatures in °${tempUnit}, shown in the app as ${tempFeels ? '"feels like" (heat with humidity, cold with wind; quote those, saying so)' : 'measured'}.`)
   if (!plan) {
     lines.push('Itinerary: not generated yet.')
   } else {
@@ -189,7 +189,7 @@ function cityInfo(args: Args): ToolResult {
     in_itinerary: stop ? { arrive: stop.arrive, depart: stop.depart, nights: stop.nights, locked: stop.locked } : false,
     weather: clim && {
       month: monthName(month),
-      ...(clim[month - 1] && { high_c: clim[month - 1].tHigh, low_c: clim[month - 1].tLow, rain_days: clim[month - 1].rainDays, sun_hours: clim[month - 1].sunHours }),
+      ...(clim[month - 1] && { high_c: clim[month - 1].tHigh, low_c: clim[month - 1].tLow, ...feelsOf(clim[month - 1]), rain_days: clim[month - 1].rainDays, sun_hours: clim[month - 1].sunHours }),
       all_months: clim.map((m) => `${monthName(m.month)} ${Math.round(m.tLow)}–${Math.round(m.tHigh)}°C, ${Math.round(m.rainDays)} rain days`),
     },
     air_quality: air && { month: monthName(month), pm25: air.pm25, level: airBand(air.pm25).short },
@@ -216,6 +216,10 @@ function cityInfo(args: Args): ToolResult {
 const BUDGETS: Budget[] = ['shoestring', 'backpacker', 'private', 'midrange', 'comfort']
 export const CITY_SECTIONS = ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] as const
 
+/** A month's "feels like" high and low (heat with humidity, cold with wind), when the data has them. */
+const feelsOf = (m: { feelsHigh?: number; feelsLow?: number }) =>
+  m.feelsHigh !== undefined && m.feelsLow !== undefined ? { feels_like_high_c: m.feelsHigh, feels_like_low_c: m.feelsLow } : {}
+
 /** Everything the app has about a city, by section (get_city_info with `sections`). */
 function citySections(id: string, sections: string[]): ToolResult {
   const unknown = sections.filter((s) => !(CITY_SECTIONS as readonly string[]).includes(s))
@@ -235,7 +239,7 @@ function citySections(id: string, sections: string[]): ToolResult {
       const air = ds.air.byCity[id]
       out.weather = {
         months: (ds.climate[id] ?? []).map((m, i) => ({
-          month: monthName(m.month), high_c: m.tHigh, low_c: m.tLow, rain_days: m.rainDays, rain_mm: m.rainMm, sun_hours: m.sunHours, humidity_pct: m.humidity,
+          month: monthName(m.month), high_c: m.tHigh, low_c: m.tLow, ...feelsOf(m), rain_days: m.rainDays, rain_mm: m.rainMm, sun_hours: m.sunHours, humidity_pct: m.humidity,
           ...(air?.[i] && { pm25: air[i].pm25, air: airBand(air[i].pm25).short, days_over_who: air[i].daysOverWho }),
         })),
         who_daily_pm25: ds.air.whoDaily,
@@ -334,7 +338,7 @@ function compareCities(args: Args): ToolResult {
     for (const f of fields) {
       if (f === 'weather') {
         const w = ds.climate[id]?.[m - 1]
-        if (w) Object.assign(row, { high_c: w.tHigh, low_c: w.tLow, rain_days: w.rainDays, sun_hours: w.sunHours })
+        if (w) Object.assign(row, { high_c: w.tHigh, low_c: w.tLow, ...feelsOf(w), rain_days: w.rainDays, sun_hours: w.sunHours })
       }
       if (f === 'air') {
         const a = ds.air.byCity[id]?.[m - 1]
@@ -418,7 +422,7 @@ function viewDetails(ref: ViewRef): ToolResult {
       case 'none': return {}
       case 'climate': {
         const m = ds.climate[cityId]?.[month - 1]
-        return m ? { month: monthName(month), high_c: m.tHigh, low_c: m.tLow, coloured_by: ref.weatherBy ?? 'high', rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
+        return m ? { month: monthName(month), high_c: m.tHigh, low_c: m.tLow, ...feelsOf(m), coloured_by: `${ref.weatherBy ?? 'high'}${useTrip.getState().tempFeels ? ', as it feels' : ''}`, rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
       }
       case 'air': {
         const a = ds.air.byCity[cityId]?.[month - 1]

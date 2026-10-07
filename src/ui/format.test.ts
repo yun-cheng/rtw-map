@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, money, rateText, temp, tempBand, tempKind, tempRange, tempScale, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -86,5 +86,13 @@ describe('climate chart scale', () => {
     expect(tempScale(23, 35, 'C')).toEqual({ lo: 20, hi: 40, step: 5, labelStep: 5 })
     // The cold city in °F (-9° to 77°F): a line every 10°F, labels every 20°F.
     expect(tempScale(-9, 77, 'F')).toEqual({ lo: -20, hi: 80, step: 10, labelStep: 20 })
+  })
+})
+
+describe('temperatures as they feel', () => {
+  it('shows temperatures as they feel when asked and known, else measured', () => {
+    expect(shownTemps({ tHigh: 33, tLow: 26, feelsHigh: 40, feelsLow: 32 }, true)).toEqual({ high: 40, low: 32, feels: true })
+    expect(shownTemps({ tHigh: 33, tLow: 26, feelsHigh: 40, feelsLow: 32 }, false)).toEqual({ high: 33, low: 26, feels: false })
+    expect(shownTemps({ tHigh: 33, tLow: 26 }, true)).toEqual({ high: 33, low: 26, feels: false })
   })
 })

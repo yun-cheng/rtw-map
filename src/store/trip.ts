@@ -57,6 +57,9 @@ type State = {
   currency: string
   /** Temperatures in Celsius or Fahrenheit (data is stored in °C). */
   tempUnit: TempUnit
+  /** Temperatures shown as how they feel (heat with humidity, cold with wind) rather than measured; one setting for the
+   *  map, the city panel and the timeline. Planning and the preference limits use measured temperatures. */
+  tempFeels: boolean
   /** Country to compare price levels with; null = guess from the display currency. */
   priceCompare: string | null
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
@@ -85,6 +88,7 @@ type State = {
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
   setTempUnit: (u: TempUnit) => void
+  setTempFeels: (feels: boolean) => void
   setPriceCompare: (iso2: string) => void
   setCityTab: (tab: CityTab) => void
   /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
@@ -170,6 +174,7 @@ export const useTrip = create<State>()(
         fitRequest: 0,
         currency: 'EUR',
         tempUnit: 'C',
+        tempFeels: true,
         priceCompare: null,
         cityTab: 'overview',
 
@@ -222,6 +227,7 @@ export const useTrip = create<State>()(
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
+        setTempFeels: (tempFeels) => set({ tempFeels }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCityTab: (cityTab) => set({ cityTab }),
         openTrip: (data, keepView = false) => {
@@ -282,7 +288,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, priceCompare: s.priceCompare, cityTab: s.cityTab }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, priceCompare: s.priceCompare, cityTab: s.cityTab }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         // A map view that has since been removed (Cards, English, Safety).

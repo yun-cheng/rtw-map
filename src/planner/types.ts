@@ -40,6 +40,9 @@ export type ClimateMonth = {
   month: number
   tHigh: number
   tLow: number
+  /** "Feels like" (apparent temperature: heat with humidity, cold with wind), average daily max and min. */
+  feelsHigh?: number
+  feelsLow?: number
   rainMm: number
   rainDays: number
   sunHours: number

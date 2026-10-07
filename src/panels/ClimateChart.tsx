@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ClimateMonth } from '../planner'
 import { MONTHS, tempScale } from '../ui/format'
+import { useTrip } from '../store/trip'
 import { useTemp } from '../ui/useTemp'
 import { LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, hoverProps, monthTick } from './chartParts'
 
@@ -18,10 +19,12 @@ const SERIES_ORDER = ['high', 'low', 'rain']
 
 /**
  * 12-month chart: rain-day bars plus high/low temperature lines, the months shown highlighted (`monthsLabel` names
- * them in the legend). Hovering (or tapping) a month reports it (`onHover`) for the details under the chart; clicking
- * a series in the legend hides it. The temperature axis fits the city's year.
+ * them in the legend); the lines show how hot or cold it feels, or the real temperatures (the shared setting).
+ * Hovering (or tapping) a month reports it (`onHover`) for the details under the chart; clicking a series in the
+ * legend hides it. The temperature axis fits the city's year.
  */
 export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: ClimateMonth[]; highlight: Set<number>; monthsLabel: string; onHover?: (month: number | null) => void }) {
+  const feels = useTrip((s) => s.tempFeels)
   const { unit } = useTemp()
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
   const toggle = (key: string) => setHidden((h) => {
@@ -30,7 +33,12 @@ export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: 
     return next
   })
   const toUnit = (c: number) => Math.round((unit === 'F' ? (c * 9) / 5 + 32 : c) * 10) / 10
-  const points: Point[] = data.map((c, i) => ({ m: MONTHS[i], month: i + 1, high: toUnit(c.tHigh), low: toUnit(c.tLow), rain: c.rainDays, c }))
+  const hasFeels = data.every((c) => c.feelsHigh !== undefined && c.feelsLow !== undefined)
+  const showFeels = feels && hasFeels
+  const points: Point[] = data.map((c, i) => ({
+    m: MONTHS[i], month: i + 1, rain: c.rainDays, c,
+    high: toUnit(showFeels ? c.feelsHigh! : c.tHigh), low: toUnit(showFeels ? c.feelsLow! : c.tLow),
+  }))
   const { lo, hi, step, labelStep } = tempScale(Math.min(...points.map((p) => p.low)), Math.max(...points.map((p) => p.high)), unit)
   const ticks: number[] = []
   for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(t)

@@ -1,6 +1,7 @@
 import type { SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
+import { FeelsToggle } from '../ui/FeelsToggle'
 import { NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
@@ -92,6 +93,7 @@ export function MapControls() {
       {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} />}
       {legend && (
         <div className="pointer-events-auto flex max-w-[34rem] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
+          {layer === 'climate' && <FeelsToggle />}
           {layer === 'climate' ? (
             // Days or nights: the colours, legend and numbers follow.
             <span className="flex rounded-md border border-line p-px" role="group" aria-label="Colour by">

@@ -114,13 +114,19 @@ export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): str
 export const warningTitle = (w: { title: string; tempC?: number; tempIsLow?: boolean }, unit: TempUnit) =>
   w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
 
+/** A month's high and low as shown: how they feel when `feels` is on and the data has it, else measured. */
+export function shownTemps(m: { tHigh: number; tLow: number; feelsHigh?: number; feelsLow?: number }, feels: boolean) {
+  const f = feels && m.feelsHigh !== undefined && m.feelsLow !== undefined
+  return { high: f ? m.feelsHigh! : m.tHigh, low: f ? m.feelsLow! : m.tLow, feels: f }
+}
+
 /** Classifies a month by its average high, using the same thresholds as the weather warnings. */
 export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {
   const t = temperatureKind(m)
   return t === 'pleasant' && m.rainDays >= 14 ? 'wet' : t
 }
 
-/** How a temperature (°C) feels, on one scale for any temperature (a day's high or a night's low):
+/** How a temperature (°C) feels, on one scale for any temperature (a day's high, a night's low, "feels like"):
  *  cold < 12, cool 12–18, pleasant 18–28, warm 28–32, hot 32+. */
 export function tempKind(c: number): Exclude<WeatherKind, 'wet'> {
   if (c < 12) return 'cold'
