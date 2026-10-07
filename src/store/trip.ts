@@ -33,6 +33,9 @@ export function nextPlanName(plans: { name: string }[]): string {
 }
 
 /** All plans of the trip, with the active one up to date (its setup and stops live in `input` and `stops`). */
+/** A plan's short mark (the folded left panel's strip): "B" for "Plan B", else the start of its name ("Sl" for "Slow"). */
+export const planMark = (name: string) => name.match(/^Plan (\S{1,2})$/i)?.[1] ?? name.trim().slice(0, 2)
+
 export const tripPlans = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[] }): TripPlan[] =>
   s.plans.map((p) => (p.id === s.activePlanId ? { ...p, input: s.input, stops: s.stops } : p))
 

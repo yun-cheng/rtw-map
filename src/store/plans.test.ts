@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
-import { MAX_PLANS, tripPlans, useTrip } from './trip'
+import { MAX_PLANS, planMark, tripPlans, useTrip } from './trip'
 
 const state = () => useTrip.getState()
 const stopIds = () => state().stops.map((s) => s.cityId)
@@ -63,5 +63,9 @@ describe('plans in a trip', () => {
   it(`allows up to ${MAX_PLANS} plans`, () => {
     for (let i = 1; i < MAX_PLANS; i++) expect(state().addPlan({ activate: false })).not.toBeNull()
     expect(state().addPlan()).toBeNull()
+  })
+
+  it('gives each plan a short mark for the folded panel', () => {
+    expect(['Plan A', 'Plan B', 'Slow version', ' Beach  '].map(planMark)).toEqual(['A', 'B', 'Sl', 'Be'])
   })
 })

@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom'
 import type { TipContent } from '../map/cityMetric'
 import { TipBody } from './tipBody'
 
-/** What to show and where: the content, and the element it points at. */
-export type Tip = { content: TipContent; rect: DOMRect }
+/** What to show and where: the content, the element it points at, and on which side of it (default above). */
+export type Tip = { content: TipContent; rect: DOMRect; side?: 'top' | 'right' }
 
 const SHADOW = '0 1px 2px rgb(0 0 0 / 0.1), 0 2px 8px rgb(0 0 0 / 0.12)'
 const BOX = 'max-w-[300px] rounded-lg bg-panel px-2.5 py-1.5 text-[12px] font-medium text-ink'
@@ -12,7 +12,7 @@ const BOX = 'max-w-[300px] rounded-lg bg-panel px-2.5 py-1.5 text-[12px] font-me
 /**
  * A hover box that looks like the map's (MapLibre popup with the app's colours: panel background, 8px corners,
  * 12px text laid out by TipBody, a small pointer) and shows at once, unlike the browser's `title` tooltip. It sits
- * above the element, kept inside the window, with the pointer over the element's centre.
+ * above the element, kept inside the window, with the pointer over the element's centre; or beside it (`side`).
  */
 export function HoverTip({ tip }: { tip: Tip | null }) {
   const box = useRef<HTMLDivElement>(null)
@@ -27,6 +27,16 @@ export function HoverTip({ tip }: { tip: Tip | null }) {
   }, [tip, center])
 
   if (!tip) return null
+  if (tip.side === 'right') {
+    // Beside the element (e.g. the buttons of the folded left panel), the pointer at its middle.
+    return createPortal(
+      <div className="pointer-events-none fixed z-50 flex items-center" style={{ top: tip.rect.top + tip.rect.height / 2, left: tip.rect.right + 4, transform: 'translateY(-50%)' }} role="tooltip">
+        <div className="h-0 w-0" style={{ borderTop: '6px solid transparent', borderBottom: '6px solid transparent', borderRight: '6px solid var(--color-panel)' }} />
+        <div className={BOX} style={{ boxShadow: SHADOW }}><TipBody tip={tip.content} /></div>
+      </div>,
+      document.body,
+    )
+  }
   return createPortal(
     <div className="pointer-events-none fixed z-50" style={{ top: tip.rect.top - 10, left: 0, transform: 'translateY(-100%)' }} role="tooltip">
       <div
