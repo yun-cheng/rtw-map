@@ -181,5 +181,5 @@ function Cell({ value, kind, link, wrap }: { value: Value; kind: Kind; link?: 'c
     return <span title={name} className="whitespace-nowrap">{text}{name && link === 'country' && <span className="ml-1.5 text-muted">{name}</span>}</span>
   }
   if (/^https?:\/\//.test(text)) return <a href={text} target="_blank" rel="noreferrer" className="text-accent hover:underline">{text}</a>
-  return <span title={wrap ? undefined : text} className={`block ${wrap ? 'max-w-md' : 'max-w-xs truncate'}`}>{text}</span>
+  return <span title={wrap ? undefined : text} className={`inline-block align-top ${wrap ? 'max-w-md' : 'max-w-xs truncate'}`}>{text}</span>
 }
