@@ -50,3 +50,20 @@ export function geminiRequest(req: ChatRequest, today: string) {
     },
   }
 }
+
+export type GeminiResponse = {
+  candidates?: { content?: { parts?: unknown[] }; finishReason?: string }[]
+  usageMetadata?: Record<string, number>
+  error?: { message?: string; status?: string }
+}
+
+/** Tries per model call when Gemini's reply is broken (see isBrokenReply). */
+export const GEMINI_TRIES = 3
+
+/** A reply worth asking for again: a malformed tool call or response, or no content without a reason like SAFETY. */
+export function isBrokenReply(data: GeminiResponse | null): boolean {
+  const c = data?.candidates?.[0]
+  if (!c) return true
+  if (c.finishReason?.startsWith('MALFORMED')) return true
+  return !c.content?.parts?.length && c.finishReason !== 'SAFETY' && c.finishReason !== 'MAX_TOKENS'
+}

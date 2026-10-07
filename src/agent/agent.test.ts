@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { geminiRequest, parseChatRequest } from '../../worker/chat'
+import { geminiRequest, isBrokenReply, parseChatRequest } from '../../worker/chat'
 import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
@@ -164,6 +164,16 @@ describe('chat endpoint checks', () => {
     // The last call of a message answers without tools.
     const final = parseChatRequest({ contents: [user('hi')], context: 'trip', think: true, final: true })
     expect(geminiRequest(final as Exclude<typeof final, string>, '2026-10-05').toolConfig.functionCallingConfig.mode).toBe('NONE')
+  })
+
+  it('asks Gemini again for a broken reply, not for a refusal or a normal answer', () => {
+    const reply = (finishReason: string, parts: unknown[] = [{ text: 'hi' }]) => ({ candidates: [{ finishReason, content: { parts } }] })
+    expect(isBrokenReply(reply('MALFORMED_RESPONSE'))).toBe(true)
+    expect(isBrokenReply(reply('MALFORMED_FUNCTION_CALL', []))).toBe(true)
+    expect(isBrokenReply(reply('STOP', []))).toBe(true)
+    expect(isBrokenReply({})).toBe(true)
+    expect(isBrokenReply(reply('SAFETY', []))).toBe(false)
+    expect(isBrokenReply(reply('STOP'))).toBe(false)
   })
 
   it('rejects requests that are malformed, too long, or try to add other content', () => {

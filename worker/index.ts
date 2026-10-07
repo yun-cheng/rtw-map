@@ -8,7 +8,7 @@
 //   POST /api/chat                 forward the assistant conversation to Gemini (20 messages a day)
 // Everything else goes to the static files.
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession, type User } from './auth'
-import { geminiRequest, isNewMessage, LIMITS, parseChatRequest } from './chat'
+import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
 import { DAILY_MESSAGES, resetsAt, today, type Count } from './limits'
 import { Account } from './account'
 import { parseTripPatch } from './trips'
@@ -86,18 +86,23 @@ async function chat(request: Request, env: Env): Promise<Response> {
     return json({ error: 'You have used all of today\'s assistant messages.', usage: usageOf(taken.count) }, 429)
   }
 
-  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
-    body: JSON.stringify(geminiRequest(req, day)),
-  })
-  const data = (await res.json().catch(() => null)) as {
-    candidates?: { content?: { parts?: unknown[] }; finishReason?: string }[]
-    usageMetadata?: Record<string, number>
-    error?: { message?: string; status?: string }
-  } | null
+  // Gemini sometimes returns a broken reply (a garbled tool call: finishReason MALFORMED_…, or no parts) that a
+  // second try answers fine; retry those here, as one counted call.
+  const body = JSON.stringify(geminiRequest(req, day))
+  let res: Response
+  let data: GeminiResponse | null
+  for (let attempt = 1; ; attempt++) {
+    res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
+      body,
+    })
+    data = (await res.json().catch(() => null)) as GeminiResponse | null
+    if (!res.ok || attempt >= GEMINI_TRIES || !isBrokenReply(data)) break
+    console.warn('Gemini broken reply, retrying', data?.candidates?.[0]?.finishReason)
+  }
   const candidate = data?.candidates?.[0]
-  if (!res.ok || !candidate?.content?.parts?.length) {
+  if (!res.ok || !candidate?.content?.parts?.length || candidate.finishReason?.startsWith('MALFORMED')) {
     console.error('Gemini error', res.status, data?.error?.status, data?.error?.message, candidate?.finishReason)
     const count = await account(env, user).refund(day, message)
     const busy = res.status === 429 || res.status === 503
