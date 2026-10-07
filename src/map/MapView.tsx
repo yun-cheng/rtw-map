@@ -5,14 +5,15 @@ import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMous
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
-import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay } from '../planner'
+import { tripDay } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, temp, tempKind, tempValue } from '../ui/format'
+import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
-import { NEARBY_LABELS, costScale, nearbyColor } from './scales'
+import { cityMetrics, cityTip, stopTip } from './cityMetric'
+import { tipElement } from '../ui/tipBody'
 
 // Vite bundles MapLibre's worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
@@ -192,7 +193,8 @@ export function MapView() {
     map.on('mousemove', (e: MapMouseEvent) => {
       const f = hit(e.point)
       map.getCanvas().style.cursor = f && (isCity(f) || Number(f.properties.leg) >= 0) ? 'pointer' : ''
-      if (f && isCity(f)) popup.setLngLat((f.geometry as Point).coordinates as [number, number]).setText(String(f.properties.label ?? f.properties.name)).addTo(map)
+      // Each city carries its hover box content (see cityTip / stopTip), laid out like the timeline's.
+      if (f && isCity(f)) popup.setLngLat((f.geometry as Point).coordinates as [number, number]).setDOMContent(tipElement(JSON.parse(String(f.properties.tip)))).addTo(map)
       else popup.remove()
     })
     map.getCanvas().addEventListener('mouseleave', () => popup.remove())
@@ -219,8 +221,8 @@ export function MapView() {
       const cityFeatures = Object.values(ds.cities)
         .filter((c) => !inPlan.has(c.id))
         .map((c) => {
-          const { color, label } = metric(c.id)
-          return point([c.lon, c.lat], { id: c.id, name: c.name, label: label ? `${c.name} · ${label}` : `${c.name} (click for details)`, ...(color ? { color } : {}) })
+          const m = metric(c.id)
+          return point([c.lon, c.lat], { id: c.id, name: c.name, tip: JSON.stringify(cityTip(c.id, m)), ...(m.color ? { color: m.color } : {}) })
         })
       ;(map.getSource('cities') as GeoJSONSource).setData({ type: 'FeatureCollection', features: cityFeatures })
 
@@ -241,7 +243,8 @@ export function MapView() {
           routeEnds.set(a, [...(routeEnds.get(a) ?? []), [ds.cities[b].lon, ds.cities[b].lat]])
         }
       }
-      const stopFeatures = stops.map(({ s, day, metrics: { color, label, rain }, text }) => {
+      const stopFeatures = stops.map(({ s, metrics, text }) => {
+        const { color, rain } = metrics
         const c = ds.cities[s.cityId]
         const radius = layer === 'none' ? half(Math.max(fitRadius(text), 7 + 1.2 * Math.sqrt(s.nights))) : sameRadius
         const isSelected = selected?.type === 'city' && selected.id === c.id
@@ -251,7 +254,7 @@ export function MapView() {
           id: c.id, name: c.name, text, textSize: textSize(text), nights: s.nights, radius,
           anchors: labelAnchors(c.id, radius, routeEnds),
           selected: isSelected,
-          label: `Day ${day}: ${c.name} · ${s.nights} nights${label ? ` · ${label}` : ''}`,
+          tip: JSON.stringify(stopTip(input.startDate, s, metrics)),
         })
       })
       // Ring images must exist before the stops are sent: MapLibre's own request for missing images comes too late
@@ -289,62 +292,7 @@ export function MapView() {
       map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
     }
 
-    const costs = costScale(input.budget, currency)
-
-    /** Month for the weather and air layers: the chosen one, or (by default) when you're there on this trip. */
-    function monthFor(cityId: string): number {
-      return layerMonth || likelyMonth(ds, plan, input, cityId)
-    }
-
-    /**
-     * Colour (and hover text) of a city for the map layer; for weather also the share of rainy days, and for
-     * weather and air the number shown in the stop's circle.
-     */
-    function metric(cityId: string): { color?: string; label?: string; rain?: number; value?: string } {
-      if (layer === 'climate') {
-        const month = monthFor(cityId)
-        const m = ds.climate[cityId]?.[month - 1]
-        if (!m) return {}
-        // Coloured and numbered by the high (days) or the low (nights), as picked in the legend, as it feels or as
-        // measured (the shared setting).
-        const shown = shownTemps(m, tempFeels)
-        const t = weatherBy === 'low' ? shown.low : shown.high
-        const rain = rainShare(m.rainDays, month)
-        return {
-          color: WEATHER_STYLE[tempKind(t)].color, rain, value: String(tempValue(t, tempUnit)),
-          label: `${MONTHS[month - 1]}: ${shown.feels ? 'feels like ' : ''}${tempValue(shown.high, tempUnit)}° / ${temp(shown.low, tempUnit)} (high / low)${shown.feels ? `, real ${tempValue(m.tHigh, tempUnit)}° / ${temp(m.tLow, tempUnit)}` : ''}, rain on ${Math.round(m.rainDays)} days`,
-        }
-      }
-      if (layer === 'air') {
-        const month = monthFor(cityId)
-        const a = ds.air.byCity[cityId]?.[month - 1]
-        if (!a) return {}
-        const band = airBand(a.pm25)
-        return {
-          color: levelColor(band.level), value: String(Math.round(a.pm25)),
-          label: `${MONTHS[month - 1]} air: ${band.short.toLowerCase()} (PM2.5 ${a.pm25} µg/m³)`,
-        }
-      }
-      if (layer === 'schengen') {
-        const inside = !!ds.countries[ds.cities[cityId]?.iso2]?.schengen
-        return { color: inside ? '#2563eb' : '#d97706', label: inside ? 'Schengen area' : 'Outside Schengen' }
-      }
-      if (layer === 'mobile') {
-        const m = mobileInternet(ds, cityId)
-        if (!m) return { color: NO_DATA, label: 'Mobile internet: no data' }
-        return { color: levelColor(m.level), value: String(m.downMbps), label: `Mobile internet: ${m.short.toLowerCase()} (~${m.downMbps} Mbps)` }
-      }
-      if (layer === 'nearby') {
-        const n = nearby(ds, cityId)?.[nearbyKind]
-        if (n === undefined) return { color: NO_DATA, label: `${NEARBY_LABELS[nearbyKind]}: no data` }
-        return { color: nearbyColor(nearbyLevel(n)), label: `${NEARBY_LABELS[nearbyKind]} within ${ds.amenities.radiusKm} km: ${roughCount(n)}` }
-      }
-      if (layer === 'cost') {
-        const d = dailyCost(ds, cityId, input.budget)
-        return { color: costs.color(d), label: `~${money(d, currency)}/day (${input.budget})` }
-      }
-      return {}
-    }
+    const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels })
 
     refresh.current = update
     if (loaded.current) update()
@@ -381,8 +329,6 @@ export function MapView() {
 }
 
 const NAME_SIZE = 12
-/** A city's colour on a map view that has no data for it. */
-const NO_DATA = '#a8a29e'
 /** Where a name can go around its stop: the side, and the direction from the stop towards it on screen. */
 const SIDES: { anchor: string; dir: [number, number] }[] = [
   // The anchor is the side of the text nearest the stop: 'top' puts the name below.

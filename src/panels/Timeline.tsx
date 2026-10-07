@@ -1,16 +1,29 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, monthOf } from '../planner'
 import { useTrip } from '../store/trip'
-import { MONTHS, WEATHER_STYLE, shownTemps, tempBand, weatherKind, type WeatherKind } from '../ui/format'
-import { FeelsToggle } from '../ui/FeelsToggle'
+import { cityMetrics, stopTip, tipText, type TipContent } from '../map/cityMetric'
+import { MONTHS, STOP_COLOR } from '../ui/format'
+import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
+
+/** A bar's hover box: the map's, without the city name (it's on the bar); "Day 3 · 4 nights" in the Route view. */
+const barTip = (t: TipContent): TipContent => ({ lines: t.lines ?? (t.sub ? [t.sub] : []) })
 
 /** At least this many pixels per day, so long trips scroll sideways instead of squeezing stops into slivers. */
 const PX_PER_DAY = 12
 
 export function Timeline() {
-  const { plan, input, selected, select, tempUnit: unit, tempFeels } = useTrip()
+  const { plan, input, selected, select, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels } = useTrip()
+  // Each stop in the map's colour for the current view, with the map's hover text.
+  const metric = useMemo(
+    () => cityMetrics({ plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels }),
+    [plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels],
+  )
+  // The map-style hover box for the bar under the pointer.
+  const [tip, setTip] = useState<Tip | null>(null)
+  const showTip = (content: TipContent) => (e: MouseEvent<HTMLElement>) => setTip({ content, rect: e.currentTarget.getBoundingClientRect() })
+  const hideTip = () => setTip(null)
   const hasStops = !!plan?.stops.length
   const scroller = useSideScroll<HTMLDivElement>([hasStops])
   const selectedId = selected?.type === 'city' ? selected.id : null
@@ -32,8 +45,8 @@ export function Timeline() {
 
   return (
     <div className="border-t border-line bg-panel px-4 pt-2 pb-3">
-      {/* Months, stops and weather scroll sideways together when the trip doesn't fit (scrollbar, or the mouse wheel). */}
-      <div ref={scroller.ref} className="thin-scrollbar -mt-1 overflow-x-auto pt-1 pb-1.5">
+      {/* Months and stops scroll sideways together when the trip doesn't fit (scrollbar, or the mouse wheel). */}
+      <div ref={scroller.ref} className="thin-scrollbar -mt-1 overflow-x-auto pt-1 pb-1.5" onScroll={hideTip}>
         <div style={{ minWidth: total * PX_PER_DAY }}>
           <div className="relative h-4 text-[11px] text-muted">
             {months.map((m) => (
@@ -44,7 +57,7 @@ export function Timeline() {
             {plan.stops.map((s, i) => {
               const from = daysBetween(start, s.arrive)
               const city = ds.cities[s.cityId]
-              const schengen = ds.countries[city.iso2]?.schengen
+              const m = metric(s.cityId)
               const isSel = selected?.type === 'city' && selected.id === s.cityId
               const overnight = plan.legs[i]?.overnight
               return (
@@ -52,43 +65,24 @@ export function Timeline() {
                   <button
                     data-city={s.cityId}
                     onClick={() => select({ type: 'city', id: s.cityId })}
-                    title={`${i + 1}. ${city.name}: ${s.nights} nights`}
+                    aria-label={tipText(stopTip(input.startDate, s, m))}
+                    onMouseEnter={showTip(barTip(stopTip(input.startDate, s, m)))}
+                    onMouseLeave={hideTip}
                     className={`absolute top-0 h-9 overflow-hidden rounded-sm border-r-2 border-panel px-1 text-left text-[11px] leading-9 font-medium whitespace-nowrap text-white ${isSel ? 'ring-2 ring-ink ring-offset-1' : ''}`}
-                    style={{ left: pct(from), width: pct(s.nights), background: schengen ? 'var(--color-schengen)' : 'var(--color-outside)' }}
+                    style={{ left: pct(from), width: pct(s.nights), background: m.color ?? STOP_COLOR, textShadow: '0 0 3px rgb(0 0 0 / 0.45)' }}
                   >
                     {city.name}
                   </button>
                   {overnight && (
-                    <div title="Overnight travel" className="absolute top-0 h-9 bg-[repeating-linear-gradient(45deg,#d6d3d1_0_3px,#f5f5f4_3px_6px)]" style={{ left: pct(from + s.nights), width: pct(1) }} />
+                    <div onMouseEnter={showTip({ title: 'Overnight travel' })} onMouseLeave={hideTip} className="absolute top-0 h-9 bg-[repeating-linear-gradient(45deg,#d6d3d1_0_3px,#f5f5f4_3px_6px)]" style={{ left: pct(from + s.nights), width: pct(1) }} />
                   )}
                 </div>
               )
             })}
           </div>
-          <div className="relative mt-1 h-1.5" title="Weather during each stay">
-            {plan.stops.map((s) => {
-              const m = ds.climate[s.cityId]?.[monthOf(addDays(s.arrive, Math.floor(s.nights / 2))) - 1]
-              return (
-                <div key={s.cityId} className="absolute top-0 h-1.5 rounded-full border-r-2 border-panel" style={{ left: pct(daysBetween(start, s.arrive)), width: pct(s.nights), background: m ? WEATHER_STYLE[weatherKind({ tHigh: shownTemps(m, tempFeels).high, rainDays: m.rainDays })].color : 'var(--color-line)' }} />
-              )
-            })}
-          </div>
         </div>
       </div>
-      <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-muted">
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-schengen" />Schengen</span>
-        <span><span className="mr-1 inline-block h-2 w-2 rounded-sm bg-outside" />Outside Schengen</span>
-        <span className="flex items-center gap-2">
-          Weather:
-          <FeelsToggle />
-          {(Object.keys(WEATHER_STYLE) as WeatherKind[]).map((k) => (
-            <span key={k} className="flex items-center gap-1" title={k === 'wet' ? 'Mild but rainy: 14 or more rain days in the month' : tempFeels ? 'Average daily high, as it feels' : 'Average daily high'}>
-              <span className="inline-block h-2 w-3 rounded-full" style={{ background: WEATHER_STYLE[k].color }} />
-              {k === 'wet' ? 'Wet' : tempBand(k, unit)}
-            </span>
-          ))}
-        </span>
-      </div>
+      <HoverTip tip={tip} />
     </div>
   )
 }
