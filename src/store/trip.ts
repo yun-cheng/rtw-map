@@ -58,7 +58,7 @@ type State = {
   routeBy: 'day' | 'nights'
   panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
   fitRequest: number
-  /** Display currency for all prices (converted from the stored EUR or local amounts). */
+  /** Display currency for all prices (US dollars by default; prices are converted from the stored EUR or local amounts). */
   currency: string
   /** Temperatures in Celsius or Fahrenheit (data is stored in °C). */
   tempUnit: TempUnit
@@ -179,7 +179,7 @@ export const useTrip = create<State>()(
         routeBy: 'day',
         panel: 'setup',
         fitRequest: 0,
-        currency: 'EUR',
+        currency: 'USD',
         tempUnit: 'C',
         tempFeels: true,
         priceCompare: null,
