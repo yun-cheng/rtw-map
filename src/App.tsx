@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { MapControls } from './map/MapControls'
+import { DRAWER_WIDTH } from './ui/layout'
 import { MapView } from './map/MapView'
 import { AssistantPanel } from './panels/AssistantPanel'
 import { CityDrawer } from './panels/CityDrawer'
@@ -60,7 +61,7 @@ export default function App() {
             </div>
           )}
           {selected && (
-            <div className="absolute top-0 right-0 bottom-0 z-20 w-[420px] overflow-y-auto border-l border-line bg-panel shadow-xl">
+            <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-panel shadow-xl" style={{ width: DRAWER_WIDTH }}>
               {selected.type === 'city' ? <CityDrawer key={selected.id} cityId={selected.id} /> : <LegDrawer index={selected.index} />}
             </div>
           )}

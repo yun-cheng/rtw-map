@@ -8,6 +8,7 @@ import { dataset as ds } from '../data/dataset'
 import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, temp, tempKind, tempValue } from '../ui/format'
+import { DRAWER_WIDTH } from '../ui/layout'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
@@ -75,7 +76,6 @@ function showBaseMap(map: MlMap, theme: Theme) {
 }
 const FONT = ['Noto Sans Bold']
 /** Width of the city/leg panel that covers the right of the map (App.tsx). */
-const DRAWER = 420
 const CITY_LAYERS = ['stop-circles', 'city-dots']
 const ROUTE_LAYERS = ['route-solid', 'route-dashed']
 
@@ -360,9 +360,9 @@ export function MapView() {
     const { width, height } = map.getContainer().getBoundingClientRect()
     const p = map.project([c.lon, c.lat])
     const margin = 40
-    const visible = p.x > margin && p.x < width - DRAWER - margin && p.y > margin + 80 && p.y < height - margin
+    const visible = p.x > margin && p.x < width - DRAWER_WIDTH - margin && p.y > margin + 80 && p.y < height - margin
     // Centre it in the part of the map the panel doesn't cover.
-    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-DRAWER / 2, 0], duration: 700 })
+    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-DRAWER_WIDTH / 2, 0], duration: 700 })
   }, [selected])
 
   // Zoom to the plan after generating or importing.

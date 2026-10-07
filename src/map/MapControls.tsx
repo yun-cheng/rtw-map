@@ -2,6 +2,7 @@ import type { SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
+import { DRAWER_WIDTH } from '../ui/layout'
 import { NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
@@ -34,7 +35,7 @@ const MODES = [
 ]
 
 export function MapControls() {
-  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency } = useTrip()
+  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
   const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(input.budget, currency).legend : LEGENDS[layer]
   // What the numbers in the legend measure.
   const lead = {
@@ -45,8 +46,9 @@ export function MapControls() {
     cost: { text: `Per day (${input.budget})`, title: 'Typical daily spending on your budget: a bed, food and local transport. Each colour holds about a fifth of all cities.' },
   }[layer as string]
   return (
-    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2">
-      <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+    // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge and wrap.
+    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
+      <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
         {LAYERS.map((l) => (
           <button
             key={l.value}
@@ -58,7 +60,7 @@ export function MapControls() {
         ))}
       </div>
       {layer === 'nearby' && (
-        <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
           {NEARBY_KINDS.map((k) => (
             <button
               key={k}
@@ -71,7 +73,7 @@ export function MapControls() {
         </div>
       )}
       {(layer === 'climate' || layer === 'air') && (
-        <div className="pointer-events-auto flex rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
           <button
             onClick={() => setLayerMonth(0)}
             title="Each stop in the month you're there; other cities in the month you're at the nearest stop"
@@ -92,7 +94,7 @@ export function MapControls() {
       )}
       {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} />}
       {legend && (
-        <div className="pointer-events-auto flex max-w-[34rem] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
+        <div className="pointer-events-auto flex max-w-[min(34rem,100%)] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
           {layer === 'climate' && <FeelsToggle />}
           {layer === 'climate' ? (
             // Days or nights: the colours, legend and numbers follow.
@@ -131,7 +133,6 @@ function RainRing() {
     <span className="flex items-center gap-1.5 border-l border-line pl-3" title="The ring around each stop: blue for the share of days with rain that month, white for dry days">
       <svg viewBox="0 0 14 14" className="h-4 w-4 -rotate-90" aria-hidden>
         <circle cx="7" cy="7" r={r + 1.25} fill="none" strokeWidth="0.5" style={{ stroke: 'var(--color-line)' }} />
-        <circle cx="7" cy="7" r={r - 1.25} fill={WEATHER_STYLE.pleasant.color} />
         <circle cx="7" cy="7" r={r} fill="none" strokeWidth="1.75" stroke="#ffffff" />
         <circle cx="7" cy="7" r={r} fill="none" strokeWidth="1.75" strokeDasharray={`${c / 3} ${c}`} style={{ stroke: 'var(--color-schengen)' }} />
       </svg>
@@ -153,7 +154,7 @@ function RouteLegend({ modes }: { modes: Set<string> }) {
   const routeBy = useTrip((s) => s.routeBy)
   const setRouteBy = useTrip((s) => s.setRouteBy)
   return (
-    <div className="pointer-events-auto flex max-w-[34rem] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
+    <div className="pointer-events-auto flex max-w-[min(34rem,100%)] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
       {/* What the number in each stop is, styled like the Weather view's High | Low. */}
       <span className="flex rounded-md border border-line p-px" role="group" aria-label="Number in each stop">
         {(['day', 'nights'] as const).map((b) => (
