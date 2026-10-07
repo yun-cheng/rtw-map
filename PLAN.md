@@ -104,7 +104,7 @@ The first region is the one my RTW plan covers, and it gets complete curated dat
 | | Moldova | No |
 | Poland | Poland | Yes |
 | Baltic States | Lithuania, Latvia, Estonia | Yes |
-| Russia | Russia (main cities, starting with St Petersburg and Moscow) | No |
+| Russia | Russia (the cities most travellers visit: St Petersburg and Moscow, the Golden Ring, the Volga, Karelia and the Arctic north, Kaliningrad, Sochi, and the Trans-Siberian to Vladivostok) | No |
 
 Countries with "do not travel" advisories (e.g. Ukraine, Belarus) are **excluded from routes by default**.
 
@@ -409,10 +409,10 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 
 **If time runs short, cut in this order:** AI copilot → road-trip mode → cost layer → print view. Never cut the Schengen calculator or the visa warnings.
 
-### Progress (5 Oct 2026)
+### Progress (7 Oct 2026)
 - **Phase 0, done:** Vite + React + TS app; data pipeline in `scripts/` (GeoNames, Natural Earth, OSRM, Passport Index, Open-Meteo, FCDO + US State Dept, World Bank, FX). 22 countries, 69 cities, ~100 curated connections; costs and connections are seed estimates. Advisories use both FCDO and US levels: a country is excluded by default if either says "do not travel" (Russia, Ukraine, Belarus).
 - **Phase 1, mostly done:** setup form → generated plan; map with route and layers (weather, cost, English, Schengen, safety); itinerary editing (± nights auto-locks + rebalances, lock, remove, drag to reorder, add from map, re-order); Schengen 90/180 counter enforced while planning; visa, advisory, border (Kosovo → Serbia), weather and pace checks; city and leg drawers; timeline; localStorage + JSON export/import.
-- **Climate, done:** monthly averages for all 117 cities (Open-Meteo ERA5, 2016–2025). Weather now affects which cities are picked and when, plus heat/cold/wet checks. ERA5 tends to count slightly more wet days than weather stations, so the wet-month note says "days with ≥1 mm, often short showers".
+- **Climate, done:** monthly averages for every city (Open-Meteo ERA5, 2016–2025). Weather now affects which cities are picked and when, plus heat/cold/wet checks. ERA5 tends to count slightly more wet days than weather stations, so the wet-month note says "days with ≥1 mm, often short showers".
 - **Display currency, done:** currency picker in the header; every price (header total, legs, city costs, map cost layer) is converted; supermarket prices also show the local-currency amount.
 - **English & language, done:** Language section in the city panel, an English map layer (later removed; route stops are coloured by the active layer), and a trip check naming stops where English is limited.
 - **Local transport & taxis, done:** "Getting around" section in the city panel: public transport ease, kinds of transport, how to pay, walkability, taxi apps, start fare + per km, a 5 km ride estimate, scam tips, and rentals (bike share, e-scooters, bikes, cars, scooters/motorbikes) with apps, daily prices and what you need to rent. The data build fails if any city or country is missing.
@@ -448,6 +448,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Scale colours, done:** every five-level scale (air, mobile, cost, nearby, the level bars) uses the same fixed colours, red → orange → yellow → light green → dark green (`LEVEL_COLORS`), instead of a blend whose top steps looked alike.
 - **Shops and medical help, done:** counts near each centre from OpenStreetMap and Overture business listings, whichever is higher (OSM is richer in the Balkans and for ATMs, the listings in Central Europe and Asia), shown as a rough scale since neither is complete (none found, 1–4, 5+, 20+, 50+). A **Nearby** map view shows one kind at a time (supermarkets, pharmacies, clinics & doctors, ATMs; `kind=` in the address). Hospital distance isn't on the map: nearly every city has one within 2 km.
 - **Mobile internet, done:** typical mobile download speed per city in five bands (slow <25, OK 25–50, good 50–100, fast 100–200, very fast 200+ Mbps), as a map view, an Overview line and a Daily life row; the app doesn't name the source (it's in the README).
+- **Russia, more cities:** from 5 to 20, the places most travellers visit: Sergiev Posad, Vladimir, Suzdal, Yaroslavl, Nizhny Novgorod, Samara, Volgograd, Kaliningrad, Petrozavodsk (Kizhi), Murmansk, Sochi, Yekaterinburg, Novosibirsk, Irkutsk (Lake Baikal) and Vladivostok, with local transport and 37 connections (Lastochka and overnight trains, the Trans-Siberian, and domestic flights for the long hops; Kaliningrad by air only, since the land routes cross the EU).
 - **Map legends, done:** every coloured view shows all five of its bands with real values (PM2.5 µg/m³, daily cost in the display currency for the chosen budget), from one set of scales shared by the map and the legend (`src/map/scales.ts`). The Cards, English and Safety map views were removed as not useful enough for the space they took (the city panels and checks still cover all three). Stops show the arrival day and are sized by nights only in the Route view (legend: "Bigger = longer stay"); map labels show just the city name, on whichever side of the stop is free (away from its route lines first; names never cover a stop, and are left out where there's no room); Weather shows the average high and Air the PM2.5 instead, the other views leave the circle plain.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 

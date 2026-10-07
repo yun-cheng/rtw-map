@@ -21,7 +21,11 @@ describe('map legends', () => {
       expect(counts.size).toBe(5)
       for (const n of counts.values()) expect(n).toBeGreaterThan(Object.keys(ds.cities).length / 10)
     }
-    expect(costScale('backpacker', 'EUR').legend.map((l) => l.label)).toEqual(['<€26', '€26–35', '€35–42', '€42–54', '€54+'])
+    // The splits move as cities are added, so only the format is fixed.
+    const labels = costScale('backpacker', 'EUR').legend.map((l) => l.label)
+    expect(labels[0]).toMatch(/^<€\d+$/)
+    expect(labels.slice(1, 4)).toEqual(labels.slice(1, 4).map((l) => l.match(/^€\d+–\d+$/)?.[0]))
+    expect(labels[4]).toMatch(/^€\d+\+$/)
     expect(costScale('backpacker', 'USD').legend[1].label).toMatch(/^\$\d+–\d+$/)
   })
 })
