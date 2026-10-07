@@ -48,7 +48,7 @@ Open the URL Vite prints (usually http://localhost:5173), click **Load test case
 src/
   planner/     planning engine (pure TS, no UI) + tests: graph, route, allocate, schengen, cost, language, health,
                mobile internet, places nearby, preferences and travel styles (prefs.ts)
-  data/        dataset loader, region presets, the test-case input
+  data/        dataset loader, region presets, the test-case input, CSV parser (shared with scripts/)
   agent/       trip assistant: instructions + tool list (schema.ts, shared with the Worker), tool runner, chat loop
   store/       Zustand trip state + localStorage persistence, saved trips, view state in the URL (url.ts)
   map/         MapLibre map, layer controls, the colour scales shared by the map and its legends (scales.ts), and each

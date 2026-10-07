@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parseCsv } from '../src/data/csv'
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
 export const SEED = join(ROOT, 'data/seed')
@@ -17,29 +18,8 @@ export function writeJson(path: string, data: unknown, compact = false) {
   console.log(`wrote ${path.replace(ROOT + '/', '')}`)
 }
 
-/** Minimal CSV parser: comma-separated, double-quoted fields, header row. */
-export function readCsv(path: string): Record<string, string>[] {
-  const text = readFileSync(path, 'utf8').trim()
-  const rows: string[][] = []
-  let row: string[] = []
-  let field = ''
-  let quoted = false
-  for (let i = 0; i < text.length; i++) {
-    const c = text[i]
-    if (quoted) {
-      if (c === '"' && text[i + 1] === '"') { field += '"'; i++ }
-      else if (c === '"') quoted = false
-      else field += c
-    } else if (c === '"') quoted = true
-    else if (c === ',') { row.push(field); field = '' }
-    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = '' }
-    else if (c !== '\r') field += c
-  }
-  row.push(field)
-  rows.push(row)
-  const [header, ...body] = rows
-  return body.map((r) => Object.fromEntries(header.map((h, i) => [h, r[i] ?? ''])))
-}
+/** Reads a CSV file (see parseCsv). */
+export const readCsv = (path: string): Record<string, string>[] => parseCsv(readFileSync(path, 'utf8'))
 
 export async function fetchCached(url: string, cacheName: string): Promise<string> {
   const path = join(CACHE, cacheName)
