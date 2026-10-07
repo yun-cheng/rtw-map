@@ -91,6 +91,10 @@ body {
 :root[data-theme='dark'] .maplibregl-ctrl-attrib-button { filter: invert(1); }
 :root[data-theme='dark'] .maplibregl-ctrl-attrib a { color: var(--color-ink); }
 
+/* Google's sign-in button is an iframe with a light page. Chrome paints such a frame white when its colour scheme
+   differs from the page's (dark), filling the corners around the pill; matching the scheme keeps it transparent. */
+iframe[src^='https://accounts.google.com/gsi/'] { color-scheme: light; }
+
 /* Sideways-scrolling bars (the city panel's tabs) without a visible scrollbar. */
 @utility no-scrollbar {
   scrollbar-width: none;
