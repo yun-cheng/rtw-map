@@ -103,7 +103,7 @@ export function tempRange(lo: number, hi: number, unit: TempUnit): string {
   return `${a}${a < 0 || b < 0 ? ' to ' : '–'}${b}°${unit}`
 }
 
-/** Each temperature class as its range of average daily highs, e.g. "18–28°C" (thresholds as in temperatureKind). */
+/** Each temperature class as its range, e.g. "18–28°C" (thresholds as in tempKind; the same for highs and lows). */
 export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
   const t = (c: number) => tempValue(c, unit)
   const u = `°${unit}`
@@ -114,39 +114,24 @@ export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): str
 export const warningTitle = (w: { title: string; tempC?: number; tempIsLow?: boolean }, unit: TempUnit) =>
   w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
 
-/**
- * The same five classes for nights, by the average daily low: near freezing, cool, comfortable for sleeping, warm,
- * and hot nights (hard to sleep in without air conditioning).
- */
-export function lowKind(m: { tLow: number }): Exclude<WeatherKind, 'wet'> {
-  if (m.tLow < 2) return 'cold'
-  if (m.tLow < 10) return 'cool'
-  if (m.tLow >= 23) return 'hot'
-  if (m.tLow >= 18) return 'warm'
-  return 'pleasant'
-}
-
-/** Each night class as its range of average lows, e.g. "10–18°C" (thresholds as in lowKind). */
-export function lowBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
-  const t = (c: number) => tempValue(c, unit)
-  const u = `°${unit}`
-  return { cold: `<${t(2)}${u}`, cool: `${t(2)}–${t(10)}${u}`, pleasant: `${t(10)}–${t(18)}${u}`, warm: `${t(18)}–${t(23)}${u}`, hot: `${t(23)}${u}+` }[kind]
-}
-
 /** Classifies a month by its average high, using the same thresholds as the weather warnings. */
 export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {
   const t = temperatureKind(m)
   return t === 'pleasant' && m.rainDays >= 14 ? 'wet' : t
 }
 
-/** The same classes by temperature alone, for the map, where rain is shown separately (a ring around each stop). */
-export function temperatureKind(m: { tHigh: number }): Exclude<WeatherKind, 'wet'> {
-  if (m.tHigh < 12) return 'cold'
-  if (m.tHigh < 18) return 'cool'
-  if (m.tHigh >= 32) return 'hot'
-  if (m.tHigh >= 28) return 'warm'
+/** How a temperature (°C) feels, on one scale for any temperature (a day's high or a night's low):
+ *  cold < 12, cool 12–18, pleasant 18–28, warm 28–32, hot 32+. */
+export function tempKind(c: number): Exclude<WeatherKind, 'wet'> {
+  if (c < 12) return 'cold'
+  if (c < 18) return 'cool'
+  if (c >= 32) return 'hot'
+  if (c >= 28) return 'warm'
   return 'pleasant'
 }
+
+/** A month by its average high, for the map, where rain is shown separately (a ring around each stop). */
+export const temperatureKind = (m: { tHigh: number }) => tempKind(m.tHigh)
 
 /** Share of the days in a month (1–12) with rain, 0–1. */
 export const rainShare = (rainDays: number, month: number) => Math.min(1, Math.max(0, rainDays / new Date(Date.UTC(2027, month, 0)).getUTCDate()))

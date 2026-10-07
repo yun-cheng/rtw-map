@@ -1,6 +1,6 @@
 import type { SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, lowBand, tempBand, type TempUnit } from '../ui/format'
+import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
@@ -20,9 +20,9 @@ const LEGENDS: Partial<Record<MapLayer, LegendItem[]>> = {
   schengen: [{ color: '#2563eb', label: 'Schengen area' }, { color: '#d97706', label: 'Outside Schengen' }],
 }
 
-/** Weather legend: the temperature classes as ranges of the average daily high (rain is the ring, see RainRing). */
-const temperatureLegend = (unit: TempUnit, by: 'high' | 'low'): LegendItem[] =>
-  (['cold', 'cool', 'pleasant', 'warm', 'hot'] as const).map((k) => ({ color: WEATHER_STYLE[k].color, label: by === 'low' ? lowBand(k, unit) : tempBand(k, unit) }))
+/** Weather legend: the temperature classes as ranges, the same for highs and lows (rain is the ring, see RainRing). */
+const temperatureLegend = (unit: TempUnit): LegendItem[] =>
+  (['cold', 'cool', 'pleasant', 'warm', 'hot'] as const).map((k) => ({ color: WEATHER_STYLE[k].color, label: tempBand(k, unit) }))
 
 /** Travel modes in the Route view's legend; minibuses share the bus colour. */
 const MODES = [
@@ -34,7 +34,7 @@ const MODES = [
 
 export function MapControls() {
   const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency } = useTrip()
-  const legend = layer === 'climate' ? temperatureLegend(tempUnit, weatherBy) : layer === 'cost' ? costScale(input.budget, currency).legend : LEGENDS[layer]
+  const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(input.budget, currency).legend : LEGENDS[layer]
   // What the numbers in the legend measure.
   const lead = {
     climate: { text: 'High', title: 'Average daily high in the month; the number on each stop' },

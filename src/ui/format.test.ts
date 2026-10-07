@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, lowBand, lowKind, money, rateText, temp, tempBand, tempRange, tempScale, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, local, money, rateText, temp, tempBand, tempKind, tempRange, tempScale, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -72,10 +72,9 @@ describe('night temperatures', () => {
     expect(warningTitle({ title: 'Athens: warm nights', tempC: 23.4, tempIsLow: true }, 'C')).toBe('Athens: warm nights (avg low 23°C)')
   })
 
-  it('classes nights by the average low, with ranges in either unit', () => {
-    expect([0, 5, 14, 20, 25].map((tLow) => lowKind({ tLow }))).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
-    expect(lowBand('pleasant', 'C')).toBe('10–18°C')
-    expect(lowBand('hot', 'F')).toBe('73°F+')
+  it('classes any temperature, day or night, on one scale', () => {
+    expect([0, 14, 20, 30, 33].map(tempKind)).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
+    expect(tempBand('pleasant', 'C')).toBe('18–28°C')
   })
 })
 

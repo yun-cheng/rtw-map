@@ -7,7 +7,7 @@ import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
 import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, lowKind, money, rainShare, temp, temperatureKind, tempValue } from '../ui/format'
+import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, levelColor, money, rainShare, temp, tempKind, tempValue } from '../ui/format'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
@@ -306,7 +306,7 @@ export function MapView() {
         if (!m) return {}
         // Coloured and numbered by the high (days) or the low (nights), as picked in the legend.
         const low = weatherBy === 'low'
-        const kind = low ? lowKind(m) : temperatureKind(m)
+        const kind = tempKind(low ? m.tLow : m.tHigh)
         const rain = rainShare(m.rainDays, month)
         return {
           color: WEATHER_STYLE[kind].color, rain, value: String(tempValue(low ? m.tLow : m.tHigh, tempUnit)),
