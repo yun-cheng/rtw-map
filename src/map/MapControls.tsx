@@ -1,9 +1,9 @@
-import type { SchengenSummary } from '../planner'
+import { COST_KINDS, type Budget, type CostKind, type SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
-import { NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
+import { COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
@@ -34,16 +34,27 @@ const MODES = [
   { modes: ['flight'], label: 'Flight' },
 ]
 
+const FIFTH = 'Each colour holds about a fifth of all cities.'
+/** What the Cost view's legend numbers are, for each kind of cost. */
+const COST_LEAD: Record<CostKind, (budget: Budget) => { text: string; title: string }> = {
+  day: (budget) => ({ text: `Per day (${budget})`, title: `Typical daily spending on your budget: a bed, food and local transport. ${FIFTH}` }),
+  dorm: () => ({ text: 'Dorm bed / night', title: `A bed in a hostel dorm for one night. ${FIFTH}` }),
+  private: () => ({ text: 'Private room / night', title: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}` }),
+  meal: () => ({ text: 'Cheap meal', title: `A meal at an inexpensive local restaurant. ${FIFTH}` }),
+  groceries: () => ({ text: 'Groceries / day', title: `Supermarket food to cook your own meals for a day (the same across a country). ${FIFTH}` }),
+  transport: () => ({ text: 'Local transport / day', title: `A day of getting around the city by public transport (the same across a country). ${FIFTH}` }),
+}
+
 export function MapControls() {
-  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
-  const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(input.budget, currency).legend : LEGENDS[layer]
+  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
+  const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(costKind, input.budget, currency).legend : LEGENDS[layer]
   // What the numbers in the legend measure.
   const lead = {
     climate: { text: 'High', title: 'Average daily high in the month; the number on each stop' },
     air: { text: 'PM2.5 µg/m³', title: "Monthly average of fine particles (PM2.5), the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day." },
     nearby: { text: 'Within 1.5 km', title: `Roughly how many ${NEARBY_LABELS[nearbyKind].toLowerCase()} within 1.5 km of the centre, from map data and business listings; both miss places, so treat it as a rough guide` },
     mobile: { text: 'Mobile Mbps', title: 'Typical download speed of mobile internet on phones in the city; the number on each stop' },
-    cost: { text: `Per day (${input.budget})`, title: 'Typical daily spending on your budget: a bed, food and local transport. Each colour holds about a fifth of all cities.' },
+    cost: COST_LEAD[costKind](input.budget),
   }[layer as string]
   return (
     // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge and wrap.
@@ -68,6 +79,19 @@ export function MapControls() {
               className={`rounded-md px-2 py-1 text-[11px] font-medium ${nearbyKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
             >
               {NEARBY_LABELS[k]}
+            </button>
+          ))}
+        </div>
+      )}
+      {layer === 'cost' && (
+        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+          {COST_KINDS.map((k) => (
+            <button
+              key={k}
+              onClick={() => setCostKind(k)}
+              className={`rounded-md px-2 py-1 text-[11px] font-medium ${costKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+            >
+              {COST_LABELS[k].label}
             </button>
           ))}
         </div>

@@ -1,10 +1,16 @@
 // What a city looks like in the current map view: its colour, hover box and the value on its circle. Shared by the
 // map and the timeline, so a stop has the same colour and hover box in both.
 import { dataset as ds } from '../data/dataset'
-import { airBand, dailyCost, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type ScheduledStop } from '../planner'
+import { airBand, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type ScheduledStop } from '../planner'
 import type { useTrip } from '../store/trip'
 import { WEATHER_STYLE, levelColor, money, rainShare, shownTemps, tempKind, tempRange, tempValue } from '../ui/format'
-import { NEARBY_LABELS, costScale, nearbyColor } from './scales'
+import { COST_LABELS, NEARBY_LABELS, costScale, nearbyColor } from './scales'
+
+/** An amount in EUR rounded to two significant digits in the display currency (6.57 → 6.6), back in EUR. */
+function roundTo2(eur: number, currency: string): number {
+  const rate = (currency === 'EUR' ? 1 : ds.fx.rates[currency]) || 1
+  return Number((eur * rate).toPrecision(2)) / rate
+}
 
 /** A city's colour on a map view that has no data for it. */
 export const NO_DATA = '#a8a29e'
@@ -16,15 +22,15 @@ export type Metric = { color?: string; lines?: string[]; rain?: number; value?: 
 export type TipContent = { title?: string; sub?: string; lines?: string[] }
 
 type TripState = ReturnType<typeof useTrip.getState>
-type MetricState = Pick<TripState, 'plan' | 'input' | 'layer' | 'layerMonth' | 'nearbyKind' | 'weatherBy' | 'currency' | 'tempUnit' | 'tempFeels'>
+type MetricState = Pick<TripState, 'plan' | 'input' | 'layer' | 'layerMonth' | 'nearbyKind' | 'costKind' | 'weatherBy' | 'currency' | 'tempUnit' | 'tempFeels'>
 
 /**
  * The colour (and hover text) of each city in the current map view; for weather also the share of rainy days, and
  * for weather, air and mobile the number shown in the stop's circle. Route view: no colour (stops keep theirs).
  */
 export function cityMetrics(s: MetricState): (cityId: string) => Metric {
-  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels } = s
-  const costs = layer === 'cost' ? costScale(input.budget, currency) : null
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels } = s
+  const costs = layer === 'cost' ? costScale(costKind, input.budget, currency) : null
   /** Month for the weather and air views: the chosen one, or (by default) when you're there on this trip. */
   const monthFor = (cityId: string) => layerMonth || likelyMonth(ds, plan, input, cityId)
 
@@ -65,8 +71,10 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       return { color: nearbyColor(nearbyLevel(n)), lines: [n ? `${roughCount(n)} ${what}` : `No ${what} found`] }
     }
     if (costs) {
-      const d = dailyCost(ds, cityId, input.budget)
-      return { color: costs.color(d), lines: [`~${money(d, currency)}/day`] }
+      const d = costOf(ds, cityId, costKind, input.budget)
+      if (!d) return { color: NO_DATA, lines: ['No data'] }
+      // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").
+      return { color: costs.color(d), lines: [`~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`] }
     }
     return {}
   }

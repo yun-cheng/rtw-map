@@ -1,7 +1,7 @@
 // The map views' colour scales, shared by the map (MapView) and its legend (MapControls) so the legend shows
 // exactly the bands the map colours by. Each has five bands from red (worst) to dark green (best), see LEVEL_COLORS.
 import { dataset as ds } from '../data/dataset'
-import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, dailyCost, type Budget } from '../planner'
+import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, costOf, type Budget, type CostKind } from '../planner'
 import type { NearbyKind } from '../store/trip'
 import { levelColor, money } from '../ui/format'
 
@@ -28,38 +28,54 @@ export const nearbyColor = (level: number) => levelColor(level + 1)
 export const NEARBY_LABELS: Record<NearbyKind, string> = { supermarket: 'Supermarkets', pharmacy: 'Pharmacies', clinic: 'Clinics & doctors', atm: 'ATMs' }
 export const nearbyLegend = (): LegendItem[] => NEARBY_BANDS.map((b, i) => ({ color: nearbyColor(i), label: b.label }))
 
-const percentiles = new Map<Budget, number[]>()
+/** Names of the kinds of cost the Cost view shows, and what each price is for (after the amount: "€12/night"). */
+export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {
+  day: { label: 'Per day', per: '/day' },
+  dorm: { label: 'Dorm bed', per: '/night' },
+  private: { label: 'Private room', per: '/night' },
+  meal: { label: 'Cheap meal', per: '/meal' },
+  groceries: { label: 'Groceries', per: '/day' },
+  transport: { label: 'Transport', per: '/day' },
+}
+
+const percentiles = new Map<string, number[]>()
 
 /**
- * Where the cost bands split for a budget, in EUR a day: the 20th, 40th, 60th and 80th percentiles over all
- * cities, so each band holds about a fifth of them whatever the budget.
+ * Where the cost bands split for a kind of cost (and budget), in EUR: the 20th, 40th, 60th and 80th percentiles over
+ * all cities, so each band holds about a fifth of them.
  */
-function costSplits(budget: Budget): number[] {
-  let splits = percentiles.get(budget)
+function costSplits(kind: CostKind, budget: Budget): number[] {
+  const key = `${kind}:${budget}`
+  let splits = percentiles.get(key)
   if (!splits) {
-    const days = Object.keys(ds.cities).map((id) => dailyCost(ds, id, budget)).filter((d) => d > 0).sort((a, b) => a - b)
+    const days = Object.keys(ds.cities).map((id) => costOf(ds, id, kind, budget)).filter((d) => d > 0).sort((a, b) => a - b)
     splits = [0.2, 0.4, 0.6, 0.8].map((p) => days[Math.floor((days.length - 1) * p)])
-    percentiles.set(budget, splits)
+    percentiles.set(key, splits)
   }
   return splits
 }
 
-/** The cost bands for a budget, with the splits rounded to two digits in the display currency (e.g. €26, NT$910). */
-export function costScale(budget: Budget, currency: string) {
+/**
+ * The bands for a kind of cost, with the splits rounded to two digits in the display currency (e.g. €26, NT$910;
+ * small amounts keep their cents, e.g. €2.50).
+ */
+export function costScale(kind: CostKind, budget: Budget, currency: string) {
   const rate = (currency === 'EUR' ? 1 : ds.fx.rates[currency]) || 1
-  const splits = costSplits(budget)
+  const splits = costSplits(kind, budget)
     .map((eur) => Number((eur * rate).toPrecision(2)) / rate)
     .filter((s, i, all) => i === 0 || s > all[i - 1])
   const colorOf = (band: number) => levelColor(5 - (band * 4) / splits.length)
+  const precise = splits[0] * rate < 10
+  const fmt = (eur: number) => money(eur, currency, precise)
   // "€26–35": the currency symbol only once.
-  const amount = (eur: number) => money(eur, currency).replace(/^[^\d]+/, '')
+  const amount = (eur: number) => fmt(eur).replace(/^[^\d]+/, '')
   return {
-    /** Colour of a daily cost in EUR: green for the cheapest fifth of cities, red for the dearest. */
+    /** Colour of a cost in EUR: green for the cheapest fifth of cities, red for the dearest. */
     color: (eur: number) => colorOf(splits.filter((s) => eur >= s).length),
     legend: [
-      { color: colorOf(0), label: `<${money(splits[0], currency)}` },
-      ...splits.slice(1).map((s, i) => ({ color: colorOf(i + 1), label: `${money(splits[i], currency)}–${amount(s)}` })),
-      { color: colorOf(splits.length), label: `${money(splits.at(-1)!, currency)}+` },
+      { color: colorOf(0), label: `<${fmt(splits[0])}` },
+      ...splits.slice(1).map((s, i) => ({ color: colorOf(i + 1), label: `${fmt(splits[i])}–${amount(s)}` })),
+      { color: colorOf(splits.length), label: `${fmt(splits.at(-1)!)}+` },
     ] as LegendItem[],
   }
 }

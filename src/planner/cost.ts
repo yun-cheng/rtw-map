@@ -74,6 +74,30 @@ export function dailyCost(ds: Dataset, cityId: string, budget: Budget): number {
   }
 }
 
+/** The kinds of cost the map's Cost view can show. */
+export type CostKind = 'day' | 'dorm' | 'private' | 'meal' | 'groceries' | 'transport'
+export const COST_KINDS: CostKind[] = ['day', 'dorm', 'private', 'meal', 'groceries', 'transport']
+
+/**
+ * One kind of cost in a city, in EUR: a day on the budget (dailyCost), a night in a dorm or a private room, a cheap
+ * meal, a day of groceries or a day of local transport. Beds and meals follow the city's cost factor; groceries and
+ * transport are national. 0 without cost data.
+ */
+export function costOf(ds: Dataset, cityId: string, kind: CostKind, budget: Budget): number {
+  if (kind === 'day') return dailyCost(ds, cityId, budget)
+  const city = ds.cities[cityId]
+  const c = costProfile(ds, city.iso2)?.profile
+  if (!c) return 0
+  const f = city.costFactor
+  switch (kind) {
+    case 'dorm': return c.dormBed * f
+    case 'private': return c.privateRoom * f
+    case 'meal': return c.mealCheap * f
+    case 'groceries': return groceryDay(c)
+    case 'transport': return c.localTransportDay
+  }
+}
+
 /**
  * How our hand-entered costs compare with what the national price level suggests (1.0 = in line).
  * Used to flag estimates that look too high or too low.

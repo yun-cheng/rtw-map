@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { airBand, dailyCost } from '../planner'
+import { COST_KINDS, airBand, costOf, dailyCost } from '../planner'
 import { airLegend, costScale } from './scales'
 
 describe('map legends', () => {
@@ -11,7 +11,7 @@ describe('map legends', () => {
 
   it('splits daily costs into five bands of about a fifth of the cities each, in the display currency', () => {
     for (const budget of ['shoestring', 'comfort'] as const) {
-      const scale = costScale(budget, 'EUR')
+      const scale = costScale('day', budget, 'EUR')
       expect(scale.legend).toHaveLength(5)
       const counts = new Map<string, number>()
       for (const id of Object.keys(ds.cities)) {
@@ -22,10 +22,22 @@ describe('map legends', () => {
       for (const n of counts.values()) expect(n).toBeGreaterThan(Object.keys(ds.cities).length / 10)
     }
     // The splits move as cities are added, so only the format is fixed.
-    const labels = costScale('backpacker', 'EUR').legend.map((l) => l.label)
+    const labels = costScale('day', 'backpacker', 'EUR').legend.map((l) => l.label)
     expect(labels[0]).toMatch(/^<€\d+$/)
     expect(labels.slice(1, 4)).toEqual(labels.slice(1, 4).map((l) => l.match(/^€\d+–\d+$/)?.[0]))
     expect(labels[4]).toMatch(/^€\d+\+$/)
-    expect(costScale('backpacker', 'USD').legend[1].label).toMatch(/^\$\d+–\d+$/)
+    expect(costScale('day', 'backpacker', 'USD').legend[1].label).toMatch(/^\$\d+–\d+$/)
+  })
+
+  it('bands each kind of cost, keeping cents for small amounts', () => {
+    for (const kind of COST_KINDS) {
+      const scale = costScale(kind, 'backpacker', 'EUR')
+      expect(scale.legend.length, kind).toBeGreaterThanOrEqual(3)
+      expect(costOf(ds, 'tirana', kind, 'backpacker'), kind).toBeGreaterThan(0)
+    }
+    expect(costOf(ds, 'tirana', 'day', 'backpacker')).toBe(dailyCost(ds, 'tirana', 'backpacker'))
+    expect(costScale('transport', 'backpacker', 'EUR').legend[0].label).toMatch(/^<€\d+\.\d\d$/)
+    // Beds follow the city: Dubrovnik's dorm costs more than Zagreb's on the same national prices.
+    expect(costOf(ds, 'dubrovnik', 'dorm', 'backpacker')).toBeGreaterThan(costOf(ds, 'zagreb', 'dorm', 'backpacker'))
   })
 })

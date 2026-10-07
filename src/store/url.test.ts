@@ -57,6 +57,15 @@ describe('address bar state', () => {
     expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=nearby&kind=atm')
   })
 
+  it('keeps the kind of cost shown by the Cost layer (a day on the budget when absent)', () => {
+    readUrl('?layer=cost&kind=dorm')
+    expect(useTrip.getState().costKind).toBe('dorm')
+    expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=cost&kind=dorm')
+    readUrl('?layer=cost')
+    expect(useTrip.getState().costKind).toBe('day')
+    expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&layer=cost')
+  })
+
   it('opens a journey only if the plan has it, and ignores unknown values', () => {
     readUrl('?leg=1')
     expect(useTrip.getState().selected).toEqual({ type: 'leg', index: 1 })

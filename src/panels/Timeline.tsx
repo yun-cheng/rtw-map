@@ -14,11 +14,11 @@ const barTip = (t: TipContent): TipContent => ({ lines: t.lines ?? (t.sub ? [t.s
 const PX_PER_DAY = 12
 
 export function Timeline() {
-  const { plan, input, selected, select, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels } = useTrip()
+  const { plan, input, selected, select, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels } = useTrip()
   // Each stop in the map's colour for the current view, with the map's hover text.
   const metric = useMemo(
-    () => cityMetrics({ plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels }),
-    [plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels],
+    () => cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels }),
+    [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels],
   )
   // The map-style hover box for the bar under the pointer.
   const [tip, setTip] = useState<Tip | null>(null)

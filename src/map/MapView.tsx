@@ -87,7 +87,7 @@ export function MapView() {
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -292,11 +292,11 @@ export function MapView() {
       map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
     }
 
-    const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, weatherBy, currency, tempUnit, tempFeels })
+    const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels })
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels])
+  }, [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).

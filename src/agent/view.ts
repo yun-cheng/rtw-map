@@ -3,15 +3,16 @@
 // the message box; the user can leave any of them out. The assistant gets a short overview of each shared item with
 // its message; for the values shown it calls get_shared_view (tools.ts), which only returns the shared items.
 import { dataset as ds } from '../data/dataset'
-import { likelyMonth, stayMonth } from '../planner'
+import { likelyMonth, stayMonth, type CostKind } from '../planner'
 import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
 import { MONTHS, shortDate } from '../ui/format'
+import { COST_LABELS } from '../map/scales'
 
 /** What a view item points at, for get_shared_view. */
 export type ViewRef =
   | { kind: 'city'; id: string; tab: CityTab }
   | { kind: 'journey'; from: string; to: string; index: number }
-  | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; weatherBy?: 'high' | 'low' }
+  | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; costKind?: CostKind; weatherBy?: 'high' | 'low' }
 
 export type ViewItem = {
   /** Changes when the view changes, so a chip the user removed comes back for something new. */
@@ -48,11 +49,15 @@ const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
   schengen: { name: 'Schengen', about: 'which countries are in the Schengen area' },
 }
 const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
+const COST_NAMES: Record<CostKind, string> = {
+  day: 'daily cost for their budget', dorm: 'a night in a hostel dorm', private: 'a night in a private room', meal: 'a cheap meal',
+  groceries: 'a day of groceries to cook for themselves', transport: 'a day of local transport',
+}
 const MONTH_NAMES = MONTHS.map((_, i) => new Date(2000, i).toLocaleString('en', { month: 'long' }))
 
 /** The parts of the current view worth sharing: the open city or journey, and the map view (Route only with a plan). */
 export function viewItems(): ViewItem[] {
-  const { selected, cityTab, layer, layerMonth, nearbyKind, weatherBy, routeBy, plan, input } = useTrip.getState()
+  const { selected, cityTab, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, plan, input } = useTrip.getState()
   const items: ViewItem[] = []
 
   if (selected?.type === 'city' && ds.cities[selected.id]) {
@@ -86,13 +91,15 @@ export function viewItems(): ViewItem[] {
       ? { name: 'Weather (lows)', about: 'average daily low, how the nights feel (the number on each stop), and share of rainy days' }
       : layer === 'none' && routeBy === 'nights'
         ? { ...LAYER_NAMES.none, about: LAYER_NAMES.none.about.replace('numbered by the trip day they arrive', 'numbered by the nights there') }
-        : LAYER_NAMES[layer]
+        : layer === 'cost'
+          ? { ...LAYER_NAMES.cost, about: `${COST_NAMES[costKind]}, in five bands of about a fifth of all cities each` }
+          : LAYER_NAMES[layer]
     const monthly = layer === 'climate' || layer === 'air'
     const when = layer === 'nearby' ? ` (${NEARBY_NAMES[nearbyKind]})` : !monthly ? '' : layerMonth ? ` in ${MONTH_NAMES[layerMonth - 1]}` : ' for each place at the time of the trip'
     items.push({
-      key: `map:${layer}:${monthly ? layerMonth : ''}${layer === 'nearby' ? nearbyKind : ''}${layer === 'climate' ? weatherBy : ''}${layer === 'none' ? routeBy : ''}`,
-      ref: { kind: 'map', layer, month: monthly ? layerMonth : 0, ...(layer === 'nearby' && { nearbyKind }), ...(layer === 'climate' && { weatherBy }) },
-      label: `${l.name} map${monthly ? ` · ${layerMonth ? MONTHS[layerMonth - 1] : 'trip dates'}` : layer === 'nearby' ? ` · ${NEARBY_NAMES[nearbyKind]}` : ''}`,
+      key: `map:${layer}:${monthly ? layerMonth : ''}${layer === 'nearby' ? nearbyKind : ''}${layer === 'cost' ? costKind : ''}${layer === 'climate' ? weatherBy : ''}${layer === 'none' ? routeBy : ''}`,
+      ref: { kind: 'map', layer, month: monthly ? layerMonth : 0, ...(layer === 'nearby' && { nearbyKind }), ...(layer === 'cost' && { costKind }), ...(layer === 'climate' && { weatherBy }) },
+      label: `${l.name} map${monthly ? ` · ${layerMonth ? MONTHS[layerMonth - 1] : 'trip dates'}` : layer === 'nearby' ? ` · ${NEARBY_NAMES[nearbyKind]}` : layer === 'cost' && costKind !== 'day' ? ` · ${COST_LABELS[costKind].label}` : ''}`,
       text: layer === 'none'
         ? `The map shows the ${l.name} view: ${l.about}.`
         : `The map shows the ${l.name} view, colouring each stop and city by ${l.about}${when}.`,

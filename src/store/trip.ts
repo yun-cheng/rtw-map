@@ -5,7 +5,7 @@ import { testCaseInput } from '../data/testCase'
 import type { TempUnit } from '../ui/format'
 import {
   DEFAULT_PREFS, addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize, stylePrefs, withPrefs,
-  type Budget, type Plan, type Stop, type TravelPrefs, type TripInput,
+  type Budget, type CostKind, type Plan, type Stop, type TravelPrefs, type TripInput,
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
@@ -52,6 +52,8 @@ type State = {
   layerMonth: number
   /** Kind of place shown by the Nearby layer. */
   nearbyKind: NearbyKind
+  /** Kind of cost shown by the Cost layer (a day on the budget by default). */
+  costKind: CostKind
   /** What the Weather layer colours by: the average daily high or low. */
   weatherBy: 'high' | 'low'
   /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
@@ -89,6 +91,7 @@ type State = {
   setLayer: (l: MapLayer) => void
   setLayerMonth: (m: number) => void
   setNearbyKind: (k: NearbyKind) => void
+  setCostKind: (k: CostKind) => void
   setRouteBy: (by: 'day' | 'nights') => void
   setWeatherBy: (by: 'high' | 'low') => void
   setPanel: (p: State['panel']) => void
@@ -175,6 +178,7 @@ export const useTrip = create<State>()(
         layer: 'none',
         layerMonth: 0,
         nearbyKind: 'pharmacy',
+        costKind: 'day',
         weatherBy: 'high',
         routeBy: 'day',
         panel: 'setup',
@@ -230,6 +234,7 @@ export const useTrip = create<State>()(
         setLayer: (layer) => set({ layer }),
         setLayerMonth: (layerMonth) => set({ layerMonth }),
         setNearbyKind: (nearbyKind) => set({ nearbyKind }),
+        setCostKind: (costKind) => set({ costKind }),
         setWeatherBy: (weatherBy) => set({ weatherBy }),
         setRouteBy: (routeBy) => set({ routeBy }),
         setPanel: (panel) => set({ panel }),

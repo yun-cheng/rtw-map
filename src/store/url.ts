@@ -4,6 +4,7 @@
 // weather and air layers show each place at the time of the trip).
 // The address is replaced, not pushed, so moving around doesn't fill the browser's history.
 import { dataset as ds } from '../data/dataset'
+import { COST_KINDS, type CostKind } from '../planner'
 import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
@@ -51,6 +52,7 @@ export function readUrl(search = window.location.search) {
   patch.layerMonth = Number.isInteger(month) && month >= 1 && month <= 12 ? month : 0
   const kind = q.get('kind') as NearbyKind
   if (NEARBY_KINDS.includes(kind)) patch.nearbyKind = kind
+  patch.costKind = COST_KINDS.includes(kind as CostKind) ? (kind as CostKind) : 'day'
   patch.weatherBy = q.get('temp') === 'low' ? 'low' : 'high'
   patch.routeBy = q.get('show') === 'nights' ? 'nights' : 'day'
 
@@ -69,6 +71,7 @@ export function buildSearch(s: ReturnType<typeof useTrip.getState>, view: MapVie
   if (s.layer !== 'none') q.set('layer', s.layer)
   if (MONTHLY.includes(s.layer) && s.layerMonth) q.set('month', String(s.layerMonth))
   if (s.layer === 'nearby') q.set('kind', s.nearbyKind)
+  if (s.layer === 'cost' && s.costKind !== 'day') q.set('kind', s.costKind)
   if (s.layer === 'climate' && s.weatherBy === 'low') q.set('temp', 'low')
   if (s.layer === 'none' && s.routeBy === 'nights') q.set('show', 'nights')
   if (view) q.set('map', formatMapView(view))
@@ -92,6 +95,6 @@ export function syncUrl() {
   readUrl()
   writeUrl()
   useTrip.subscribe((s, prev) => {
-    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl()
+    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.costKind !== prev.costKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl()
   })
 }

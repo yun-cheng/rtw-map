@@ -3,7 +3,7 @@
 import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
-  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costProfile, dailyCost, englishLevel,
+  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, englishLevel,
   groceryDay, likelyMonth, mobileInternet, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
@@ -433,7 +433,11 @@ function viewDetails(ref: ViewRef): ToolResult {
         const kind = ref.nearbyKind ?? 'pharmacy'
         return { [`${kind}_within_${ds.amenities.radiusKm}_km`]: nearby(ds, cityId)?.[kind] ?? 'no data', note: 'rough counts: map data misses places' }
       }
-      case 'cost': return { daily_cost_eur: Math.round(dailyCost(ds, cityId, input.budget)), budget: input.budget }
+      case 'cost': {
+        const kind = ref.costKind ?? 'day'
+        const eur = costOf(ds, cityId, kind, input.budget)
+        return kind === 'day' ? { daily_cost_eur: Math.round(eur), budget: input.budget } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
+      }
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
     }
   }
