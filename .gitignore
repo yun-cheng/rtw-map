@@ -25,7 +25,7 @@ dist-ssr
 .cache
 
 # Data lives in Cloudflare R2 (npm run data:pull / data:push), not in git
-data/
+/data/
 
 # Wrangler local state
 .wrangler/
