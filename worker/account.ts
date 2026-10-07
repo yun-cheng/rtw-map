@@ -2,7 +2,7 @@
 // (SQLite) and today's assistant usage. A Durable Object handles one request at a time, so nothing can race.
 // The rules are plain functions in limits.ts and trips.ts.
 import { DurableObject } from 'cloudflare:workers'
-import { canCall, current, spend, type Count } from './limits'
+import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
 type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number }
@@ -24,10 +24,10 @@ export class Account extends DurableObject {
     return this.count(day)
   }
 
-  /** Whether a model call of this request size may go out now (see canCall). */
-  async allowed(day: string, message: boolean, requestChars: number): Promise<{ ok: boolean; count: Count }> {
+  /** Whether a model call of this request size may go out now under this daily limit (see canCall). */
+  async allowed(day: string, message: boolean, requestChars: number, dailyUsd: number): Promise<{ ok: boolean; count: Count }> {
     const count = await this.count(day)
-    return { ok: canCall(count, message, requestChars), count }
+    return { ok: canCall(count, message, requestChars, dailyUsd), count }
   }
 
   /** Adds what a call cost, in USD. */
@@ -35,6 +35,16 @@ export class Account extends DurableObject {
     const next = spend(await this.count(day), usd)
     await this.ctx.storage.put('count', next)
     return next
+  }
+
+  // ---------------------------------------------------------------- account limits (on the "settings" instance only)
+
+  async getLimits(): Promise<AccountLimits> {
+    return (await this.ctx.storage.get<AccountLimits>('limits')) ?? {}
+  }
+
+  async setLimits(limits: AccountLimits): Promise<void> {
+    await this.ctx.storage.put('limits', limits)
   }
 
   // ---------------------------------------------------------------- trips

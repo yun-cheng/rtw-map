@@ -1,6 +1,7 @@
 // Cloudflare Worker for the site: serves the built app (dist/) as static files, and /api/* from worker/index.ts
 // (the trip assistant, which calls Gemini). Build first: npm run data:pull && npm run build
-// Secrets (not in this file): GEMINI_API_KEY and SESSION_SECRET, set with `wrangler secret put <name>`.
+// Secrets (not in this file): GEMINI_API_KEY, SESSION_SECRET and ADMIN_EMAILS (who may edit the assistant's
+// per-account limits, comma-separated), set with `wrangler secret put <name>`.
 // Local development: npm run dev:api (reads .env.local) next to npm run dev, which forwards /api to it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",

@@ -3,15 +3,45 @@
 import { create } from 'zustand'
 import { useTheme } from '../ui/theme'
 
-export type User = { sub: string; name: string; picture?: string }
-/** Today's assistant allowance in percent (`limit` is 100), counted in dollars on the server. */
-export type Usage = { used: number; limit: number; remaining: number; resetsAt: string }
+export type User = { sub: string; name: string; picture?: string; email?: string }
+/** Today's assistant allowance in percent (`limit` is 100), counted in dollars on the server; `multiple`: the
+ *  account's daily allowance as a multiple of the usual one (0 when the assistant is off for it). */
+export type Usage = { used: number; limit: number; remaining: number; resetsAt: string; multiple?: number }
+
+/** "5× the usual allowance" for an account with a different allowance; null for the usual one. */
+export function allowanceNote(usage: Usage | null): string | null {
+  const m = usage?.multiple
+  if (m === undefined || m === 1) return null
+  if (m === 0) return 'Assistant turned off for this account'
+  return `${Number.isInteger(m) ? m : m.toFixed(1)}× the usual allowance`
+}
+
+const seenKey = (sub: string) => `rtw-map-allowance:${sub}`
+
+/** The allowance multiple this browser last told the user about (1 if never). */
+export function seenMultiple(sub: string): number {
+  try {
+    return Number(localStorage.getItem(seenKey(sub))) || 1
+  } catch {
+    return 1
+  }
+}
+
+export function setSeenMultiple(sub: string, multiple: number) {
+  try {
+    localStorage.setItem(seenKey(sub), String(multiple))
+  } catch {
+    // Storage blocked: the notice may show again.
+  }
+}
 
 type AccountState = {
   loaded: boolean
   /** OAuth client ID for "Sign in with Google"; null when sign-in isn't set up on the server. */
   clientId: string | null
   user: User | null
+  /** May edit other accounts' daily limits. */
+  admin: boolean
   usage: Usage | null
   error: string | null
   load: () => Promise<void>
@@ -28,6 +58,7 @@ export const useAccount = create<AccountState>()((set) => ({
   loaded: false,
   clientId: null,
   user: null,
+  admin: false,
   usage: null,
   error: null,
 
@@ -35,7 +66,7 @@ export const useAccount = create<AccountState>()((set) => ({
     try {
       const res = await fetch('/api/session')
       const data = await res.json()
-      set({ loaded: true, clientId: data.clientId || null, user: data.user, usage: data.usage, error: null })
+      set({ loaded: true, clientId: data.clientId || null, user: data.user, admin: data.admin === true, usage: data.usage, error: null })
     } catch {
       set({ loaded: true, error: 'The assistant is not reachable right now.' })
     }
@@ -45,17 +76,17 @@ export const useAccount = create<AccountState>()((set) => ({
     const res = await post('/api/auth/google', { credential })
     const data = await res.json().catch(() => null)
     if (!res.ok || !data?.user) return set({ error: data?.error ?? 'Sign-in failed: please try again.' })
-    set({ user: data.user, usage: data.usage, error: null })
+    set({ user: data.user, admin: data.admin === true, usage: data.usage, error: null })
   },
 
   signOut: async () => {
     await post('/api/auth/logout').catch(() => null)
     window.google?.accounts.id.disableAutoSelect()
-    set({ user: null, usage: null })
+    set({ user: null, admin: false, usage: null })
   },
 
   setUsage: (usage) => set({ usage }),
-  signedOut: () => set({ user: null, usage: null }),
+  signedOut: () => set({ user: null, admin: false, usage: null }),
 }))
 
 // ---------------------------------------------------------------- "Sign in with Google" (Google Identity Services)

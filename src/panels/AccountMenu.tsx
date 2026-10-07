@@ -1,11 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
-import { renderGoogleButton, useAccount } from '../agent/account'
+import { allowanceNote, renderGoogleButton, useAccount } from '../agent/account'
 import { useTheme } from '../ui/theme'
+import { AccountLimits } from './AccountLimits'
 
 /** Top-right account control: "Sign in" when signed out; the user's picture with a menu (name, usage, sign out) when signed in. */
 export function AccountMenu() {
-  const { loaded, clientId, user, usage, load, signOut } = useAccount()
+  const { loaded, clientId, user, admin, usage, load, signOut } = useAccount()
   const [open, setOpen] = useState(false)
+  const [limits, setLimits] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLDivElement>(null)
   const theme = useTheme((s) => s.theme)
@@ -38,6 +40,7 @@ export function AccountMenu() {
 
   return (
     <div key="menu" ref={box} className="relative">
+      {limits && <AccountLimits onClose={() => setLimits(false)} />}
       <button
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"
@@ -57,7 +60,20 @@ export function AccountMenu() {
           {usage && (
             <p className="mt-2 text-[12px]">
               Assistant: <b>{usage.remaining}%</b> of today's use left
+              {allowanceNote(usage) && <span className="block text-muted">{allowanceNote(usage)}</span>}
             </p>
+          )}
+          {admin && (
+            <button
+              role="menuitem"
+              onClick={() => {
+                setOpen(false)
+                setLimits(true)
+              }}
+              className="mt-3 w-full rounded-md border border-line px-2 py-1.5 text-left font-medium hover:bg-canvas"
+            >
+              Assistant limits…
+            </button>
           )}
           <button
             role="menuitem"

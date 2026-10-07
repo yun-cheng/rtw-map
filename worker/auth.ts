@@ -1,7 +1,9 @@
 // Sign-in for the trip assistant: verifies the ID token from "Sign in with Google" and keeps the user signed in with
 // our own signed session cookie (HMAC-SHA256), so Google is only asked once per 30 days.
 
-export type User = { sub: string; name: string; picture?: string }
+/** `email`: only when Google says it's verified; kept in the session cookie (not stored) to look up the account's
+ *  daily limit and admin rights. */
+export type User = { sub: string; name: string; picture?: string; email?: string }
 
 const SESSION_COOKIE = 'rtw_session'
 const SESSION_DAYS = 30
@@ -32,7 +34,7 @@ export async function verifyGoogleIdToken(token: string, clientId: string, fetch
   const parts = token.split('.')
   if (parts.length !== 3) return null
   let header: { alg?: string; kid?: string }
-  let claims: { iss?: string; aud?: string; exp?: number; sub?: string; name?: string; picture?: string; email_verified?: boolean }
+  let claims: { iss?: string; aud?: string; exp?: number; sub?: string; name?: string; picture?: string; email?: string; email_verified?: boolean }
   try {
     header = decodeJson(parts[0])
     claims = decodeJson(parts[1])
@@ -46,7 +48,8 @@ export async function verifyGoogleIdToken(token: string, clientId: string, fetch
   const key = await crypto.subtle.importKey('jwk', { kty: jwk.kty, n: jwk.n, e: jwk.e, alg: 'RS256', ext: true }, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify'])
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, fromB64url(parts[2]), enc.encode(`${parts[0]}.${parts[1]}`))
   if (!ok) return null
-  return { sub: claims.sub, name: claims.name ?? 'Traveller', picture: claims.picture }
+  const email = claims.email && claims.email_verified === true ? claims.email.toLowerCase() : undefined
+  return { sub: claims.sub, name: claims.name ?? 'Traveller', picture: claims.picture, ...(email && { email }) }
 }
 
 // ---------------------------------------------------------------- our session
@@ -64,8 +67,8 @@ export async function verifySession(token: string, secret: string, now = Date.no
   if (!payload || !sig) return null
   try {
     if (!(await crypto.subtle.verify('HMAC', await hmacKey(secret), fromB64url(sig), enc.encode(payload)))) return null
-    const { sub, name, picture, exp } = decodeJson(payload) as User & { exp: number }
-    return exp > now && sub ? { sub, name, picture } : null
+    const { sub, name, picture, email, exp } = decodeJson(payload) as User & { exp: number }
+    return exp > now && sub ? { sub, name, picture, ...(email && { email }) } : null
   } catch {
     return null
   }

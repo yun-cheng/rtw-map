@@ -117,9 +117,9 @@ async function callModel(contents: Content[], context: string, think: boolean, f
       body: JSON.stringify({ contents, context, think, ...(final && { final }) }),
     })
     data = await res.json().catch(() => null)
-    // Too many calls this minute (or Gemini busy) during a long run: wait and try again. Out of today's allowance:
-    // stop.
-    const outForToday = /today/.test(data?.error ?? '')
+    // Too many calls this minute (or Gemini busy) during a long run: wait and try again. Out of today's allowance,
+    // or the assistant turned off for the account: stop.
+    const outForToday = /today|turned off/.test(data?.error ?? '')
     if (res.status !== 429 || outForToday || attempt >= RETRY_WAITS.length) break
     await new Promise((r) => setTimeout(r, RETRY_WAITS[attempt]))
   }

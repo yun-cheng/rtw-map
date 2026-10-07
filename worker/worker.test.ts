@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { isNewMessage } from './chat'
-import { canCall, costOf, current, DAILY_USD, MESSAGE_RESERVE_USD, resetsAt, spend, today, usageOf } from './limits'
+import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, today, usageOf } from './limits'
 import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -28,6 +28,10 @@ describe('Google sign-in', () => {
   it('accepts a valid ID token for our client', async () => {
     const g = await fakeGoogle()
     expect(await verifyGoogleIdToken(await g.issue(claims), 'client-1', g.fetcher, now)).toEqual({ sub: '1234', name: 'Zeke', picture: undefined })
+    // The email is kept only when Google has verified it (keys are cached, so this uses the same fake Google).
+    const withEmail = { ...claims, email: 'Zeke@Example.com', email_verified: true }
+    expect(await verifyGoogleIdToken(await g.issue(withEmail), 'client-1', g.fetcher, now)).toMatchObject({ email: 'zeke@example.com' })
+    expect(await verifyGoogleIdToken(await g.issue({ ...withEmail, email_verified: false }), 'client-1', g.fetcher, now)).not.toHaveProperty('email')
   })
 
   it('rejects tokens for another app, expired tokens, forged signatures and unknown keys', async () => {
@@ -48,6 +52,7 @@ describe('session cookie', () => {
   it('round-trips a signed session and rejects tampering, a wrong secret and expiry', async () => {
     const token = await signSession(user, 'secret-a')
     expect(await verifySession(token, 'secret-a')).toEqual({ sub: '1234', name: 'Zeke', picture: undefined })
+    expect(await verifySession(await signSession({ ...user, email: 'zeke@example.com' }, 'secret-a'), 'secret-a')).toMatchObject({ email: 'zeke@example.com' })
     expect(await verifySession(token, 'secret-b')).toBeNull()
     const [, sig] = token.split('.')
     expect(await verifySession(`${enc({ ...user, sub: '9999', exp: Date.now() + 1e9 })}.${sig}`, 'secret-a')).toBeNull()
@@ -98,6 +103,27 @@ describe('daily limits', () => {
     // A new day starts at zero; older records (messages or tokens) too.
     expect(current(c, '2026-10-07')).toEqual({ day: '2026-10-07', usd: 0 })
     expect(current({ day: '2026-10-06', tokens: 500 } as never, '2026-10-06')).toEqual({ day: '2026-10-06', usd: 0 })
+  })
+
+  it('gives listed accounts their own daily limit', () => {
+    const limits = parseAccountLimits({ limits: [{ email: ' Friend@Example.com ', usd: 5 }, { email: 'off@example.com', usd: 0 }] })
+    expect(limits).toEqual({ 'friend@example.com': 5, 'off@example.com': 0 })
+    const l = limits as Record<string, number>
+    expect(dailyUsdFor(l, 'friend@example.com')).toBe(5)
+    expect(dailyUsdFor(l, 'someone@example.com')).toBe(DAILY_USD)
+    expect(dailyUsdFor(l, undefined)).toBe(DAILY_USD)
+    // $5: plenty left after $2; $0: nothing at all.
+    expect(canCall({ day: '2026-10-06', usd: 2 }, true, 100_000, 5)).toBe(true)
+    expect(usageOf({ day: 'd', usd: 0 }, 0)).toMatchObject({ remaining: 0, multiple: 0 })
+    expect(usageOf({ day: 'd', usd: 0 }, 5).multiple).toBe(5)
+    expect(usageOf({ day: 'd', usd: 0 }).multiple).toBe(1)
+    expect(usageOf({ day: 'd', usd: 0 }, 0.01).multiple).toBe(0.1)
+    expect(canCall({ day: '2026-10-06', usd: 0 }, true, 1000, 0)).toBe(false)
+    // Bad lists are refused with a reason.
+    expect(parseAccountLimits({ limits: [{ email: 'not-an-email', usd: 1 }] })).toMatch(/Not an email/)
+    expect(parseAccountLimits({ limits: [{ email: 'a@b.co', usd: 500 }] })).toMatch(/\$0–50/)
+    expect(parseAccountLimits({ limits: [{ email: 'a@b.co', usd: 1 }, { email: 'A@b.co', usd: 2 }] })).toMatch(/twice/)
+    expect(parseAccountLimits(null)).toBeTypeOf('string')
   })
 
   it('shows the percent left for new messages', () => {

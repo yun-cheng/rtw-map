@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
-import { renderGoogleButton, useAccount, type Usage } from '../agent/account'
+import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { useChat, type ChatMessage } from '../agent/chat'
 import { viewItems, type ViewItem } from '../agent/view'
 import { useTrip } from '../store/trip'
@@ -103,7 +103,7 @@ function SignIn() {
     <div className="px-4 py-4 text-[13px]">
       <p className="font-medium">Plan and change your trip by chatting with the assistant.</p>
       <p className="mt-1 text-muted">It can add or remove stops, change nights, dates, pace or budget, and look up weather, costs, visas and transport from the app's data. Everything else in the app works without signing in.</p>
-      <p className="mt-3 text-muted">Sign in with Google to use it: each account gets a free daily allowance. We keep only an anonymous account ID, how much of it you've used today, and the trips you save.</p>
+      <p className="mt-3 text-muted">Sign in with Google to use it: each account gets a free daily allowance. We keep only an anonymous account ID, how much of it you've used today, and the trips you save; your email is only checked against the list of accounts with a different limit, never saved.</p>
       {clientId ? <div ref={button} className="mt-3 min-h-[44px]" /> : <p className="mt-3 rounded-md bg-warn-soft px-2 py-1.5 text-warn">Sign-in isn't set up yet.</p>}
       {failed && <p className="mt-2 text-danger">Couldn't load Google sign-in. Check your connection or ad blocker.</p>}
       {error && <p className="mt-2 text-danger">{error}</p>}
@@ -119,6 +119,7 @@ function UsageLine({ usage }: { usage: Usage }) {
       title={`Counted by how much the assistant reads and writes: a quick question uses little, Plan with AI or Think harder much more. Resets at ${resetTime(usage.resetsAt)} (midnight UTC).`}
     >
       {usage.remaining}% of today's assistant use left
+      {allowanceNote(usage) && usage.multiple !== 0 && <> · {allowanceNote(usage)}</>}
     </span>
   )
 }
@@ -133,7 +134,22 @@ export function AssistantPanel() {
 /** Chat with the trip assistant (Gemini), which can answer questions and change the trip; every change can be undone. */
 function Chat() {
   const usage = useAccount((s) => s.usage)
+  const sub = useAccount((s) => s.user?.sub)
   const outOfAllowance = usage?.remaining === 0
+  const turnedOff = usage?.multiple === 0
+  // Tell the user once when their account's allowance was raised (lowering it needs no notice).
+  const multiple = usage?.multiple ?? 1
+  const [seen, setSeen] = useState(() => (sub ? seenMultiple(sub) : 1))
+  useEffect(() => {
+    if (sub) setSeen(seenMultiple(sub))
+  }, [sub])
+  useEffect(() => {
+    if (sub && multiple < seen) {
+      setSeenMultiple(sub, multiple)
+      setSeen(multiple)
+    }
+  }, [sub, multiple, seen])
+  const raised = !!sub && multiple > 1 && multiple > seen
   const { messages, busy, think, send, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const end = useRef<HTMLDivElement>(null)
@@ -157,6 +173,20 @@ function Chat() {
   return (
     <div className="flex h-full flex-col">
       {usage && <div className="border-b border-line px-4 py-1.5 text-right text-[12px]"><UsageLine usage={usage} /></div>}
+      {raised && (
+        <div className="flex items-start gap-2 border-b border-line bg-accent-soft px-4 py-2 text-[12px]">
+          <p className="flex-1">🎉 Your daily assistant allowance was raised to <b>{allowanceNote(usage)}</b>: more room for Plan with AI and long changes.</p>
+          <button
+            onClick={() => {
+              setSeenMultiple(sub!, multiple)
+              setSeen(multiple)
+            }}
+            className="text-muted hover:text-ink" aria-label="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
+      )}
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {messages.length === 0 ? (
           <div className="text-[13px]">
@@ -195,7 +225,9 @@ function Chat() {
       <div className="border-t border-line px-3 py-2">
         {outOfAllowance && usage && (
           <p className="mb-1.5 rounded-md bg-warn-soft px-2 py-1.5 text-[12px] text-warn">
-            You've used today's assistant allowance. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.
+            {turnedOff
+              ? <>The assistant is turned off for this account. You can still edit the trip by hand.</>
+              : <>You've used today's assistant allowance. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.</>}
           </p>
         )}
         {view.length > 0 && (
