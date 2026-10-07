@@ -98,7 +98,7 @@ npm run data:refresh   # fast-changing data only; also runs weekly (Mondays) via
 
 To add a city: add a row to `data/seed/cities.csv` (and connections to `data/seed/connections.csv`), then run `npm run data:build`, then `npm run data:push`.
 
-To review the seed data as tables, run `npm run dev` and open `/data.html` (development only, never deployed). Each seed file is a table you can sort, filter and search. It marks links to unknown cities or countries, repeated rows, values out of order (e.g. `daysMin` above `daysIdeal`) and countries or cities with no row. It updates as you edit the files.
+To review the seed data as tables, run `npm run dev` and open `/data.html` (development only, never deployed). Each seed file is a table you can sort, filter and search. It marks links to unknown cities or countries, repeated rows, values out of order (e.g. `daysMin` above `daysIdeal`) and countries or cities with no row. Money columns show the unit after their name; **Prices: As entered | All in …** switches the costs, route, taxi and rental prices to the display currency set in the app. It updates as you edit the files.
 
 ### Publishing
 

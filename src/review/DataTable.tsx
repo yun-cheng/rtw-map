@@ -39,7 +39,8 @@ function optionsFor(values: Value[], kind: Kind): { value: string; label: string
   }
 }
 
-export function DataTable({ table, wrap, onlyIssues }: { table: Table; wrap: boolean; onlyIssues: boolean }) {
+/** `unitOf`: the currency to show after a money column's name, if any. */
+export function DataTable({ table, wrap, onlyIssues, unitOf }: { table: Table; wrap: boolean; onlyIssues: boolean; unitOf?: (col: string) => string | undefined }) {
   const [sorting, setSorting] = useState<SortingState>([])
   const [filters, setFilters] = useState<ColumnFiltersState>([])
   const [search, setSearch] = useState('')
@@ -104,6 +105,7 @@ export function DataTable({ table, wrap, onlyIssues }: { table: Table; wrap: boo
                 <th key={h.id} className={`border-b border-line px-2.5 pt-2 pb-1 text-left font-semibold whitespace-nowrap ${n === 0 ? 'sticky left-0 z-10 bg-panel' : ''}`}>
                   <button onClick={h.column.getToggleSortingHandler()} className="flex items-center gap-1 hover:text-accent" title="Sort (Shift-click to add a second sort)">
                     {flexRender(h.column.columnDef.header, h.getContext())}
+                    {unitOf?.(h.column.id) && <span className="text-[11px] font-normal text-muted">{unitOf(h.column.id)}</span>}
                     <span className="w-3 text-accent">{{ asc: '↑', desc: '↓' }[h.column.getIsSorted() as string] ?? ''}</span>
                   </button>
                 </th>

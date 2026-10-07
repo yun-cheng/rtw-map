@@ -1,10 +1,19 @@
 import { useEffect, useState } from 'react'
 import { DataTable } from './DataTable'
-import { SOURCES, type Source, type Table } from './sources'
+import { SOURCES, inCurrency, type Source, type Table } from './sources'
 
 const problemsIn = (t: Table) => t.issues.filter((x) => Object.keys(x).length).length + t.missing.length
 const problemsOf = (s: Source) => Object.values(s.tables).reduce((n, t) => n + problemsIn(t), 0)
 const rowsOf = (s: Source) => Object.values(s.tables).reduce((n, t) => n + t.rows.length, 0)
+
+/** The display currency picked in the app (its saved settings in this browser); US dollars if none. */
+function appCurrency(): string {
+  try {
+    return JSON.parse(localStorage.getItem('rtw-map-trip') ?? '{}')?.state?.currency ?? 'USD'
+  } catch {
+    return 'USD'
+  }
+}
 
 /** "#local-transport/cities" → the file and its table; the first of each when missing. */
 function fromHash(): { source: Source; part: string } {
@@ -21,15 +30,26 @@ export function ReviewApp() {
   const [at, setAt] = useState(fromHash)
   const [wrap, setWrap] = useState(false)
   const [onlyIssues, setOnlyIssues] = useState(false)
+  // Money columns as entered, or all in the app's display currency.
+  const [converted, setConverted] = useState(false)
+  const [currency, setCurrency] = useState(appCurrency)
   useEffect(() => {
     const onHash = () => setAt(fromHash())
+    // Follows a currency change made in the app in another tab.
+    const onStorage = () => setCurrency(appCurrency())
     addEventListener('hashchange', onHash)
-    return () => removeEventListener('hashchange', onHash)
+    addEventListener('storage', onStorage)
+    return () => {
+      removeEventListener('hashchange', onHash)
+      removeEventListener('storage', onStorage)
+    }
   }, [])
   // Re-read after the files change (hot reload brings new tables).
   const source = SOURCES.find((s) => s.id === at.source.id) ?? SOURCES[0]
   const parts = Object.entries(source.tables)
   const table = source.tables[at.part] ?? parts[0][1]
+  const inOne = inCurrency(table, currency)
+  const shown = converted && inOne ? inOne : table
   const problems = problemsIn(table)
   const go = (s: Source, part = Object.keys(s.tables)[0]) => {
     history.pushState(null, '', `#${s.id}/${part}`)
@@ -72,7 +92,19 @@ export function ReviewApp() {
         )}
         <code className="text-[12px] text-muted">{source.file}</code>
         {source.updatedAt && <span className="text-[12px] text-muted">updated {source.updatedAt}</span>}
-        <label className="ml-auto flex items-center gap-1.5">
+        {inOne && (
+          <div className="ml-auto flex items-center gap-1.5">
+            <span className="text-muted">Prices</span>
+            <div className="flex rounded-md bg-canvas p-0.5 ring-1 ring-line" title={`${currency} is the display currency set in the app`}>
+              {[false, true].map((on) => (
+                <button key={String(on)} onClick={() => setConverted(on)} className={`rounded px-2.5 py-0.5 ${converted === on ? 'bg-panel font-medium shadow-sm' : 'text-muted hover:text-ink'}`}>
+                  {on ? `All in ${currency}` : 'As entered'}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        <label className={`${inOne ? '' : 'ml-auto'} flex items-center gap-1.5`}>
           <input type="checkbox" checked={wrap} onChange={(e) => setWrap(e.target.checked)} className="accent-accent" /> Wrap long text
         </label>
         <label className={`flex items-center gap-1.5 ${problems ? '' : 'text-muted'}`}>
@@ -87,7 +119,10 @@ export function ReviewApp() {
           No row for {table.missing.length}: {table.missing.join(', ')}
         </p>
       )}
-      <DataTable key={`${source.id}/${at.part}`} table={table} wrap={wrap} onlyIssues={onlyIssues} />
+      <DataTable key={`${source.id}/${at.part}`} table={shown} wrap={wrap} onlyIssues={onlyIssues} unitOf={(col) => {
+        const kind = table.money?.[col]
+        return converted && inOne && kind ? currency : kind === 'EUR' ? 'EUR' : undefined
+      }} />
     </div>
   )
 }

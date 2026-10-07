@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { matches, textOf } from './cells'
-import { SOURCES, table } from './sources'
+import { SOURCES, inCurrency, table } from './sources'
 
 describe('data review cells', () => {
   it('shows values as text', () => {
@@ -44,5 +44,15 @@ describe('data review checks', () => {
 
   it('reads every seed file', () => {
     for (const s of SOURCES) for (const tb of Object.values(s.tables)) expect(tb.rows.length, `${s.id} ${tb.label}`).toBeGreaterThan(0)
+  })
+
+  it('shows money columns in one currency', () => {
+    const costs = SOURCES.find((s) => s.id === 'costs')!.tables.all
+    const jp = costs.rows.findIndex((r) => r.iso2 === 'JP')
+    const eur = inCurrency(costs, 'EUR')!
+    expect(eur.rows[jp].currency).toBe('EUR')
+    expect(eur.rows[jp].water15).toBeLessThan(costs.rows[jp].water15 as number)
+    expect(eur.rows[jp]['vs price level']).toBe(costs.rows[jp]['vs price level'])
+    expect(inCurrency(SOURCES.find((s) => s.id === 'cities')!.tables.all, 'USD')).toBeNull()
   })
 })

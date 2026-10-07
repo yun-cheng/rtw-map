@@ -35,6 +35,8 @@ export type Table = {
   links: Record<string, 'city' | 'country'>
   /** Countries or cities that should have a row here but don't. */
   missing: string[]
+  /** Money columns: in EUR, or in the row's own `currency`. */
+  money?: Record<string, 'EUR' | 'row'>
 }
 
 export type Source = { id: string; label: string; file: string; about?: string; updatedAt?: string; notes?: string[]; tables: Record<string, Table> }
@@ -120,6 +122,7 @@ export function table(label: string, data: { columns?: string[]; rows: Row[]; wh
   rule?: Rule
   /** Every one of these should have a row (matched on `key`). */
   expect?: string[]
+  money?: Table['money']
 } = {}): Table {
   const { rows, where } = data
   const links = opts.links ?? {}
@@ -144,7 +147,7 @@ export function table(label: string, data: { columns?: string[]; rows: Row[]; wh
   })
   const present = new Set(keyOf ? rows.map(keyOf) : [])
   return {
-    label, rows, where, issues, links, lines: where[0]?.startsWith('line ') ?? false,
+    label, rows, where, issues, links, lines: where[0]?.startsWith('line ') ?? false, money: opts.money,
     columns: data.columns ?? columnsOf(rows),
     missing: (opts.expect ?? []).filter((k) => !present.has(k)),
   }
@@ -166,10 +169,10 @@ const both = (...rules: Rule[]): Rule => (r) => Object.assign({}, ...rules.map((
 
 const csvLines = (n: number) => Array.from({ length: n }, (_, i) => `line ${i + 2}`)
 
-function keyedSource(id: string, label: string, json: unknown, opts: { cities?: string; notes?: string[] }): Source {
+function keyedSource(id: string, label: string, json: unknown, opts: { cities?: string; notes?: string[]; money?: Table['money'] }): Source {
   const j = json as Meta & { countries?: Record<string, object>; cities?: Record<string, object> }
   const tables: Record<string, Table> = {}
-  if (j.countries) tables.countries = table('Countries', keyedRows(j.countries, 'iso2'), { key: 'iso2', links: { iso2: 'country' }, expect: countryIds })
+  if (j.countries) tables.countries = table('Countries', keyedRows(j.countries, 'iso2'), { key: 'iso2', links: { iso2: 'country' }, expect: countryIds, money: opts.money })
   if (j.cities) tables.cities = table('Cities', keyedRows(j.cities, 'city'), {
     key: 'city', links: { city: 'city' }, expect: opts.cities === 'all' ? cityIds : undefined,
   })
@@ -192,7 +195,7 @@ export const SOURCES: Source[] = [
     about: 'Ground and air routes between cities: minutes, price range (EUR) and how often.',
     tables: {
       all: table('Routes', { ...connections, where: csvLines(connections.rows.length) }, {
-        key: (r) => `${r.from}|${r.to}|${r.mode}`, links: { from: 'city', to: 'city' },
+        key: (r) => `${r.from}|${r.to}|${r.mode}`, links: { from: 'city', to: 'city' }, money: { priceMin: 'EUR', priceMax: 'EUR' },
         rule: both(required(['from', 'to', 'mode', 'durationMin']), ordered([['priceMin', 'priceMax']]), (r): Record<string, string> => (r.from !== null && r.from === r.to ? { to: 'Same as "from"' } : {})),
       }),
     },
@@ -203,6 +206,7 @@ export const SOURCES: Source[] = [
     tables: {
       all: table('Costs', { ...costs, where: csvLines(costs.rows.length) }, {
         key: 'iso2', links: { iso2: 'country' }, expect: countryIds,
+        money: Object.fromEntries(['dormBed', 'privateRoom', 'mealCheap', 'mealMid', 'localTransportDay', ...GROCERY_KEYS, 'groceryDay'].map((c) => [c, 'row' as const])),
         rule: both(required(['currency', ...GROCERY_KEYS]), ordered([['dormBed', 'privateRoom'], ['mealCheap', 'mealMid']]), (r): Record<string, string> => {
           const out: Record<string, string> = {}
           if (r.currency !== null && !(fxJson.rates as Record<string, number>)[String(r.currency)]) out.currency = `No exchange rate for ${r.currency} in fx.json`
@@ -220,7 +224,9 @@ export const SOURCES: Source[] = [
     },
   },
   keyedSource('health', 'Health', healthJson, {}),
-  keyedSource('local-transport', 'Local transport', localTransportJson, { cities: 'all' }),
+  keyedSource('local-transport', 'Local transport', localTransportJson, {
+    cities: 'all', money: { 'taxi.flagFall': 'EUR', 'taxi.perKm': 'EUR', 'rentals.carDay': 'EUR', 'rentals.motoDay': 'EUR' },
+  }),
   keyedSource('payments', 'Payments', paymentsJson, { notes: (paymentsJson as { tips?: string[] }).tips }),
   keyedSource('shopping', 'Shopping', shoppingJson, {}),
   (() => {
@@ -232,3 +238,21 @@ export const SOURCES: Source[] = [
     }
   })(),
 ]
+
+/** The table with its money columns in one currency (`to`), at the current exchange rates; null when it has none. */
+export function inCurrency(t: Table, to: string): Table | null {
+  const rates = fxJson.rates as Record<string, number>
+  if (!t.money || !rates[to]) return null
+  const convert = (v: Value, from: string): Value =>
+    typeof v === 'number' ? tidy((v / rates[from]) * rates[to]) : Array.isArray(v) ? v.map((x) => convert(x, from)) : v
+  const rows = t.rows.map((r) => {
+    const out: Row = { ...r }
+    for (const [col, kind] of Object.entries(t.money!)) {
+      const from = kind === 'EUR' ? 'EUR' : String(r.currency)
+      if (rates[from] && col in r) out[col] = convert(r[col], from)
+    }
+    if ('currency' in r) out.currency = to
+    return out
+  })
+  return { ...t, rows }
+}
