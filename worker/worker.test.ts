@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { isNewMessage } from './chat'
-import { current, DAILY_CALLS, DAILY_MESSAGES, refund, resetsAt, take, today } from './limits'
+import { canCall, costOf, current, DAILY_USD, MESSAGE_RESERVE_USD, resetsAt, spend, today, usageOf } from './limits'
 import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -74,28 +74,35 @@ describe('daily message count', () => {
 })
 
 describe('daily limits', () => {
-  it('allows 20 messages a day, then refuses until the next day', () => {
-    let c = current(undefined, '2026-10-05')
-    for (let i = 0; i < DAILY_MESSAGES; i++) {
-      const r = take(c, true)
-      expect(r.ok).toBe(true)
-      c = r.next
-    }
-    expect(c.messages).toBe(20)
-    expect(take(c, true).ok).toBe(false)
-    // Tool-result rounds of the last message still go through, up to the call cap.
-    expect(take(c, false).ok).toBe(true)
-    expect(current(c, '2026-10-06')).toEqual({ day: '2026-10-06', messages: 0, calls: 0 })
+  it('prices a call from its tokens, at the prices of that day', () => {
+    // 2026: input $0.75, cached $0.075, output (incl. thinking) $3.75 per million.
+    expect(costOf({ promptTokenCount: 1_000_000, candidatesTokenCount: 100_000, thoughtsTokenCount: 100_000 }, '2026-10-06')).toBeCloseTo(1.5)
+    expect(costOf({ promptTokenCount: 1_000_000, cachedContentTokenCount: 800_000 }, '2026-10-06')).toBeCloseTo(0.21)
+    // Prices double from 2027.
+    expect(costOf({ promptTokenCount: 1_000_000 }, '2027-01-01')).toBeCloseTo(1.5)
+    expect(costOf(undefined, '2026-10-06')).toBe(0)
   })
 
-  it('caps model calls per day even without new messages', () => {
-    const c = { day: '2026-10-05', messages: 1, calls: DAILY_CALLS }
-    expect(take(c, false).ok).toBe(false)
+  it('caps the day at $1: new messages need some left, and no call may go past it', () => {
+    let c = current(undefined, '2026-10-06')
+    expect(canCall(c, true, 100_000)).toBe(true)
+    c = spend(c, DAILY_USD - MESSAGE_RESERVE_USD - 0.01)
+    expect(canCall(c, true)).toBe(true)
+    expect(usageOf(c).remaining).toBe(1)
+    c = spend(c, 0.01)
+    expect(canCall(c, true)).toBe(false)
+    expect(usageOf(c).remaining).toBe(0)
+    // The tool rounds of a message under way may use the rest, if the request fits.
+    expect(canCall(c, false, 400_000)).toBe(true)
+    expect(canCall(spend(c, 0.15), false, 400_000)).toBe(false)
+    // A new day starts at zero; older records (messages or tokens) too.
+    expect(current(c, '2026-10-07')).toEqual({ day: '2026-10-07', usd: 0 })
+    expect(current({ day: '2026-10-06', tokens: 500 } as never, '2026-10-06')).toEqual({ day: '2026-10-06', usd: 0 })
   })
 
-  it('refunds a failed call', () => {
-    expect(refund({ day: 'd', messages: 3, calls: 5 }, true)).toEqual({ day: 'd', messages: 2, calls: 4 })
-    expect(refund({ day: 'd', messages: 0, calls: 0 }, true)).toEqual({ day: 'd', messages: 0, calls: 0 })
+  it('shows the percent left for new messages', () => {
+    expect(usageOf({ day: 'd', usd: 0 }).remaining).toBe(100)
+    expect(usageOf({ day: 'd', usd: (DAILY_USD - MESSAGE_RESERVE_USD) / 4 })).toMatchObject({ used: 25, limit: 100, remaining: 75 })
   })
 
   it('resets at midnight UTC', () => {

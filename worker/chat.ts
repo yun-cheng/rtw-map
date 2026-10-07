@@ -1,6 +1,7 @@
 // Checks a chat request from the browser and turns it into a Gemini generateContent request.
 // The instructions and tools are added here, so the endpoint only works as the trip assistant.
 import { SYSTEM_PROMPT, TOOLS } from '../src/agent/schema'
+import type { TokenUsage } from './limits'
 
 export const LIMITS = { bodyBytes: 200_000, messages: 80, contextChars: 30_000, maxOutputTokens: 8192 }
 
@@ -53,7 +54,7 @@ export function geminiRequest(req: ChatRequest, today: string) {
 
 export type GeminiResponse = {
   candidates?: { content?: { parts?: unknown[] }; finishReason?: string }[]
-  usageMetadata?: Record<string, number>
+  usageMetadata?: TokenUsage
   error?: { message?: string; status?: string }
 }
 

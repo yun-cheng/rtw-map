@@ -1,9 +1,10 @@
-// Who is signed in for the trip assistant, and how many messages they have left today. The session itself is an
+// Who is signed in for the trip assistant, and how much of today's allowance they have left. The session itself is an
 // HttpOnly cookie set by the Worker; this only mirrors what /api/session reports.
 import { create } from 'zustand'
 import { useTheme } from '../ui/theme'
 
 export type User = { sub: string; name: string; picture?: string }
+/** Today's assistant allowance in percent (`limit` is 100), counted in dollars on the server. */
 export type Usage = { used: number; limit: number; remaining: number; resetsAt: string }
 
 type AccountState = {

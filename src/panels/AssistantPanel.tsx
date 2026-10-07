@@ -103,7 +103,7 @@ function SignIn() {
     <div className="px-4 py-4 text-[13px]">
       <p className="font-medium">Plan and change your trip by chatting with the assistant.</p>
       <p className="mt-1 text-muted">It can add or remove stops, change nights, dates, pace or budget, and look up weather, costs, visas and transport from the app's data. Everything else in the app works without signing in.</p>
-      <p className="mt-3 text-muted">Sign in with Google to use it: each account gets a few free messages a day. We keep only an anonymous account ID and how many messages you've used.</p>
+      <p className="mt-3 text-muted">Sign in with Google to use it: each account gets a free daily allowance. We keep only an anonymous account ID, how much of it you've used today, and the trips you save.</p>
       {clientId ? <div ref={button} className="mt-3 min-h-[44px]" /> : <p className="mt-3 rounded-md bg-warn-soft px-2 py-1.5 text-warn">Sign-in isn't set up yet.</p>}
       {failed && <p className="mt-2 text-danger">Couldn't load Google sign-in. Check your connection or ad blocker.</p>}
       {error && <p className="mt-2 text-danger">{error}</p>}
@@ -112,10 +112,13 @@ function SignIn() {
 }
 
 function UsageLine({ usage }: { usage: Usage }) {
-  const low = usage.remaining <= 3
+  const low = usage.remaining <= 15
   return (
-    <span className={low ? 'font-semibold text-warn' : 'text-muted'} title={`Resets at ${resetTime(usage.resetsAt)} (midnight UTC)`}>
-      {usage.remaining} of {usage.limit} messages left today
+    <span
+      className={low ? 'font-semibold text-warn' : 'text-muted'}
+      title={`Counted by how much the assistant reads and writes: a quick question uses little, Plan with AI or Think harder much more. Resets at ${resetTime(usage.resetsAt)} (midnight UTC).`}
+    >
+      {usage.remaining}% of today's assistant use left
     </span>
   )
 }
@@ -130,7 +133,7 @@ export function AssistantPanel() {
 /** Chat with the trip assistant (Gemini), which can answer questions and change the trip; every change can be undone. */
 function Chat() {
   const usage = useAccount((s) => s.usage)
-  const outOfMessages = usage?.remaining === 0
+  const outOfAllowance = usage?.remaining === 0
   const { messages, busy, think, send, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const end = useRef<HTMLDivElement>(null)
@@ -146,7 +149,7 @@ function Chat() {
   }, [messages.length, busy])
 
   const submit = (text = draft) => {
-    if (!text.trim() || busy || outOfMessages) return
+    if (!text.trim() || busy || outOfAllowance) return
     setDraft('')
     void send(text, shared)
   }
@@ -161,7 +164,7 @@ function Chat() {
             <p className="mt-1 text-muted">It can add or remove stops, change nights, dates, pace or budget, and look up weather, costs, visas and transport from the app's data. Changes apply right away; each can be undone.</p>
             <div className="mt-3 flex flex-col gap-1.5">
               {EXAMPLES.map((e) => (
-                <button key={e} onClick={() => submit(e)} disabled={outOfMessages} className="rounded-md border border-line px-2.5 py-1.5 text-left text-[12px] hover:bg-canvas">{e}</button>
+                <button key={e} onClick={() => submit(e)} disabled={outOfAllowance} className="rounded-md border border-line px-2.5 py-1.5 text-left text-[12px] hover:bg-canvas">{e}</button>
               ))}
             </div>
           </div>
@@ -176,7 +179,7 @@ function Chat() {
               ) : (
                 <AssistantMessage
                   key={i} msg={m} index={i} canUndo={i === lastChange}
-                  {...(i === messages.length - 1 && !busy && !outOfMessages && {
+                  {...(i === messages.length - 1 && !busy && !outOfAllowance && {
                     onChoose: (text: string) => void send(text, shared, { think: m.think }),
                     onRetry: () => void retry(i, shared),
                   })}
@@ -190,9 +193,9 @@ function Chat() {
       </div>
 
       <div className="border-t border-line px-3 py-2">
-        {outOfMessages && usage && (
+        {outOfAllowance && usage && (
           <p className="mb-1.5 rounded-md bg-warn-soft px-2 py-1.5 text-[12px] text-warn">
-            You've used today's {usage.limit} messages. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.
+            You've used today's assistant allowance. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.
           </p>
         )}
         {view.length > 0 && (
@@ -217,7 +220,7 @@ function Chat() {
           }}
           rows={2}
           maxLength={2000}
-          disabled={outOfMessages}
+          disabled={outOfAllowance}
           placeholder="Ask or tell the assistant… (Enter to send)"
           className="w-full resize-none rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
         />
@@ -226,7 +229,7 @@ function Chat() {
             <input type="checkbox" checked={think} onChange={(e) => setThink(e.target.checked)} /> Think harder
           </label>
           {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
-          <Button variant="primary" className="ml-auto" disabled={busy || !draft.trim() || outOfMessages} onClick={() => submit()}>Send</Button>
+          <Button variant="primary" className="ml-auto" disabled={busy || !draft.trim() || outOfAllowance} onClick={() => submit()}>Send</Button>
         </div>
       </div>
     </div>

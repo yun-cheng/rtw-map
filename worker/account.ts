@@ -2,7 +2,7 @@
 // (SQLite) and today's assistant usage. A Durable Object handles one request at a time, so nothing can race.
 // The rules are plain functions in limits.ts and trips.ts.
 import { DurableObject } from 'cloudflare:workers'
-import { current, refund, take, type Count } from './limits'
+import { canCall, current, spend, type Count } from './limits'
 import { summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
 type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number }
@@ -17,21 +17,22 @@ export class Account extends DurableObject {
   // ---------------------------------------------------------------- assistant usage
 
   private async count(day: string): Promise<Count> {
-    return current(await this.ctx.storage.get<Count>('count'), day)
+    return current(await this.ctx.storage.get<Partial<Count>>('count'), day)
   }
 
   async status(day: string): Promise<Count> {
     return this.count(day)
   }
 
-  async take(day: string, message: boolean): Promise<{ ok: boolean; count: Count }> {
-    const { ok, next } = take(await this.count(day), message)
-    if (ok) await this.ctx.storage.put('count', next)
-    return { ok, count: next }
+  /** Whether a model call of this request size may go out now (see canCall). */
+  async allowed(day: string, message: boolean, requestChars: number): Promise<{ ok: boolean; count: Count }> {
+    const count = await this.count(day)
+    return { ok: canCall(count, message, requestChars), count }
   }
 
-  async refund(day: string, message: boolean): Promise<Count> {
-    const next = refund(await this.count(day), message)
+  /** Adds what a call cost, in USD. */
+  async spend(day: string, usd: number): Promise<Count> {
+    const next = spend(await this.count(day), usd)
     await this.ctx.storage.put('count', next)
     return next
   }

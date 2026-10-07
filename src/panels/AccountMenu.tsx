@@ -56,7 +56,7 @@ export function AccountMenu() {
           <p className="text-[12px] text-muted">Signed in with Google</p>
           {usage && (
             <p className="mt-2 text-[12px]">
-              Assistant: <b>{usage.remaining}</b> of {usage.limit} messages left today
+              Assistant: <b>{usage.remaining}%</b> of today's use left
             </p>
           )}
           <button
