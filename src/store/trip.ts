@@ -58,7 +58,7 @@ type State = {
   routeBy: 'day' | 'nights'
   panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
   fitRequest: number
-  /** Display currency for all prices (data is stored in EUR). */
+  /** Display currency for all prices (converted from the stored EUR or local amounts). */
   currency: string
   /** Temperatures in Celsius or Fahrenheit (data is stored in °C). */
   tempUnit: TempUnit

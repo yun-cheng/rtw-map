@@ -1,29 +1,33 @@
 // Converts the hand-curated seed files (countries, costs, connections, notices) into app-ready JSON.
 import { join } from 'node:path'
+import { GROCERY_KEYS } from '../src/planner/cost'
 import { GEN, SEED, readCsv, readJson, writeJson } from './lib.ts'
 
 const SEED_DATE = '2026-10-04'
+const COSTS_DATE = '2026-10-08'
 const num = (s: string) => Number(s)
 
 const countries = readJson<{ _meta: unknown; countries: unknown[] }>(join(SEED, 'countries.json'))
 writeJson(join(GEN, 'countries.json'), countries)
 writeJson(join(GEN, 'notices.json'), readJson(join(SEED, 'notices.json')))
 
+// Prices in the money they're quoted in (the country's currency; US dollars in Cambodia). The app converts them to
+// EUR with the current exchange rates (costsInEur), so they don't go stale when a currency moves.
 const costs = Object.fromEntries(
-  readCsv(join(SEED, 'costs.csv')).map((r) => [
-    r.iso2,
-    {
+  readCsv(join(SEED, 'costs.csv')).map((r) => {
+    const profile = {
+      currency: r.currency,
       dormBed: num(r.dormBed), privateRoom: num(r.privateRoom), mealCheap: num(r.mealCheap), mealMid: num(r.mealMid),
       localTransportDay: num(r.localTransportDay),
-      groceries: {
-        bread: num(r.bread), eggs12: num(r.eggs12), milk1l: num(r.milk1l), rice1kg: num(r.rice1kg),
-        chicken1kg: num(r.chicken1kg), tomatoes1kg: num(r.tomatoes1kg), beer05: num(r.beer05), water15: num(r.water15),
-      },
-    },
-  ]),
+      groceries: Object.fromEntries(GROCERY_KEYS.map((k) => [k, num(r[k])])),
+    }
+    const bad = [...Object.entries(profile), ...Object.entries(profile.groceries)].filter(([, v]) => typeof v === 'number' && !(v > 0))
+    if (!/^[A-Z]{3}$/.test(r.currency) || bad.length) throw new Error(`costs.csv ${r.iso2}: ${bad.length ? `bad ${bad.map(([k]) => k).join(', ')}` : 'no currency'}`)
+    return [r.iso2, profile]
+  }),
 )
 writeJson(join(GEN, 'costs.json'), {
-  _meta: { source: 'Seed estimates in EUR, not yet verified', updatedAt: SEED_DATE, confidence: 'low' },
+  _meta: { source: 'Seed estimates in local currency, not yet verified', updatedAt: COSTS_DATE, confidence: 'low' },
   costs,
 })
 

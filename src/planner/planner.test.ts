@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { airBand, cardLevel, comparePrices, costProfile, costSanity, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -437,6 +437,17 @@ describe('price levels and estimated costs', () => {
     // The estimate should land near our hand-entered Polish prices.
     expect(info!.profile.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
     expect(info!.profile.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)
+  })
+
+  it('converts costs from local money at the current exchange rate', () => {
+    const groceries = Object.fromEntries(GROCERY_KEYS.map((k) => [k, 100])) as LocalCostProfile['groceries']
+    const local: LocalCostProfile = { currency: 'JPY', dormBed: 4000, privateRoom: 10000, mealCheap: 1000, mealMid: 3000, localTransportDay: 800, groceries }
+    const eur = costsInEur({ JP: local }, { JPY: 200 }).JP
+    expect(eur.dormBed).toBe(20)
+    expect(eur.groceries.coke05).toBe(0.5)
+    expect(() => costsInEur({ JP: local }, {})).toThrow('No exchange rate for JPY')
+    // Every country's prices are in a currency we have a rate for.
+    for (const c of Object.values(ds.costs)) expect(c.groceries.water15).toBeGreaterThan(0)
   })
 
   it('compares hand-entered costs with the price level', () => {

@@ -20,7 +20,8 @@ import priceLevelsJson from '../../data/gen/price-levels.json'
 import roadsJson from '../../data/gen/roads.json'
 import shoppingJson from '../../data/gen/shopping.json'
 import visaJson from '../../data/gen/visa.json'
-import type { Dataset } from '../planner/types'
+import { costsInEur } from '../planner/cost'
+import type { Dataset, LocalCostProfile } from '../planner/types'
 
 const byKey = <T, K extends keyof T>(xs: T[], k: K) => Object.fromEntries(xs.map((x) => [x[k] as string, x]))
 
@@ -28,7 +29,8 @@ export const dataset: Dataset = {
   countries: byKey(countriesJson.countries, 'iso2'),
   cities: byKey(citiesJson.cities, 'id'),
   climate: climateJson.climate as Dataset['climate'],
-  costs: costsJson.costs as Dataset['costs'],
+  // Stored in local money; converted at the current exchange rates.
+  costs: costsInEur(costsJson.costs as Record<string, LocalCostProfile>, fxJson.rates),
   connections: connectionsJson.connections as Dataset['connections'],
   roads: roadsJson.roads,
   visa: visaJson as unknown as Dataset['visa'],

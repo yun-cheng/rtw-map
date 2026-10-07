@@ -50,14 +50,21 @@ export type ClimateMonth = {
   comfort: number
 }
 
+/** Shop prices: water 1.5 L, Coca-Cola 0.5 L, local beer 0.5 L, a loaf of bread, 10 eggs, milk 1 L, pasta 500 g, bananas 1 kg, tomatoes 1 kg, chicken breast 500 g. */
+export type GroceryKey = 'water15' | 'coke05' | 'beer05' | 'bread' | 'eggs10' | 'milk1l' | 'pasta500g' | 'bananas1kg' | 'tomatoes1kg' | 'chicken500g'
+
+/** A country's typical prices in EUR (the seed file has them in local money; see costsInEur). */
 export type CostProfile = {
   dormBed: number
   privateRoom: number
   mealCheap: number
   mealMid: number
   localTransportDay: number
-  groceries: Record<'bread' | 'eggs12' | 'milk1l' | 'rice1kg' | 'chicken1kg' | 'tomatoes1kg' | 'beer05' | 'water15', number>
+  groceries: Record<GroceryKey, number>
 }
+
+/** The same prices in the money they're quoted in (`currency`), as in data/seed/costs.csv. */
+export type LocalCostProfile = CostProfile & { currency: string }
 
 export type Connection = {
   from: string

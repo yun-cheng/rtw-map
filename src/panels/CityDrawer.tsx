@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
@@ -66,9 +66,10 @@ const BUDGETS: { value: Budget; label: string }[] = [
   { value: 'midrange', label: 'Mid-range' }, { value: 'comfort', label: 'Comfort' },
 ]
 
-const GROCERIES: [keyof (typeof ds.costs)[string]['groceries'], string][] = [
-  ['bread', 'Bread (loaf)'], ['eggs12', 'Eggs (12)'], ['milk1l', 'Milk (1 L)'], ['rice1kg', 'Rice (1 kg)'],
-  ['chicken1kg', 'Chicken breast (1 kg)'], ['tomatoes1kg', 'Tomatoes (1 kg)'], ['beer05', 'Beer (0.5 L, shop)'], ['water15', 'Water (1.5 L)'],
+const GROCERIES: [GroceryKey, string][] = [
+  ['water15', 'Water (1.5 L)'], ['coke05', 'Coca-Cola (0.5 L)'], ['beer05', 'Beer (0.5 L, shop)'], ['bread', 'Bread (loaf)'],
+  ['eggs10', 'Eggs (10)'], ['milk1l', 'Milk (1 L)'], ['pasta500g', 'Pasta (500 g)'], ['bananas1kg', 'Bananas (1 kg)'],
+  ['tomatoes1kg', 'Tomatoes (1 kg)'], ['chicken500g', 'Chicken breast (500 g)'],
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {

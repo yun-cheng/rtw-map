@@ -10,7 +10,11 @@ import localTransportJson from '../../data/seed/local-transport.json'
 import noticesJson from '../../data/seed/notices.json'
 import paymentsJson from '../../data/seed/payments.json'
 import shoppingJson from '../../data/seed/shopping.json'
+import fxJson from '../../data/gen/fx.json'
+import priceLevelsJson from '../../data/gen/price-levels.json'
 import { parseCsv } from '../data/csv'
+import { GROCERY_KEYS, costSanity, costsInEur, groceryDay } from '../planner/cost'
+import type { Dataset, LocalCostProfile } from '../planner/types'
 
 /** A cell: text, number, yes/no, a list, or nothing. */
 export type Value = string | number | boolean | Value[] | null
@@ -37,6 +41,9 @@ export type Source = { id: string; label: string; file: string; about?: string; 
 
 type Meta = { _meta?: { source?: string; updatedAt?: string } }
 type Rule = (row: Row) => Record<string, string>
+
+/** Rounded for reading: whole numbers from 100, one decimal from 10, else two. */
+const tidy = (v: number) => (v >= 100 ? Math.round(v) : v >= 10 ? Math.round(v * 10) / 10 : Math.round(v * 100) / 100)
 
 // ---------------------------------------------------------------- reading
 
@@ -77,8 +84,29 @@ const columnsOf = (rows: Row[]) => [...new Set(rows.flatMap((r) => Object.keys(r
 
 const cities = csvRows(citiesCsv)
 const connections = csvRows(connectionsCsv)
-const costs = csvRows(costsCsv)
+const costs = withCostColumns(csvRows(costsCsv))
 const countryList = (countriesJson as Meta & { countries: Record<string, unknown>[] }).countries
+
+/**
+ * Costs are in local money; two columns are added: a day of groceries (in the row's currency, see groceryDay), and
+ * how all the prices compare with the national price level (1 = in line; the city panel warns below 0.8 or above 1.25).
+ */
+function withCostColumns(data: { columns: string[]; rows: Row[] }) {
+  const rates = fxJson.rates as Record<string, number>
+  const local = Object.fromEntries(data.rows.filter((r) => rates[String(r.currency)]).map((r) => [String(r.iso2), {
+    currency: String(r.currency),
+    dormBed: Number(r.dormBed), privateRoom: Number(r.privateRoom), mealCheap: Number(r.mealCheap), mealMid: Number(r.mealMid),
+    localTransportDay: Number(r.localTransportDay),
+    groceries: Object.fromEntries(GROCERY_KEYS.map((k) => [k, Number(r[k])])),
+  } as LocalCostProfile]))
+  const ds = { costs: costsInEur(local, rates), priceLevels: priceLevelsJson } as unknown as Dataset
+  const rows = data.rows.map((r): Row => {
+    const own = local[String(r.iso2)]
+    // In the row's own currency, like the prices it adds up.
+    return { ...r, groceryDay: own ? tidy(groceryDay(own)) : null, 'vs price level': own ? costSanity(ds, String(r.iso2)) : null }
+  })
+  return { columns: [...data.columns, 'groceryDay', 'vs price level'], rows }
+}
 
 /** Known ids, with names for hover text. */
 export const cityNames = new Map(cities.rows.map((r) => [String(r.id), String(r.name)]))
@@ -138,7 +166,7 @@ const both = (...rules: Rule[]): Rule => (r) => Object.assign({}, ...rules.map((
 
 const csvLines = (n: number) => Array.from({ length: n }, (_, i) => `line ${i + 2}`)
 
-function keyedSource(id: string, label: string, json: unknown, opts: { countries?: string; cities?: string; notes?: string[] }): Source {
+function keyedSource(id: string, label: string, json: unknown, opts: { cities?: string; notes?: string[] }): Source {
   const j = json as Meta & { countries?: Record<string, object>; cities?: Record<string, object> }
   const tables: Record<string, Table> = {}
   if (j.countries) tables.countries = table('Countries', keyedRows(j.countries, 'iso2'), { key: 'iso2', links: { iso2: 'country' }, expect: countryIds })
@@ -171,9 +199,18 @@ export const SOURCES: Source[] = [
   },
   {
     id: 'costs', label: 'Costs', file: 'data/seed/costs.csv',
-    about: 'Typical prices per country in EUR: beds, meals, a day of local transport and groceries.',
+    about: 'Typical prices per country in local money (the "currency" column): beds, meals, a day of local transport and 10 shop items. The last two columns are worked out here: a day of groceries (in the same currency), and all the prices compared with the national price level (1 = in line).',
     tables: {
-      all: table('Costs', { ...costs, where: csvLines(costs.rows.length) }, { key: 'iso2', links: { iso2: 'country' }, expect: countryIds, rule: ordered([['dormBed', 'privateRoom'], ['mealCheap', 'mealMid']]) }),
+      all: table('Costs', { ...costs, where: csvLines(costs.rows.length) }, {
+        key: 'iso2', links: { iso2: 'country' }, expect: countryIds,
+        rule: both(required(['currency', ...GROCERY_KEYS]), ordered([['dormBed', 'privateRoom'], ['mealCheap', 'mealMid']]), (r): Record<string, string> => {
+          const out: Record<string, string> = {}
+          if (r.currency !== null && !(fxJson.rates as Record<string, number>)[String(r.currency)]) out.currency = `No exchange rate for ${r.currency} in fx.json`
+          const v = r['vs price level']
+          if (typeof v === 'number' && (v < 0.8 || v > 1.25)) out['vs price level'] = `About ${Math.round(Math.abs(v - 1) * 100)}% ${v > 1 ? 'above' : 'below'} what the price level suggests (the city panel warns about this)`
+          return out
+        }),
+      }),
     },
   },
   {

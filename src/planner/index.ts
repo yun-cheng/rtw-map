@@ -10,7 +10,7 @@ import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
 import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripInput } from './types'
 
 export * from './types'
-export { comparePrices, costProfile, costSanity, dailyCost, estimatedCosts, groceryDay } from './cost'
+export { GROCERY_KEYS, comparePrices, costProfile, costSanity, costsInEur, dailyCost, estimatedCosts, groceryDay } from './cost'
 export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
