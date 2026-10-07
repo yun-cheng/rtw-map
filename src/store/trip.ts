@@ -51,6 +51,8 @@ type State = {
   nearbyKind: NearbyKind
   /** What the Weather layer colours by: the average daily high or low. */
   weatherBy: 'high' | 'low'
+  /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
+  routeBy: 'day' | 'nights'
   panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
   fitRequest: number
   /** Display currency for all prices (data is stored in EUR). */
@@ -84,6 +86,7 @@ type State = {
   setLayer: (l: MapLayer) => void
   setLayerMonth: (m: number) => void
   setNearbyKind: (k: NearbyKind) => void
+  setRouteBy: (by: 'day' | 'nights') => void
   setWeatherBy: (by: 'high' | 'low') => void
   setPanel: (p: State['panel']) => void
   setCurrency: (c: string) => void
@@ -170,6 +173,7 @@ export const useTrip = create<State>()(
         layerMonth: 0,
         nearbyKind: 'pharmacy',
         weatherBy: 'high',
+        routeBy: 'day',
         panel: 'setup',
         fitRequest: 0,
         currency: 'EUR',
@@ -224,6 +228,7 @@ export const useTrip = create<State>()(
         setLayerMonth: (layerMonth) => set({ layerMonth }),
         setNearbyKind: (nearbyKind) => set({ nearbyKind }),
         setWeatherBy: (weatherBy) => set({ weatherBy }),
+        setRouteBy: (routeBy) => set({ routeBy }),
         setPanel: (panel) => set({ panel }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),

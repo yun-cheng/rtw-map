@@ -150,14 +150,30 @@ const Line = ({ color, dashed }: { color: string; dashed?: boolean }) => (
 /** Legend for the Route view: how each journey is travelled and which times are estimates. */
 function RouteLegend({ modes }: { modes: Set<string> }) {
   const used = MODES.filter((m) => m.modes.some((x) => modes.has(x)))
+  const routeBy = useTrip((s) => s.routeBy)
+  const setRouteBy = useTrip((s) => s.setRouteBy)
   return (
     <div className="pointer-events-auto flex max-w-[34rem] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
+      {/* What the number in each stop is, styled like the Weather view's High | Low. */}
+      <span className="flex rounded-md border border-line p-px" role="group" aria-label="Number in each stop">
+        {(['day', 'nights'] as const).map((b) => (
+          <button
+            key={b}
+            onClick={() => setRouteBy(b)}
+            aria-pressed={routeBy === b}
+            title={b === 'day' ? 'The trip day you arrive' : 'Nights you stay'}
+            className={`rounded px-1.5 text-[11px] ${routeBy === b ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
+          >
+            {b === 'day' ? 'Day' : 'Nights'}
+          </button>
+        ))}
+      </span>
       {used.map((m) => (
         <span key={m.label} className="flex items-center gap-1.5"><Line color={MODE_COLOR[m.modes[0]]} />{m.label}</span>
       ))}
       <span className="flex items-center gap-1.5 border-l border-line pl-3" title="Times and prices from timetable data"><Line color="var(--color-muted)" />Timetable</span>
       <span className="flex items-center gap-1.5" title="No timetable data yet: a bus is assumed, with time and price estimated from the road distance"><Line color="var(--color-muted)" dashed />Estimated</span>
-      <span className="flex items-center gap-1.5 border-l border-line pl-3" title="The number in each stop is the trip day you arrive; longer stays get bigger circles">
+      <span className="flex items-center gap-1.5 border-l border-line pl-3" title="Longer stays get bigger circles">
         <svg viewBox="0 0 22 14" className="h-3.5 w-[22px]" aria-hidden>
           <circle cx="4" cy="7" r="3" fill={STOP_COLOR} />
           <circle cx="15" cy="7" r="6" fill={STOP_COLOR} />

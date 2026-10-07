@@ -43,6 +43,14 @@ describe('address bar state', () => {
     expect(useTrip.getState().weatherBy).toBe('high')
   })
 
+  it('keeps whether the Route view numbers stops by day or nights', () => {
+    readUrl('?panel=itinerary&show=nights')
+    expect(useTrip.getState().routeBy).toBe('nights')
+    expect(buildSearch(useTrip.getState(), null)).toBe('?panel=itinerary&show=nights')
+    readUrl('?panel=itinerary')
+    expect(useTrip.getState().routeBy).toBe('day')
+  })
+
   it('keeps the kind of place shown by the Nearby layer', () => {
     readUrl('?layer=nearby&kind=atm')
     expect(useTrip.getState().nearbyKind).toBe('atm')

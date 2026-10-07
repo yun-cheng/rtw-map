@@ -52,7 +52,7 @@ const MONTH_NAMES = MONTHS.map((_, i) => new Date(2000, i).toLocaleString('en', 
 
 /** The parts of the current view worth sharing: the open city or journey, and the map view (Route only with a plan). */
 export function viewItems(): ViewItem[] {
-  const { selected, cityTab, layer, layerMonth, nearbyKind, weatherBy, plan, input } = useTrip.getState()
+  const { selected, cityTab, layer, layerMonth, nearbyKind, weatherBy, routeBy, plan, input } = useTrip.getState()
   const items: ViewItem[] = []
 
   if (selected?.type === 'city' && ds.cities[selected.id]) {
@@ -84,11 +84,13 @@ export function viewItems(): ViewItem[] {
   if (layer !== 'none' || plan) {
     const l = layer === 'climate' && weatherBy === 'low'
       ? { name: 'Weather (lows)', about: 'average daily low, how the nights feel (the number on each stop), and share of rainy days' }
-      : LAYER_NAMES[layer]
+      : layer === 'none' && routeBy === 'nights'
+        ? { ...LAYER_NAMES.none, about: LAYER_NAMES.none.about.replace('numbered by the trip day they arrive', 'numbered by the nights there') }
+        : LAYER_NAMES[layer]
     const monthly = layer === 'climate' || layer === 'air'
     const when = layer === 'nearby' ? ` (${NEARBY_NAMES[nearbyKind]})` : !monthly ? '' : layerMonth ? ` in ${MONTH_NAMES[layerMonth - 1]}` : ' for each place at the time of the trip'
     items.push({
-      key: `map:${layer}:${monthly ? layerMonth : ''}${layer === 'nearby' ? nearbyKind : ''}${layer === 'climate' ? weatherBy : ''}`,
+      key: `map:${layer}:${monthly ? layerMonth : ''}${layer === 'nearby' ? nearbyKind : ''}${layer === 'climate' ? weatherBy : ''}${layer === 'none' ? routeBy : ''}`,
       ref: { kind: 'map', layer, month: monthly ? layerMonth : 0, ...(layer === 'nearby' && { nearbyKind }), ...(layer === 'climate' && { weatherBy }) },
       label: `${l.name} map${monthly ? ` · ${layerMonth ? MONTHS[layerMonth - 1] : 'trip dates'}` : layer === 'nearby' ? ` · ${NEARBY_NAMES[nearbyKind]}` : ''}`,
       text: layer === 'none'

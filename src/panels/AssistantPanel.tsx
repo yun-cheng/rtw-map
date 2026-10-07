@@ -275,6 +275,9 @@ function useViewItems(): ViewItem[] {
   useTrip((s) => s.cityTab)
   useTrip((s) => s.layer)
   useTrip((s) => s.layerMonth)
+  useTrip((s) => s.nearbyKind)
+  useTrip((s) => s.weatherBy)
+  useTrip((s) => s.routeBy)
   useTrip((s) => s.plan)
   return viewItems()
 }

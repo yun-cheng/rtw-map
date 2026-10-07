@@ -86,7 +86,7 @@ export function MapView() {
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -224,13 +224,14 @@ export function MapView() {
         })
       ;(map.getSource('cities') as GeoJSONSource).setData({ type: 'FeatureCollection', features: cityFeatures })
 
-      // The Route view numbers the stops by the day you arrive (day 1 = start date) and sizes them by the nights
-      // there; the weather, air and mobile views show their value; the others leave the circle plain. Outside the Route
-      // view all stops are one size, big enough for the longest number.
+      // The Route view numbers the stops by the day you arrive (day 1 = start date) or by the nights there (the
+      // legend's switch), and sizes them by the nights; the weather, air and mobile views show their value; the
+      // others leave the circle plain. Outside the Route view all stops are one size, big enough for the longest
+      // number.
       const stops = (plan?.stops ?? []).map((s) => {
         const metrics = metric(s.cityId)
         const day = tripDay(input.startDate, s.arrive)
-        return { s, day, metrics, text: layer === 'none' ? String(day) : metrics.value ?? '' }
+        return { s, day, metrics, text: layer === 'none' ? String(routeBy === 'nights' ? s.nights : day) : metrics.value ?? '' }
       })
       const sameRadius = half(Math.max(SAME_RADIUS, ...stops.map((x) => fitRadius(x.text))))
       // For each stop, the places its route lines lead to (the first or last hop of the journeys either side).
@@ -347,7 +348,7 @@ export function MapView() {
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, selected, currency, tempUnit, tempFeels])
+  }, [plan, input, layer, layerMonth, nearbyKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).
