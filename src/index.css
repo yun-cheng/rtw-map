@@ -96,3 +96,9 @@ body {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
 }
+
+/* Charts (Recharts) are focusable for arrow-key browsing; the tooltip shows where focus is, so no focus box (Chrome
+   would draw one on every mouse click). */
+.recharts-wrapper :focus {
+  outline: none;
+}

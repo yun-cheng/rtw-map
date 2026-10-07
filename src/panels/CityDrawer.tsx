@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
@@ -6,9 +6,12 @@ import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, sho
 import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
-import { AirChart } from './AirChart'
-import { ClimateChart } from './ClimateChart'
 import { PriceLevel } from './PriceLevel'
+
+/** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
+const ClimateChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.ClimateChart })))
+const AirChart = lazy(() => import('./AirChart').then((m) => ({ default: m.AirChart })))
+const SunChart = lazy(() => import('./SunChart').then((m) => ({ default: m.SunChart })))
 
 const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' | 'info' }> = {
   free_movement: { label: 'Free movement (EU citizen)', tone: 'ok' },
@@ -100,7 +103,11 @@ const GROCERIES: [keyof (typeof ds.costs)[string]['groceries'], string][] = [
 export function CityDrawer({ cityId }: { cityId: string }) {
   const { plan, input, select, addCity, removeStop, cityTab, setCityTab, layer, layerMonth } = useTrip()
   const { currency, fmt } = useMoney()
-  const { unit, range } = useTemp()
+  const { range } = useTemp()
+  // The month under the pointer in each chart: its details replace the shown months' under that chart.
+  const [hover, setHover] = useState<{ chart: 'weather' | 'sun' | 'air'; month: number } | null>(null)
+  const hoverFor = (chart: 'weather' | 'sun' | 'air') => (month: number | null) => setHover(month ? { chart, month } : null)
+  const monthsFor = (chart: 'weather' | 'sun' | 'air') => (hover?.chart === chart ? [hover.month] : [...stayMonths])
   const city = ds.cities[cityId]
   const country = ds.countries[city.iso2]
   const costInfo = costProfile(ds, city.iso2)
@@ -217,21 +224,31 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       <Section title="Weather" aside={<span className="text-[11px] text-muted">avg 2016–2025</span>}>
         {climate ? (
           <>
-            <ClimateChart data={climate} highlight={stayMonths} />
-            <div className="mt-1 flex gap-3 text-[11px] text-muted">
-              <span><span className="text-orange-600">●</span> High °{unit}</span>
-              <span><span className="text-sky-600">●</span> Low °{unit}</span>
-              <span><span className="text-blue-300">■</span> Rain days</span>
-              <span className="text-accent">▮ {monthsLabel}</span>
-            </div>
-            {[...stayMonths].map((m) => {
+            <Suspense fallback={<div className="h-[180px]" />}>
+              <ClimateChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} onHover={hoverFor('weather')} />
+            </Suspense>
+            {monthsFor('weather').map((m) => {
               const c = climate[m - 1]
               return (
                 <p key={m} className="mt-1.5 text-[13px]">
-                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b> {range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.sunHours}h sun/day, {c.humidity}% humidity
+                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b>{' '}
+                  {range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.humidity}% humidity
                 </p>
               )
             })}
+            <div className="mt-3 flex items-baseline justify-between text-[11px]">
+              <span className="font-semibold tracking-wider text-muted uppercase">Sunshine</span>
+              <span className="text-muted">hours a day</span>
+            </div>
+            <Suspense fallback={<div className="h-[130px]" />}>
+              <SunChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} onHover={hoverFor('sun')} />
+            </Suspense>
+            {monthsFor('sun').map((m) => (
+              <p key={m} className="mt-1 text-[13px]">
+                <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b>{' '}
+                {climate[m - 1].sunHours < 0.5 ? 'almost no sun (polar night or very cloudy)' : `${climate[m - 1].sunHours} hours of sunshine a day`}
+              </p>
+            ))}
           </>
         ) : (
           <p className="text-[13px] text-muted">Climate data not loaded yet.</p>
@@ -332,12 +349,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       <Section title="Air quality" aside={<span className="text-[11px] text-muted">PM2.5, µg/m³</span>}>
         {air ? (
           <>
-            <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} />
-            <div className="mt-1 flex gap-3 text-[11px] text-muted">
-              <span>┄ WHO daily guideline ({ds.air.whoDaily} µg/m³)</span>
-              <span className="text-accent">▯ {monthsLabel}</span>
-            </div>
-            {[...stayMonths].map((m) => {
+            <Suspense fallback={<div className="h-[140px]" />}>
+              <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} monthsLabel={monthsLabel} onHover={hoverFor('air')} />
+            </Suspense>
+            {monthsFor('air').map((m) => {
               const a = air[m - 1]
               return (
                 <p key={m} className="mt-1 text-[13px]">

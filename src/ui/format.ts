@@ -97,7 +97,11 @@ export const tempValue = (c: number, unit: TempUnit) => Math.round(unit === 'F' 
 /** "25°C" / "77°F". */
 export const temp = (c: number, unit: TempUnit) => `${tempValue(c, unit)}°${unit}`
 /** "12–25°C" / "54–77°F". */
-export const tempRange = (lo: number, hi: number, unit: TempUnit) => `${tempValue(lo, unit)}–${tempValue(hi, unit)}°${unit}`
+/** "18–28°C"; "-24 to -15°C" when a value is below zero, where a dash would read as a minus. */
+export function tempRange(lo: number, hi: number, unit: TempUnit): string {
+  const [a, b] = [tempValue(lo, unit), tempValue(hi, unit)]
+  return `${a}${a < 0 || b < 0 ? ' to ' : '–'}${b}°${unit}`
+}
 
 /** Each temperature class as its range of average daily highs, e.g. "18–28°C" (thresholds as in temperatureKind). */
 export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
@@ -146,3 +150,13 @@ export function temperatureKind(m: { tHigh: number }): Exclude<WeatherKind, 'wet
 
 /** Share of the days in a month (1–12) with rain, 0–1. */
 export const rainShare = (rainDays: number, month: number) => Math.min(1, Math.max(0, rainDays / new Date(Date.UTC(2027, month, 0)).getUTCDate()))
+
+/** A temperature axis around [min, max] (in the unit shown): a gridline every 5°C (10°F), a little room above and
+ *  below so the lines don't touch the edges, and labels on every line, or every other one when there are many. */
+export function tempScale(min: number, max: number, unit: 'C' | 'F'): { lo: number; hi: number; step: number; labelStep: number } {
+  const room = unit === 'F' ? 3 : 2
+  const step = unit === 'F' ? 10 : 5
+  const lo = Math.floor((min - room) / step) * step
+  const hi = Math.ceil((max + room) / step) * step
+  return { lo, hi, step, labelStep: (hi - lo) / step > 8 ? step * 2 : step }
+}

@@ -1,49 +1,65 @@
+import { useState } from 'react'
+import { Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ClimateMonth } from '../planner'
-import { MONTHS } from '../ui/format'
+import { MONTHS, tempScale } from '../ui/format'
 import { useTemp } from '../ui/useTemp'
+import { LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, hoverProps, monthTick } from './chartParts'
 
-/** 12-month chart: rain-day bars plus high/low temperature lines; stay months highlighted. */
-export function ClimateChart({ data, highlight }: { data: ClimateMonth[]; highlight: Set<number> }) {
-  const { unit, t: temp } = useTemp()
-  const W = 360
-  const H = 150
-  const pad = { l: 26, r: 22, t: 10, b: 20 }
-  const iw = W - pad.l - pad.r
-  const ih = H - pad.t - pad.b
-  const tMin = Math.min(0, ...data.map((d) => d.tLow)) - 2
-  const tMax = Math.max(30, ...data.map((d) => d.tHigh)) + 2
-  const x = (i: number) => pad.l + (i + 0.5) * (iw / 12)
-  const yT = (t: number) => pad.t + ih - ((t - tMin) / (tMax - tMin)) * ih
-  const yR = (r: number) => pad.t + ih - (r / 25) * ih
-  const line = (k: 'tHigh' | 'tLow') => data.map((d, i) => `${i ? 'L' : 'M'}${x(i)},${yT(d[k])}`).join('')
-  const ticks = [0, 10, 20, 30].filter((t) => t >= tMin && t <= tMax)
+const HIGH = '#ea580c'
+const LOW = '#0284c7'
+const RAIN = '#93c5fd'
+/** Rain days on the right axis, up to this many (most places have fewer). */
+const RAIN_MAX = 25
+
+type Point = { m: string; month: number; high: number; low: number; rain: number; c: ClimateMonth }
+
+/** Legend order: high, low, then rain. */
+const SERIES_ORDER = ['high', 'low', 'rain']
+
+/**
+ * 12-month chart: rain-day bars plus high/low temperature lines, the months shown highlighted (`monthsLabel` names
+ * them in the legend). Hovering (or tapping) a month reports it (`onHover`) for the details under the chart; clicking
+ * a series in the legend hides it. The temperature axis fits the city's year.
+ */
+export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: ClimateMonth[]; highlight: Set<number>; monthsLabel: string; onHover?: (month: number | null) => void }) {
+  const { unit } = useTemp()
+  const [hidden, setHidden] = useState<Set<string>>(() => new Set())
+  const toggle = (key: string) => setHidden((h) => {
+    const next = new Set(h)
+    if (!next.delete(key)) next.add(key)
+    return next
+  })
+  const toUnit = (c: number) => Math.round((unit === 'F' ? (c * 9) / 5 + 32 : c) * 10) / 10
+  const points: Point[] = data.map((c, i) => ({ m: MONTHS[i], month: i + 1, high: toUnit(c.tHigh), low: toUnit(c.tLow), rain: c.rainDays, c }))
+  const { lo, hi, step, labelStep } = tempScale(Math.min(...points.map((p) => p.low)), Math.max(...points.map((p) => p.high)), unit)
+  const ticks: number[] = []
+  for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(t)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Monthly climate">
-      {data.map((_, i) => highlight.has(i + 1) && (
-        <rect key={`h${i}`} x={x(i) - iw / 24} y={pad.t} width={iw / 12} height={ih} style={{ fill: 'var(--color-accent-soft)' }} />
-      ))}
-      {ticks.map((t) => (
-        <g key={t}>
-          <line x1={pad.l} x2={W - pad.r} y1={yT(t)} y2={yT(t)} style={{ stroke: 'var(--color-line)' }} strokeWidth={1} />
-          <text x={pad.l - 4} y={yT(t) + 3} textAnchor="end" fontSize={9} style={{ fill: 'var(--color-muted)' }}>{unit === 'F' ? Math.round((t * 9) / 5 + 32) : t}°</text>
-        </g>
-      ))}
-      {data.map((d, i) => (
-        <rect key={`r${i}`} x={x(i) - 5} y={yR(d.rainDays)} width={10} height={pad.t + ih - yR(d.rainDays)} fill="#93c5fd" rx={2}>
-          <title>{`${MONTHS[i]}: ${d.rainDays} rain days, ${d.rainMm} mm`}</title>
-        </rect>
-      ))}
-      <path d={line('tHigh')} fill="none" stroke="#ea580c" strokeWidth={2} />
-      <path d={line('tLow')} fill="none" stroke="#0284c7" strokeWidth={2} />
-      {data.map((d, i) => (
-        <g key={`p${i}`}>
-          <circle cx={x(i)} cy={yT(d.tHigh)} r={2.5} fill="#ea580c"><title>{`${MONTHS[i]} high ${temp(d.tHigh)}`}</title></circle>
-          <circle cx={x(i)} cy={yT(d.tLow)} r={2.5} fill="#0284c7"><title>{`${MONTHS[i]} low ${temp(d.tLow)}`}</title></circle>
-          <text x={x(i)} y={H - 6} textAnchor="middle" fontSize={9} style={{ fill: highlight.has(i + 1) ? 'var(--color-accent)' : 'var(--color-muted)' }} fontWeight={highlight.has(i + 1) ? 700 : 400}>{MONTHS[i][0]}</text>
-        </g>
-      ))}
-      <text x={W - pad.r + 4} y={yR(20) + 3} fontSize={9} fill="#60a5fa">20d</text>
-    </svg>
+    <div>
+      <div className="h-[180px] w-full" role="img" aria-label="Monthly climate">
+        <ResponsiveContainer width="100%" height="100%">
+          <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...hoverProps(onHover)}>
+            {[...highlight].map((m) => (
+              <ReferenceArea key={m} yAxisId="t" x1={MONTHS[m - 1]} x2={MONTHS[m - 1]} fill="var(--color-accent-soft)" fillOpacity={1} ifOverflow="extendDomain" />
+            ))}
+            <CartesianGrid vertical={false} yAxisId="t" stroke="var(--color-line)" />
+            <XAxis dataKey="m" interval={0} height={18} tickLine={false} axisLine={false} tick={monthTick(highlight)} />
+            <YAxis
+              yAxisId="t" domain={[lo, hi]} ticks={ticks} allowDataOverflow tickLine={false} axisLine={false} width={44}
+              tick={{ fontSize: 9, fill: 'var(--color-muted)' }}
+              tickFormatter={(t: number) => (t % labelStep === 0 ? `${t}°` : '')}
+            />
+            <YAxis yAxisId="rain" orientation="right" domain={[0, RAIN_MAX]} hide />
+            <Bar yAxisId="rain" dataKey="rain" name="Rain days" hide={hidden.has('rain')} fill={RAIN} radius={[2, 2, 0, 0]} barSize={10} isAnimationActive={false} />
+            <Line yAxisId="t" dataKey="high" name={`High °${unit}`} hide={hidden.has('high')} stroke={HIGH} strokeWidth={2} dot={{ r: 2.5, fill: HIGH, strokeWidth: 0 }} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Line yAxisId="t" dataKey="low" name={`Low °${unit}`} hide={hidden.has('low')} stroke={LOW} strokeWidth={2} dot={{ r: 2.5, fill: LOW, strokeWidth: 0 }} activeDot={{ r: 4 }} isAnimationActive={false} />
+            <Legend verticalAlign="bottom" wrapperStyle={LEGEND_STYLE} itemSorter={(e) => SERIES_ORDER.indexOf(String(e.dataKey))} content={legendContent({ onToggle: toggle, extras: [monthsLegend(monthsLabel)] })} />
+            <Tooltip cursor={HOVER_CURSOR} content={() => null} isAnimationActive={false} />
+          </ComposedChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   )
 }
+

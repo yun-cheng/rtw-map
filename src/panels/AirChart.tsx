@@ -1,38 +1,43 @@
+import { Bar, CartesianGrid, Cell, ComposedChart, Legend, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { airBand, type AirMonth } from '../planner'
 import { MONTHS, levelColor } from '../ui/format'
+import { dashedLegend, LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, hoverProps, monthTick } from './chartParts'
 
-/** 12 monthly PM2.5 bars coloured by band, with the WHO 24-hour guideline as a dashed line; stay months highlighted. */
-export function AirChart({ data, highlight, who }: { data: AirMonth[]; highlight: Set<number>; who: number }) {
-  const W = 360
-  const H = 110
-  const pad = { l: 26, r: 8, t: 8, b: 18 }
-  const iw = W - pad.l - pad.r
-  const ih = H - pad.t - pad.b
-  const max = Math.max(40, ...data.map((d) => d.pm25)) * 1.1
-  const x = (i: number) => pad.l + (i + 0.5) * (iw / 12)
-  const y = (v: number) => pad.t + ih - (v / max) * ih
+type Point = { m: string; month: number; pm25: number; a: AirMonth }
+
+/**
+ * 12 monthly PM2.5 bars coloured by band, with the WHO 24-hour guideline as a dashed line; the months shown
+ * highlighted. Hovering (or tapping) a month reports it (`onHover`) for the details under the chart.
+ */
+export function AirChart({ data, highlight, who, monthsLabel, onHover }: { data: AirMonth[]; highlight: Set<number>; who: number; monthsLabel: string; onHover?: (month: number | null) => void }) {
+  const points: Point[] = data.map((a, i) => ({ m: MONTHS[i], month: i + 1, pm25: a.pm25, a }))
+  // Gridlines every 20 µg/m³, up to the worst month (at least 40, so clean places don't look alarming).
+  const top = Math.ceil(Math.max(40, ...points.map((p) => p.pm25 * 1.1)) / 20) * 20
+  const ticks = Array.from({ length: top / 20 + 1 }, (_, i) => i * 20)
 
   return (
-    <svg viewBox={`0 0 ${W} ${H}`} className="w-full" role="img" aria-label="Monthly air pollution (PM2.5)">
-      {data.map((_, i) => highlight.has(i + 1) && (
-        <rect key={`h${i}`} x={x(i) - iw / 24} y={pad.t} width={iw / 12} height={ih} style={{ fill: 'var(--color-accent-soft)' }} opacity={0.5} />
-      ))}
-      {[0, 20, 40].filter((t) => t < max).map((t) => (
-        <g key={t}>
-          <line x1={pad.l} x2={W - pad.r} y1={y(t)} y2={y(t)} style={{ stroke: 'var(--color-line)' }} />
-          <text x={pad.l - 4} y={y(t) + 3} textAnchor="end" fontSize={9} style={{ fill: 'var(--color-muted)' }}>{t}</text>
-        </g>
-      ))}
-      {data.map((d, i) => (
-        <rect key={i} x={x(i) - 7} y={y(d.pm25)} width={14} height={pad.t + ih - y(d.pm25)} rx={2} fill={levelColor(airBand(d.pm25).level)}
-          style={{ stroke: highlight.has(i + 1) ? 'var(--color-accent)' : 'none' }} strokeWidth={1.5}>
-          <title>{`${MONTHS[i]}: PM2.5 ${d.pm25} µg/m³, ~${d.daysOverWho} days above WHO guideline`}</title>
-        </rect>
-      ))}
-      <line x1={pad.l} x2={W - pad.r} y1={y(who)} y2={y(who)} style={{ stroke: 'var(--color-ink)' }} strokeDasharray="3 3" strokeWidth={1} />
-      {data.map((_, i) => (
-        <text key={`m${i}`} x={x(i)} y={H - 5} textAnchor="middle" fontSize={9} style={{ fill: highlight.has(i + 1) ? 'var(--color-accent)' : 'var(--color-muted)' }} fontWeight={highlight.has(i + 1) ? 700 : 400}>{MONTHS[i][0]}</text>
-      ))}
-    </svg>
+    <div className="h-[140px] w-full" role="img" aria-label="Monthly air pollution (PM2.5)">
+      <ResponsiveContainer width="100%" height="100%">
+        <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...hoverProps(onHover)}>
+          {[...highlight].map((m) => (
+            <ReferenceArea key={m} x1={MONTHS[m - 1]} x2={MONTHS[m - 1]} fill="var(--color-accent-soft)" fillOpacity={1} />
+          ))}
+          <CartesianGrid vertical={false} stroke="var(--color-line)" />
+          <XAxis dataKey="m" interval={0} height={18} tickLine={false} axisLine={false} tick={monthTick(highlight)} />
+          <YAxis domain={[0, top]} ticks={ticks} tickLine={false} axisLine={false} width={44} tick={{ fontSize: 9, fill: 'var(--color-muted)' }} />
+          <Bar dataKey="pm25" legendType="none" radius={[2, 2, 0, 0]} barSize={14} isAnimationActive={false}>
+            {points.map((p) => (
+              <Cell key={p.month} fill={levelColor(airBand(p.pm25).level)} stroke={highlight.has(p.month) ? 'var(--color-accent)' : 'none'} strokeWidth={1.5} />
+            ))}
+          </Bar>
+          <ReferenceLine y={who} stroke="var(--color-ink)" strokeDasharray="3 3" />
+          <Legend
+            verticalAlign="bottom" wrapperStyle={LEGEND_STYLE}
+            content={legendContent({ extras: [dashedLegend(`WHO daily guideline (${who} µg/m³)`, 'var(--color-ink)'), monthsLegend(monthsLabel)] })}
+          />
+          <Tooltip cursor={HOVER_CURSOR} content={() => null} isAnimationActive={false} />
+        </ComposedChart>
+      </ResponsiveContainer>
+    </div>
   )
 }

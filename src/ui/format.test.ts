@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, lowBand, lowKind, money, rateText, temp, tempBand, tempRange, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, local, lowBand, lowKind, money, rateText, temp, tempBand, tempRange, tempScale, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -52,6 +52,8 @@ describe('temperatures', () => {
     expect(temp(24.9, 'C')).toBe('25°C')
     expect(temp(24.9, 'F')).toBe('77°F')
     expect(tempRange(-3.2, 4.6, 'F')).toBe('26–40°F')
+    expect(tempRange(-24, -15, 'C')).toBe('-24 to -15°C')
+    expect(tempRange(-3.2, 4.6, 'C')).toBe('-3 to 5°C')
   })
 
   it('labels the map classes by their range of average highs', () => {
@@ -74,5 +76,16 @@ describe('night temperatures', () => {
     expect([0, 5, 14, 20, 25].map((tLow) => lowKind({ tLow }))).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
     expect(lowBand('pleasant', 'C')).toBe('10–18°C')
     expect(lowBand('hot', 'F')).toBe('73°F+')
+  })
+})
+
+describe('climate chart scale', () => {
+  it('fits the year, below zero too, with round gridlines', () => {
+    // Irkutsk-like, -23° to 25°C: a line every 5°, labels every 10°.
+    expect(tempScale(-23, 25, 'C')).toEqual({ lo: -25, hi: 30, step: 5, labelStep: 10 })
+    // Bangkok-like, 23° to 35°C: every line labelled.
+    expect(tempScale(23, 35, 'C')).toEqual({ lo: 20, hi: 40, step: 5, labelStep: 5 })
+    // The cold city in °F (-9° to 77°F): a line every 10°F, labels every 20°F.
+    expect(tempScale(-9, 77, 'F')).toEqual({ lo: -20, hi: 80, step: 10, labelStep: 20 })
   })
 })
