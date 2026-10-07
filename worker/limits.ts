@@ -2,8 +2,9 @@
 
 /** Messages a user may send per day (UTC), shown as a countdown. */
 export const DAILY_MESSAGES = 20
-/** Model calls per day: one message can take a few calls when the assistant uses tools; this caps the cost. */
-export const DAILY_CALLS = 160
+/** Model calls per day: one message can take many calls when the assistant uses tools (up to 40 for Plan with AI
+ *  or Think harder); this caps the cost. */
+export const DAILY_CALLS = 300
 
 export type Count = { day: string; messages: number; calls: number }
 

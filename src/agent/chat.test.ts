@@ -71,17 +71,37 @@ describe('assistant chat', () => {
   })
 
   it('allows more tool rounds when asked (Plan with AI)', async () => {
-    const fetch = serve(...Array(10).fill(toolCall), reply('Finished'))
-    await useChat.getState().send('plan', [], { rounds: 24 })
-    expect(fetch).toHaveBeenCalledTimes(11)
+    const fetch = serve(...Array(30).fill(toolCall), reply('Finished'))
+    await useChat.getState().send('plan', [], { rounds: 40 })
+    expect(fetch).toHaveBeenCalledTimes(31)
     expect(lastReply().text).toBe('Finished')
-    // A chat message stops after 8 rounds; with "Think harder" on, it gets as many as Plan with AI.
-    serve(...Array(10).fill(toolCall))
+    // A chat message gets 12 calls; with "Think harder" on, as many as Plan with AI.
+    serve(...Array(30).fill(toolCall))
     await useChat.getState().send('chat')
-    expect(lastReply().text).toMatch(/stopped before finishing/)
+    expect(lastReply().text).toMatch(/ran out of steps while looking things up/)
     useChat.getState().setThink(true)
-    serve(...Array(10).fill(toolCall), reply('Thought it through'))
+    serve(...Array(30).fill(toolCall), reply('Thought it through'))
     await useChat.getState().send('chat')
     expect(lastReply().text).toBe('Thought it through')
   })
+
+  it('tells the model the steps left and makes the last call without tools', async () => {
+    const fetch = serve(...Array(4).fill(toolCall), reply('Changed what I could; the rest needs another message.'))
+    await useChat.getState().send('plan', [], { rounds: 5 })
+    const bodies = (fetch.mock.calls as unknown as [string, RequestInit][]).map(([, init]) => JSON.parse(String(init.body)))
+    expect(bodies.map((b) => b.final ?? false)).toEqual([false, false, false, false, true])
+    // The latest tool result in each request (older ones are shortened).
+    type Response = { steps_left?: number; note?: string }
+    const latest = bodies.slice(1).map((b) => b.contents.at(-1).parts.at(-1).functionResponse.response as Response)
+    expect(latest.map((r) => r.steps_left)).toEqual([3, 2, 1, 0])
+    expect(latest[0].note).toMatch(/3 steps left/)
+    expect(latest[3].note).toMatch(/answer now/)
+    expect(lastReply().text).toMatch(/Changed what I could/)
+    // A tool call in the final answer isn't kept unanswered in the conversation.
+    serve(...Array(5).fill(toolCall))
+    await useChat.getState().send('again', [], { rounds: 5 })
+    const contents = useChat.getState().contents
+    expect(contents.at(-1)!.parts.some((p) => p.functionCall)).toBe(false)
+  })
+
 })

@@ -40,9 +40,12 @@ type ChatState = {
 export type SavedChat = { messages: ChatMessage[]; contents: Content[]; note: string | null }
 
 /** Model calls per chat message (each tool round is one call). Thinking harder (the chat switch, and always for
- *  Plan with AI) allows more, for bigger changes. */
-const MAX_ROUNDS = 8
-export const THINK_ROUNDS = 24
+ *  Plan with AI) allows more, since reworking a months-long trip takes many lookups and edits. The last call is
+ *  always made without tools, so the reply ends with what was done (and what's left) rather than mid-way. */
+const MAX_ROUNDS = 12
+export const THINK_ROUNDS = 40
+/** From this many steps left, tool results remind the model to finish. */
+const WRAP_UP_STEPS = 3
 /** Waits before retrying when the per-minute limit is hit (the daily limit isn't retried). */
 const RETRY_WAITS = [15_000, 30_000, 45_000]
 /** Older turns are dropped to keep requests within /api/chat's limits (worker/chat.ts: 80 turns, 200 KB), with
@@ -88,14 +91,14 @@ function compact(contents: Content[]): Content[] {
   })
 }
 
-async function callModel(contents: Content[], context: string, think: boolean): Promise<Content> {
+async function callModel(contents: Content[], context: string, think: boolean, final: boolean): Promise<Content> {
   let res: Response
   let data: { usage?: Usage; signIn?: boolean; error?: string; content?: Content } | null
   for (let attempt = 0; ; attempt++) {
     res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, context, think }),
+      body: JSON.stringify({ contents, context, think, ...(final && { final }) }),
     })
     data = await res.json().catch(() => null)
     // Too many calls this minute (or Gemini busy) during a long run: wait and try again. Out of today's messages
@@ -132,24 +135,46 @@ export const useChat = create<ChatState>()(
         const reply: Extract<ChatMessage, { role: 'assistant' }> = { role: 'assistant', text: '', steps: [], changes: [] }
         set({ busy: true, note: null, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
 
+        let ranOut = false
         try {
           for (let round = 0; round < rounds; round++) {
             contents = trim(compact(contents))
-            const content = await callModel(contents, context, think)
-            contents = [...contents, content]
+            const final = round === rounds - 1
+            const content = await callModel(contents, context, think, final)
             const calls = content.parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
             const said = content.parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim()
             if (said) reply.text = reply.text ? `${reply.text}\n\n${said}` : said
+            if (final && calls.length) {
+              // Asked for tools with none allowed: keep only its text, so no call is left unanswered.
+              ranOut = true
+              if (said) contents = [...contents, { role: 'model', parts: [{ text: said }] }]
+              break
+            }
+            contents = [...contents, content]
             if (!calls.length) break
-            const responses: Part[] = calls.map((call) => {
+            // Steps left after this one; the last is for the answer only.
+            const left = rounds - 2 - round
+            const responses: Part[] = calls.map((call, i) => {
               const { ok, summary, result } = runTool(call.name, call.args ?? {})
               if (WRITE_TOOLS.has(call.name) || !ok) reply.steps.push({ name: call.name, ok, summary })
-              return { functionResponse: { name: call.name, ...(call.id && { id: call.id }), response: result } }
+              const response = i < calls.length - 1 ? result : {
+                ...result,
+                steps_left: left,
+                ...(left <= WRAP_UP_STEPS && {
+                  note: left ? `Only ${left} step${left > 1 ? 's' : ''} left: make your remaining changes now, together, then answer.` : 'No steps left: answer now.',
+                }),
+              }
+              return { functionResponse: { name: call.name, ...(call.id && { id: call.id }), response } }
             })
             contents = [...contents, { role: 'user', parts: responses }]
-            if (round === rounds - 1) reply.text ||= 'I made some changes but stopped before finishing. Check the itinerary, or ask me to continue.'
           }
-          if (!reply.text) reply.text = reply.steps.length ? 'Done.' : 'Sorry, I have no answer to that.'
+          const changed = reply.steps.some((s) => s.ok && WRITE_TOOLS.has(s.name))
+          if (!reply.text && ranOut) {
+            reply.text = changed
+              ? 'I made some changes but ran out of steps before finishing. Check the itinerary, or ask me to continue.'
+              : 'I ran out of steps while looking things up, before changing anything. Ask me to continue.'
+          }
+          if (!reply.text) reply.text = changed ? 'Done.' : 'Sorry, I have no answer to that.'
         } catch (e) {
           reply.error = (e as Error).message
           // Keep the conversation valid for the next try: drop the unanswered turn.
@@ -174,6 +199,7 @@ export const useChat = create<ChatState>()(
           messages: get().messages.map((m, i) => (i === index ? { ...m, undone: true } : m)),
         })
       },
+
 
       setThink: (think) => set({ think }),
       clear: () => set({ messages: [], contents: [], note: null }),

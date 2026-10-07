@@ -14,6 +14,9 @@ How to work:
 - Use tools for facts about cities (weather, costs, visas, transport, safety) and for which cities exist in the app.
   You can look up any city, not only the trip's or what the user is looking at: get_city_info (sections for full
   detail), compare_cities for questions across many cities, get_route for travel between any two cities.
+- Each of your replies that calls tools is one step, and a message has a limited number of steps (tool results show
+  steps_left). Look things up in bulk: get_route takes many pairs and get_city_info many cities in one call, and
+  independent tools can be called together in one step. Don't look up what the trip description already says.
   The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
 - When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
   Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
@@ -26,9 +29,9 @@ How to work:
   with update_preferences.
 - "Plan with AI": when asked to adjust a freshly generated plan to the user's wishes, keep that plan and change it with
   small edits (add, remove or move stops, set and lock nights around fixed dates); the plan must still fill the dates.
-  Don't call generate_plan for this. Work in few steps: look up what you need together, then make several changes at
-  once (call several tools in one step). Then list what you changed for which wish, and which wishes you couldn't
-  meet and why.
+  Don't call generate_plan for this. Work in few steps: look up what you need in one or two steps, then make several
+  changes at once (call several tools in one step). Then list what you changed for which wish, and which wishes you
+  couldn't meet and why.
 - Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
 - If a request is unclear or would remove a lot, ask one short question first.
 - Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
@@ -62,15 +65,16 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_city_info',
-    description: 'One city. Without sections: a summary (weather, daily cost, visa for the traveller\'s passport, travel advice, public transport, English, card payments, tap water, air quality, connections). With sections: everything the app has on those topics.',
+    description: 'One city, or several with `cities`. Without sections: a summary (weather, daily cost, visa for the traveller\'s passport, travel advice, public transport, English, card payments, tap water, air quality, connections). With sections: everything the app has on those topics.',
     parametersJsonSchema: obj({
       city: CITY,
+      cities: { type: 'array', items: CITY, description: 'Several cities at once (up to 8), instead of city' },
       month: { type: 'integer', description: 'Month 1–12 for the summary\'s weather and air; default: when the user would be there' },
       sections: {
         type: 'array', items: { type: 'string', enum: ['weather', 'costs', 'entry', 'safety', 'health', 'transport', 'daily'] },
         description: 'Full detail instead of the summary: weather (12 months incl. sun, humidity, air), costs (all prices, groceries, price level, Big Mac, shops, payments), entry (visa, Schengen, notices), safety (full travel advice), health (vaccines, risks, healthcare, pharmacies, hospital), transport (local, taxi, rentals, connections), daily (English, languages, plugs, emergency number, mobile internet, shops, ATMs)',
       },
-    }, ['city']),
+    }),
   },
   {
     name: 'get_shared_view',
@@ -90,8 +94,12 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_route',
-    description: 'The best way to travel between any two cities in the app (also ones not in the trip): each part with mode, hours, price in EUR, and whether it is estimated from road distance.',
-    parametersJsonSchema: obj({ from: CITY, to: CITY }, ['from', 'to']),
+    description: 'The best way to travel between two cities in the app (also ones not in the trip), or between many pairs at once with `pairs`: each part with mode, hours, price in EUR, and whether it is estimated from road distance.',
+    parametersJsonSchema: obj({
+      from: CITY,
+      to: CITY,
+      pairs: { type: 'array', items: obj({ from: CITY, to: CITY }, ['from', 'to']), description: 'Many routes at once (up to 20), instead of from and to' },
+    }),
   },
   {
     name: 'get_options',

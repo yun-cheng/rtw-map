@@ -148,7 +148,26 @@ function findCities(args: Args): ToolResult {
   }
 }
 
+/** Lookups that take many items at once; one bad item gives an error in its place instead of failing all. */
+const MAX_CITIES = 8
+const MAX_PAIRS = 20
+
+function each<T>(items: T[], max: number, what: string, fn: (item: T) => ToolResult): ToolResult[] {
+  if (items.length > max) throw new ToolError(`At most ${max} ${what} at once`)
+  return items.map((item) => {
+    try {
+      return fn(item)
+    } catch (e) {
+      if (e instanceof ToolError) return { error: e.message }
+      throw e
+    }
+  })
+}
+
 function cityInfo(args: Args): ToolResult {
+  if (Array.isArray(args.cities) && args.cities.length) {
+    return { cities: each(args.cities, MAX_CITIES, 'cities', (city) => cityInfo({ ...args, cities: undefined, city })) }
+  }
   if (Array.isArray(args.sections) && args.sections.length) return citySections(cityId(args.city), args.sections.map(String))
   const id = cityId(args.city)
   const { input, plan } = useTrip.getState()
@@ -353,6 +372,9 @@ const legResult = (leg: Leg): ToolResult => ({
 
 /** The best way between any two cities in the app (not only stops of the trip). */
 function routeTool(args: Args): ToolResult {
+  if (Array.isArray(args.pairs) && args.pairs.length) {
+    return { routes: each(args.pairs as Args[], MAX_PAIRS, 'routes', (pair) => routeTool({ from: pair?.from, to: pair?.to })) }
+  }
   const from = cityId(args.from)
   const to = cityId(args.to)
   if (from === to) throw new ToolError('from and to are the same city')

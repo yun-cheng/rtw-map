@@ -160,6 +160,10 @@ describe('chat endpoint checks', () => {
     expect(body.systemInstruction.parts[0].text).toMatch(/trip assistant[\s\S]*Today is 2026-10-05[\s\S]*latest message:\ntrip/)
     expect(body.tools[0].functionDeclarations).toBe(TOOLS)
     expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('high')
+    expect(body.toolConfig.functionCallingConfig.mode).toBe('AUTO')
+    // The last call of a message answers without tools.
+    const final = parseChatRequest({ contents: [user('hi')], context: 'trip', think: true, final: true })
+    expect(geminiRequest(final as Exclude<typeof final, string>, '2026-10-05').toolConfig.functionCallingConfig.mode).toBe('NONE')
   })
 
   it('rejects requests that are malformed, too long, or try to add other content', () => {
@@ -265,5 +269,14 @@ describe('looking up any data', () => {
     expect(r.result).toMatchObject({ from: 'Tirana', to: 'Kraków', reachable: true })
     expect((r.result.parts as unknown[]).length).toBeGreaterThan(0)
     expect(runTool('get_route', { from: 'Tirana', to: 'Tirana' }).ok).toBe(false)
+  })
+
+  it('looks up many routes or cities in one call, with an error in place of a bad item', () => {
+    const routes = runTool('get_route', { pairs: [{ from: 'Tirana', to: 'Kraków' }, { from: 'Tirana', to: 'Atlantis' }] }).result.routes as Record<string, unknown>[]
+    expect(routes[0]).toMatchObject({ from: 'Tirana', to: 'Kraków', reachable: true })
+    expect(routes[1].error).toMatch(/not a city/)
+    const cities = runTool('get_city_info', { cities: ['Riga', 'Kazan'], sections: ['transport'] }).result.cities as Record<string, unknown>[]
+    expect(cities.map((c) => c.name)).toEqual(['Riga', 'Kazan'])
+    expect(runTool('get_route', { pairs: Array(21).fill({ from: 'Riga', to: 'Vilnius' }) }).ok).toBe(false)
   })
 })
