@@ -1,0 +1,23 @@
+<!doctype html>
+<!-- The seed data review page: development only (npm run dev, then /data.html). The build uses index.html alone, so it is never deployed. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>rtw-map seed data</title>
+    <script>
+      // Apply the saved light/dark theme before the page paints (see src/ui/theme.ts).
+      try {
+        var t = localStorage.getItem('rtw-map-theme')
+        document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+      } catch (e) {}
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/review/main.tsx"></script>
+  </body>
+</html>
