@@ -98,7 +98,7 @@ const GROCERIES: [keyof (typeof ds.costs)[string]['groceries'], string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, removeStop, cityTab, setCityTab } = useTrip()
+  const { plan, input, select, addCity, removeStop, cityTab, setCityTab, layer, layerMonth } = useTrip()
   const { currency, fmt } = useMoney()
   const { unit, range } = useTemp()
   const city = ds.cities[cityId]
@@ -132,9 +132,14 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
 
+  // The months the weather and air shown are for: a month picked on the map's Weather or Air view; else the stay
+  // (for a stop) or when the trip would pass by.
+  const pickedMonth = (layer === 'climate' || layer === 'air') && layerMonth ? layerMonth : 0
   const stayMonths = new Set<number>()
-  if (stop) for (let d = 0; d <= stop.nights; d++) stayMonths.add(monthOf(addDays(stop.arrive, d)))
-  else stayMonths.add(useTrip.getState().layerMonth || likelyMonth(ds, plan, input, cityId))
+  if (pickedMonth) stayMonths.add(pickedMonth)
+  else if (stop) for (let d = 0; d <= stop.nights; d++) stayMonths.add(monthOf(addDays(stop.arrive, d)))
+  else stayMonths.add(likelyMonth(ds, plan, input, cityId))
+  const monthsLabel = pickedMonth ? 'Map month' : stop ? 'Your stay' : 'Trip month'
 
   const connections = ds.connections
     .filter((c) => c.from === cityId || c.to === cityId)
@@ -217,7 +222,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               <span><span className="text-orange-600">●</span> High °{unit}</span>
               <span><span className="text-sky-600">●</span> Low °{unit}</span>
               <span><span className="text-blue-300">■</span> Rain days</span>
-              <span className="text-accent">▮ {stop ? 'Your stay' : 'Selected month'}</span>
+              <span className="text-accent">▮ {monthsLabel}</span>
             </div>
             {[...stayMonths].map((m) => {
               const c = climate[m - 1]
@@ -330,7 +335,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} />
             <div className="mt-1 flex gap-3 text-[11px] text-muted">
               <span>┄ WHO daily guideline ({ds.air.whoDaily} µg/m³)</span>
-              <span className="text-accent">▯ {stop ? 'Your stay' : 'Selected month'}</span>
+              <span className="text-accent">▯ {monthsLabel}</span>
             </div>
             {[...stayMonths].map((m) => {
               const a = air[m - 1]
