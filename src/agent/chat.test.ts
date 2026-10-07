@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
-import { useChat } from './chat'
+import { splitChoices, useChat } from './chat'
 
 const reply = (text: string) => ({ status: 200, body: { content: { role: 'model', parts: [{ text }] } } })
 const toolCall = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'get_options', args: {} } }] } } }
@@ -23,13 +23,14 @@ beforeEach(() => {
   vi.useFakeTimers()
   useTrip.setState({ input: testCaseInput(ds, 'US'), stops: [], plan: null })
   useChat.getState().clear()
+  useChat.getState().setThink(false)
 })
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
-const lastReply = () => useChat.getState().messages.at(-1) as { text: string; error?: string }
+const lastReply = () => useChat.getState().messages.at(-1) as { text: string; error?: string; choices?: string[] }
 
 describe('assistant chat', () => {
   it('waits and tries again when the per-minute limit is hit', async () => {
@@ -104,4 +105,31 @@ describe('assistant chat', () => {
     expect(contents.at(-1)!.parts.some((p) => p.functionCall)).toBe(false)
   })
 
+  it('turns a last "Choices:" line into buttons', () => {
+    expect(splitChoices('Swap Kotor for Budva?\n\nChoices: [Yes, swap them] [Keep Kotor]')).toEqual({ text: 'Swap Kotor for Budva?', choices: ['Yes, swap them', 'Keep Kotor'] })
+    expect(splitChoices('Choices: [a] [b]\nmore text')).toEqual({ text: 'Choices: [a] [b]\nmore text', choices: [] })
+    expect(splitChoices('No choices here [really]').choices).toEqual([])
+    expect(splitChoices('Pick\nChoices: [1] [2] [3] [4] [5]').choices).toHaveLength(4)
+  })
+
+  it('offers the model\'s choices, Continue when out of steps, and Try again after a failure', async () => {
+    serve(reply('Make Sarajevo longer?\nChoices: [Yes] [No]'))
+    await useChat.getState().send('hi')
+    expect(lastReply()).toMatchObject({ text: 'Make Sarajevo longer?', choices: ['Yes', 'No'] })
+
+    serve(...Array(12).fill(toolCall))
+    await useChat.getState().send('chat')
+    expect(lastReply().choices).toEqual(['Continue'])
+
+    serve({ status: 502, body: { error: 'The assistant failed to answer: try again.' } }, reply('Here you go'))
+    await useChat.getState().send('question')
+    expect(lastReply().error).toBeTruthy()
+    const before = useChat.getState().messages.length
+    await useChat.getState().retry(before - 1)
+    const messages = useChat.getState().messages
+    // The failed attempt is replaced, not repeated.
+    expect(messages).toHaveLength(before)
+    expect(messages.at(-2)).toMatchObject({ role: 'user', text: 'question' })
+    expect(lastReply().text).toBe('Here you go')
+  })
 })

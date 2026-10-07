@@ -41,7 +41,15 @@ function RichText({ text }: { text: string }) {
   return <>{out}</>
 }
 
-function AssistantMessage({ msg, index, canUndo }: { msg: Extract<ChatMessage, { role: 'assistant' }>; index: number; canUndo: boolean }) {
+/** A reply, with its changes (and Undo) and, on the latest reply, buttons to answer it with a click. */
+function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
+  msg: Extract<ChatMessage, { role: 'assistant' }>
+  index: number
+  canUndo: boolean
+  /** Set on the latest reply when a choice can be sent. */
+  onChoose?: (text: string) => void
+  onRetry?: () => void
+}) {
   const undo = useChat((s) => s.undo)
   return (
     <div className="text-[13px] leading-relaxed">
@@ -62,7 +70,21 @@ function AssistantMessage({ msg, index, canUndo }: { msg: Extract<ChatMessage, {
           </ul>
         </div>
       )}
+      {(onChoose && msg.choices?.length) || (onRetry && msg.error) ? (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {msg.error && onRetry && <ChoiceButton onClick={onRetry}>↻ Try again</ChoiceButton>}
+          {!msg.error && onChoose && msg.choices?.map((c) => <ChoiceButton key={c} onClick={() => onChoose(c)}>{c}</ChoiceButton>)}
+        </div>
+      ) : null}
     </div>
+  )
+}
+
+function ChoiceButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button onClick={onClick} className="rounded-full border border-accent/50 px-2.5 py-1 text-left text-[12px] text-accent hover:bg-accent-soft">
+      {children}
+    </button>
   )
 }
 
@@ -109,7 +131,7 @@ export function AssistantPanel() {
 function Chat() {
   const usage = useAccount((s) => s.usage)
   const outOfMessages = usage?.remaining === 0
-  const { messages, busy, think, send, setThink, clear } = useChat()
+  const { messages, busy, think, send, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const end = useRef<HTMLDivElement>(null)
   const view = useViewItems()
@@ -152,7 +174,13 @@ function Chat() {
                   {m.view && <div className="text-[11px] text-muted" title="What you were looking at, sent with this message">Context: {m.view.join(', ')}</div>}
                 </div>
               ) : (
-                <AssistantMessage key={i} msg={m} index={i} canUndo={i === lastChange} />
+                <AssistantMessage
+                  key={i} msg={m} index={i} canUndo={i === lastChange}
+                  {...(i === messages.length - 1 && !busy && !outOfMessages && {
+                    onChoose: (text: string) => void send(text, shared, { think: m.think }),
+                    onRetry: () => void retry(i, shared),
+                  })}
+                />
               ),
             )}
             {busy && <p className="text-[13px] text-muted">{think ? 'Thinking it through…' : 'Working on it…'}</p>}

@@ -16,7 +16,9 @@ export type ToolStep = { name: string; ok: boolean; summary: string }
 export type ChatMessage =
   /** `view`: the labels of what the user shared from the screen with this message. */
   | { role: 'user'; text: string; view?: string[] }
-  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string }
+  /** `choices`: short replies shown as buttons (the model's, or Continue when it ran out of steps); `think`: whether
+   *  this reply thought harder, so a clicked choice or a retry continues the same way. */
+  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string; choices?: string[]; think?: boolean }
 
 type ChatState = {
   messages: ChatMessage[]
@@ -30,6 +32,8 @@ type ChatState = {
    *  `think` overrides the "Think harder" switch, `rounds` allows more model calls than a chat message. */
   send: (text: string, view?: ViewItem[], options?: { think?: boolean; rounds?: number }) => Promise<void>
   undo: (index: number) => void
+  /** Sends the message that a failed reply answered again, in place of the failed attempt. */
+  retry: (index: number, view?: ViewItem[]) => Promise<void>
   setThink: (think: boolean) => void
   clear: () => void
   /** Shows the chat saved with a trip (or an empty one). */
@@ -54,6 +58,18 @@ const MAX_CONTENTS = 60
 const MAX_BYTES = 170_000
 /** Older tool results bigger than this are shortened (the latest results stay whole). */
 const OLD_RESULT_CHARS = 2_000
+
+/** Clickable replies: the model ends its text with a line like `Choices: [Yes, do it] [Keep it as it is]`. */
+const CHOICES_LINE = /\n*^Choices:\s*((?:\[[^\]\n]+\]\s*)+)$/m
+const MAX_CHOICES = 4
+
+/** The reply's text without the choices line, and the choices in it. */
+export function splitChoices(text: string): { text: string; choices: string[] } {
+  const m = text.match(CHOICES_LINE)
+  if (!m || m.index === undefined || text.slice(m.index + m[0].length).trim()) return { text, choices: [] }
+  const choices = [...m[1].matchAll(/\[([^\]\n]+)\]/g)].map((c) => c[1].trim()).filter(Boolean).slice(0, MAX_CHOICES)
+  return { text: text.slice(0, m.index).trimEnd(), choices }
+}
 
 const isUserText = (c: Content) => c.role === 'user' && c.parts.some((p) => p.text !== undefined)
 
@@ -132,17 +148,20 @@ export const useChat = create<ChatState>()(
         setSharedView(view)
         const prefix = get().note ? `[${get().note}]\n` : ''
         let contents = trim([...get().contents, { role: 'user', parts: [{ text: prefix + text.trim() }] }])
-        const reply: Extract<ChatMessage, { role: 'assistant' }> = { role: 'assistant', text: '', steps: [], changes: [] }
+        const reply: Extract<ChatMessage, { role: 'assistant' }> = { role: 'assistant', text: '', steps: [], changes: [], think }
         set({ busy: true, note: null, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
 
         let ranOut = false
+        let choices: string[] = []
         try {
           for (let round = 0; round < rounds; round++) {
             contents = trim(compact(contents))
             const final = round === rounds - 1
             const content = await callModel(contents, context, think, final)
             const calls = content.parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
-            const said = content.parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim()
+            const split = splitChoices(content.parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim())
+            const said = split.text
+            if (split.choices.length) choices = split.choices
             if (said) reply.text = reply.text ? `${reply.text}\n\n${said}` : said
             if (final && calls.length) {
               // Asked for tools with none allowed: keep only its text, so no call is left unanswered.
@@ -175,6 +194,8 @@ export const useChat = create<ChatState>()(
               : 'I ran out of steps while looking things up, before changing anything. Ask me to continue.'
           }
           if (!reply.text) reply.text = changed ? 'Done.' : 'Sorry, I have no answer to that.'
+          if (ranOut) choices = ['Continue', ...choices]
+          if (choices.length) reply.choices = [...new Set(choices)].slice(0, MAX_CHOICES)
         } catch (e) {
           reply.error = (e as Error).message
           // Keep the conversation valid for the next try: drop the unanswered turn.
@@ -200,6 +221,14 @@ export const useChat = create<ChatState>()(
         })
       },
 
+      retry: async (index, view = []) => {
+        const { messages, send } = get()
+        const failed = messages[index]
+        const asked = messages[index - 1]
+        if (failed?.role !== 'assistant' || !failed.error || asked?.role !== 'user' || get().busy) return
+        set({ messages: messages.filter((_, i) => i !== index && i !== index - 1) })
+        await send(asked.text, view, { think: failed.think })
+      },
 
       setThink: (think) => set({ think }),
       clear: () => set({ messages: [], contents: [], note: null }),
