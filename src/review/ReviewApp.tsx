@@ -119,7 +119,7 @@ export function ReviewApp() {
           No row for {table.missing.length}: {table.missing.join(', ')}
         </p>
       )}
-      <DataTable key={`${source.id}/${at.part}`} table={shown} wrap={wrap} onlyIssues={onlyIssues} unitOf={(col) => {
+      <DataTable key={`${source.id}/${at.part}`} id={`${source.id}/${at.part}`} table={shown} wrap={wrap} onlyIssues={onlyIssues} unitOf={(col) => {
         const kind = table.money?.[col]
         return converted && inOne && kind ? currency : kind === 'EUR' ? 'EUR' : undefined
       }} />

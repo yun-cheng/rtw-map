@@ -37,6 +37,8 @@ export type Table = {
   missing: string[]
   /** Money columns: in EUR, or in the row's own `currency`. */
   money?: Record<string, 'EUR' | 'row'>
+  /** Columns pinned at the left by default (after the line number): what each row is about. */
+  pinned: string[]
 }
 
 export type Source = { id: string; label: string; file: string; about?: string; updatedAt?: string; notes?: string[]; tables: Record<string, Table> }
@@ -123,6 +125,8 @@ export function table(label: string, data: { columns?: string[]; rows: Row[]; wh
   /** Every one of these should have a row (matched on `key`). */
   expect?: string[]
   money?: Table['money']
+  /** Default: the first column. */
+  pinned?: string[]
 } = {}): Table {
   const { rows, where } = data
   const links = opts.links ?? {}
@@ -148,6 +152,7 @@ export function table(label: string, data: { columns?: string[]; rows: Row[]; wh
   const present = new Set(keyOf ? rows.map(keyOf) : [])
   return {
     label, rows, where, issues, links, lines: where[0]?.startsWith('line ') ?? false, money: opts.money,
+    pinned: opts.pinned ?? (data.columns ?? columnsOf(rows)).slice(0, 1),
     columns: data.columns ?? columnsOf(rows),
     missing: (opts.expect ?? []).filter((k) => !present.has(k)),
   }
@@ -185,7 +190,7 @@ export const SOURCES: Source[] = [
     about: 'One row per city. Empty lat/lon are looked up from GeoNames by the "geoname" name.',
     tables: {
       all: table('Cities', { ...cities, where: csvLines(cities.rows.length) }, {
-        key: 'id', links: { iso2: 'country' },
+        key: 'id', links: { iso2: 'country' }, pinned: ['id', 'name'],
         rule: both(required(['id', 'name', 'iso2', 'daysMin', 'daysIdeal', 'daysMax']), ordered([['daysMin', 'daysIdeal'], ['daysIdeal', 'daysMax']])),
       }),
     },
@@ -195,7 +200,7 @@ export const SOURCES: Source[] = [
     about: 'Ground and air routes between cities: minutes, price range (EUR) and how often.',
     tables: {
       all: table('Routes', { ...connections, where: csvLines(connections.rows.length) }, {
-        key: (r) => `${r.from}|${r.to}|${r.mode}`, links: { from: 'city', to: 'city' }, money: { priceMin: 'EUR', priceMax: 'EUR' },
+        key: (r) => `${r.from}|${r.to}|${r.mode}`, links: { from: 'city', to: 'city' }, money: { priceMin: 'EUR', priceMax: 'EUR' }, pinned: ['from', 'to'],
         rule: both(required(['from', 'to', 'mode', 'durationMin']), ordered([['priceMin', 'priceMax']]), (r): Record<string, string> => (r.from !== null && r.from === r.to ? { to: 'Same as "from"' } : {})),
       }),
     },
