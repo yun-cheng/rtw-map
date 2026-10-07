@@ -4,6 +4,7 @@ import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LAB
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
+import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
@@ -45,37 +46,6 @@ const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
   { key: 'safety', label: 'Safety', sections: ['safety'] },
   { key: 'entry', label: 'Entry', sections: ['visa'] },
 ]
-
-/**
- * For a bar that scrolls sideways: the mouse wheel scrolls it sideways too, and the edge fades where more is
- * hidden, so it's clear there's more to see.
- */
-function useSideScroll() {
-  const ref = useRef<HTMLElement>(null)
-  const [edges, setEdges] = useState({ left: false, right: false })
-  useEffect(() => {
-    const el = ref.current
-    if (!el) return
-    const update = () => setEdges({ left: el.scrollLeft > 1, right: el.scrollLeft + el.clientWidth < el.scrollWidth - 1 })
-    const onWheel = (e: WheelEvent) => {
-      if (el.scrollWidth <= el.clientWidth || Math.abs(e.deltaX) > Math.abs(e.deltaY)) return
-      e.preventDefault()
-      el.scrollLeft += e.deltaY
-    }
-    update()
-    el.addEventListener('scroll', update, { passive: true })
-    el.addEventListener('wheel', onWheel, { passive: false })
-    const resize = new ResizeObserver(update)
-    resize.observe(el)
-    return () => {
-      el.removeEventListener('scroll', update)
-      el.removeEventListener('wheel', onWheel)
-      resize.disconnect()
-    }
-  }, [])
-  const fade = `linear-gradient(to right, ${edges.left ? 'transparent, #000 24px' : '#000'}, ${edges.right ? '#000 calc(100% - 24px), transparent' : '#000'})`
-  return { ref, mask: { maskImage: fade, WebkitMaskImage: fade } }
-}
 
 /** A number with a label underneath, in the grids of shops and medical help. */
 const Tile = ({ value, label }: { value: string; label: string }) => (

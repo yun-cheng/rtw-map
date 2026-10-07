@@ -97,6 +97,13 @@ body {
   &::-webkit-scrollbar { display: none; }
 }
 
+/* A thin scrollbar in the theme's colours, for strips that scroll sideways (e.g. the timeline): visible, so it works
+   with any mouse or trackpad. */
+@utility thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-muted) transparent;
+}
+
 /* Charts (Recharts) are focusable for arrow-key browsing; the tooltip shows where focus is, so no focus box (Chrome
    would draw one on every mouse click). */
 .recharts-wrapper :focus {
