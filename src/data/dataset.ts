@@ -15,6 +15,7 @@ import mobileJson from '../../data/gen/mobile.json'
 import overtureJson from '../../data/gen/overture.json'
 import noticesJson from '../../data/gen/notices.json'
 import paymentsJson from '../../data/gen/payments.json'
+import phrasesJson from '../../data/gen/phrases.json'
 import populationJson from '../../data/gen/population.json'
 import priceLevelsJson from '../../data/gen/price-levels.json'
 import roadsJson from '../../data/gen/roads.json'
@@ -47,6 +48,7 @@ export const dataset: Dataset = {
   amenities: { radiusKm: amenitiesJson.radiusKm, byCity: amenitiesJson.amenities as Dataset['amenities']['byCity'] },
   shopping: shoppingJson.countries as Dataset['shopping'],
   payments: paymentsJson as unknown as Dataset['payments'],
+  phrases: phrasesJson as unknown as Dataset['phrases'],
   priceLevels: { compare: priceLevelsJson.compare, levels: priceLevelsJson.levels },
   bigMac: bigMacJson as unknown as Dataset['bigMac'],
   meta: {
@@ -69,6 +71,7 @@ export const dataset: Dataset = {
     amenities: amenitiesJson._meta,
     shopping: shoppingJson._meta,
     payments: paymentsJson._meta,
+    phrases: phrasesJson._meta,
     priceLevels: priceLevelsJson._meta,
     bigMac: bigMacJson._meta,
   },

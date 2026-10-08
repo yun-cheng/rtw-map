@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -143,6 +143,22 @@ describe('english level', () => {
     expect(ru.warnings.find((w) => w.kind === 'language')?.title).toMatch(/Pskov/)
     const ee = evaluatePlan(ds, input, [stop('tallinn'), stop('tartu')])
     expect(ee.warnings.some((w) => w.kind === 'language')).toBe(false)
+  })
+})
+
+describe('phrases', () => {
+  it('has every phrase, with how to say it, in every language of every city', () => {
+    for (const id of Object.keys(ds.cities)) {
+      const p = phrasesFor(ds, id)
+      expect(p, id).not.toBeNull()
+      if (!p!.languages.length) expect(p!.note, id).toBeTruthy()
+      for (const l of p!.languages) for (const { key } of PHRASES) expect(l.phrases[key].text && l.phrases[key].say, `${id} ${l.tag} ${key}`).toBeTruthy()
+    }
+  })
+  it("lists the country's languages, main one first, and none where English is the common one", () => {
+    expect(phrasesFor(ds, 'tokyo')!.languages[0].phrases.thanks.text).toBe('ありがとうございます')
+    expect(phrasesFor(ds, 'minsk')!.languages.map((l) => l.tag)).toEqual(['ru', 'be'])
+    expect(phrasesFor(ds, 'singapore')!.languages).toEqual([])
   })
 })
 

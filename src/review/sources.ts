@@ -9,6 +9,7 @@ import healthJson from '../../data/seed/health.json'
 import localTransportJson from '../../data/seed/local-transport.json'
 import noticesJson from '../../data/seed/notices.json'
 import paymentsJson from '../../data/seed/payments.json'
+import phrasesJson from '../../data/seed/phrases.json'
 import shoppingJson from '../../data/seed/shopping.json'
 import fxJson from '../../data/gen/fx.json'
 import priceLevelsJson from '../../data/gen/price-levels.json'
@@ -235,6 +236,12 @@ export const SOURCES: Source[] = [
   }),
   keyedSource('payments', 'Payments', paymentsJson, { notes: (paymentsJson as { tips?: string[] }).tips }),
   keyedSource('shopping', 'Shopping', shoppingJson, {}),
+  (() => {
+    // Each country's language, and each language's phrases (one row per language, a column per phrase and its pronunciation).
+    const source = keyedSource('phrases', 'Phrases', phrasesJson, {})
+    source.tables.languages = table('Languages', keyedRows(phrasesJson.languages, 'language'), { key: 'language', pinned: ['language', 'name'] })
+    return source
+  })(),
   (() => {
     const j = noticesJson as Meta & { notices: Record<string, unknown>[] }
     const rows = j.notices.map((n) => flatten(n))

@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, englishLevel,
-  groceryDay, likelyMonth, mobileInternet, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -308,10 +308,24 @@ function citySections(id: string, sections: string[]): ToolResult {
         languages: country.languages, religion: country.religion, plugs: country.plugs, voltage: country.voltage, emergency_number: country.emergency,
         notes: country.notes, timezone: city.timezone, population: city.population, mobile_internet: mobileView(id),
         nearby: amen && { supermarkets: amen.supermarket, convenience_stores: amen.convenience, atms: amen.atm, within_km: ds.amenities.radiusKm, note: 'rough counts: map data misses places' },
+        phrases: phrasesView(id),
       }
     }
   }
   return out
+}
+
+/** The Phrases tab for the assistant: each language spoken there (main one first), its phrases and how to say them. */
+function phrasesView(id: string) {
+  const p = phrasesFor(ds, id)
+  if (!p) return 'no data'
+  return {
+    note: p.note,
+    languages: p.languages.map((l) => ({
+      language: l.name, note: l.note,
+      phrases: PHRASES.map(({ key, label }) => ({ english: label, ...l.phrases[key] })),
+    })),
+  }
 }
 
 /** Mobile internet in a city for the assistant: its band and typical speeds. */
@@ -400,6 +414,7 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
   weather: ['weather', 'air_quality'],
   money: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
   daily: ['english', 'mobile_internet'],
+  phrases: ['phrases'], // not in the summary: only when the tab is open
   health: ['vaccines', 'tap_water'],
   safety: ['travel_advice'],
   entry: ['schengen', 'visa'],
@@ -413,7 +428,7 @@ function viewDetails(ref: ViewRef): ToolResult {
     const fields = TAB_FIELDS[ref.tab]
     return {
       open: `${info.name} details, ${ref.tab} tab`,
-      ...(fields ? { name: info.name, country: info.country, in_itinerary: info.in_itinerary, ...Object.fromEntries(fields.map((f) => [f, info[f]])) } : info),
+      ...(fields ? { name: info.name, country: info.country, in_itinerary: info.in_itinerary, ...Object.fromEntries(fields.map((f) => [f, f === 'phrases' ? phrasesView(ref.id) : info[f]])) } : info),
     }
   }
   if (ref.kind === 'journey') {

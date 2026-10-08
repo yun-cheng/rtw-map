@@ -162,6 +162,22 @@ export type PriceLevel = { level: number; year: number; source: string }
 
 export type BigMac = { localPrice: number; currency: string }
 
+/** The everyday phrases each city's Phrases tab shows, in this order. */
+export type PhraseKey = 'hello' | 'thanks' | 'bye' | 'howMuch' | 'thisOne' | 'dontUnderstand' | 'cheers'
+/** A phrase in the local script, how to say it, and a note if it needs one. */
+export type Phrase = { text: string; say: string; note?: string }
+/** A language's phrases, keyed by its language tag ("sr", "zh-TW"). */
+export type PhraseLanguage = { name: string; note?: string; phrases: Record<PhraseKey, Phrase> }
+/** Where each language is spoken: the first is the main one, the rest can be switched to. */
+export type PhrasePlace = { languages: string[]; note?: string }
+export type Phrases = {
+  languages: Record<string, PhraseLanguage>
+  /** A country's languages; none where English is the common language (Singapore), with a note saying so. */
+  countries: Record<string, PhrasePlace>
+  /** A city whose languages differ from its country's (Barcelona: Catalan and Spanish). */
+  cities?: Record<string, PhrasePlace>
+}
+
 /** How you pay in a country: 1 = cash only … 5 = cards and phones everywhere. */
 export type CountryPayments = {
   cardLevel: number
@@ -198,6 +214,7 @@ export type Dataset = {
   priceLevels: { compare: { iso2: string; name: string; currency: string }[]; levels: Record<string, PriceLevel> }
   bigMac: { date: string; euroArea: BigMac | null; prices: Record<string, BigMac> }
   payments: { tips: string[]; countries: Record<string, CountryPayments>; cities: Record<string, { cardLevel?: number; note?: string }> }
+  phrases: Phrases
   meta: Record<string, Meta>
 }
 

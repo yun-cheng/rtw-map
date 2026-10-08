@@ -10,7 +10,7 @@ import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
 const PANELS = ['setup', 'prefs', 'itinerary', 'assistant'] as const
-const TABS: CityTab[] = ['overview', 'transport', 'weather', 'money', 'daily', 'health', 'safety', 'entry']
+const TABS: CityTab[] = ['overview', 'transport', 'weather', 'money', 'daily', 'phrases', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
 

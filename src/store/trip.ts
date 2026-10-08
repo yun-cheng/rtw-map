@@ -9,7 +9,7 @@ import {
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type CityTab = 'overview' | 'transport' | 'weather' | 'money' | 'daily' | 'health' | 'safety' | 'entry'
+export type CityTab = 'overview' | 'transport' | 'weather' | 'money' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
 export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen'
 export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen']
 /** The kinds of place the Nearby map view can show. */

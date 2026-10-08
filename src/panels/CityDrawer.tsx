@@ -1,11 +1,11 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { useSideScroll } from '../ui/useSideScroll'
-import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
+import { Badge, Button, LevelBar, Links, Row, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CostDay } from './CostDay'
@@ -33,7 +33,7 @@ const PACES: { value: Pace; icon: string; label: string }[] = [
 ]
 
 type SectionKey =
-  | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people'
+  | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people' | 'phrases'
   | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
 
 /** A sub-tab of a city panel tab, and the sections it shows. */
@@ -53,6 +53,7 @@ const TABS: { key: CityTab; label: string; sections: SectionKey[]; parts?: Part[
     ],
   },
   { key: 'daily', label: 'Daily life', sections: ['language', 'phone', 'services', 'people'] },
+  { key: 'phrases', label: 'Phrases', sections: ['phrases'] },
   { key: 'health', label: 'Health', sections: ['vaccines', 'health', 'medical'] },
   { key: 'safety', label: 'Safety', sections: ['safety'] },
   { key: 'entry', label: 'Entry', sections: ['visa'] },
@@ -113,6 +114,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const services = nearby(ds, cityId)
   const shopping = ds.shopping[city.iso2]
   const pay = ds.payments.countries[city.iso2]
+  const phrases = phrasesFor(ds, cityId)
+  // The language the Phrases tab is in: the city's main one until another is picked.
+  const [phraseLang, setPhraseLang] = useState<string | null>(null)
+  const lang = phrases?.languages.find((l) => l.tag === phraseLang) ?? phrases?.languages[0]
   const card = cardLevel(ds, cityId)
   const payNote = ds.payments.cities[cityId]?.note
   const entryNotices = country.schengen && schengenApplies(ds, input.passport)
@@ -500,6 +505,30 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <a className="text-[12px] text-accent hover:underline" href={n.url} target="_blank" rel="noreferrer">Official site ↗</a>
           </div>
         ))}
+      </Section>
+    ),
+    phrases: phrases && (
+      <Section title={lang ? `In ${lang.name}` : 'Phrases'}>
+        {/* Where more than one language is spoken, a switch picks which one the phrases are in; the main one first. */}
+        {phrases.languages.length > 1 && (
+          <div className="mb-2">
+            <Segmented value={lang!.tag} onChange={setPhraseLang} options={phrases.languages.map((l) => ({ value: l.tag, label: l.name }))} />
+          </div>
+        )}
+        {(phrases.note || lang?.note) && <p className="mb-1.5 text-[12px] text-muted">{[lang?.note, phrases.note].filter(Boolean).join(' ')}</p>}
+        {lang && PHRASES.map(({ key, label }) => {
+          const p = lang.phrases[key]
+          return (
+            <div key={key} className="flex items-baseline justify-between gap-3 py-1.5">
+              <span className="shrink-0 text-[13px] text-muted">{label}</span>
+              <div className="min-w-0 text-right">
+                <div lang={lang.tag} className="text-[15px] font-medium">{p.text}</div>
+                <div className="text-[12px] text-muted">{p.say}</div>
+                {p.note && <div className="text-[11px] text-muted">{p.note}</div>}
+              </div>
+            </div>
+          )
+        })}
       </Section>
     ),
     people: (

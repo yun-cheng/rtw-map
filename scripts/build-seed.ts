@@ -1,6 +1,8 @@
 // Converts the hand-curated seed files (countries, costs, connections, notices) into app-ready JSON.
 import { join } from 'node:path'
 import { GROCERY_KEYS } from '../src/planner/cost'
+import { PHRASES } from '../src/planner/phrases'
+import type { Phrases } from '../src/planner/types'
 import { GEN, SEED, readCsv, readJson, writeJson } from './lib.ts'
 
 const SEED_DATE = '2026-10-04'
@@ -77,3 +79,23 @@ for (const name of ['health', 'shopping', 'payments']) {
   }
   writeJson(join(GEN, `${name}.json`), data)
 }
+
+// Phrases: every country lists its languages (or none, with a note), cities with their own are real cities, and every
+// language has every phrase.
+const phrases = readJson<Phrases & { _meta: unknown }>(join(SEED, 'phrases.json'))
+const placeProblems = (where: string, x: { languages: string[]; note?: string }) => [
+  ...(x.languages.length || x.note ? [] : [`${where}: no language and no note`]),
+  ...x.languages.filter((l) => !phrases.languages[l]).map((l) => `${where}: unknown language ${l}`),
+]
+const phraseProblems = [
+  ...isoCodes.filter((c) => !phrases.countries[c]).map((c) => `missing country ${c}`),
+  ...Object.entries(phrases.countries).flatMap(([c, x]) => placeProblems(c, x)),
+  ...Object.entries(phrases.cities ?? {}).flatMap(([id, x]) => [...(cityIds.includes(id) ? [] : [`unknown city ${id}`]), ...placeProblems(id, x)]),
+  ...Object.entries(phrases.languages).flatMap(([tag, l]) =>
+    PHRASES.filter((p) => !l.phrases[p.key]?.text || !l.phrases[p.key]?.say).map((p) => `${tag}: missing ${p.key}`)),
+]
+if (phraseProblems.length) {
+  console.error(`phrases.json: ${phraseProblems.join('; ')}`)
+  process.exit(1)
+}
+writeJson(join(GEN, 'phrases.json'), phrases)

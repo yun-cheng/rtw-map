@@ -31,13 +31,14 @@ const TAB_SHOWS: Record<CityTab, string> = {
   weather: 'monthly highs and lows, rainy days, sunshine and air quality, with the stay months highlighted',
   money: 'daily costs per budget, sample prices, how widely cards are accepted and when cash is needed',
   daily: 'how easy English is, mobile internet speed, plugs, shops and people & culture',
+  phrases: 'seven everyday phrases in the local language (hello, thank you, bye, how much, this one, I don\'t understand, cheers), with how to say them',
   health: 'vaccines and medicines (CDC advice), tap water, health risks, healthcare, and pharmacies, clinics and the nearest hospital',
   safety: 'government travel advice, the emergency number and travel insurance',
   entry: 'the visa rule for their passport, Schengen days and entry notices',
 }
 
 const TAB_NAMES: Record<CityTab, string> = {
-  overview: 'Overview', transport: 'Transport', weather: 'Weather', money: 'Money', daily: 'Daily life', health: 'Health', safety: 'Safety', entry: 'Entry',
+  overview: 'Overview', transport: 'Transport', weather: 'Weather', money: 'Money', daily: 'Daily life', phrases: 'Phrases', health: 'Health', safety: 'Safety', entry: 'Entry',
 }
 const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
   none: { name: 'Route', about: 'the trip: its stops in order, numbered by the trip day they arrive, joined by lines coloured by travel mode (dashed where times are estimated)' },
