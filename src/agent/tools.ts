@@ -194,7 +194,7 @@ function cityInfo(args: Args): ToolResult {
     },
     air_quality: air && { month: monthName(month), pm25: air.pm25, level: airBand(air.pm25).short },
     daily_cost_eur: Object.fromEntries((['shoestring', 'backpacker', 'private', 'midrange', 'comfort'] as Budget[]).map((b) => [b, Math.round(dailyCost(ds, id, b))])),
-    prices_eur: cost && { dorm_bed: cost.profile.dormBed, private_room: cost.profile.privateRoom, cheap_meal: cost.profile.mealCheap, estimated: cost.estimated },
+    prices_eur: cost && { dorm_bed: cost.profile.dormBed, private_room: cost.profile.privateRoom, local_meal: cost.profile.mealLocal, estimated: cost.estimated },
     visa: visa ? { passport: input.passport, requirement: visa.req, days: visa.days } : 'unknown',
     travel_advice: adv && {
       uk_level: adv.level, do_not_travel: adv.excludedByDefault, us: adv.us?.title, uk_url: adv.url,

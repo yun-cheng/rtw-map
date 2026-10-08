@@ -17,8 +17,8 @@ const costs = Object.fromEntries(
   readCsv(join(SEED, 'costs.csv')).map((r) => {
     const profile = {
       currency: r.currency,
-      dormBed: num(r.dormBed), privateRoom: num(r.privateRoom), mealCheap: num(r.mealCheap), mealMid: num(r.mealMid),
-      localTransportDay: num(r.localTransportDay),
+      dormBed: num(r.dormBed), privateRoom: num(r.privateRoom), mealLocal: num(r.mealLocal), mealDinner: num(r.mealDinner),
+      localTransportDay: num(r.localTransportDay), coffee: num(r.coffee), beerBar: num(r.beerBar),
       groceries: Object.fromEntries(GROCERY_KEYS.map((k) => [k, num(r[k])])),
     }
     const bad = [...Object.entries(profile), ...Object.entries(profile.groceries)].filter(([, v]) => typeof v === 'number' && !(v > 0))

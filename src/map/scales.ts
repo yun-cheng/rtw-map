@@ -33,7 +33,7 @@ export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {
   day: { label: 'Per day', per: '/day' },
   dorm: { label: 'Dorm bed', per: '/night' },
   private: { label: 'Private room', per: '/night' },
-  meal: { label: 'Cheap meal', per: '/meal' },
+  meal: { label: 'Local meal', per: '/meal' },
   groceries: { label: 'Groceries', per: '/day' },
   transport: { label: 'Transport', per: '/day' },
 }

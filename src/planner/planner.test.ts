@@ -441,7 +441,7 @@ describe('price levels and estimated costs', () => {
 
   it('converts costs from local money at the current exchange rate', () => {
     const groceries = Object.fromEntries(GROCERY_KEYS.map((k) => [k, 100])) as LocalCostProfile['groceries']
-    const local: LocalCostProfile = { currency: 'JPY', dormBed: 4000, privateRoom: 10000, mealCheap: 1000, mealMid: 3000, localTransportDay: 800, groceries }
+    const local: LocalCostProfile = { currency: 'JPY', dormBed: 4000, privateRoom: 10000, mealLocal: 1000, mealDinner: 3000, localTransportDay: 800, coffee: 500, beerBar: 700, groceries }
     const eur = costsInEur({ JP: local }, { JPY: 200 }).JP
     expect(eur.dormBed).toBe(20)
     expect(eur.groceries.coke05).toBe(0.5)

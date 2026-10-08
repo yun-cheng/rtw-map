@@ -13,7 +13,7 @@ import shoppingJson from '../../data/seed/shopping.json'
 import fxJson from '../../data/gen/fx.json'
 import priceLevelsJson from '../../data/gen/price-levels.json'
 import { parseCsv } from '../data/csv'
-import { GROCERY_KEYS, costSanity, costsInEur, groceryDay } from '../planner/cost'
+import { COST_HINTS, GROCERY_KEYS, costSanity, costsInEur, groceryDay } from '../planner/cost'
 import type { Dataset, LocalCostProfile } from '../planner/types'
 
 /** A cell: text, number, yes/no, a list, or nothing. */
@@ -99,8 +99,8 @@ function withCostColumns(data: { columns: string[]; rows: Row[] }) {
   const rates = fxJson.rates as Record<string, number>
   const local = Object.fromEntries(data.rows.filter((r) => rates[String(r.currency)]).map((r) => [String(r.iso2), {
     currency: String(r.currency),
-    dormBed: Number(r.dormBed), privateRoom: Number(r.privateRoom), mealCheap: Number(r.mealCheap), mealMid: Number(r.mealMid),
-    localTransportDay: Number(r.localTransportDay),
+    dormBed: Number(r.dormBed), privateRoom: Number(r.privateRoom), mealLocal: Number(r.mealLocal), mealDinner: Number(r.mealDinner),
+    localTransportDay: Number(r.localTransportDay), coffee: Number(r.coffee), beerBar: Number(r.beerBar),
     groceries: Object.fromEntries(GROCERY_KEYS.map((k) => [k, Number(r[k])])),
   } as LocalCostProfile]))
   const ds = { costs: costsInEur(local, rates), priceLevels: priceLevelsJson } as unknown as Dataset
@@ -208,11 +208,12 @@ export const SOURCES: Source[] = [
   {
     id: 'costs', label: 'Costs', file: 'data/seed/costs.csv',
     about: 'Typical prices per country in local money (the "currency" column): beds, meals, a day of local transport and 10 shop items. The last two columns are worked out here: a day of groceries (in the same currency), and all the prices compared with the national price level (1 = in line).',
+    notes: [`mealLocal: ${COST_HINTS.mealLocal}`, `mealDinner: ${COST_HINTS.mealDinner}`, `coffee: ${COST_HINTS.coffee}`, `beerBar: ${COST_HINTS.beerBar}`, `groceryDay: ${COST_HINTS.groceryDay}`],
     tables: {
       all: table('Costs', { ...costs, where: csvLines(costs.rows.length) }, {
         key: 'iso2', links: { iso2: 'country' }, expect: countryIds,
-        money: Object.fromEntries(['dormBed', 'privateRoom', 'mealCheap', 'mealMid', 'localTransportDay', ...GROCERY_KEYS, 'groceryDay'].map((c) => [c, 'row' as const])),
-        rule: both(required(['currency', ...GROCERY_KEYS]), ordered([['dormBed', 'privateRoom'], ['mealCheap', 'mealMid']]), (r): Record<string, string> => {
+        money: Object.fromEntries(['dormBed', 'privateRoom', 'mealLocal', 'mealDinner', 'localTransportDay', 'coffee', 'beerBar', ...GROCERY_KEYS, 'groceryDay'].map((c) => [c, 'row' as const])),
+        rule: both(required(['currency', 'coffee', 'beerBar', ...GROCERY_KEYS]), ordered([['dormBed', 'privateRoom'], ['mealLocal', 'mealDinner']]), (r): Record<string, string> => {
           const out: Record<string, string> = {}
           if (r.currency !== null && !(fxJson.rates as Record<string, number>)[String(r.currency)]) out.currency = `No exchange rate for ${r.currency} in fx.json`
           const v = r['vs price level']

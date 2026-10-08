@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type GroceryKey, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
@@ -250,15 +250,17 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         </div>
         <Row label="Hostel dorm bed">{fmt(cost.dormBed * city.costFactor)}</Row>
         <Row label="Private room">{fmt(cost.privateRoom * city.costFactor)}</Row>
-        <Row label="Cheap meal">{fmt(cost.mealCheap * city.costFactor)}</Row>
-        <Row label="Mid-range dinner">{fmt(cost.mealMid * city.costFactor)}</Row>
+        <Row label="Local meal" hint={COST_HINTS.mealLocal}>{fmt(cost.mealLocal * city.costFactor)}</Row>
+        <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{fmt(cost.mealDinner * city.costFactor)}</Row>
+        <Row label="Café coffee" hint={COST_HINTS.coffee}>{fmt(cost.coffee * city.costFactor, true)}</Row>
+        <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{fmt(cost.beerBar * city.costFactor, true)}</Row>
         <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket (cook it yourself)</div>
         {GROCERIES.map(([k, label]) => (
           <Row key={k} label={label}>
             {fmt(cost.groceries[k], true)} <span className="font-normal text-muted">{local(cost.groceries[k], country.currency, currency)}</span>
           </Row>
         ))}
-        <Row label="Groceries for a day of cooking">{fmt(groceryDay(cost), true)}</Row>
+        <Row label="Groceries for a day of cooking" hint={COST_HINTS.groceryDay}>{fmt(groceryDay(cost), true)}</Row>
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ),

@@ -40,7 +40,7 @@ const COST_LEAD: Record<CostKind, (budget: Budget) => { text: string; title: str
   day: (budget) => ({ text: `Per day (${budget})`, title: `Typical daily spending on your budget: a bed, food and local transport. ${FIFTH}` }),
   dorm: () => ({ text: 'Dorm bed / night', title: `A bed in a hostel dorm for one night. ${FIFTH}` }),
   private: () => ({ text: 'Private room / night', title: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}` }),
-  meal: () => ({ text: 'Cheap meal', title: `A meal at an inexpensive local restaurant. ${FIFTH}` }),
+  meal: () => ({ text: 'Local meal', title: `A main dish and a soft drink at a simple place where locals eat (street stall, canteen, noodle shop). ${FIFTH}` }),
   groceries: () => ({ text: 'Groceries / day', title: `Supermarket food to cook your own meals for a day (the same across a country). ${FIFTH}` }),
   transport: () => ({ text: 'Local transport / day', title: `A day of getting around the city by public transport (the same across a country). ${FIFTH}` }),
 }

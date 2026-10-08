@@ -1,4 +1,6 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { Info } from 'lucide-react'
+import { useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { levelColor } from './format'
 
 export function Button({ variant = 'default', className = '', ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'default' | 'primary' | 'ghost' }) {
@@ -53,11 +55,83 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
   )
 }
 
-export function Row({ label, children }: { label: string; children: ReactNode }) {
+/**
+ * A name, with what follows it (`after`, e.g. a small button), what goes at the right (`aside`) and under it
+ * (`children`). With a `hint`, an info icon after the name shows what it means (InfoTip).
+ */
+export function Named({ label, hint, after, aside, labelClass = 'text-muted', children }: { label: ReactNode; hint?: string; after?: ReactNode; aside?: ReactNode; labelClass?: string; children?: ReactNode }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 py-0.5 text-[13px]">
-      <span className="text-muted">{label}</span>
-      <span className="text-right font-medium">{children}</span>
+    <div className="text-[13px]">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="flex items-center gap-1.5">
+          <span className={labelClass}>{label}</span>
+          {hint && <InfoTip text={hint} label={typeof label === 'string' ? label : 'this'} />}
+          {after}
+        </span>
+        {aside}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+/**
+ * An info icon whose `text` shows in a tooltip above it, styled like the map's hover box: on hover, or while the icon
+ * has focus (a tap on a phone, or the keyboard). It's drawn over the page, so a scrolling panel doesn't cut it off,
+ * and moved back inside the window when needed, with its arrow still on the icon.
+ */
+export function InfoTip({ text, label }: { text: string; label: string }) {
+  const [at, setAt] = useState<{ x: number; y: number } | null>(null)
+  const [shift, setShift] = useState(0)
+  const box = useRef<HTMLSpanElement>(null)
+  const id = useId()
+  const show = (e: MouseEvent | FocusEvent) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setShift(0)
+    setAt({ x: r.left + r.width / 2, y: r.top })
+  }
+  useLayoutEffect(() => {
+    if (!at || !box.current) return
+    const r = box.current.getBoundingClientRect()
+    const edge = 8
+    setShift(r.left < edge ? edge - r.left : r.right > window.innerWidth - edge ? window.innerWidth - edge - r.right : 0)
+  }, [at])
+  return (
+    <>
+      <button
+        type="button"
+        aria-label={`What ${label.toLowerCase()} means`}
+        aria-describedby={at ? id : undefined}
+        onMouseEnter={show}
+        onMouseLeave={() => setAt(null)}
+        onFocus={show}
+        onBlur={() => setAt(null)}
+        className="text-muted hover:text-ink focus:text-ink focus:outline-none"
+      >
+        <Info size={12} />
+      </button>
+      {at && createPortal(
+        <span
+          ref={box}
+          id={id}
+          role="tooltip"
+          style={{ left: at.x + shift, top: at.y - 8 }}
+          className="pointer-events-none fixed z-50 w-max max-w-60 -translate-x-1/2 -translate-y-full rounded-lg bg-panel px-2.5 py-1.5 text-[12px] leading-snug font-medium text-ink shadow-[0_1px_2px_rgba(0,0,0,0.1)]"
+        >
+          {text}
+          <span style={{ left: `calc(50% - ${shift}px)` }} className="absolute top-full -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-panel" />
+        </span>,
+        document.body,
+      )}
+    </>
+  )
+}
+
+/** A label and its value; with a `hint`, an info icon after the label explains what's counted. */
+export function Row({ label, hint, children }: { label: string; hint?: string; children: ReactNode }) {
+  return (
+    <div className="py-0.5">
+      <Named label={label} hint={hint} aside={<span className="text-right font-medium">{children}</span>} />
     </div>
   )
 }

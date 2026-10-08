@@ -57,9 +57,13 @@ export type GroceryKey = 'water15' | 'coke05' | 'beer05' | 'bread' | 'eggs10' | 
 export type CostProfile = {
   dormBed: number
   privateRoom: number
-  mealCheap: number
-  mealMid: number
+  mealLocal: number
+  mealDinner: number
   localTransportDay: number
+  /** A cappuccino (or the usual café coffee) at an ordinary café. */
+  coffee: number
+  /** 0.5 L of local beer at an ordinary bar. */
+  beerBar: number
   groceries: Record<GroceryKey, number>
 }
 
