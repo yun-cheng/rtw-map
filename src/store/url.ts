@@ -1,6 +1,6 @@
 // Keeps what's on screen in the address bar, so a refresh (or a copied link) comes back to the same view:
 //   ?panel=itinerary&city=krakow&tab=weather&layer=climate&month=7&map=5.20/50.061/19.937
-// (or leg=3 for an open journey; kind=atm for the Nearby layer; temp=low for the Weather layer by night temperatures; show=nights for the Route view numbered by nights; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
+// (or leg=3 for an open journey; part=prices for a sub-tab of the city panel tab; kind=atm for the Nearby layer; temp=low for the Weather layer by night temperatures; show=nights for the Route view numbered by nights; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
 // weather and air layers show each place at the time of the trip).
 // The address is replaced, not pushed, so moving around doesn't fill the browser's history.
 import { dataset as ds } from '../data/dataset'
@@ -43,7 +43,11 @@ export function readUrl(search = window.location.search) {
   patch.selected = selected
 
   const tab = q.get('tab') as CityTab
-  if (TABS.includes(tab)) patch.cityTab = tab
+  if (TABS.includes(tab)) {
+    patch.cityTab = tab
+    const part = q.get('part')
+    if (part) patch.cityPart = { ...state.cityPart, [tab]: part }
+  }
 
   const layer = q.get('layer') as MapLayer
   if (MAP_LAYERS.includes(layer)) patch.layer = layer
@@ -67,6 +71,7 @@ export function buildSearch(s: ReturnType<typeof useTrip.getState>, view: MapVie
   if (s.selected?.type === 'city') {
     q.set('city', s.selected.id)
     q.set('tab', s.cityTab)
+    if (s.cityPart[s.cityTab]) q.set('part', s.cityPart[s.cityTab]!)
   } else if (s.selected?.type === 'leg') q.set('leg', String(s.selected.index))
   if (s.layer !== 'none') q.set('layer', s.layer)
   if (MONTHLY.includes(s.layer) && s.layerMonth) q.set('month', String(s.layerMonth))
@@ -95,6 +100,6 @@ export function syncUrl() {
   readUrl()
   writeUrl()
   useTrip.subscribe((s, prev) => {
-    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.costKind !== prev.costKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl()
+    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.cityPart !== prev.cityPart || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.costKind !== prev.costKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl()
   })
 }

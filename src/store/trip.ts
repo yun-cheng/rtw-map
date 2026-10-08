@@ -71,6 +71,8 @@ type State = {
   priceCompare: string | null
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
   cityTab: CityTab
+  /** The sub-tab open in each city panel tab that has them (e.g. Money: daily, prices, paying). */
+  cityPart: Partial<Record<CityTab, string>>
 
   setInput: (patch: Partial<TripInput>) => void
   /** Picks a travel style: its preferences replace the style fields, and daily costs use its price level. */
@@ -99,7 +101,8 @@ type State = {
   setTempUnit: (u: TempUnit) => void
   setTempFeels: (feels: boolean) => void
   setPriceCompare: (iso2: string) => void
-  setCityTab: (tab: CityTab) => void
+  /** Opens a city panel tab, and with `part` one of its sub-tabs. */
+  setCityTab: (tab: CityTab, part?: string) => void
   /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
    *  open panel, map layer month and map position instead (when reloading the trip that is already on screen). */
   openTrip: (data: TripData | null, keepView?: boolean) => void
@@ -188,6 +191,7 @@ export const useTrip = create<State>()(
         tempFeels: true,
         priceCompare: null,
         cityTab: 'overview',
+        cityPart: {},
 
         setInput: (patch) => {
           const input = { ...get().input, ...patch }
@@ -242,7 +246,7 @@ export const useTrip = create<State>()(
         setTempUnit: (tempUnit) => set({ tempUnit }),
         setTempFeels: (tempFeels) => set({ tempFeels }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
-        setCityTab: (cityTab) => set({ cityTab }),
+        setCityTab: (cityTab, part) => set((s) => ({ cityTab, ...(part && { cityPart: { ...s.cityPart, [cityTab]: part } }) })),
         openTrip: (data, keepView = false) => {
           const norm = (x: { input: TripInput; stops?: Stop[] }) => ({ input: { ...newTripInput(), ...withPrefs(x.input) }, stops: x.stops ?? [] })
           // Trips saved before plans existed have one plan.
@@ -301,7 +305,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, priceCompare: s.priceCompare, cityTab: s.cityTab }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         // A map view that has since been removed (Cards, English, Safety).

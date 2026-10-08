@@ -36,12 +36,22 @@ type SectionKey =
   | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people'
   | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
 
-/** Tabs of the city panel and the sections each one shows, most useful first. */
-const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
+/** A sub-tab of a city panel tab, and the sections it shows. */
+type Part = { key: string; label: string; sections: SectionKey[] }
+
+/** Tabs of the city panel and the sections each one shows (or its sub-tabs), most useful first. */
+const TABS: { key: CityTab; label: string; sections: SectionKey[]; parts?: Part[] }[] = [
   { key: 'overview', label: 'Overview', sections: [] },
   { key: 'transport', label: 'Transport', sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', sections: ['weather', 'air'] },
-  { key: 'money', label: 'Money', sections: ['day', 'stay', 'food', 'money'] },
+  {
+    key: 'money', label: 'Money', sections: [],
+    parts: [
+      { key: 'daily', label: 'Daily cost', sections: ['day'] },
+      { key: 'prices', label: 'Prices', sections: ['stay', 'food'] },
+      { key: 'paying', label: 'Paying & cash', sections: ['money'] },
+    ],
+  },
   { key: 'daily', label: 'Daily life', sections: ['language', 'phone', 'services', 'people'] },
   { key: 'health', label: 'Health', sections: ['vaccines', 'health', 'medical'] },
   { key: 'safety', label: 'Safety', sections: ['safety'] },
@@ -69,7 +79,7 @@ const GROCERIES: [GroceryKey, string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, removeStop, cityTab, setCityTab, layer, layerMonth } = useTrip()
+  const { plan, input, select, addCity, removeStop, cityTab, cityPart, setCityTab, layer, layerMonth } = useTrip()
   const { currency, fmt } = useMoney()
   const { range } = useTemp()
   // Temperatures as they feel or as measured: one setting for the whole app.
@@ -525,7 +535,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const vaccineSummary = vaccines.source === 'cdc'
     ? recommended.length ? `Routine + ${recommended.join(', ')}` : 'Routine vaccines only'
     : `Routine + ${vaccines.items.length} to discuss`
-  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; problem?: boolean; color?: string }[] = [
+  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; part?: string; problem?: boolean; color?: string }[] = [
     ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tone: VISA_TEXT[visa.req].tone, tab: 'entry' as const, problem: visaProblem }] : []),
     ...(adv ? [{
       icon: '🛡', label: 'Safety', tab: 'safety' as const, problem: safetyProblem,
@@ -537,8 +547,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
     ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),
-    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'money' as const }] : []),
-    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, problem: moneyProblem }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'money' as const, part: 'daily' }] : []),
+    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, part: 'paying', problem: moneyProblem }] : []),
     ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tone: toneOf(mobile.level), tab: 'daily' as const }] : []),
     { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },
   ].sort((a, b) =>
@@ -547,6 +557,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
   const tabInfo = TABS.find((t) => t.key === cityTab) ?? TABS[0]
+  const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
+  // Sub-tabs that need attention, like their tab: paying when foreign cards don't work.
+  const problemParts = new Set(moneyProblem ? ['paying'] : [])
   // Keep the open tab in view when the tab bar scrolls sideways.
   const activeTab = useRef<HTMLButtonElement>(null)
   useEffect(() => {
@@ -589,6 +602,22 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             </button>
           ))}
         </nav>
+        {tabInfo.parts && (
+          <div className="-mx-4 flex gap-1 border-t border-line px-4 py-1.5" role="tablist" aria-label={`${tabInfo.label} sections`}>
+            {tabInfo.parts.map((p) => (
+              <button
+                key={p.key}
+                role="tab"
+                aria-selected={p.key === part!.key}
+                onClick={() => setCityTab(tabInfo.key, p.key)}
+                className={`relative rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap ${p.key === part!.key ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-canvas hover:text-ink'}`}
+              >
+                {p.label}
+                {problemParts.has(p.key) && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {tabInfo.key === 'overview' ? (
@@ -616,7 +645,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             {glance.map((g) => (
               <li key={g.label}>
                 <button
-                  onClick={() => setCityTab(g.tab)}
+                  onClick={() => setCityTab(g.tab, g.part)}
                   className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : ''}`}
                 >
                   <span className={`h-2 w-2 shrink-0 rounded-full ${g.color ? '' : TONE_DOT[g.tone]}`} style={g.color ? { background: g.color } : undefined} />
@@ -630,7 +659,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </ul>
         </div>
       ) : (
-        tabInfo.sections.map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
+        (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
       )}
     </div>
   )
