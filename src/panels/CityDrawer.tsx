@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type Budget, type GroceryKey, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
@@ -8,6 +8,7 @@ import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
+import { CostDay } from './CostDay'
 import { PriceLevel } from './PriceLevel'
 
 /** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
@@ -32,7 +33,7 @@ const PACES: { value: Pace; icon: string; label: string }[] = [
 ]
 
 type SectionKey =
-  | 'around' | 'gettingThere' | 'weather' | 'air' | 'costs' | 'money' | 'language' | 'phone' | 'services' | 'people'
+  | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people'
   | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
 
 /** Tabs of the city panel and the sections each one shows, most useful first. */
@@ -40,7 +41,7 @@ const TABS: { key: CityTab; label: string; sections: SectionKey[] }[] = [
   { key: 'overview', label: 'Overview', sections: [] },
   { key: 'transport', label: 'Transport', sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', sections: ['weather', 'air'] },
-  { key: 'money', label: 'Money', sections: ['costs', 'money'] },
+  { key: 'money', label: 'Money', sections: ['day', 'stay', 'food', 'money'] },
   { key: 'daily', label: 'Daily life', sections: ['language', 'phone', 'services', 'people'] },
   { key: 'health', label: 'Health', sections: ['vaccines', 'health', 'medical'] },
   { key: 'safety', label: 'Safety', sections: ['safety'] },
@@ -60,11 +61,6 @@ const TONE_DOT: Record<Tone, string> = { ok: 'bg-green-600', info: 'bg-slate-400
 const toneOf = (level: number): Tone => (level >= 4 ? 'ok' : level === 3 ? 'info' : 'warn')
 const tabRank = (tab: CityTab) => TABS.findIndex((t) => t.key === tab)
 const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'money']
-
-const BUDGETS: { value: Budget; label: string }[] = [
-  { value: 'shoestring', label: 'Shoestring' }, { value: 'backpacker', label: 'Backpacker' }, { value: 'private', label: 'Private' },
-  { value: 'midrange', label: 'Mid-range' }, { value: 'comfort', label: 'Comfort' },
-]
 
 const GROCERIES: [GroceryKey, string][] = [
   ['water15', 'Water (1.5 L)'], ['coke05', 'Coca-Cola (0.5 L)'], ['beer05', 'Beer (0.5 L, shop)'], ['bread', 'Bread (loaf)'],
@@ -86,6 +82,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const country = ds.countries[city.iso2]
   const costInfo = costProfile(ds, city.iso2)
   const cost = costInfo?.profile
+  // Prices are estimates anyway; only those worked out from the price level (no price list for the country) say so.
+  const roughCosts = costInfo?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined
   const climate = ds.climate[cityId]
   const adv = ds.advisories[city.iso2]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
@@ -237,30 +235,27 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
       </Section>
     ),
-    costs: cost && (
-      <Section title="Costs" aside={<Badge tone="warn">{costInfo?.estimated ? 'estimated from price level' : 'estimates'}</Badge>}>
-        <div className="mb-3 grid grid-cols-5 gap-1 text-center">
-          {BUDGETS.map((b) => (
-            <div key={b.value} className={`rounded-md border px-1 py-1.5 ${b.value === input.budget ? 'border-accent bg-accent-soft' : 'border-line'}`}>
-              <div className="text-[10px] text-muted">{b.label}</div>
-              <div className="font-semibold">{fmt(dailyCost(ds, cityId, b.value))}</div>
-              <div className="text-[10px] text-muted">/day</div>
-            </div>
-          ))}
-        </div>
+    day: cost && <CostDay cityId={cityId} />,
+    stay: cost && (
+      <Section title="Stay" aside={roughCosts}>
         <Row label="Hostel dorm bed">{fmt(cost.dormBed * city.costFactor)}</Row>
         <Row label="Private room">{fmt(cost.privateRoom * city.costFactor)}</Row>
+        <p className="mt-1 text-[12px] text-muted">A night, in this city. Hotel and apartment prices aren't in our data yet.</p>
+      </Section>
+    ),
+    food: cost && (
+      <Section title="Food & drink" aside={roughCosts}>
         <Row label="Local meal" hint={COST_HINTS.mealLocal}>{fmt(cost.mealLocal * city.costFactor)}</Row>
         <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{fmt(cost.mealDinner * city.costFactor)}</Row>
         <Row label="Café coffee" hint={COST_HINTS.coffee}>{fmt(cost.coffee * city.costFactor, true)}</Row>
         <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{fmt(cost.beerBar * city.costFactor, true)}</Row>
-        <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket (cook it yourself)</div>
+        <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket</div>
         {GROCERIES.map(([k, label]) => (
           <Row key={k} label={label}>
             {fmt(cost.groceries[k], true)} <span className="font-normal text-muted">{local(cost.groceries[k], country.currency, currency)}</span>
           </Row>
         ))}
-        <Row label="Groceries for a day of cooking" hint={COST_HINTS.groceryDay}>{fmt(groceryDay(cost), true)}</Row>
+        <Row label="Groceries for a day" hint={COST_HINTS.groceryDay}>{fmt(groceryDay(cost), true)}</Row>
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ),
@@ -542,7 +537,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
     ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),
-    ...(cost ? [{ icon: '💶', label: 'Daily budget', value: `${fmt(dailyCost(ds, cityId, input.budget))} (${BUDGETS.find((b) => b.value === input.budget)?.label.toLowerCase()})`, tone: 'info' as const, tab: 'money' as const }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'money' as const }] : []),
     ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, problem: moneyProblem }] : []),
     ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tone: toneOf(mobile.level), tab: 'daily' as const }] : []),
     { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },

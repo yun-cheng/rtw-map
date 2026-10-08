@@ -204,26 +204,28 @@ export type Dataset = {
 // ---------- Trip input ----------
 
 export type Pace = 'chill' | 'balanced' | 'fast'
-/** Travel style: a preset of preferences, and the price level used for daily costs. */
+/** Travel style: a preset of the day's choices and travel preferences (the assistant can apply one). */
 export type Budget = 'shoestring' | 'backpacker' | 'private' | 'midrange' | 'comfort'
 
 /**
- * How someone likes to travel (the Preferences tab). A travel style (input.budget) fills in the style fields;
- * the rest are the traveller's own. Amounts are in EUR, like all prices.
+ * How someone likes to travel (the Preferences tab). A travel style preset (input.budget) can fill in the style
+ * fields; all are the traveller's to change. Amounts are in EUR, like all prices.
  */
 export type TravelPrefs = {
   travellers: 1 | 2 | 4
   /** Where the traveller starts from (and returns to, with returnHome); not a stop of the trip. */
   homeCityId: string | null
   returnHome: boolean
-  room: 'dorm' | 'shared_bath' | 'own_bath' | 'hotel' | 'apartment'
-  hotelStars: 2 | 3 | 4
+  /** The bed the daily cost counts (hotels and apartments come with their prices). */
+  room: 'dorm' | 'private'
   maxPerNight: number | null
-  cooking: 'mostly' | 'half' | 'rarely'
-  eatingOut: 'street' | 'casual' | 'nice'
-  coffee: boolean
-  alcohol: 'none' | 'some' | 'most'
-  cityTransport: 'public' | 'taxi_sometimes' | 'taxi_often'
+  /** Each meal of a normal day: what the daily cost counts for it. */
+  breakfast: BreakfastChoice
+  lunch: MealChoice
+  dinner: MealChoice
+  /** Café coffees and bar beers a day. */
+  coffees: 0 | 1 | 2
+  beers: 0 | 1 | 2
   betweenCities: 'cheapest' | 'balanced' | 'fastest'
   overnight: boolean
   maxTravelHours: 3 | 5 | 8 | null
@@ -241,6 +243,29 @@ export type TravelPrefs = {
   needInternet: boolean
   dailyBudget: number | null
 }
+/**
+ * One meal of the day: skipped, DIY from the supermarket (groceryMeal), at a simple local
+ * place (mealLocal) or at a sit-down restaurant (mealDinner).
+ */
+export type MealChoice = 'skip' | 'diy' | 'local' | 'restaurant'
+/** Breakfast leaves out the restaurant. */
+export type BreakfastChoice = Exclude<MealChoice, 'restaurant'>
+
+/**
+ * What one traveller pays for on a day in a city. The preferences give every city the same choices; a trip can
+ * change them for one city (TripInput.cityCosts).
+ */
+export type DayChoices = {
+  bed: 'dorm' | 'private'
+  breakfast: BreakfastChoice
+  lunch: MealChoice
+  dinner: MealChoice
+  coffees: 0 | 1 | 2
+  beers: 0 | 1 | 2
+  /** Taxi rides of ~5 km a day, on top of the day of public transport (chosen per city; none by default). */
+  taxis: 0 | 1 | 2 | 3
+}
+
 export type CountryMode = 'must' | 'optional' | 'excluded'
 
 /** An ordered part of the trip, e.g. "Western Balkans" then "Poland". */
@@ -270,6 +295,8 @@ export type TripInput = {
   wishes?: string
   passport: string
   schengenDaysBefore: number
+  /** Changes to the daily cost choices for single cities of this trip (city id → the choices that differ). */
+  cityCosts?: Record<string, Partial<DayChoices>>
 }
 
 // ---------- Plan output ----------

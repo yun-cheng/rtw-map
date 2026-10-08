@@ -1,28 +1,28 @@
 import type { Budget, TravelPrefs } from './types'
 
 /** The preferences each travel style sets; the others (who, limits, comfort) are left as they are. */
-type StyleFields = Pick<TravelPrefs, 'room' | 'hotelStars' | 'cooking' | 'eatingOut' | 'coffee' | 'alcohol' | 'cityTransport' | 'betweenCities' | 'overnight' | 'sights'>
+type StyleFields = Pick<TravelPrefs, 'room' | 'breakfast' | 'lunch' | 'dinner' | 'coffees' | 'beers' | 'betweenCities' | 'overnight' | 'sights'>
 
 export const STYLES: { value: Budget; label: string; about: string; prefs: StyleFields }[] = [
   {
-    value: 'shoestring', label: 'Shoestring', about: 'Dorm bed, mostly cooking, walking and free sights',
-    prefs: { room: 'dorm', hotelStars: 2, cooking: 'mostly', eatingOut: 'street', coffee: false, alcohol: 'none', cityTransport: 'public', betweenCities: 'cheapest', overnight: true, sights: 'few' },
+    value: 'shoestring', label: 'Shoestring', about: 'Dorm bed, DIY meals, walking and free sights',
+    prefs: { room: 'dorm', breakfast: 'diy', lunch: 'diy', dinner: 'diy', coffees: 0, beers: 0, betweenCities: 'cheapest', overnight: true, sights: 'few' },
   },
   {
-    value: 'backpacker', label: 'Backpacker', about: 'Dorm bed, street food and cheap local places',
-    prefs: { room: 'dorm', hotelStars: 2, cooking: 'half', eatingOut: 'street', coffee: true, alcohol: 'some', cityTransport: 'public', betweenCities: 'cheapest', overnight: true, sights: 'few' },
+    value: 'backpacker', label: 'Backpacker', about: 'Dorm bed, DIY breakfast, local places for lunch and dinner',
+    prefs: { room: 'dorm', breakfast: 'diy', lunch: 'local', dinner: 'local', coffees: 1, beers: 1, betweenCities: 'cheapest', overnight: true, sights: 'few' },
   },
   {
-    value: 'private', label: 'Budget private', about: 'Your own room in a guesthouse or budget hotel, cheap restaurants',
-    prefs: { room: 'own_bath', hotelStars: 2, cooking: 'half', eatingOut: 'casual', coffee: true, alcohol: 'some', cityTransport: 'public', betweenCities: 'balanced', overnight: true, sights: 'daily' },
+    value: 'private', label: 'Budget private', about: 'Your own room in a guesthouse or budget hotel, local places',
+    prefs: { room: 'private', breakfast: 'diy', lunch: 'local', dinner: 'local', coffees: 1, beers: 1, betweenCities: 'balanced', overnight: true, sights: 'daily' },
   },
   {
-    value: 'midrange', label: 'Mid-range', about: 'A ~3★ hotel, casual lunches and restaurant dinners',
-    prefs: { room: 'hotel', hotelStars: 3, cooking: 'rarely', eatingOut: 'casual', coffee: true, alcohol: 'some', cityTransport: 'taxi_sometimes', betweenCities: 'balanced', overnight: true, sights: 'daily' },
+    value: 'midrange', label: 'Mid-range', about: 'A ~3★ hotel, local breakfasts and lunches, restaurant dinners',
+    prefs: { room: 'private', breakfast: 'local', lunch: 'local', dinner: 'restaurant', coffees: 1, beers: 1, betweenCities: 'balanced', overnight: true, sights: 'daily' },
   },
   {
-    value: 'comfort', label: 'Comfort', about: 'A ~4★ hotel, nice restaurants, taxis and tours',
-    prefs: { room: 'hotel', hotelStars: 4, cooking: 'rarely', eatingOut: 'nice', coffee: true, alcohol: 'some', cityTransport: 'taxi_often', betweenCities: 'fastest', overnight: false, sights: 'lots' },
+    value: 'comfort', label: 'Comfort', about: 'A ~4★ hotel, restaurants, taxis and tours',
+    prefs: { room: 'private', breakfast: 'local', lunch: 'restaurant', dinner: 'restaurant', coffees: 2, beers: 1, betweenCities: 'fastest', overnight: false, sights: 'lots' },
   },
 ]
 
@@ -45,5 +45,11 @@ export const DEFAULT_PREFS: TravelPrefs = {
 
 /** Trips saved before preferences existed get those of their travel style; newer fields get their defaults. */
 export function withPrefs<T extends { budget: Budget; prefs?: Partial<TravelPrefs> }>(input: T): T & { prefs: TravelPrefs } {
-  return { ...input, prefs: { ...stylePrefs(input.budget), ...input.prefs } }
+  const prefs = { ...stylePrefs(input.budget), ...input.prefs }
+  // Older saved values: rooms other than a dorm (private rooms, hotels, apartments) are a private room; breakfast
+  // "with the room" (no hotel prices include it yet) is local; "cook" and "shop" are "diy".
+  if (prefs.room !== 'dorm') prefs.room = 'private'
+  if ((prefs.breakfast as string) === 'included') prefs.breakfast = 'local'
+  for (const m of ['breakfast', 'lunch', 'dinner'] as const) if (['cook', 'shop'].includes(prefs[m] as string)) prefs[m] = 'diy'
+  return { ...input, prefs }
 }

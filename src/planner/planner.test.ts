@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, englishLevel, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -231,20 +231,75 @@ describe('places near the centre', () => {
 describe('travel preferences', () => {
   it("fills in a travel style's preferences and keeps the traveller's own", () => {
     const p = stylePrefs('comfort', { ...stylePrefs('backpacker'), travellers: 2, dailyBudget: 80 })
-    expect(p).toMatchObject({ room: 'hotel', hotelStars: 4, travellers: 2, dailyBudget: 80 })
+    expect(p).toMatchObject({ room: 'private', dinner: 'restaurant', travellers: 2, dailyBudget: 80 })
     expect(matchesStyle(p, 'comfort')).toBe(true)
-    expect(matchesStyle({ ...p, cooking: 'mostly' }, 'comfort')).toBe(false)
+    expect(matchesStyle({ ...p, dinner: 'diy' }, 'comfort')).toBe(false)
+  })
+
+  it('turns a saved breakfast "with the room" into a local one', () => {
+    const input = testTrip('US')
+    const saved = { ...input, prefs: { ...input.prefs, breakfast: 'included' as never } }
+    expect(withPrefs(saved).prefs.breakfast).toBe('local')
+    expect(withPrefs({ ...input, prefs: { ...input.prefs, dinner: 'cook' as never } }).prefs.dinner).toBe('diy')
   })
 
   it("gives trips saved before preferences existed those of their travel style", () => {
     const { prefs: _, ...old } = { ...testTrip('US'), budget: 'midrange' as const }
-    expect(withPrefs(old).prefs).toMatchObject({ room: 'hotel', hotelStars: 3, travellers: 1 })
+    expect(withPrefs(old).prefs).toMatchObject({ room: 'private', dinner: 'restaurant', travellers: 1 })
   })
 
-  it('costs the new budget private style between backpacker and mid-range', () => {
-    const [b, p, m] = (['backpacker', 'private', 'midrange'] as const).map((x) => dailyCost(ds, 'krakow', x))
+  it('costs the budget private style between backpacker and mid-range', () => {
+    const [b, p, m] = (['backpacker', 'private', 'midrange'] as const).map((x) => dailyCost(ds, 'krakow', { prefs: stylePrefs(x) }))
     expect(p).toBeGreaterThan(b)
     expect(p).toBeLessThan(m)
+  })
+})
+
+describe('daily cost from your choices', () => {
+  const prefs = stylePrefs('backpacker')
+  const c = ds.costs.PL
+  const f = ds.cities.krakow.costFactor
+
+  it('adds up the bed, each meal, drinks and getting around', () => {
+    const day = dayCost(ds, 'krakow', prefsDay(prefs))!
+    expect(day.items.map((i) => i.key)).toEqual(['bed', 'breakfast', 'lunch', 'dinner', 'coffee', 'beer', 'transport', 'taxi'])
+    expect(day.total).toBeCloseTo(day.items.reduce((t, i) => t + i.eur, 0))
+    expect(day.items[0].eur).toBeCloseTo(c.dormBed * f)
+    expect(day.items[1].eur).toBeCloseTo(groceryMeal(c, 'breakfast'))
+    // DIY meals and 1.5 L of water make up the day of groceries: a smaller breakfast, and lunch the same as dinner.
+    const [b, l, d] = (['breakfast', 'lunch', 'dinner'] as const).map((m) => groceryMeal(c, m))
+    expect(b + l + d + c.groceries.water15).toBeCloseTo(groceryDay(c))
+    expect(b).toBeLessThan(l)
+    expect(l).toBe(d)
+    expect(day.items[2].eur).toBeCloseTo(c.mealLocal * f)
+    expect(day.items[4].eur).toBeCloseTo(c.coffee * f)
+    expect(day.items[5].eur).toBeCloseTo(c.beerBar * f)
+  })
+
+  it('counts nothing for a skipped meal, and halves a private room for two', () => {
+    const day = (d: Partial<ReturnType<typeof prefsDay>>, travellers: 1 | 2 = 1) => dayCost(ds, 'krakow', { ...prefsDay(prefs), ...d }, travellers)!
+    expect(day({ breakfast: 'skip' }).items[1].eur).toBe(0)
+    expect(day({ bed: 'private' }, 2).items[0].eur).toBeCloseTo((c.privateRoom * f) / 2)
+    expect(day({}).items[6].eur).toBeCloseTo(c.localTransportDay)
+    expect(day({}).items[7].eur).toBe(0)
+    const ride = taxiEstimate(ds, 'krakow')!
+    expect(day({ taxis: 2 }).items[7].eur).toBeCloseTo(ride.min + ride.max)
+  })
+
+  it("uses the trip's changes for one city and the preferences elsewhere", () => {
+    const input = { prefs, cityCosts: { krakow: { dinner: 'restaurant' as const } } }
+    expect(dayChoices(input, 'krakow').dinner).toBe('restaurant')
+    expect(dayChoices(input, 'warsaw').dinner).toBe(prefs.dinner)
+    expect(dailyCost(ds, 'krakow', input)).toBeCloseTo(dailyCost(ds, 'krakow', { prefs }) + (c.mealDinner - c.mealLocal) * f)
+  })
+
+  it("counts a city's changes in the trip total", () => {
+    const input = testTrip('US')
+    const plan = generatePlan(ds, input)
+    const city = plan.stops[0].cityId
+    const changed = generatePlan(ds, { ...input, cityCosts: { [city]: { bed: 'private', dinner: 'restaurant' } } })
+    expect(changed.stops.map((s) => s.cityId)).toContain(city)
+    expect(changed.cost.max).toBeGreaterThan(plan.cost.max)
   })
 })
 
@@ -255,7 +310,7 @@ describe('trip goals', () => {
   }
   const balanced = plan({})
   const countries = (p: ReturnType<typeof plan>) => new Set(p.stops.map((s) => iso(s.cityId))).size
-  const daily = (id: string) => dailyCost(ds, id, 'backpacker')
+  const daily = (id: string) => dailyCost(ds, id, { prefs: stylePrefs('backpacker') })
   const median = [...balanced.stops.map((s) => daily(s.cityId))].sort((a, b) => a - b)[balanced.stops.length >> 1]
   const pricey = (p: ReturnType<typeof plan>) => p.stops.filter((s) => daily(s.cityId) > 1.3 * median)
 
@@ -433,7 +488,7 @@ describe('price levels and estimated costs', () => {
     const noPoland = { ...ds, costs }
     const info = costProfile(noPoland, 'PL')
     expect(info?.estimated).toBe(true)
-    expect(dailyCost(noPoland, 'krakow', 'backpacker')).toBeGreaterThan(0)
+    expect(dailyCost(noPoland, 'krakow', { prefs: stylePrefs('backpacker') })).toBeGreaterThan(0)
     // The estimate should land near our hand-entered Polish prices.
     expect(info!.profile.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
     expect(info!.profile.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)

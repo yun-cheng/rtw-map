@@ -1,25 +1,22 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { INTERESTS } from '../data/presets'
-import { STYLES, matchesStyle, type Pace, type TravelPrefs } from '../planner'
+import { prefsDay, type DayChoices, type Pace, type TravelPrefs } from '../planner'
 import { useTrip } from '../store/trip'
 import { tempValue, type TempUnit } from '../ui/format'
-import { Segmented } from '../ui/kit'
+import { Named, Segmented } from '../ui/kit'
+import { Counter, DAY_FIELDS, DaySwitch } from './CostDay'
 
-const ROOMS: { value: TravelPrefs['room']; label: string }[] = [
-  { value: 'dorm', label: 'Dorm bed' },
-  { value: 'shared_bath', label: 'Private room, shared bathroom' },
-  { value: 'own_bath', label: 'Private room, own bathroom' },
-  { value: 'hotel', label: 'Hotel' },
-  { value: 'apartment', label: 'Apartment with a kitchen' },
-]
+/** The preference behind each of the day's choices (taxi rides are chosen per city, not here). */
+const PREF_OF: Partial<Record<keyof DayChoices, keyof TravelPrefs>> = {
+  bed: 'room', breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', coffees: 'coffees', beers: 'beers',
+}
 
-/** How the user likes to travel: a travel style to start from, then the details. Saved with the trip. */
+/** How the user likes to travel. Saved with the trip. */
 export function PrefsPanel() {
-  const { input, setInput, setStyle, setPrefs, currency, tempUnit } = useTrip()
+  const { input, setInput, setPrefs, currency, tempUnit } = useTrip()
   const p = input.prefs
-  const custom = !matchesStyle(p, input.budget)
-  const style = STYLES.find((s) => s.value === input.budget)!
+  const day = prefsDay(p)
   // A segmented control for one preference.
   const choose = <K extends keyof TravelPrefs>(key: K, options: { value: TravelPrefs[K]; label: string }[]) => (
     <Segmented
@@ -57,31 +54,6 @@ export function PrefsPanel() {
         {choose('travellers', [{ value: 1, label: 'Solo' }, { value: 2, label: 'Two, one room' }, { value: 4, label: '3–4' }])}
       </Group>
 
-      <Group title="Travel style">
-        <div className="flex flex-col gap-1">
-          {STYLES.map((s) => {
-            const on = s.value === input.budget
-            return (
-              <button
-                key={s.value}
-                onClick={() => setStyle(s.value)}
-                className={`rounded-md border px-2.5 py-1.5 text-left ${on ? 'border-accent bg-accent-soft' : 'border-line hover:bg-canvas'}`}
-              >
-                <div className={`text-[13px] font-medium ${on ? 'text-accent' : ''}`}>
-                  {s.label}{on && custom && <span className="font-normal text-muted"> · customised below</span>}
-                </div>
-                <div className="text-[12px] text-muted">{s.about}</div>
-              </button>
-            )
-          })}
-        </div>
-        {custom && (
-          <button onClick={() => setStyle(input.budget)} className="mt-1 text-[12px] text-accent hover:underline">
-            Reset to {style.label}
-          </button>
-        )}
-      </Group>
-
       <Group title="Trip goals">
         <p className="-mt-0.5 mb-1 text-[12px] text-muted">How the planner picks places when it makes the plan.</p>
         <Label>What matters most</Label>
@@ -90,36 +62,30 @@ export function PrefsPanel() {
         {choose('expensive', [{ value: 'ignore', label: "Don't mind" }, { value: 'shorter', label: 'Shorter stays' }, { value: 'skip', label: 'Skip if optional' }])}
       </Group>
 
-      <Group title="Sleep">
-        <Label>Room</Label>
-        <select value={p.room} onChange={(e) => setPrefs({ room: e.target.value as TravelPrefs['room'] })} className={inputCls}>
-          {ROOMS.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-        </select>
-        {p.room === 'hotel' && (
-          <>
-            <Label>Hotel level</Label>
-            {choose('hotelStars', [{ value: 2, label: 'Budget (~2★)' }, { value: 3, label: 'Standard (~3★)' }, { value: 4, label: 'Upscale (~4★)' }])}
-          </>
-        )}
+      <Group title="A day in a city">
+        <p className="-mt-0.5 mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Money tab.</p>
+        {DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
+          const set = (v: unknown) => setPrefs({ [PREF_OF[f.key]!]: v } as Partial<TravelPrefs>)
+          return (
+            <div key={f.key} className="mt-2.5 first-of-type:mt-0">
+              <Named
+                label={f.label}
+                hint={f.hint?.(day[f.key])}
+                labelClass="text-[12px] text-muted"
+                aside={f.max !== undefined && <Counter value={Number(day[f.key])} max={f.max} label={f.label} onChange={set} />}
+              >
+                {f.options && <div className="mt-1"><DaySwitch field={f} value={day[f.key]} onChange={set} /></div>}
+              </Named>
+            </div>
+          )
+        })}
         <Label>Most you'd pay per night (optional)</Label>
         <MoneyInput value={p.maxPerNight} currency={currency} onChange={(maxPerNight) => setPrefs({ maxPerNight })} />
-      </Group>
-
-      <Group title="Eat">
-        <Label>Cook or eat out</Label>
-        {choose('cooking', [{ value: 'mostly', label: 'Mostly cook' }, { value: 'half', label: 'Half and half' }, { value: 'rarely', label: 'Mostly eat out' }])}
-        <Label>When eating out</Label>
-        {choose('eatingOut', [{ value: 'street', label: 'Street food' }, { value: 'casual', label: 'Casual places' }, { value: 'nice', label: 'Upscale' }])}
-        <Label>Alcohol</Label>
-        {choose('alcohol', [{ value: 'none', label: 'None' }, { value: 'some', label: 'Some evenings' }, { value: 'most', label: 'Most evenings' }])}
-        <div className="mt-2">{toggle('coffee', 'A coffee out every day')}</div>
       </Group>
 
       <Group title="Get around">
         <Label>Pace</Label>
         <Segmented<Pace> value={input.pace} onChange={(pace) => setInput({ pace })} options={[{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]} />
-        <Label>In cities</Label>
-        {choose('cityTransport', [{ value: 'public', label: 'Walk & transit' }, { value: 'taxi_sometimes', label: 'Taxi sometimes' }, { value: 'taxi_often', label: 'Taxi often' }])}
         <Label>Between cities (fastest allows flights)</Label>
         {choose('betweenCities', [{ value: 'cheapest', label: 'Cheapest' }, { value: 'balanced', label: 'Balanced' }, { value: 'fastest', label: 'Fastest' }])}
         <Label>Longest travel day</Label>

@@ -52,14 +52,22 @@ function regionsText(input: TripInput): string {
 }
 
 /** A compact description of the trip, sent with every message so the assistant knows the current state. */
+/** One traveller's daily cost in a city on this trip's choices, and on each travel style's for comparison (EUR). */
+function dailyCosts(input: TripInput, id: string) {
+  return {
+    this_trip: Math.round(dailyCost(ds, id, input)),
+    ...Object.fromEntries(BUDGETS.map((b) => [b, Math.round(dailyCost(ds, id, { prefs: stylePrefs(b, input.prefs) }))])),
+  }
+}
+
 /** The traveller's preferences in a line, for the assistant (amounts in EUR). */
 function prefsText(p: TravelPrefs): string {
   return [
     ...(p.homeCityId ? [`home: ${cityName(p.homeCityId)} (starts there${p.returnHome ? ' and returns' : ', one way'}; not a stop)`] : []),
     `${p.travellers === 1 ? 'solo' : p.travellers === 2 ? 'two sharing a room' : '3–4 people'}`,
-    `room: ${p.room.replace('_', ' ')}${p.room === 'hotel' ? ` ~${p.hotelStars}★` : ''}${p.maxPerNight ? ` up to €${p.maxPerNight}/night` : ''}`,
-    `cooking: ${p.cooking}, eating out: ${p.eatingOut}, alcohol: ${p.alcohol}${p.coffee ? ', coffee out daily' : ''}`,
-    `in cities: ${p.cityTransport.replace('_', ' ')}; between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
+    `bed: ${p.room === 'dorm' ? 'dorm bed' : 'private room'}${p.maxPerNight ? `, up to €${p.maxPerNight}/night` : ''}`,
+    `breakfast: ${p.breakfast}, lunch: ${p.lunch}, dinner: ${p.dinner}; café coffees a day: ${p.coffees}, bar beers a day: ${p.beers}`,
+    `between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
     `paid sights: ${p.sights}`,
     `planner focus: ${p.focus === 'countries' ? 'as many countries as fit' : p.focus === 'highlights' ? 'the most popular places' : 'balanced'}`,
     ...(p.expensive !== 'ignore' ? [`expensive places: ${p.expensive === 'shorter' ? 'shorter stays' : 'skip where optional'}`] : []),
@@ -75,7 +83,7 @@ export function tripContext(): string {
   const { input, plan } = useTrip.getState()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
-    `Dates: ${input.startDate} to ${input.endDate}. Pace: ${input.pace}. Travel style: ${input.budget}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    `Dates: ${input.startDate} to ${input.endDate}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
     ...(useTrip.getState().plans.length > 1 ? [`Plans in this trip: ${useTrip.getState().plans.map((p) => `${p.name}${p.id === useTrip.getState().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
     ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${input.minStops ?? 'any'} to ${input.maxStops ?? 'any'} (the planner keeps to this when it makes a plan).`] : []),
     ...(input.wishes?.trim() ? [`The user's wishes for this trip, in their words: "${input.wishes.trim()}"`] : []),
@@ -106,7 +114,7 @@ function tripDetails(): ToolResult {
   const { input, plan } = useTrip.getState()
   return {
     settings: {
-      start_date: input.startDate, end_date: input.endDate, pace: input.pace, budget: input.budget, interests: input.interests,
+      start_date: input.startDate, end_date: input.endDate, pace: input.pace, interests: input.interests,
       passport: input.passport, keep_region_order: input.keepGroupOrder, start_city: input.startCityId && cityName(input.startCityId),
       end_city: input.endCityId && cityName(input.endCityId), schengen_days_before: input.schengenDaysBefore,
     },
@@ -193,7 +201,7 @@ function cityInfo(args: Args): ToolResult {
       all_months: clim.map((m) => `${monthName(m.month)} ${Math.round(m.tLow)}–${Math.round(m.tHigh)}°C, ${Math.round(m.rainDays)} rain days`),
     },
     air_quality: air && { month: monthName(month), pm25: air.pm25, level: airBand(air.pm25).short },
-    daily_cost_eur: Object.fromEntries((['shoestring', 'backpacker', 'private', 'midrange', 'comfort'] as Budget[]).map((b) => [b, Math.round(dailyCost(ds, id, b))])),
+    daily_cost_eur: dailyCosts(input, id),
     prices_eur: cost && { dorm_bed: cost.profile.dormBed, private_room: cost.profile.privateRoom, local_meal: cost.profile.mealLocal, estimated: cost.estimated },
     visa: visa ? { passport: input.passport, requirement: visa.req, days: visa.days } : 'unknown',
     travel_advice: adv && {
@@ -250,7 +258,7 @@ function citySections(id: string, sections: string[]): ToolResult {
       const big = ds.bigMac.prices[city.iso2]
       out.costs = {
         currency: country.currency,
-        daily_cost_eur: Object.fromEntries(BUDGETS.map((b) => [b, Math.round(dailyCost(ds, id, b))])),
+        daily_cost_eur: dailyCosts(input, id),
         prices_eur: cost && { ...cost.profile, groceries_for_a_day: Math.round(groceryDay(cost.profile) * 10) / 10, estimated_from_price_level: cost.estimated },
         price_level_vs_us: ds.priceLevels.levels[city.iso2]?.level,
         big_mac: big && { local_price: big.localPrice, currency: big.currency },
@@ -344,7 +352,7 @@ function compareCities(args: Args): ToolResult {
         const a = ds.air.byCity[id]?.[m - 1]
         if (a) Object.assign(row, { pm25: a.pm25, air: airBand(a.pm25).short })
       }
-      if (f === 'daily_cost') row.daily_cost_eur = Math.round(dailyCost(ds, id, input.budget))
+      if (f === 'daily_cost') row.daily_cost_eur = Math.round(dailyCost(ds, id, input))
       if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id).level]?.short
       if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id).level]?.short
       if (f === 'mobile_internet') row.mobile_internet = mobileView(id)
@@ -357,7 +365,7 @@ function compareCities(args: Args): ToolResult {
   })
   return {
     month: month ? monthName(month) : 'each city in the month the user would be there',
-    ...(fields.includes('daily_cost') && { budget: input.budget }),
+    ...(fields.includes('daily_cost') && { daily_cost: 'one traveller, on this trip’s choices' }),
     rows,
     ...(ids.size > MAX_ROWS && { note: `Showing ${MAX_ROWS} of ${ids.size} cities; narrow the request.` }),
   }
@@ -435,8 +443,8 @@ function viewDetails(ref: ViewRef): ToolResult {
       }
       case 'cost': {
         const kind = ref.costKind ?? 'day'
-        const eur = costOf(ds, cityId, kind, input.budget)
-        return kind === 'day' ? { daily_cost_eur: Math.round(eur), budget: input.budget } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
+        const eur = costOf(ds, cityId, kind, input)
+        return kind === 'day' ? { daily_cost_eur: Math.round(eur), on: 'this trip’s choices' } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
       }
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
     }
@@ -702,18 +710,19 @@ export function runTool(name: string, args: Args = {}): { result: ToolResult; ok
   }
 }
 
+const LUNCH_DINNER = ['skip', 'diy', 'local', 'restaurant'] as const
+
 /** The preferences the assistant can change: argument name, preference, and the values allowed (null = no limit). */
 const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknown[]; amount?: true; flag?: true; temp?: true }[] = [
   { arg: 'return_home', key: 'returnHome', flag: true },
   { arg: 'travellers', key: 'travellers', values: [1, 2, 4] },
-  { arg: 'room', key: 'room', values: ['dorm', 'shared_bath', 'own_bath', 'hotel', 'apartment'] },
-  { arg: 'hotel_stars', key: 'hotelStars', values: [2, 3, 4] },
+  { arg: 'room', key: 'room', values: ['dorm', 'private'] },
   { arg: 'max_per_night_eur', key: 'maxPerNight', amount: true },
-  { arg: 'cooking', key: 'cooking', values: ['mostly', 'half', 'rarely'] },
-  { arg: 'eating_out', key: 'eatingOut', values: ['street', 'casual', 'nice'] },
-  { arg: 'coffee', key: 'coffee', flag: true },
-  { arg: 'alcohol', key: 'alcohol', values: ['none', 'some', 'most'] },
-  { arg: 'city_transport', key: 'cityTransport', values: ['public', 'taxi_sometimes', 'taxi_often'] },
+  { arg: 'breakfast', key: 'breakfast', values: ['diy', 'local', 'skip'] },
+  { arg: 'lunch', key: 'lunch', values: LUNCH_DINNER },
+  { arg: 'dinner', key: 'dinner', values: LUNCH_DINNER },
+  { arg: 'coffees', key: 'coffees', values: [0, 1, 2] },
+  { arg: 'beers', key: 'beers', values: [0, 1, 2] },
   { arg: 'between_cities', key: 'betweenCities', values: ['cheapest', 'balanced', 'fastest'] },
   { arg: 'overnight', key: 'overnight', flag: true },
   { arg: 'max_travel_hours', key: 'maxTravelHours', values: [3, 5, 8, null] },
@@ -740,8 +749,8 @@ function findPlan(ref: unknown): TripPlan {
 
 /** Names of the preferences in the list of changes under a reply. */
 const PREF_NAMES: Record<keyof TravelPrefs, string> = {
-  homeCityId: 'Home city', returnHome: 'Return home at the end', travellers: 'Travellers', room: 'Room', hotelStars: 'Hotel level', maxPerNight: 'Most per night (EUR)', cooking: 'Cooking',
-  eatingOut: 'Eating out', coffee: 'Coffee out daily', alcohol: 'Alcohol', cityTransport: 'In cities', betweenCities: 'Between cities',
+  homeCityId: 'Home city', returnHome: 'Return home at the end', travellers: 'Travellers', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
+  lunch: 'Lunch', dinner: 'Dinner', coffees: 'Café coffees', beers: 'Beers in a bar', betweenCities: 'Between cities',
   overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', sights: 'Paid sights', focus: 'Trip goal',
   expensive: 'Expensive places', maxHeatC: 'Highest comfortable high (°C)', minHighC: 'Lowest comfortable high (°C)', maxLowC: 'Warmest comfortable night (°C)', minLowC: 'Coldest comfortable night (°C)', avoidRain: 'Avoid rainy months',
   needInternet: 'Needs fast internet', dailyBudget: 'Daily budget (EUR)',

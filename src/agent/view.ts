@@ -51,7 +51,7 @@ const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
 const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
 const COST_NAMES: Record<CostKind, string> = {
   day: 'daily cost for their budget', dorm: 'a night in a hostel dorm', private: 'a night in a private room', meal: 'a meal at a simple local eatery',
-  groceries: 'a day of groceries to cook for themselves', transport: 'a day of local transport',
+  groceries: 'a day of DIY meals from the supermarket', transport: 'a day of local transport',
 }
 const MONTH_NAMES = MONTHS.map((_, i) => new Date(2000, i).toLocaleString('en', { month: 'long' }))
 

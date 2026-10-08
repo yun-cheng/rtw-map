@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { REGION_PRESETS, makeGroup } from '../data/presets'
-import { STYLES, daysBetween, type CountryMode, type TripGroup } from '../planner'
+import { daysBetween, type CountryMode, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
@@ -149,7 +149,7 @@ export function SetupPanel() {
       </Field>
 
       <p className="text-[12px] text-muted">
-        Passport, pace, interests and travel style ({STYLES.find((s) => s.value === input.budget)?.label}):{' '}
+        Passport, pace, interests and what a day costs:{' '}
         <button onClick={() => setPanel('prefs')} className="text-accent hover:underline">Preferences</button>
       </p>
 

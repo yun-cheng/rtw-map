@@ -10,7 +10,7 @@ import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
 import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripInput } from './types'
 
 export * from './types'
-export { COST_HINTS, COST_KINDS, GROCERY_KEYS, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, estimatedCosts, groceryDay, type CostKind } from './cost'
+export { COST_HINTS, COST_KINDS, MEAL_HINTS, GROCERY_KEYS, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, estimatedCosts, groceryDay, groceryMeal, prefsDay, type CostInput, type CostItem, type CostKind } from './cost'
 export { schengenApplies } from './schengen'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
@@ -73,9 +73,9 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   for (const id of [...input.mustCities, input.startCityId, input.endCityId]) {
     if (id && candidates.includes(id)) required.add(id)
   }
-  const daily = candidates.map((id) => dailyCost(ds, id, input.budget)).filter((d) => d > 0).sort((a, b) => a - b)
+  const daily = candidates.map((id) => dailyCost(ds, id, input)).filter((d) => d > 0).sort((a, b) => a - b)
   const median = daily[daily.length >> 1] || 1
-  const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, input.budget) || median) / median]))
+  const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, input) || median) / median]))
   const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, costRatio }
   const requireBestIn = (countries: string[]) => {
     if ([...required].some((id) => countries.includes(ds.cities[id].iso2))) return
@@ -716,7 +716,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
   }
 
   // Cost
-  const stay = sched.reduce((t, s) => t + dailyCost(ds, s.cityId, input.budget) * s.nights, 0)
+  const stay = sched.reduce((t, s) => t + dailyCost(ds, s.cityId, input) * s.nights, 0)
   const allLegs = [...legs, ...(home.out ? [home.out] : []), ...(home.back ? [home.back] : [])]
   const legMin = allLegs.reduce((t, l) => t + l.priceMin, 0)
   const legMax = allLegs.reduce((t, l) => t + l.priceMax, 0)

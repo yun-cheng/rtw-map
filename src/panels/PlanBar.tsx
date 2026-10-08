@@ -116,7 +116,6 @@ function Compare({ plans, onClose }: { plans: TripPlan[]; onClose: () => void })
     { label: 'Dates', value: (p) => `${p.input.startDate.slice(5)} → ${p.input.endDate.slice(5)}` },
     { label: 'Stops', value: (p) => String(p.stops.length) },
     { label: 'Countries', value: (p) => String(new Set(p.stops.map((s) => ds.cities[s.cityId]?.iso2)).size) },
-    { label: 'Travel style', value: (p) => p.input.budget },
     { label: 'Cost', value: (p) => (p.plan ? `${fmt(p.plan.cost.min)}–${fmt(p.plan.cost.max)}` : '–'), title: 'Stays and travel, roughly' },
     { label: 'Per day', value: (p) => (p.plan ? fmt(p.plan.cost.perDay) : '–') },
     { label: 'Travel time', value: (p) => (p.plan ? duration(p.plan.legs.reduce((t, l) => t + l.durationMin, 0)) : '–'), title: 'All journeys between stops added up' },

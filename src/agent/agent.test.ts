@@ -61,10 +61,10 @@ describe('assistant tools', () => {
   it('changes any preference, lists the changes, and keeps the itinerary until it is regenerated', () => {
     const before = snapshot()
     const stops = stopIds()
-    const r = runTool('update_preferences', { travellers: 2, room: 'hotel', hotel_stars: '3', focus: 'countries', max_high_c: 'none', min_low_c: 0, daily_budget_eur: 70 })
+    const r = runTool('update_preferences', { travellers: 2, room: 'private', dinner: 'restaurant', focus: 'countries', max_high_c: 'none', min_low_c: 0, daily_budget_eur: 70 })
     expect(r.ok).toBe(true)
     expect(r.summary).toContain('generate_plan')
-    expect(useTrip.getState().input.prefs).toMatchObject({ travellers: 2, room: 'hotel', hotelStars: 3, focus: 'countries', maxHeatC: null, minLowC: 0, dailyBudget: 70 })
+    expect(useTrip.getState().input.prefs).toMatchObject({ travellers: 2, room: 'private', dinner: 'restaurant', focus: 'countries', maxHeatC: null, minLowC: 0, dailyBudget: 70 })
     expect(stopIds()).toEqual(stops)
     expect(describeChanges(before, snapshot())).toEqual(expect.arrayContaining(['Travellers: 1 → 2', 'Trip goal: balanced → countries', 'Daily budget (EUR): no limit → 70']))
     expect(tripContext()).toContain('as many countries as fit')

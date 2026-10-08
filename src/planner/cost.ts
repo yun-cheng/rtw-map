@@ -1,24 +1,43 @@
-import type { Budget, CostProfile, Dataset, GroceryKey, LocalCostProfile } from './types'
+import { taxiEstimate } from './transport'
+import type { CostProfile, Dataset, DayChoices, GroceryKey, LocalCostProfile, MealChoice, TravelPrefs, TripInput } from './types'
 
 /** The shop items, in the order the city panel lists them. */
 export const GROCERY_KEYS: GroceryKey[] = ['water15', 'coke05', 'beer05', 'bread', 'eggs10', 'milk1l', 'pasta500g', 'bananas1kg', 'tomatoes1kg', 'chicken500g']
 
-/** What the meal, drink and grocery prices count, for one person; shown in the city panel and on the review page. */
+/** What the meal and grocery prices count, for one person; shown in the city panel and on the review page. */
 export const COST_HINTS = {
   mealLocal: "One person's lunch or dinner at a simple place where locals eat every day (a street stall, food court, canteen, noodle or kebab shop), not a fast-food chain: one main dish with water or a soft drink. What you actually pay, including tax and any usual tip.",
   mealDinner: "One person's dinner at a sit-down restaurant with table service, the kind locals choose for a nice evening out (not fast food, not fine dining, not a tourist trap): one main course and one drink (a beer, a glass of wine or a soft drink). What you actually pay, including tax, any service charge and the usual tip.",
   coffee: 'A cappuccino, or the usual café coffee, at an ordinary café (sit-down or takeaway). What you actually pay.',
   beerBar: 'Half a litre of local beer at an ordinary bar or pub (smaller bottles and glasses are scaled to 0.5 L). What you actually pay, including any service charge or usual tip.',
-  groceryDay: 'Supermarket food for one person cooking all their own meals for a day: a loaf of bread, 6 eggs, ½ L of milk, 250 g of pasta, 2 bananas, about 330 g each of chicken breast and tomatoes, and 1.5 L of water.',
+  groceryDay: 'Supermarket food for one person for a day of DIY meals, and 1.5 L of drinking water. Breakfast: 2 slices of bread (⅙ of a 500 g loaf), an egg and a banana. Lunch and dinner, each: 125 g of pasta, 150 g of chicken breast and 200 g of tomatoes.',
+}
+
+/** What a meal choice counts, shown for the chosen one (skipping a meal needs no explanation). */
+export const MEAL_HINTS: { breakfast: Partial<Record<MealChoice, string>>; lunchDinner: Partial<Record<MealChoice, string>> } = {
+  breakfast: {
+    diy: '2 slices of bread, an egg and a banana from the supermarket.',
+    local: 'Breakfast at a simple local place, priced like a local meal.',
+  },
+  lunchDinner: {
+    diy: '125 g of pasta, 150 g of chicken breast and 200 g of tomatoes from the supermarket.',
+    local: 'One main dish with water or a soft drink at a simple place where locals eat.',
+    restaurant: 'A main course and a drink at a sit-down restaurant.',
+  },
 }
 
 /**
- * Groceries to cook your own meals for one day: a loaf of bread, 6 eggs, ½ L of milk, 250 g of pasta, 2 bananas
- * (~250 g), ~330 g of chicken breast and of tomatoes, and 1.5 L of water (COST_HINTS.groceryDay says the same).
+ * A DIY meal from the supermarket (see COST_HINTS.groceryDay): breakfast is 2 slices of bread, an egg and a banana
+ * (~400 kcal); lunch and dinner are the same, 125 g of pasta, 150 g of chicken breast and 200 g of tomatoes (~650 kcal).
  */
-export function groceryDay(c: CostProfile): number {
+export function groceryMeal(c: CostProfile, meal: 'breakfast' | 'lunch' | 'dinner'): number {
   const g = c.groceries
-  return g.bread + g.eggs10 * 0.6 + g.milk1l / 2 + g.pasta500g / 2 + g.bananas1kg / 4 + (g.chicken500g * 2) / 3 + g.tomatoes1kg / 3 + g.water15
+  return meal === 'breakfast' ? g.bread / 6 + g.eggs10 / 10 + g.bananas1kg / 8 : g.pasta500g / 4 + g.chicken500g * 0.3 + g.tomatoes1kg / 5
+}
+
+/** A day of DIY meals from the supermarket (groceryMeal), and 1.5 L of drinking water (not counted in the meals). */
+export function groceryDay(c: CostProfile): number {
+  return groceryMeal(c, 'breakfast') + groceryMeal(c, 'lunch') + groceryMeal(c, 'dinner') + c.groceries.water15
 }
 
 /**
@@ -69,19 +88,59 @@ export function costProfile(ds: Dataset, iso2: string): { profile: CostProfile; 
   return est ? { profile: est, estimated: true } : null
 }
 
-/** Estimated spend per day in EUR for a city and travel style. */
-export function dailyCost(ds: Dataset, cityId: string, budget: Budget): number {
+/** The day choices the preferences give every city (no taxis: those are chosen per city). */
+export function prefsDay(p: TravelPrefs): DayChoices {
+  return {
+    bed: p.room,
+    breakfast: p.breakfast, lunch: p.lunch, dinner: p.dinner, coffees: p.coffees, beers: p.beers, taxis: 0,
+  }
+}
+
+/** The day choices for a city on this trip: the preferences, with the trip's changes for that city. */
+export function dayChoices(input: CostInput, cityId: string): DayChoices {
+  return { ...prefsDay(input.prefs), ...input.cityCosts?.[cityId] }
+}
+
+/** What the daily cost depends on: the preferences and the trip's changes per city. */
+export type CostInput = Pick<TripInput, 'prefs' | 'cityCosts'>
+
+export type CostItem = { key: 'bed' | 'breakfast' | 'lunch' | 'dinner' | 'coffee' | 'beer' | 'transport' | 'taxi'; label: string; eur: number }
+
+const MEAL_LABELS: Record<MealChoice, string> = {
+  skip: 'skipped', diy: 'DIY', local: 'local meal', restaurant: 'restaurant',
+}
+
+/**
+ * One traveller's day in a city, item by item, in EUR: the bed (a private room is shared by two travellers, also
+ * when 3–4 take two rooms), each meal, café coffees, bar beers, a day of public transport (always) and taxi rides of
+ * ~5 km (none where we have no taxi prices). Beds, meals and drinks follow the city's cost factor; groceries, transport
+ * and taxis are national. Null without cost data.
+ */
+export function dayCost(ds: Dataset, cityId: string, d: DayChoices, travellers: TravelPrefs['travellers'] = 1): { items: CostItem[]; total: number } | null {
   const city = ds.cities[cityId]
   const c = costProfile(ds, city.iso2)?.profile
-  if (!c) return 0
+  if (!c) return null
   const f = city.costFactor
-  switch (budget) {
-    case 'shoestring': return c.dormBed * f + groceryDay(c) + c.localTransportDay * 0.5 + 3
-    case 'backpacker': return c.dormBed * f + groceryDay(c) * 0.5 + c.mealLocal * f * 1.5 + c.localTransportDay + 8
-    case 'private': return c.privateRoom * f * 0.75 + c.mealLocal * f * 2 + groceryDay(c) * 0.3 + c.localTransportDay + 10
-    case 'midrange': return c.privateRoom * f + (c.mealLocal + c.mealDinner) * f + c.localTransportDay + 15
-    case 'comfort': return c.privateRoom * f * 2 + c.mealDinner * f * 2.5 + c.localTransportDay * 2 + 30
-  }
+  const meal = (m: MealChoice, slot: 'breakfast' | 'lunch' | 'dinner') =>
+    m === 'diy' ? groceryMeal(c, slot) : m === 'local' ? c.mealLocal * f : m === 'restaurant' ? c.mealDinner * f : 0
+  const taxi = taxiEstimate(ds, cityId)
+  const ride = taxi ? (taxi.min + taxi.max) / 2 : 0
+  const items: CostItem[] = [
+    { key: 'bed', label: d.bed === 'dorm' ? 'Dorm bed' : travellers > 1 ? 'Private room, half' : 'Private room', eur: d.bed === 'dorm' ? c.dormBed * f : (c.privateRoom * f) / (travellers > 1 ? 2 : 1) },
+    { key: 'breakfast', label: `Breakfast: ${MEAL_LABELS[d.breakfast]}`, eur: meal(d.breakfast, 'breakfast') },
+    { key: 'lunch', label: `Lunch: ${MEAL_LABELS[d.lunch]}`, eur: meal(d.lunch, 'lunch') },
+    { key: 'dinner', label: `Dinner: ${MEAL_LABELS[d.dinner]}`, eur: meal(d.dinner, 'dinner') },
+    { key: 'coffee', label: `Café coffee × ${d.coffees}`, eur: c.coffee * f * d.coffees },
+    { key: 'beer', label: `Beer in a bar × ${d.beers}`, eur: c.beerBar * f * d.beers },
+    { key: 'transport', label: 'Public transport, a day', eur: c.localTransportDay },
+    { key: 'taxi', label: `Taxi ride × ${d.taxis}`, eur: ride * d.taxis },
+  ]
+  return { items, total: items.reduce((t, i) => t + i.eur, 0) }
+}
+
+/** One traveller's spend per day in a city on this trip, in EUR (0 without cost data). */
+export function dailyCost(ds: Dataset, cityId: string, input: CostInput): number {
+  return dayCost(ds, cityId, dayChoices(input, cityId), input.prefs.travellers)?.total ?? 0
 }
 
 /** The kinds of cost the map's Cost view can show. */
@@ -89,12 +148,12 @@ export type CostKind = 'day' | 'dorm' | 'private' | 'meal' | 'groceries' | 'tran
 export const COST_KINDS: CostKind[] = ['day', 'dorm', 'private', 'meal', 'groceries', 'transport']
 
 /**
- * One kind of cost in a city, in EUR: a day on the budget (dailyCost), a night in a dorm or a private room, a local
- * meal, a day of groceries or a day of local transport. Beds and meals follow the city's cost factor; groceries and
+ * One kind of cost in a city, in EUR: a day on this trip's choices (dailyCost), a night in a dorm or a private room, a
+ * local meal, a day of groceries or a day of local transport. Beds and meals follow the city's cost factor; groceries and
  * transport are national. 0 without cost data.
  */
-export function costOf(ds: Dataset, cityId: string, kind: CostKind, budget: Budget): number {
-  if (kind === 'day') return dailyCost(ds, cityId, budget)
+export function costOf(ds: Dataset, cityId: string, kind: CostKind, input: CostInput): number {
+  if (kind === 'day') return dailyCost(ds, cityId, input)
   const city = ds.cities[cityId]
   const c = costProfile(ds, city.iso2)?.profile
   if (!c) return 0

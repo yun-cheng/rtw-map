@@ -30,7 +30,7 @@ type MetricState = Pick<TripState, 'plan' | 'input' | 'layer' | 'layerMonth' | '
  */
 export function cityMetrics(s: MetricState): (cityId: string) => Metric {
   const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels } = s
-  const costs = layer === 'cost' ? costScale(costKind, input.budget, currency) : null
+  const costs = layer === 'cost' ? costScale(costKind, input, currency) : null
   /** Month for the weather and air views: the chosen one, or (by default) when you're there on this trip. */
   const monthFor = (cityId: string) => layerMonth || likelyMonth(ds, plan, input, cityId)
 
@@ -71,7 +71,7 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       return { color: nearbyColor(nearbyLevel(n)), lines: [n ? `${roughCount(n)} ${what}` : `No ${what} found`] }
     }
     if (costs) {
-      const d = costOf(ds, cityId, costKind, input.budget)
+      const d = costOf(ds, cityId, costKind, input)
       if (!d) return { color: NO_DATA, lines: ['No data'] }
       // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").
       return { color: costs.color(d), lines: [`~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`] }

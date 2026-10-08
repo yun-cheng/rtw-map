@@ -1,7 +1,7 @@
 // The map views' colour scales, shared by the map (MapView) and its legend (MapControls) so the legend shows
 // exactly the bands the map colours by. Each has five bands from red (worst) to dark green (best), see LEVEL_COLORS.
 import { dataset as ds } from '../data/dataset'
-import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, costOf, type Budget, type CostKind } from '../planner'
+import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, costOf, prefsDay, type CostInput, type CostKind } from '../planner'
 import type { NearbyKind } from '../store/trip'
 import { levelColor, money } from '../ui/format'
 
@@ -41,14 +41,14 @@ export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {
 const percentiles = new Map<string, number[]>()
 
 /**
- * Where the cost bands split for a kind of cost (and budget), in EUR: the 20th, 40th, 60th and 80th percentiles over
+ * Where the cost bands split for a kind of cost (a day: on these choices), in EUR: the 20th, 40th, 60th and 80th percentiles over
  * all cities, so each band holds about a fifth of them.
  */
-function costSplits(kind: CostKind, budget: Budget): number[] {
-  const key = `${kind}:${budget}`
+function costSplits(kind: CostKind, input: CostInput): number[] {
+  const key = kind === 'day' ? `day:${JSON.stringify([prefsDay(input.prefs), input.prefs.travellers, input.cityCosts])}` : kind
   let splits = percentiles.get(key)
   if (!splits) {
-    const days = Object.keys(ds.cities).map((id) => costOf(ds, id, kind, budget)).filter((d) => d > 0).sort((a, b) => a - b)
+    const days = Object.keys(ds.cities).map((id) => costOf(ds, id, kind, input)).filter((d) => d > 0).sort((a, b) => a - b)
     splits = [0.2, 0.4, 0.6, 0.8].map((p) => days[Math.floor((days.length - 1) * p)])
     percentiles.set(key, splits)
   }
@@ -59,9 +59,9 @@ function costSplits(kind: CostKind, budget: Budget): number[] {
  * The bands for a kind of cost, with the splits rounded to two digits in the display currency (e.g. €26, NT$910;
  * small amounts keep their cents, e.g. €2.50).
  */
-export function costScale(kind: CostKind, budget: Budget, currency: string) {
+export function costScale(kind: CostKind, input: CostInput, currency: string) {
   const rate = (currency === 'EUR' ? 1 : ds.fx.rates[currency]) || 1
-  const splits = costSplits(kind, budget)
+  const splits = costSplits(kind, input)
     .map((eur) => Number((eur * rate).toPrecision(2)) / rate)
     .filter((s, i, all) => i === 0 || s > all[i - 1])
   const colorOf = (band: number) => levelColor(5 - (band * 4) / splits.length)
