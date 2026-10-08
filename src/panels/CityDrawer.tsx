@@ -47,7 +47,7 @@ const TABS: { key: CityTab; label: string; icon: LucideIcon; sections: SectionKe
   { key: 'transport', label: 'Transport', icon: TramFront, sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', icon: CloudSun, sections: ['weather', 'air'] },
   {
-    key: 'money', label: 'Money', icon: CircleDollarSign, sections: [],
+    key: 'costs', label: 'Costs', icon: CircleDollarSign, sections: [],
     parts: [
       { key: 'daily', label: 'Daily cost', sections: ['day'] },
       { key: 'prices', label: 'Prices', sections: ['stay', 'food'] },
@@ -73,7 +73,7 @@ type Tone = 'ok' | 'info' | 'warn' | 'error'
 const TONE_DOT: Record<Tone, string> = { ok: 'bg-green-600', info: 'bg-slate-400', warn: 'bg-amber-500', error: 'bg-red-600' }
 const toneOf = (level: number): Tone => (level >= 4 ? 'ok' : level === 3 ? 'info' : 'warn')
 const tabRank = (tab: CityTab) => TABS.findIndex((t) => t.key === tab)
-const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'money']
+const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'costs']
 
 const GROCERIES: [GroceryKey, string][] = [
   ['water15', 'Water (1.5 L)'], ['coke05', 'Coca-Cola (0.5 L)'], ['beer05', 'Beer (0.5 L, shop)'], ['bread', 'Bread (loaf)'],
@@ -554,7 +554,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const visaProblem = !!visa && ['visa_required', 'e_visa', 'eta', 'no_admission'].includes(visa.req)
   const safetyProblem = !!adv && (adv.excludedByDefault || adv.level >= 3)
   const moneyProblem = !!pay && !pay.foreignCardsWork
-  const problemTabs = new Set<CityTab>([...(visaProblem ? ['entry' as const] : []), ...(safetyProblem ? ['safety' as const] : []), ...(moneyProblem ? ['money' as const] : [])])
+  const problemTabs = new Set<CityTab>([...(visaProblem ? ['entry' as const] : []), ...(safetyProblem ? ['safety' as const] : []), ...(moneyProblem ? ['costs' as const] : [])])
 
   // One line per topic for the Overview tab; each opens the tab with the details.
   const month = [...stayMonths][0]
@@ -578,8 +578,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
     ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),
-    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'money' as const, part: 'daily' }] : []),
-    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'money' as const, part: 'paying', problem: moneyProblem }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'costs' as const, part: 'daily' }] : []),
+    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
     ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tone: toneOf(mobile.level), tab: 'daily' as const }] : []),
     { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },
   ].sort((a, b) =>

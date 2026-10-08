@@ -412,7 +412,7 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
   overview: null, // a summary of everything
   transport: ['public_transport', 'taxi_apps', 'connections'],
   weather: ['weather', 'air_quality'],
-  money: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
+  costs: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
   daily: ['english', 'mobile_internet'],
   phrases: ['phrases'], // not in the summary: only when the tab is open
   health: ['vaccines', 'tap_water'],

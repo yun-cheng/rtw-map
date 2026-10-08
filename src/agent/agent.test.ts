@@ -207,7 +207,7 @@ describe('what the user is looking at', () => {
     useTrip.setState({ plan })
     expect(viewText([])).toBe('')
     const off = Object.keys(ds.cities).find((id) => !useTrip.getState().stops.some((s) => s.cityId === id))!
-    useTrip.setState({ selected: { type: 'city', id: off }, cityTab: 'money', layer: 'air', layerMonth: 7 })
+    useTrip.setState({ selected: { type: 'city', id: off }, cityTab: 'costs', layer: 'air', layerMonth: 7 })
     const [city, map] = viewItems()
     expect(city.text).toContain('not in the trip')
     expect(map.label).toBe('Air map · Jul')

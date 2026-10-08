@@ -9,7 +9,7 @@ import {
 } from '../planner'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type CityTab = 'overview' | 'transport' | 'weather' | 'money' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
+export type CityTab = 'overview' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
 export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen'
 export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen']
 /** The kinds of place the Nearby map view can show. */
@@ -71,7 +71,7 @@ type State = {
   priceCompare: string | null
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
   cityTab: CityTab
-  /** The sub-tab open in each city panel tab that has them (e.g. Money: daily, prices, paying). */
+  /** The sub-tab open in each city panel tab that has them (e.g. Costs: daily, prices, paying). */
   cityPart: Partial<Record<CityTab, string>>
 
   setInput: (patch: Partial<TripInput>) => void

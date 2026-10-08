@@ -63,7 +63,7 @@ export function PrefsPanel() {
       </Group>
 
       <Group title="A day in a city">
-        <p className="-mt-0.5 mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Money tab.</p>
+        <p className="-mt-0.5 mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Costs tab.</p>
         {DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
           const set = (v: unknown) => setPrefs({ [PREF_OF[f.key]!]: v } as Partial<TravelPrefs>)
           return (

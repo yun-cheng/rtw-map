@@ -21,7 +21,7 @@ type DayField<K extends keyof DayChoices = keyof DayChoices> = {
 const field = <K extends keyof DayChoices>(f: DayField<K>) => f as unknown as DayField
 const MEALS: Option<'lunch'>[] = [{ value: 'diy', label: 'DIY' }, { value: 'local', label: 'Local' }, { value: 'restaurant', label: 'Restaurant' }, { value: 'skip', label: 'Skip' }]
 
-/** The day's choices, in order: shown in a city's Money tab and, as the defaults for every city, in Preferences. */
+/** The day's choices, in order: shown in a city's Costs tab and, as the defaults for every city, in Preferences. */
 export const DAY_FIELDS: DayField[] = [
   field({ key: 'bed', label: 'Bed', options: () => [{ value: 'dorm', label: 'Dorm bed' }, { value: 'private', label: 'Private room' }] }),
   field({ key: 'breakfast', label: 'Breakfast', hint: (v) => MEAL_HINTS.breakfast[v], options: () => [{ value: 'diy', label: 'DIY' }, { value: 'local', label: 'Local' }, { value: 'skip', label: 'Skip' }] }),
