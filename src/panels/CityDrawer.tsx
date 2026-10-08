@@ -1,9 +1,11 @@
+import { CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
+import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
@@ -39,24 +41,24 @@ type SectionKey =
 /** A sub-tab of a city panel tab, and the sections it shows. */
 type Part = { key: string; label: string; sections: SectionKey[] }
 
-/** Tabs of the city panel and the sections each one shows (or its sub-tabs), most useful first. */
-const TABS: { key: CityTab; label: string; sections: SectionKey[]; parts?: Part[] }[] = [
-  { key: 'overview', label: 'Overview', sections: [] },
-  { key: 'transport', label: 'Transport', sections: ['around', 'gettingThere'] },
-  { key: 'weather', label: 'Weather', sections: ['weather', 'air'] },
+/** Tabs of the city panel, their icons and the sections each one shows (or its sub-tabs), most useful first. */
+const TABS: { key: CityTab; label: string; icon: LucideIcon; sections: SectionKey[]; parts?: Part[] }[] = [
+  { key: 'overview', label: 'Overview', icon: LayoutGrid, sections: [] },
+  { key: 'transport', label: 'Transport', icon: TramFront, sections: ['around', 'gettingThere'] },
+  { key: 'weather', label: 'Weather', icon: CloudSun, sections: ['weather', 'air'] },
   {
-    key: 'money', label: 'Money', sections: [],
+    key: 'money', label: 'Money', icon: CircleDollarSign, sections: [],
     parts: [
       { key: 'daily', label: 'Daily cost', sections: ['day'] },
       { key: 'prices', label: 'Prices', sections: ['stay', 'food'] },
       { key: 'paying', label: 'Paying & cash', sections: ['money'] },
     ],
   },
-  { key: 'daily', label: 'Daily life', sections: ['language', 'phone', 'services', 'people'] },
-  { key: 'phrases', label: 'Phrases', sections: ['phrases'] },
-  { key: 'health', label: 'Health', sections: ['vaccines', 'health', 'medical'] },
-  { key: 'safety', label: 'Safety', sections: ['safety'] },
-  { key: 'entry', label: 'Entry', sections: ['visa'] },
+  { key: 'daily', label: 'Daily life', icon: Coffee, sections: ['language', 'phone', 'services', 'people'] },
+  { key: 'phrases', label: 'Phrases', icon: Languages, sections: ['phrases'] },
+  { key: 'health', label: 'Health', icon: HeartPulse, sections: ['vaccines', 'health', 'medical'] },
+  { key: 'safety', label: 'Safety', icon: ShieldCheck, sections: ['safety'] },
+  { key: 'entry', label: 'Entry', icon: Stamp, sections: ['visa'] },
 ]
 
 /** A number with a label underneath, in the grids of shops and medical help. */
@@ -595,6 +597,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     activeTab.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
   }, [tabInfo.key])
   const tabBar = useSideScroll()
+  const [tabTip, setTabTip] = useState<Tip | null>(null)
 
   return (
     <div className="pb-8">
@@ -617,19 +620,28 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           ) : null}
         </div>
         <nav ref={tabBar.ref} style={tabBar.mask} className="no-scrollbar -mx-4 -mb-px mt-2 flex gap-1 overflow-x-auto overflow-y-hidden scroll-px-4 px-3" role="tablist" aria-label="City information">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              ref={t.key === tabInfo.key ? activeTab : undefined}
-              role="tab"
-              aria-selected={t.key === tabInfo.key}
-              onClick={() => setCityTab(t.key)}
-              className={`relative shrink-0 border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap ${t.key === tabInfo.key ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
-            >
-              {t.label}
-              {problemTabs.has(t.key) && <span className="absolute top-1 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
-            </button>
-          ))}
+          {/* Icons; the open tab also has its name, the others name themselves on hover. */}
+          {TABS.map((t) => {
+            const active = t.key === tabInfo.key
+            return (
+              <button
+                key={t.key}
+                ref={active ? activeTab : undefined}
+                role="tab"
+                aria-selected={active}
+                aria-label={t.label}
+                onMouseEnter={active ? undefined : (e) => setTabTip({ content: { lines: [t.label] }, rect: e.currentTarget.getBoundingClientRect() })}
+                onMouseLeave={() => setTabTip(null)}
+                onClick={() => { setTabTip(null); setCityTab(t.key) }}
+                className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap ${active ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              >
+                <t.icon size={16} />
+                {active && t.label}
+                {problemTabs.has(t.key) && <span className="absolute top-1 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
+              </button>
+            )
+          })}
+          <HoverTip tip={tabTip} />
         </nav>
         {tabInfo.parts && (
           <div className="-mx-4 flex gap-1 border-t border-line px-4 py-1.5" role="tablist" aria-label={`${tabInfo.label} sections`}>
