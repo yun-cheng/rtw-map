@@ -1,7 +1,7 @@
 import { AIRPORT_MIN } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, cityName, duration, shortDate } from '../ui/format'
-import { Badge, Section } from '../ui/kit'
+import { Badge, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 
 export function LegDrawer({ index }: { index: number }) {
@@ -39,7 +39,7 @@ export function LegDrawer({ index }: { index: number }) {
       </div>
 
       {leg.reachable && (
-        <Section title={leg.hops.length > 1 ? `${leg.hops.length} segments` : 'Option'}>
+        <Sections><Section title={leg.hops.length > 1 ? `${leg.hops.length} segments` : 'Option'}>
           <ol className="flex flex-col gap-2">
             {leg.hops.map((h, i) => (
               <li key={i} className="rounded-lg border border-line p-2.5">
@@ -59,7 +59,7 @@ export function LegDrawer({ index }: { index: number }) {
               </li>
             ))}
           </ol>
-        </Section>
+        </Section></Sections>
       )}
     </div>
   )

@@ -160,7 +160,7 @@ export default function App() {
             </div>
           )}
           {selected && (
-            <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-panel shadow-xl" style={{ width: DRAWER_WIDTH }}>
+            <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-canvas shadow-xl" style={{ width: DRAWER_WIDTH }}>
               {selected.type === 'city' ? <CityDrawer key={selected.id} cityId={selected.id} /> : <LegDrawer index={selected.index} />}
             </div>
           )}

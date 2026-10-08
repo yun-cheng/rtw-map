@@ -12,17 +12,26 @@ export function Button({ variant = 'default', className = '', ...props }: Button
   return <button className={`inline-flex items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[13px] font-medium transition-colors disabled:cursor-not-allowed ${styles} ${className}`} {...props} />
 }
 
-export function Section({ title, children, aside }: { title: string; children: ReactNode; aside?: ReactNode }) {
+/**
+ * A card of related information in a drawer, on the drawer's darker background (wrap a drawer's sections in
+ * `Sections`). The title is optional for a card that needs no heading.
+ */
+export function Section({ title, children, aside }: { title?: string; children: ReactNode; aside?: ReactNode }) {
   return (
-    <section className="border-t border-line px-4 py-3">
-      <div className="mb-2 flex items-center justify-between">
-        <h3 className="text-[11px] font-semibold tracking-wider text-muted uppercase">{title}</h3>
-        {aside}
-      </div>
+    <section className="rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+      {(title || aside) && (
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h3 className="text-[13px] font-semibold">{title}</h3>
+          {aside}
+        </div>
+      )}
       {children}
     </section>
   )
 }
+
+/** A drawer's cards, spaced apart so each one reads as its own group. */
+export const Sections = ({ children }: { children: ReactNode }) => <div className="flex flex-col gap-3 p-3">{children}</div>
 
 /** A line of related links under a section (official pages and guides). */
 export function Links({ children }: { children: ReactNode }) {

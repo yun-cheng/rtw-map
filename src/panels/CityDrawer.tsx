@@ -7,7 +7,7 @@ import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, sho
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
-import { Badge, Button, LevelBar, Links, Row, Section, Segmented } from '../ui/kit'
+import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CostDay } from './CostDay'
@@ -661,8 +661,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
       </div>
 
+      <Sections>
       {tabInfo.key === 'overview' ? (
-        <div className="px-4 py-3">
+        <>
+        <Section>
           <p className="text-[13px]">{city.blurb}</p>
           <div className="mt-2 flex flex-wrap items-center gap-1">
             {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
@@ -680,9 +682,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             ))}
           </div>
           {suggested.longer && <p className="mt-1 text-[11px] text-muted">Includes extra time because {suggested.longer} is marked "Longer".</p>}
+        </Section>
 
-          <h3 className="mt-4 mb-1 text-[11px] font-semibold tracking-wider text-muted uppercase">At a glance</h3>
-          <ul className="flex flex-col">
+        <Section title="At a glance">
+          <ul className="-mx-2 flex flex-col">
             {glance.map((g) => (
               <li key={g.label}>
                 <button
@@ -698,10 +701,12 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               </li>
             ))}
           </ul>
-        </div>
+        </Section>
+        </>
       ) : (
         (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
       )}
+      </Sections>
     </div>
   )
 }
