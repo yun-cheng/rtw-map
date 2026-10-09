@@ -491,6 +491,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Days per country, instead of "Longer" regions:** each country of the trip can have a fewest and a most days (the nights at its stops; empty for any), set in its region's card or by the assistant (`set_country_mode` with `min_days` / `max_days`). The planner picks no more cities in a country than fit its most (always one), adds cities in one visited for fewer days than its fewest, moves nights between unlocked stops after assigning them (`keepCountryDays`), keeps the Schengen fix-up and flexible dates within the ranges where it can (Schengen first), and Checks warns about a country outside its range. The region-wide "Longer" option is gone; the test case asks for 14–21 days in Poland.
 - **Number of stops as a range:** a fewest and a most, like a country's days (`update_settings` `min_stops` / `max_stops`), replacing a number give or take some (`stopsFlex`, `withStops`); a range saved that way shows as its fewest and most. Its boxes are the size of the Schengen days field.
 - **No Travellers preference:** the option (solo, two sharing a room, 3–4) is gone, and with it the private room halved for two; daily costs are one traveller's. A number saved with a trip is dropped when it loads (`withPrefs`).
+- **Daily cost card:** Preferences' "A day in a city" and "Money" are one card, **Daily cost**: the daily budget first, then what a day counts in every city.
 - **Next:** verify the seed costs and connections; the offline part of Phase 3 (PWA) and a "today" screen.
 
 ---

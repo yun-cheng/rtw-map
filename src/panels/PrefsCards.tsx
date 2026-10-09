@@ -52,7 +52,8 @@ export function PrefsCards() {
   const summary = {
     who: [`${ds.visa.passports.find((x) => x.code === input.passport)?.name ?? input.passport} passport`, home && `from ${home}`],
     goals: [labelOf(FOCUS, p.focus), `expensive places: ${labelOf(EXPENSIVE, p.expensive).toLowerCase()}`],
-    day: [
+    cost: [
+      p.dailyBudget != null ? `budget ${money(p.dailyBudget, currency)}` : 'no budget',
       ...DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
         const v = day[f.key]
         if (f.max !== undefined) return Number(v) > 0 && `${f.label.toLowerCase()} ×${v}`
@@ -70,7 +71,6 @@ export function PrefsCards() {
       p.avoidRain && 'no rainy months',
       p.needInternet && 'fast internet',
     ],
-    money: [p.dailyBudget != null ? `${money(p.dailyBudget, currency)} a day` : 'No daily budget'],
   }
   // One card open at a time: opening one folds the one that was open.
   const [open, setOpen] = useState<string | null>(null)
@@ -108,8 +108,10 @@ export function PrefsCards() {
         {choose('expensive', EXPENSIVE)}
       </Fold>
 
-      <Fold title="A day in a city" {...fold('A day in a city')} summary={line(summary.day)}>
-        <p className="mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Costs tab.</p>
+      <Fold title="Daily cost" {...fold('Daily cost')} summary={line(summary.cost)}>
+        <Label>Daily budget per person (optional)</Label>
+        <MoneyInput value={p.dailyBudget} currency={currency} onChange={(dailyBudget) => setPrefs({ dailyBudget })} />
+        <p className="mt-3 text-[12px] text-muted">What a day costs in every city: what you'd pick for each. Change it for one city in that city's Costs tab.</p>
         {DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
           const set = (v: unknown) => setPrefs({ [PREF_OF[f.key]!]: v } as Partial<TravelPrefs>)
           return (
@@ -172,11 +174,6 @@ export function PrefsCards() {
           {toggle('avoidRain', 'Avoid rainy months')}
           {toggle('needInternet', 'I need fast internet (working on the road)')}
         </div>
-      </Fold>
-
-      <Fold title="Money" {...fold('Money')} summary={line(summary.money)}>
-        <Label>Daily budget per person (optional)</Label>
-        <MoneyInput value={p.dailyBudget} currency={currency} onChange={(dailyBudget) => setPrefs({ dailyBudget })} />
       </Fold>
     </>
   )
