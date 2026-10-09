@@ -121,7 +121,8 @@ export function MapControls() {
       // its sheet (`--sheet-height`, see BottomSheet) and clear of the map's ⓘ credits, one row of dropdowns instead of
       // rows of buttons and switches: the view, then its month or kind, and the legend's switches.
       <>
-        <div className="pointer-events-none absolute inset-x-2 top-2 flex flex-col items-start">{legends}</div>
+        {/* (Clear of the settings gear at the top right, see App.) */}
+        <div className="pointer-events-none absolute top-2 right-12 left-2 flex flex-col items-start">{legends}</div>
         <div className="pointer-events-none absolute right-10 left-2 flex transition-[bottom] duration-300 ease-out" style={{ bottom: 'calc(var(--sheet-height, 0px) + 8px)' }}>
           <div className="no-scrollbar pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto">
             <Pick label="Map view" value={layer} onChange={(v) => setLayer(v as MapLayer)}>

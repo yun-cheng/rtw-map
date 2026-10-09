@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, SlidersHorizontal, Sparkles, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, Settings, SlidersHorizontal, Sparkles, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { MapControls } from './map/MapControls'
 import { BOTH_PANELS_MIN_WIDTH, DRAWER_WIDTH, SIDEBAR_WIDTH } from './ui/layout'
@@ -10,6 +10,7 @@ import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
 import { PlanBar } from './panels/PlanBar'
 import { PrefsPanel } from './panels/PrefsPanel'
+import { SettingsPanel } from './panels/SettingsPanel'
 import { SetupPanel } from './panels/SetupPanel'
 import { Timeline } from './panels/Timeline'
 import { planMark, useTrip } from './store/trip'
@@ -112,6 +113,8 @@ export default function App() {
   // How far the phone's sheets are pulled up: the left panel's starts open on a new trip; a city's opens to half.
   const [leftSnap, setLeftSnap] = useState<Snap>(plan ? 'peek' : 'half')
   const [drawerSnap, setDrawerSnap] = useState<Snap>('half')
+  // On a phone the top bar's contents are in a settings panel, opened from a gear over the map.
+  const [settings, setSettings] = useState(false)
   const open = !!selected
   useEffect(() => {
     if (open) setDrawerSnap('half')
@@ -133,7 +136,7 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
-      <Header />
+      {!phone && <Header />}
       <div className="flex min-h-0 flex-1">
         {!phone && sidebar.hidden && (
           // The folded panel: a strip to open it again, on any tab (the panel stays mounted, so nothing is lost).
@@ -195,6 +198,14 @@ export default function App() {
           )}
           {phone ? (
             <>
+              <button
+                onClick={() => setSettings(true)}
+                aria-label="Settings"
+                className="absolute top-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
+              >
+                <Settings size={18} />
+              </button>
+              <SettingsPanel open={settings} onClose={() => setSettings(false)} />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while a city's is open. */}
               <BottomSheet snap={leftSnap} onSnap={setLeftSnap} label={TAB_LABELS[tab]} hidden={!!selected} className="z-10 bg-panel">
                 <LeftPanel tab={tab} peek />
