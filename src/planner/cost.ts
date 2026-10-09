@@ -111,12 +111,11 @@ const MEAL_LABELS: Record<MealChoice, string> = {
 }
 
 /**
- * One traveller's day in a city, item by item, in EUR: the bed (a private room is shared by two travellers, also
- * when 3–4 take two rooms), each meal, café coffees, bar beers, a day of public transport (always) and taxi rides of
- * ~5 km (none where we have no taxi prices). Beds, meals and drinks follow the city's cost factor; groceries, transport
- * and taxis are national. Null without cost data.
+ * One traveller's day in a city, item by item, in EUR: the bed, each meal, café coffees, bar beers, a day of public
+ * transport (always) and taxi rides of ~5 km (none where we have no taxi prices). Beds, meals and drinks follow the
+ * city's cost factor; groceries, transport and taxis are national. Null without cost data.
  */
-export function dayCost(ds: Dataset, cityId: string, d: DayChoices, travellers: TravelPrefs['travellers'] = 1): { items: CostItem[]; total: number } | null {
+export function dayCost(ds: Dataset, cityId: string, d: DayChoices): { items: CostItem[]; total: number } | null {
   const city = ds.cities[cityId]
   const c = costProfile(ds, city.iso2)?.profile
   if (!c) return null
@@ -126,7 +125,7 @@ export function dayCost(ds: Dataset, cityId: string, d: DayChoices, travellers: 
   const taxi = taxiEstimate(ds, cityId)
   const ride = taxi ? (taxi.min + taxi.max) / 2 : 0
   const items: CostItem[] = [
-    { key: 'bed', label: d.bed === 'dorm' ? 'Dorm bed' : travellers > 1 ? 'Private room, half' : 'Private room', eur: d.bed === 'dorm' ? c.dormBed * f : (c.privateRoom * f) / (travellers > 1 ? 2 : 1) },
+    { key: 'bed', label: d.bed === 'dorm' ? 'Dorm bed' : 'Private room', eur: d.bed === 'dorm' ? c.dormBed * f : c.privateRoom * f },
     { key: 'breakfast', label: `Breakfast: ${MEAL_LABELS[d.breakfast]}`, eur: meal(d.breakfast, 'breakfast') },
     { key: 'lunch', label: `Lunch: ${MEAL_LABELS[d.lunch]}`, eur: meal(d.lunch, 'lunch') },
     { key: 'dinner', label: `Dinner: ${MEAL_LABELS[d.dinner]}`, eur: meal(d.dinner, 'dinner') },
@@ -140,7 +139,7 @@ export function dayCost(ds: Dataset, cityId: string, d: DayChoices, travellers: 
 
 /** One traveller's spend per day in a city on this trip, in EUR (0 without cost data). */
 export function dailyCost(ds: Dataset, cityId: string, input: CostInput): number {
-  return dayCost(ds, cityId, dayChoices(input, cityId), input.prefs.travellers)?.total ?? 0
+  return dayCost(ds, cityId, dayChoices(input, cityId))?.total ?? 0
 }
 
 /** The kinds of cost the map's Cost view can show. */

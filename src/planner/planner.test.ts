@@ -245,8 +245,8 @@ describe('places near the centre', () => {
 
 describe('travel preferences', () => {
   it("fills in a travel style's preferences and keeps the traveller's own", () => {
-    const p = stylePrefs('comfort', { ...stylePrefs('backpacker'), travellers: 2, dailyBudget: 80 })
-    expect(p).toMatchObject({ room: 'private', dinner: 'restaurant', travellers: 2, dailyBudget: 80 })
+    const p = stylePrefs('comfort', { ...stylePrefs('backpacker'), homeCityId: 'krakow', dailyBudget: 80 })
+    expect(p).toMatchObject({ room: 'private', dinner: 'restaurant', homeCityId: 'krakow', dailyBudget: 80 })
     expect(matchesStyle(p, 'comfort')).toBe(true)
     expect(matchesStyle({ ...p, dinner: 'diy' }, 'comfort')).toBe(false)
   })
@@ -260,7 +260,12 @@ describe('travel preferences', () => {
 
   it("gives trips saved before preferences existed those of their travel style", () => {
     const { prefs: _, ...old } = { ...testTrip('US'), budget: 'midrange' as const }
-    expect(withPrefs(old).prefs).toMatchObject({ room: 'private', dinner: 'restaurant', travellers: 1 })
+    expect(withPrefs(old).prefs).toMatchObject({ room: 'private', dinner: 'restaurant' })
+  })
+
+  it('leaves out a number of travellers saved before the option was removed', () => {
+    const input = testTrip('US')
+    expect(withPrefs({ ...input, prefs: { ...input.prefs, travellers: 2 } as never }).prefs).not.toHaveProperty('travellers')
   })
 
   it('costs the budget private style between backpacker and mid-range', () => {
@@ -291,10 +296,10 @@ describe('daily cost from your choices', () => {
     expect(day.items[5].eur).toBeCloseTo(c.beerBar * f)
   })
 
-  it('counts nothing for a skipped meal, and halves a private room for two', () => {
-    const day = (d: Partial<ReturnType<typeof prefsDay>>, travellers: 1 | 2 = 1) => dayCost(ds, 'krakow', { ...prefsDay(prefs), ...d }, travellers)!
+  it('counts nothing for a skipped meal', () => {
+    const day = (d: Partial<ReturnType<typeof prefsDay>>) => dayCost(ds, 'krakow', { ...prefsDay(prefs), ...d })!
     expect(day({ breakfast: 'skip' }).items[1].eur).toBe(0)
-    expect(day({ bed: 'private' }, 2).items[0].eur).toBeCloseTo((c.privateRoom * f) / 2)
+    expect(day({ bed: 'private' }).items[0].eur).toBeCloseTo(c.privateRoom * f)
     expect(day({}).items[6].eur).toBeCloseTo(c.localTransportDay)
     expect(day({}).items[7].eur).toBe(0)
     const ride = taxiEstimate(ds, 'krakow')!

@@ -59,7 +59,7 @@ const percentiles = new Map<string, number[]>()
  * all cities, so each band holds about a fifth of them.
  */
 function costSplits(kind: CostKind, input: CostInput): number[] {
-  const key = kind === 'day' ? `day:${JSON.stringify([prefsDay(input.prefs), input.prefs.travellers, input.cityCosts])}` : kind
+  const key = kind === 'day' ? `day:${JSON.stringify([prefsDay(input.prefs), input.cityCosts])}` : kind
   let splits = percentiles.get(key)
   if (!splits) {
     const days = Object.keys(ds.cities).map((id) => costOf(ds, id, kind, input)).filter((d) => d > 0).sort((a, b) => a - b)

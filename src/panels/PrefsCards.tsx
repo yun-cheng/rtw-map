@@ -13,7 +13,6 @@ const PREF_OF: Partial<Record<keyof DayChoices, keyof TravelPrefs>> = {
 }
 
 type Options<T> = { value: T; label: string }[]
-const TRAVELLERS: Options<TravelPrefs['travellers']> = [{ value: 1, label: 'Solo' }, { value: 2, label: 'Two, one room' }, { value: 4, label: '3–4' }]
 const FOCUS: Options<TravelPrefs['focus']> = [{ value: 'balanced', label: 'Balanced' }, { value: 'countries', label: 'More countries' }, { value: 'highlights', label: 'Top highlights' }]
 const EXPENSIVE: Options<TravelPrefs['expensive']> = [{ value: 'ignore', label: "Don't mind" }, { value: 'shorter', label: 'Shorter stays' }, { value: 'skip', label: 'Skip if optional' }]
 const PACES: Options<Pace> = [{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]
@@ -51,7 +50,7 @@ export function PrefsCards() {
   const home = p.homeCityId ? ds.cities[p.homeCityId]?.name : null
 
   const summary = {
-    who: [`${ds.visa.passports.find((x) => x.code === input.passport)?.name ?? input.passport} passport`, labelOf(TRAVELLERS, p.travellers), home && `from ${home}`],
+    who: [`${ds.visa.passports.find((x) => x.code === input.passport)?.name ?? input.passport} passport`, home && `from ${home}`],
     goals: [labelOf(FOCUS, p.focus), `expensive places: ${labelOf(EXPENSIVE, p.expensive).toLowerCase()}`],
     day: [
       ...DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
@@ -99,8 +98,6 @@ export function PrefsCards() {
           {HOME_CITIES.map((c) => <option key={c.id} value={c.id}>{c.name}, {ds.countries[c.iso2]?.name ?? c.iso2}</option>)}
         </select>
         {p.homeCityId && <div className="mt-1.5">{toggle('returnHome', 'Return home at the end')}</div>}
-        <Label>Travellers</Label>
-        {choose('travellers', TRAVELLERS)}
       </Fold>
 
       <Fold title="Trip goals" {...fold('Trip goals')} summary={line(summary.goals)}>

@@ -138,7 +138,6 @@ export const TOOLS: FunctionDeclaration[] = [
     parametersJsonSchema: obj({
       home_city: str('Home city the trip starts from (and returns to): any city find_cities knows, or "" for none; it is not a stop'),
       return_home: { type: 'boolean', description: 'Return home at the end (false: one way)' },
-      travellers: { type: 'integer', description: '1 solo, 2 for two sharing a room, 4 for 3–4 people' },
       room: str('The bed the daily cost counts: a dorm bed or a private room', { enum: ['dorm', 'private'] }),
       max_per_night_eur: { type: 'number', description: 'Most they would pay for a room per night, in EUR; 0 for no limit' },
       breakfast: str('Breakfast on a normal day: DIY (food from a supermarket), at a simple local place, or skipped', { enum: ['diy', 'local', 'skip'] }),

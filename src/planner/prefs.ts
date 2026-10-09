@@ -39,13 +39,15 @@ export function matchesStyle(prefs: TravelPrefs, style: Budget): boolean {
 }
 
 export const DEFAULT_PREFS: TravelPrefs = {
-  travellers: 1, homeCityId: null, returnHome: true, ...STYLES[1].prefs, maxPerNight: null, maxTravelHours: null,
+  homeCityId: null, returnHome: true, ...STYLES[1].prefs, maxPerNight: null, maxTravelHours: null,
   focus: 'balanced', expensive: 'ignore', maxHeatC: null, minHighC: null, maxLowC: null, minLowC: null, avoidRain: false, needInternet: false, dailyBudget: null,
 }
 
 /** Trips saved before preferences existed get those of their travel style; newer fields get their defaults. */
 export function withPrefs<T extends { budget: Budget; prefs?: Partial<TravelPrefs> }>(input: T): T & { prefs: TravelPrefs } {
-  const prefs = { ...stylePrefs(input.budget), ...input.prefs }
+  // A number of travellers, saved before the option was removed, is left out (costs are one traveller's).
+  const { travellers: _, ...saved } = (input.prefs ?? {}) as Partial<TravelPrefs> & { travellers?: number }
+  const prefs = { ...stylePrefs(input.budget), ...saved }
   // Older saved values: rooms other than a dorm (private rooms, hotels, apartments) are a private room; breakfast
   // "with the room" (no hotel prices include it yet) is local; "cook" and "shop" are "diy".
   if (prefs.room !== 'dorm') prefs.room = 'private'

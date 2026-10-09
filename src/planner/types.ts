@@ -231,7 +231,6 @@ export type Budget = 'shoestring' | 'backpacker' | 'private' | 'midrange' | 'com
  * fields; all are the traveller's to change. Amounts are in EUR, like all prices.
  */
 export type TravelPrefs = {
-  travellers: 1 | 2 | 4
   /** Where the traveller starts from (and returns to, with returnHome); not a stop of the trip. */
   homeCityId: string | null
   returnHome: boolean

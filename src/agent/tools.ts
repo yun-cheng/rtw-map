@@ -68,7 +68,6 @@ function dailyCosts(input: TripInput, id: string) {
 function prefsText(p: TravelPrefs): string {
   return [
     ...(p.homeCityId ? [`home: ${cityName(p.homeCityId)} (starts there${p.returnHome ? ' and returns' : ', one way'}; not a stop)`] : []),
-    `${p.travellers === 1 ? 'solo' : p.travellers === 2 ? 'two sharing a room' : '3–4 people'}`,
     `bed: ${p.room === 'dorm' ? 'dorm bed' : 'private room'}${p.maxPerNight ? `, up to €${p.maxPerNight}/night` : ''}`,
     `breakfast: ${p.breakfast}, lunch: ${p.lunch}, dinner: ${p.dinner}; café coffees a day: ${p.coffees}, bar beers a day: ${p.beers}`,
     `between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
@@ -771,7 +770,6 @@ const LUNCH_DINNER = ['skip', 'diy', 'local', 'restaurant'] as const
 /** The preferences the assistant can change: argument name, preference, and the values allowed (null = no limit). */
 const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknown[]; amount?: true; flag?: true; temp?: true }[] = [
   { arg: 'return_home', key: 'returnHome', flag: true },
-  { arg: 'travellers', key: 'travellers', values: [1, 2, 4] },
   { arg: 'room', key: 'room', values: ['dorm', 'private'] },
   { arg: 'max_per_night_eur', key: 'maxPerNight', amount: true },
   { arg: 'breakfast', key: 'breakfast', values: ['diy', 'local', 'skip'] },
@@ -805,7 +803,7 @@ function findPlan(ref: unknown): TripPlan {
 
 /** Names of the preferences in the list of changes under a reply. */
 const PREF_NAMES: Record<keyof TravelPrefs, string> = {
-  homeCityId: 'Home city', returnHome: 'Return home at the end', travellers: 'Travellers', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
+  homeCityId: 'Home city', returnHome: 'Return home at the end', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
   lunch: 'Lunch', dinner: 'Dinner', coffees: 'Café coffees', beers: 'Beers in a bar', betweenCities: 'Between cities',
   overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', sights: 'Paid sights', focus: 'Trip goal',
   expensive: 'Expensive places', maxHeatC: 'Highest comfortable high (°C)', minHighC: 'Lowest comfortable high (°C)', maxLowC: 'Warmest comfortable night (°C)', minLowC: 'Coldest comfortable night (°C)', avoidRain: 'Avoid rainy months',

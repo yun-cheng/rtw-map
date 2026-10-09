@@ -67,8 +67,7 @@ export function CostDay({ cityId }: { cityId: string }) {
   const { input, setInput, plan } = useTrip()
   const { fmt } = useMoney()
   const choices = dayChoices(input, cityId)
-  const travellers = input.prefs.travellers
-  const day = dayCost(ds, cityId, choices, travellers)
+  const day = dayCost(ds, cityId, choices)
   if (!day) return null
   const base = prefsDay(input.prefs)
   const changed = !!input.cityCosts?.[cityId]
@@ -132,7 +131,7 @@ export function CostDay({ cityId }: { cityId: string }) {
         )
       })}
       <div className="mt-1.5 flex items-baseline justify-between border-t border-line pt-1.5 text-[13px]">
-        <span className="font-semibold">Per day{travellers > 1 && <span className="font-normal text-muted">, per person (a private room is shared by two)</span>}</span>
+        <span className="font-semibold">Per day</span>
         <span className="font-semibold tabular-nums">{fmt(day.total)}</span>
       </div>
       {stop && (
