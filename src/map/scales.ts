@@ -34,8 +34,14 @@ export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {
   dorm: { label: 'Dorm bed', per: '/night' },
   private: { label: 'Private room', per: '/night' },
   meal: { label: 'Local meal', per: '/meal' },
+  restaurant: { label: 'Restaurant', per: '/dinner' },
+  coffee: { label: 'Café', per: '/coffee' },
+  beer: { label: 'Bar', per: '/beer' },
   groceries: { label: 'Groceries', per: '/day' },
   transport: { label: 'Transport', per: '/day' },
+  taxi: { label: 'Taxi', per: '/ride' },
+  car: { label: 'Car rental', per: '/day' },
+  scooter: { label: 'Scooter rental', per: '/day' },
 }
 
 const percentiles = new Map<string, number[]>()

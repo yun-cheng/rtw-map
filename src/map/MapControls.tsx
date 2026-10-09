@@ -41,8 +41,14 @@ const COST_LEAD: Record<CostKind, () => { text: string; title: string }> = {
   dorm: () => ({ text: 'Dorm bed / night', title: `A bed in a hostel dorm for one night. ${FIFTH}` }),
   private: () => ({ text: 'Private room / night', title: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}` }),
   meal: () => ({ text: 'Local meal', title: `A main dish and a soft drink at a simple place where locals eat (street stall, canteen, noodle shop). ${FIFTH}` }),
+  restaurant: () => ({ text: 'Restaurant dinner', title: `A main course and a drink at a sit-down restaurant locals pick for a nice evening out. ${FIFTH}` }),
+  coffee: () => ({ text: 'Café coffee', title: `A cappuccino, or the usual coffee, at an ordinary café. ${FIFTH}` }),
+  beer: () => ({ text: 'Beer in a bar (0.5 L)', title: `Half a litre of local beer at an ordinary bar or pub. ${FIFTH}` }),
   groceries: () => ({ text: 'Groceries / day', title: `A day of DIY meals from the supermarket (the same across a country). ${FIFTH}` }),
   transport: () => ({ text: 'Local transport / day', title: `A day of getting around the city by public transport (the same across a country). ${FIFTH}` }),
+  taxi: () => ({ text: 'Taxi ride (~5 km)', title: `A ride of about 5 km at the usual meter or app price (the same across a country). ${FIFTH}` }),
+  car: () => ({ text: 'Car rental / day', title: `A small car from a rental company for one day (the same across a country). Grey where renting a car isn't usual. ${FIFTH}` }),
+  scooter: () => ({ text: 'Scooter rental / day', title: `A scooter or small motorbike for one day (the same across a country). Grey where renting one isn't usual. ${FIFTH}` }),
 }
 
 export function MapControls() {

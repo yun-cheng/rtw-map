@@ -72,7 +72,8 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
     }
     if (costs) {
       const d = costOf(ds, cityId, costKind, input)
-      if (!d) return { color: NO_DATA, lines: ['No data'] }
+      // No rental price where that rental isn't usual in the city; for other costs, no data.
+      if (!d) return { color: NO_DATA, lines: [costKind === 'car' || costKind === 'scooter' ? `No ${COST_LABELS[costKind].label.toLowerCase()} here` : 'No data'] }
       // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").
       return { color: costs.color(d), lines: [`~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`] }
     }

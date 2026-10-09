@@ -144,13 +144,15 @@ export function dailyCost(ds: Dataset, cityId: string, input: CostInput): number
 }
 
 /** The kinds of cost the map's Cost view can show. */
-export type CostKind = 'day' | 'dorm' | 'private' | 'meal' | 'groceries' | 'transport'
-export const COST_KINDS: CostKind[] = ['day', 'dorm', 'private', 'meal', 'groceries', 'transport']
+export type CostKind = 'day' | 'dorm' | 'private' | 'meal' | 'restaurant' | 'coffee' | 'beer' | 'groceries' | 'transport' | 'taxi' | 'car' | 'scooter'
+export const COST_KINDS: CostKind[] = ['day', 'dorm', 'private', 'meal', 'restaurant', 'coffee', 'beer', 'groceries', 'transport', 'taxi', 'car', 'scooter']
 
 /**
  * One kind of cost in a city, in EUR: a day on this trip's choices (dailyCost), a night in a dorm or a private room, a
- * local meal, a day of groceries or a day of local transport. Beds and meals follow the city's cost factor; groceries and
- * transport are national. 0 without cost data.
+ * local meal, a restaurant dinner, a café coffee, a beer in a bar, a day of groceries, a day of local transport or a
+ * taxi ride of ~5 km (as in the daily cost), or a day's car or scooter rental (the middle of the usual range, only where
+ * the city's transport lists that rental). Beds, meals and drinks follow the city's cost factor; groceries, transport,
+ * taxis and rentals are national. 0 without cost data.
  */
 export function costOf(ds: Dataset, cityId: string, kind: CostKind, input: CostInput): number {
   if (kind === 'day') return dailyCost(ds, cityId, input)
@@ -162,8 +164,21 @@ export function costOf(ds: Dataset, cityId: string, kind: CostKind, input: CostI
     case 'dorm': return c.dormBed * f
     case 'private': return c.privateRoom * f
     case 'meal': return c.mealLocal * f
+    case 'restaurant': return c.mealDinner * f
+    case 'coffee': return c.coffee * f
+    case 'beer': return c.beerBar * f
     case 'groceries': return groceryDay(c)
     case 'transport': return c.localTransportDay
+    case 'taxi': {
+      const taxi = taxiEstimate(ds, cityId)
+      return taxi ? (taxi.min + taxi.max) / 2 : 0
+    }
+    case 'car':
+    case 'scooter': {
+      const range = ds.localTransport.countries[city.iso2]?.rentals?.[kind === 'car' ? 'carDay' : 'motoDay']
+      const rented = ds.localTransport.cities[cityId]?.rentals?.includes(kind === 'car' ? 'car' : 'moto')
+      return range && rented ? (range[0] + range[1]) / 2 : 0
+    }
   }
 }
 
