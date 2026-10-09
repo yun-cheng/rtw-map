@@ -38,20 +38,20 @@ const MODES = [
 ]
 
 const FIFTH = 'Each colour holds about a fifth of all cities.'
-/** What the Cost view's legend numbers are, for each kind of cost. */
-const COST_LEAD: Record<CostKind, () => { text: string; title: string }> = {
-  day: () => ({ text: 'Per day', title: `A day on your choices (Preferences, or changed for a city in its Costs tab): bed, meals, drinks and getting around. ${FIFTH}` }),
-  dorm: () => ({ text: 'Dorm bed / night', title: `A bed in a hostel dorm for one night. ${FIFTH}` }),
-  private: () => ({ text: 'Private room / night', title: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}` }),
-  meal: () => ({ text: 'Local meal', title: `A main dish and a soft drink at a simple place where locals eat (street stall, canteen, noodle shop). ${FIFTH}` }),
-  restaurant: () => ({ text: 'Restaurant dinner', title: `A main course and a drink at a sit-down restaurant locals pick for a nice evening out. ${FIFTH}` }),
-  coffee: () => ({ text: 'Café coffee', title: `A cappuccino, or the usual coffee, at an ordinary café. ${FIFTH}` }),
-  beer: () => ({ text: 'Beer in a bar (0.5 L)', title: `Half a litre of local beer at an ordinary bar or pub. ${FIFTH}` }),
-  groceries: () => ({ text: 'Groceries / day', title: `A day of DIY meals from the supermarket (the same across a country). ${FIFTH}` }),
-  transport: () => ({ text: 'Local transport / day', title: `A day of getting around the city by public transport (the same across a country). ${FIFTH}` }),
-  taxi: () => ({ text: 'Taxi ride (~5 km)', title: `A ride of about 5 km at the usual meter or app price (the same across a country). ${FIFTH}` }),
-  car: () => ({ text: 'Car rental / day', title: `A small car from a rental company for one day (the same across a country). Grey where renting a car isn't usual. ${FIFTH}` }),
-  scooter: () => ({ text: 'Scooter rental / day', title: `A scooter or small motorbike for one day (the same across a country). Grey where renting one isn't usual. ${FIFTH}` }),
+/** What the Cost view's legend numbers are, for each kind of cost (the legend's hover text). */
+const COST_ABOUT: Record<CostKind, string> = {
+  day: `A day on your choices (Preferences, or changed for a city in its Costs tab): bed, meals, drinks and getting around. ${FIFTH}`,
+  dorm: `A bed in a hostel dorm for one night. ${FIFTH}`,
+  private: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}`,
+  meal: `A main dish and a soft drink at a simple place where locals eat (street stall, canteen, noodle shop). ${FIFTH}`,
+  restaurant: `A main course and a drink at a sit-down restaurant locals pick for a nice evening out. ${FIFTH}`,
+  coffee: `A cappuccino, or the usual coffee, at an ordinary café. ${FIFTH}`,
+  beer: `Half a litre of local beer at an ordinary bar or pub. ${FIFTH}`,
+  groceries: `A day of DIY meals from the supermarket (the same across a country). ${FIFTH}`,
+  transport: `A day of getting around the city by public transport (the same across a country). ${FIFTH}`,
+  taxi: `A ride of about 5 km at the usual meter or app price (the same across a country). ${FIFTH}`,
+  car: `A small car from a rental company for one day (the same across a country). Grey where renting a car isn't usual. ${FIFTH}`,
+  scooter: `A scooter or small motorbike for one day (the same across a country). Grey where renting one isn't usual. ${FIFTH}`,
 }
 
 export function MapControls() {
@@ -73,22 +73,21 @@ export function MapControls() {
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
   const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(costKind, input, currency).legend : LEGENDS[layer]
-  // What the numbers in the legend measure.
-  const lead = {
-    climate: { text: 'High', title: 'Average daily high in the month; the number on each stop' },
-    air: { text: 'PM2.5 µg/m³', title: "Monthly average of fine particles (PM2.5), the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day." },
-    nearby: { text: 'Within 1.5 km', title: `Roughly how many ${NEARBY_LABELS[nearbyKind].toLowerCase()} within 1.5 km of the centre, from map data and business listings; both miss places, so treat it as a rough guide` },
-    mobile: { text: 'Mobile Mbps', title: 'Typical download speed of mobile internet on phones in the city; the number on each stop' },
-    cost: COST_LEAD[costKind](),
+  // What the numbers in the legend measure, shown on hover: the view's name is already on its button or dropdown.
+  const about = {
+    air: "Monthly average of fine particles (PM2.5) in µg/m³, the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day.",
+    nearby: `Roughly how many ${NEARBY_LABELS[nearbyKind].toLowerCase()} within 1.5 km of the centre, from map data and business listings; both miss places, so treat it as a rough guide`,
+    mobile: 'Typical download speed of mobile internet on phones in the city, in Mbps; the number on each stop',
+    cost: COST_ABOUT[costKind],
   }[layer as string]
   // The legend: what the route's lines or the view's colours mean.
   const legends = (
     <>
       {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} phone={phone} />}
       {legend && (
-        <div className={LEGEND_BOX}>
+        <div className={LEGEND_BOX} title={about}>
           {layer === 'climate' && !phone && <FeelsToggle />}
-          {layer === 'climate' ? !phone && (
+          {layer === 'climate' && !phone && (
             // Days or nights: the colours, legend and numbers follow.
             <span className="flex rounded-md border border-line p-px" role="group" aria-label="Colour by">
               {(['high', 'low'] as const).map((b) => (
@@ -102,7 +101,7 @@ export function MapControls() {
                 </button>
               ))}
             </span>
-          ) : lead && <span className="text-muted" title={lead.title}>{lead.text}</span>}
+          )}
           {legend.map((l) => (
             <span key={l.label} className="flex items-center gap-1.5" title={l.title}>
               <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
