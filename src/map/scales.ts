@@ -44,6 +44,14 @@ export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {
   scooter: { label: 'Scooter rental', per: '/day' },
 }
 
+/** The Cost view's buttons: a group, then the kinds in it (Per day is a group of its own). */
+export const COST_GROUPS: { label: string; kinds: CostKind[] }[] = [
+  { label: 'Per day', kinds: ['day'] },
+  { label: 'Stay', kinds: ['dorm', 'private'] },
+  { label: 'Food & drink', kinds: ['meal', 'restaurant', 'coffee', 'beer', 'groceries'] },
+  { label: 'Getting around', kinds: ['transport', 'taxi', 'car', 'scooter'] },
+]
+
 const percentiles = new Map<string, number[]>()
 
 /**

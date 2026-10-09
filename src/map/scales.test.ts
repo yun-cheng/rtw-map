@@ -1,11 +1,15 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { COST_KINDS, airBand, costOf, dailyCost, stylePrefs } from '../planner'
-import { airLegend, costScale } from './scales'
+import { COST_GROUPS, airLegend, costScale } from './scales'
 
 const BACKPACKER = { prefs: stylePrefs('backpacker') }
 
 describe('map legends', () => {
+  it('puts every kind of cost in exactly one group of the Cost view', () => {
+    expect(COST_GROUPS.flatMap((g) => g.kinds).sort()).toEqual([...COST_KINDS].sort())
+  })
+
   it('shows the PM2.5 range of each of the five air bands', () => {
     expect(airLegend().map((l) => l.label)).toEqual(['0–10', '10–15', '15–25', '25–35', '35+'])
     expect([10, 10.1, 25, 35.1].map((v) => airBand(v).short)).toEqual(['Good', 'OK', 'Moderate', 'Very poor'])

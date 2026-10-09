@@ -1,9 +1,10 @@
-import { COST_KINDS, type CostKind, type SchengenSummary } from '../planner'
+import { useState } from 'react'
+import { type CostKind, type SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
-import { COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
+import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
@@ -53,6 +54,9 @@ const COST_LEAD: Record<CostKind, () => { text: string; title: string }> = {
 
 export function MapControls() {
   const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
+  // The kind last picked in each cost group, so going back to a group returns to it.
+  const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
+  const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
   const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(costKind, input, currency).legend : LEGENDS[layer]
   // What the numbers in the legend measure.
   const lead = {
@@ -90,17 +94,32 @@ export function MapControls() {
         </div>
       )}
       {layer === 'cost' && (
+        <>
         <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
-          {COST_KINDS.map((k) => (
+          {COST_GROUPS.map((g) => (
             <button
-              key={k}
-              onClick={() => setCostKind(k)}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium ${costKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+              key={g.label}
+              onClick={() => setCostKind(g === costGroup ? costKind : groupKind[g.label] ?? g.kinds[0])}
+              className={`rounded-md px-2 py-1 text-[11px] font-medium ${g === costGroup ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
             >
-              {COST_LABELS[k].label}
+              {g.label}
             </button>
           ))}
         </div>
+        {costGroup.kinds.length > 1 && (
+          <div className="pointer-events-auto flex max-w-full flex-wrap gap-0.5 rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+            {costGroup.kinds.map((k) => (
+              <button
+                key={k}
+                onClick={() => { setCostKind(k); setGroupKind({ ...groupKind, [costGroup.label]: k }) }}
+                className={`rounded-md px-2 py-1 text-[11px] font-medium ${costKind === k ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
+              >
+                {COST_LABELS[k].label}
+              </button>
+            ))}
+          </div>
+        )}
+        </>
       )}
       {(layer === 'climate' || layer === 'air') && (
         <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
