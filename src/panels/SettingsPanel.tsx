@@ -1,5 +1,5 @@
 import { X } from 'lucide-react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
 import { dataset as ds } from '../data/dataset'
 import { useTrip } from '../store/trip'
@@ -7,7 +7,8 @@ import { shortDate } from '../ui/format'
 import { Section, Sections, Segmented } from '../ui/kit'
 import { useTheme, type ThemeChoice } from '../ui/theme'
 import { useMoney } from '../ui/useMoney'
-import { AccountMenu } from './AccountMenu'
+import { AccountLimits } from './AccountLimits'
+import { AccountDetails, AccountMenu } from './AccountMenu'
 import { TripSwitcher } from './TripSwitcher'
 
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
@@ -21,6 +22,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const { currency } = useMoney()
   const { choice, setChoice } = useTheme()
   const user = useAccount((s) => s.user)
+  const [limits, setLimits] = useState(false)
 
   // Esc closes it.
   useEffect(() => {
@@ -69,9 +71,19 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
               </div>
             </Section>
-            <Section title="Account" aside={<AccountMenu />}>
-              <p className="text-[13px] text-muted">{user ? `Signed in as ${user.name}` : 'Sign in to save your trips to your account, keep several and use the assistant.'}</p>
-            </Section>
+            {user ? (
+              // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
+              <Section title="Account">
+                <div className="-mx-4 -mb-3 overflow-hidden rounded-b-xl">
+                  <AccountDetails top="pt-0" onLimits={() => setLimits(true)} onSignOut={onClose} />
+                </div>
+                {limits && <AccountLimits onClose={() => setLimits(false)} />}
+              </Section>
+            ) : (
+              <Section title="Account" aside={<AccountMenu />}>
+                <p className="text-[13px] text-muted">Sign in to save your trips to your account, keep several and use the assistant.</p>
+              </Section>
+            )}
           </Sections>
         </div>
       </div>
