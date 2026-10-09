@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Check, Search } from 'lucide-react'
+import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, citiesIn, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
@@ -55,6 +55,9 @@ export function SetupPanel() {
     setInput({ groups })
   }
   const ordered = input.keepGroupOrder
+  // The regions' cards start folded, to a line of what's in them; opening one folds the others.
+  const [unfolded, setUnfolded] = useState<string | null>(null)
+  const fold = (id: string) => setUnfolded((was) => (was === id ? null : id))
 
   return (
     <div className="flex min-h-full flex-col bg-canvas">
@@ -97,15 +100,22 @@ export function SetupPanel() {
           >
             <div className="flex flex-col gap-2">
               {input.groups.map((g, i) => {
+                const open = unfolded === g.id
                 return (
-                  // Pointing at a region's card (or one of its countries) shows it on the map.
+                  // Pointing at a region's card (or one of its countries) shades it on the map and brings the region into view.
                   <div
                     key={g.id} className="rounded-lg border border-line bg-panel p-2.5 hover:border-point"
                     onMouseEnter={() => setHovered(g.countries.map((c) => c.iso2))} onMouseLeave={() => setHovered([])}
                   >
-                    <div className="mb-2 flex items-center gap-1">
-                      {ordered && <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>}
-                      <span className="flex-1 font-semibold">{g.name}</span>
+                    <div className={`flex items-center gap-1 ${open ? 'mb-2' : ''}`}>
+                      {ordered && <span className="mr-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>}
+                      <button onClick={() => fold(g.id)} aria-expanded={open} className="flex min-w-0 flex-1 items-start gap-1.5 text-left">
+                        <ChevronRight size={14} className={`mt-0.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+                        <span className="min-w-0">
+                          <span className="block font-semibold">{g.name}</span>
+                          {!open && <span className="block truncate text-[12px] text-muted">{groupSummary(g)}</span>}
+                        </span>
+                      </button>
                       <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
                         <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
                         Longer
@@ -118,7 +128,7 @@ export function SetupPanel() {
                       )}
                       <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
                     </div>
-                    <div className="flex flex-wrap gap-1">
+                    {open && <div className="flex flex-wrap gap-1">
                       {g.countries.map((c) => {
                         const adv = ds.advisories[c.iso2]
                         return (
@@ -134,7 +144,7 @@ export function SetupPanel() {
                           </button>
                         )
                       })}
-                    </div>
+                    </div>}
                   </div>
                 )
               })}
@@ -208,6 +218,13 @@ export function SetupPanel() {
 const Card = ({ className = '', children }: { className?: string; children: React.ReactNode }) => (
   <section className={`rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)] ${className}`}>{children}</section>
 )
+
+/** A folded region's line: how many of its countries are must visits, optional or left out. */
+function groupSummary(g: TripGroup) {
+  const count = (mode: CountryMode) => g.countries.filter((c) => c.mode === mode).length
+  const parts = [[count('must'), 'must visit'], [count('optional'), 'optional'], [count('excluded'), 'left out']] as const
+  return parts.filter(([n]) => n).map(([n, label]) => `${n} ${label}`).join(' · ') || 'No countries'
+}
 
 /** A date as the date inputs show it: 2027/05/08. */
 const slashDate = (iso: string) => iso.replaceAll('-', '/')

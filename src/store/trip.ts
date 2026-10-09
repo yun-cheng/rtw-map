@@ -64,8 +64,8 @@ type State = {
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
   addAs: 'must' | 'optional'
-  /** Countries pointed at in the Trip tab (a country or a region's card), shaded on the map, and those it centres on:
-   *  for a country in a region's card, the region. */
+  /** Countries pointed at in the Trip tab (a country or a region's card), shaded on the map, and those it brings into
+   *  view: for a country in a region's card, the region. */
   hovered: { countries: string[]; focus: string[] }
   fitRequest: number
   /** Counts "Ask AI" presses in a city or journey panel: the app shows the Assistant beside it (see App). */

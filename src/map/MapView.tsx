@@ -404,10 +404,10 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-cover.right / 2, -cover.bottom / 2], duration: 700 })
   }, [selected])
 
-  // Countries pointed at in the Trip tab's list: shaded, and what they're part of (a country in a region's card: the
-  // region) brought into view, after a moment so passing over the list doesn't move the map, at a zoom that fits it,
-  // kept between FOCUS_ZOOM's: a small country isn't blown up, and a huge one is shown in part, around its cities in
-  // the app, rather than as a speck.
+  // Countries pointed at in the Trip tab: shaded, and what they're part of (a country in a region's card: the region)
+  // brought into view, after a moment so passing over the list doesn't move the map. The map zooms out to fit it, never
+  // in (moving between places stays calm), and not past FOCUS_ZOOM's: a huge country is shown in part, around its
+  // cities in the app, rather than as a speck.
   const shaded = useTrip((s) => s.hovered.countries)
   useEffect(() => {
     const map = mapRef.current
@@ -428,7 +428,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       const cover = { top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: useTrip.getState().selected ? DRAWER_WIDTH : 0, bottom: 0 }) }
       const margin = 40
       const fit = map.cameraForBounds(box!, { padding: { top: cover.top + margin, bottom: cover.bottom + margin, left: margin, right: cover.right + margin } })?.zoom ?? map.getZoom()
-      const zoom = Math.max(FOCUS_ZOOM.min, Math.min(FOCUS_ZOOM.max, fit))
+      const zoom = Math.min(map.getZoom(), Math.max(FOCUS_ZOOM.min, Math.min(FOCUS_ZOOM.max, fit)))
       // Shown in part (too big to fit): around its cities in the app, else the middle of its land.
       const center = (zoom > fit + 0.01 && citiesCentre(hovered)) || shape.centre
       // The middle of the part of the map nothing covers, where it goes; no move when it's about there already.
