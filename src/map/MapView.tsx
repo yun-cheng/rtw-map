@@ -98,6 +98,19 @@ export function MapView() {
     const map = new maplibregl.Map({ container: container.current!, ...view, attributionControl: { compact: true } })
     mapRef.current = map
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+    // The map's credits start folded into their ⓘ button, which shows them: MapLibre opens them once, when its sources
+    // first say what to credit (some time after loading), so fold them the moment that happens.
+    const credits = map.getContainer().querySelector('.maplibregl-ctrl-attrib')
+    if (credits) {
+      const fold = () => {
+        if (!credits.classList.contains('maplibregl-compact-show')) return
+        credits.classList.remove('maplibregl-compact-show')
+        watch.disconnect()
+      }
+      const watch = new MutationObserver(fold)
+      watch.observe(credits, { attributeFilter: ['class'] })
+      fold()
+    }
     showBaseMap(map, shownTheme.current)
     map.on('moveend', () => {
       const c = map.getCenter()
