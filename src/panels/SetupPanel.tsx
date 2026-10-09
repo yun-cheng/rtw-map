@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
@@ -23,7 +23,9 @@ const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2]
 const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
 
 export function SetupPanel() {
-  const { input, setInput, setPanel, generate, loadTestCase, stops, plan, picking, setPicking } = useTrip()
+  const { input, setInput, setPanel, generate, loadTestCase, stops, plan, picking, setPicking, setHovered } = useTrip()
+  // Nothing stays highlighted on the map once the tab closes.
+  useEffect(() => () => setHovered([]), [setHovered])
   const user = useAccount((s) => s.user)
   const busy = useChat((s) => s.busy)
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
@@ -100,7 +102,11 @@ export function SetupPanel() {
           {input.groups.map((g, i) => {
             const empty = g.countries.filter((c) => c.mode !== 'excluded' && !hasCities(c.iso2))
             return (
-              <div key={g.id} className="rounded-lg border border-line bg-panel p-2.5">
+              // Pointing at a region's card (or one of its countries) shows it on the map.
+              <div
+                key={g.id} className="rounded-lg border border-line bg-panel p-2.5 hover:border-point"
+                onMouseEnter={() => setHovered(g.countries.map((c) => c.iso2))} onMouseLeave={() => setHovered([])}
+              >
                 <div className="mb-2 flex items-center gap-1">
                   {ordered && <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>}
                   <span className="flex-1 font-semibold">{g.name}</span>
@@ -123,7 +129,8 @@ export function SetupPanel() {
                       <button
                         key={c.iso2}
                         onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
-                        className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
+                        onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
+                        className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
                         title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
                       >
                         {flag(c.iso2)} {countryName(c.iso2)}
@@ -264,7 +271,7 @@ function FlexDays({ value, label, onChange }: { value: number; label: string; on
  * say so.
  */
 function Picker() {
-  const { input, picking, setPicking, toggleRegion, toggleCountry, addAs, setAddAs } = useTrip()
+  const { input, picking, setPicking, toggleRegion, toggleCountry, addAs, setAddAs, setHovered } = useTrip()
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const inTrip = new Map(input.groups.flatMap((g) => g.countries.map((c) => [c.iso2, c.mode] as const)))
@@ -292,13 +299,13 @@ function Picker() {
         <Search size={14} className="text-muted" />
         <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={picking === 'country' ? 'Search countries' : 'Search regions or countries'} className="w-full bg-transparent py-1.5 text-[13px] outline-none" />
       </label>
-      <div className="-mx-1 max-h-72 overflow-y-auto">
+      <div className="-mx-1 max-h-72 overflow-y-auto" onMouseLeave={() => setHovered([])}>
         {picking === 'country'
           ? countries.map((iso2) => {
               const mode = inTrip.get(iso2)
               return (
                 <PickRow
-                  key={iso2} on={!!mode && mode !== 'excluded'} onClick={() => toggleCountry(iso2)}
+                  key={iso2} on={!!mode && mode !== 'excluded'} onClick={() => toggleCountry(iso2)} onHover={() => setHovered([iso2])}
                   label={`${flag(iso2)} ${countryName(iso2)}`}
                   sub={[REGION_OF[iso2], !hasCities(iso2) && 'no cities yet'].filter(Boolean).join(' · ')}
                 />
@@ -308,7 +315,7 @@ function Picker() {
               const covered = r.countries.filter(hasCities).length
               return (
                 <PickRow
-                  key={r.name} on={input.groups.some((g) => g.name === r.name)} onClick={() => toggleRegion(r.name)}
+                  key={r.name} on={input.groups.some((g) => g.name === r.name)} onClick={() => toggleRegion(r.name)} onHover={() => setHovered(r.countries)}
                   label={r.name}
                   sub={`${r.countries.length} ${r.countries.length > 1 ? 'countries' : 'country'}${covered === r.countries.length ? '' : covered ? `, ${covered} with cities` : ' · no cities yet'}`}
                 />
@@ -320,9 +327,9 @@ function Picker() {
   )
 }
 
-function PickRow({ on, label, sub, onClick }: { on: boolean; label: string; sub: string; onClick: () => void }) {
+function PickRow({ on, label, sub, onClick, onHover }: { on: boolean; label: string; sub: string; onClick: () => void; onHover: () => void }) {
   return (
-    <button role="checkbox" aria-checked={on} onClick={onClick} className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left hover:bg-canvas">
+    <button role="checkbox" aria-checked={on} onClick={onClick} onMouseEnter={onHover} className="flex w-full items-center gap-2 rounded-md px-1 py-1 text-left hover:bg-canvas">
       <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded border ${on ? 'border-accent bg-accent text-on-accent' : 'border-line'}`}>{on && <Check size={12} strokeWidth={3} />}</span>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px]">{label}</span>

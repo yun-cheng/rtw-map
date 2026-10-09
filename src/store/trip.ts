@@ -65,6 +65,9 @@ type State = {
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
   addAs: 'must' | 'optional'
+  /** Countries pointed at in the Trip tab (a country or a region's card), shaded on the map, and those it centres on:
+   *  for a country in a region's card, the region. */
+  hovered: { countries: string[]; focus: string[] }
   fitRequest: number
   /** Counts "Ask AI" presses in a city or journey panel: the app shows the Assistant beside it (see App). */
   askRequest: number
@@ -113,6 +116,7 @@ type State = {
    *  is excluded (and back to `addAs` when picked again). */
   toggleCountry: (iso2: string) => void
   setAddAs: (mode: State['addAs']) => void
+  setHovered: (countries: string[], focus?: string[]) => void
   /** Opens the Assistant about the open city or journey panel ("Ask AI"). */
   askAssistant: () => void
   setCurrency: (c: string) => void
@@ -205,6 +209,7 @@ export const useTrip = create<State>()(
         panel: 'setup',
         picking: null,
         addAs: 'must',
+        hovered: { countries: [], focus: [] },
         fitRequest: 0,
         askRequest: 0,
         currency: 'USD',
@@ -270,6 +275,7 @@ export const useTrip = create<State>()(
         setPanel: (panel) => set({ panel, ...(panel !== 'setup' && { picking: null }) }),
         setPicking: (picking) => set({ picking }),
         setAddAs: (addAs) => set({ addAs }),
+        setHovered: (countries, focus = countries) => set({ hovered: { countries, focus } }),
         toggleRegion: (name) => {
           const { input, setInput } = get()
           const region = REGIONS.find((r) => r.name === name)

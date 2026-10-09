@@ -22,6 +22,9 @@
   --color-warn-soft: #fef3c7;
   --color-info: #475569;
   --color-info-soft: #f1f5f9;
+  /* What's pointed at in the Trip tab, and the same place on the map (MapView's HOVER_COLOR). */
+  --color-point: #2563eb;
+  --color-point-soft: #dbeafe;
 }
 
 :root {
@@ -48,6 +51,8 @@
   --color-danger-soft: #3f1515;
   --color-warn: #fbbf24;
   --color-warn-soft: #3a2a0a;
+  --color-point: #60a5fa;
+  --color-point-soft: #1e2f4f;
   --color-info: #94a3b8;
   --color-info-soft: #1e2530;
 }

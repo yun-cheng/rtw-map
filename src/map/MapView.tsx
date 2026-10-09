@@ -15,6 +15,7 @@ import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
 import { cityMetrics, cityTip, stopTip } from './cityMetric'
+import { shapeOf } from './shapes'
 import { tipElement } from '../ui/tipBody'
 
 // Vite bundles MapLibre's worker separately; tell MapLibre where it is.
@@ -82,7 +83,8 @@ const FONT = ['Noto Sans Bold']
 const CITY_LAYERS = ['stop-circles', 'city-dots']
 const ROUTE_LAYERS = ['route-solid', 'route-dashed']
 const STOP_LAYERS = ['stop-rain', 'stop-circles', 'stop-numbers', 'stop-names', 'stop-boxes']
-/** The country or region under the pointer while adding places: blue, unlike the trip's own colours. */
+/** The country or region pointed at (on the map while adding places, or in the Trip tab's list): blue, unlike the
+ *  trip's own colours. */
 const HOVER_COLOR = 'rgba(59,130,246,0.55)'
 /** Colours of the trip's countries while its setup is open, by how they're picked: must visit strong and optional
  *  faint, so they're easy to tell apart. */
@@ -387,6 +389,42 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-cover.right / 2, -cover.bottom / 2], duration: 700 })
   }, [selected])
 
+  // Countries pointed at in the Trip tab's list: shaded, and what they're part of (a country in a region's card: the
+  // region) brought into view, after a moment so passing over the list doesn't move the map, at a zoom that fits it,
+  // kept between FOCUS_ZOOM's: a small country isn't blown up, and a huge one is shown in part, around its cities in
+  // the app, rather than as a speck.
+  const shaded = useTrip((s) => s.hovered.countries)
+  useEffect(() => {
+    const map = mapRef.current
+    if (map && loaded.current) map.setFilter('pick-hover', ['in', ['get', 'iso2'], ['literal', shaded]])
+  }, [shaded])
+  // (As text, so moving between countries of the same region doesn't move the map again.)
+  const focus = useTrip((s) => s.hovered.focus.join())
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !loaded.current || !focus) return
+    const hovered = focus.split(',')
+    const shape = shapeOf(hovered)
+    const box = shape && new maplibregl.LngLatBounds([shape.box[0], shape.box[1]], [shape.box[2], shape.box[3]])
+    if (!shape) return
+    const timer = setTimeout(() => {
+      const { width, height } = map.getContainer().getBoundingClientRect()
+      // What covers the map: the legend along the top, and a phone's bottom sheet or the city panel at the right.
+      const cover = { top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: useTrip.getState().selected ? DRAWER_WIDTH : 0, bottom: 0 }) }
+      const margin = 40
+      const fit = map.cameraForBounds(box!, { padding: { top: cover.top + margin, bottom: cover.bottom + margin, left: margin, right: cover.right + margin } })?.zoom ?? map.getZoom()
+      const zoom = Math.max(FOCUS_ZOOM.min, Math.min(FOCUS_ZOOM.max, fit))
+      // Shown in part (too big to fit): around its cities in the app, else the middle of its land.
+      const center = (zoom > fit + 0.01 && citiesCentre(hovered)) || shape.centre
+      // The middle of the part of the map nothing covers, where it goes; no move when it's about there already.
+      const mid = { x: (width - cover.right) / 2, y: (height + cover.top - cover.bottom) / 2 }
+      const p = map.project(center)
+      if (Math.abs(map.getZoom() - zoom) < 0.5 && Math.hypot(p.x - mid.x, p.y - mid.y) < 40) return
+      map.easeTo({ center, zoom, offset: [mid.x - width / 2, mid.y - height / 2], duration: 700 })
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [focus])
+
   // Zoom to the plan after generating or importing.
   useEffect(() => {
     const map = mapRef.current
@@ -434,6 +472,19 @@ function labelAnchors(cityId: string, radius: number, routeEnds: Map<string, [nu
     .sort((a, b) => a.score - b.score)
     .flatMap(({ side: { anchor, dir } }) => [anchor, [dir[0] * gap, dir[1] * gap] as [number, number]])
 }
+
+/** The zooms the map moves to for a country or region pointed at in the Trip tab (see MapView). */
+const FOCUS_ZOOM = { min: 3, max: 6 }
+
+/** The middle of the app's cities in these countries (where a trip there goes), if it has any. */
+function citiesCentre(countries: string[]): [number, number] | null {
+  const cities = Object.values(ds.cities).filter((c) => countries.includes(c.iso2))
+  if (!cities.length) return null
+  return [cities.reduce((t, c) => t + c.lon, 0) / cities.length, cities.reduce((t, c) => t + c.lat, 0) / cities.length]
+}
+
+/** How much of the map a phone's bottom sheet covers (BottomSheet sets --sheet-height on the map's parent). */
+const sheetHeight = (map: MlMap) => parseFloat(map.getContainer().parentElement?.style.getPropertyValue('--sheet-height') || '0') || 0
 
 const empty = (): FC => ({ type: 'FeatureCollection', features: [] })
 const point = (coordinates: number[], properties: Record<string, unknown>) => ({
