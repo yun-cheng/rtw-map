@@ -242,6 +242,7 @@ function Chat() {
           />
         )}
         <textarea
+          data-assistant-input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => {

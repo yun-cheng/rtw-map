@@ -60,6 +60,8 @@ type State = {
   routeBy: 'day' | 'nights'
   panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
   fitRequest: number
+  /** Counts "Ask AI" presses in a city or journey panel: the app shows the Assistant beside it (see App). */
+  askRequest: number
   /** Display currency for all prices (US dollars by default; prices are converted from the stored EUR or local amounts). */
   currency: string
   /** Temperatures in Celsius or Fahrenheit (data is stored in °C). */
@@ -97,6 +99,8 @@ type State = {
   setRouteBy: (by: 'day' | 'nights') => void
   setWeatherBy: (by: 'high' | 'low') => void
   setPanel: (p: State['panel']) => void
+  /** Opens the Assistant about the open city or journey panel ("Ask AI"). */
+  askAssistant: () => void
   setCurrency: (c: string) => void
   setTempUnit: (u: TempUnit) => void
   setTempFeels: (feels: boolean) => void
@@ -186,6 +190,7 @@ export const useTrip = create<State>()(
         routeBy: 'day',
         panel: 'setup',
         fitRequest: 0,
+        askRequest: 0,
         currency: 'USD',
         tempUnit: 'C',
         tempFeels: true,
@@ -242,6 +247,7 @@ export const useTrip = create<State>()(
         setWeatherBy: (weatherBy) => set({ weatherBy }),
         setRouteBy: (routeBy) => set({ routeBy }),
         setPanel: (panel) => set({ panel }),
+        askAssistant: () => set({ panel: 'assistant', askRequest: get().askRequest + 1 }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
         setTempFeels: (tempFeels) => set({ tempFeels }),

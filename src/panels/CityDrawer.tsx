@@ -10,6 +10,7 @@ import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
+import { AskButton } from './AskButton'
 import { CostDay } from './CostDay'
 import { PriceLevel } from './PriceLevel'
 
@@ -614,6 +615,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <h2 className="text-[18px] font-semibold">{city.name}</h2>
             <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name} · {country.schengen ? 'Schengen area' : 'Outside Schengen'}</p>
           </div>
+          <AskButton />
           <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         <div className="mt-2 flex items-center gap-2">

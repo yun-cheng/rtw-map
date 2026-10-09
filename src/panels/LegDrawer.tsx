@@ -3,6 +3,7 @@ import { useTrip } from '../store/trip'
 import { MODE_ICON, cityName, duration, shortDate } from '../ui/format'
 import { Badge, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { AskButton } from './AskButton'
 
 export function LegDrawer({ index }: { index: number }) {
   const { plan, select } = useTrip()
@@ -20,6 +21,7 @@ export function LegDrawer({ index }: { index: number }) {
             <h2 className="text-[18px] font-semibold">{cityName(leg.from)} → {cityName(leg.to)}</h2>
             <p className="text-[13px] text-muted">Leg {index + 1} · leaves {shortDate(date)}{leg.overnight && ' · overnight'}</p>
           </div>
+          <AskButton />
           <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         {leg.reachable ? (

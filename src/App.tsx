@@ -35,7 +35,8 @@ const readCollapsed = () => {
 /**
  * The left panel can be folded into a thin strip (and opened again from it). On a narrow window only one side panel
  * shows at a time: opening a city or journey panel folds the left one away (it comes back when that closes), and
- * opening the left one closes the city or journey panel (`closeDrawer`).
+ * opening the left one closes the city or journey panel (`closeDrawer`). `showBeside` opens it next to the open city or
+ * journey panel even then ("Ask AI": the map gets narrow until that panel closes).
  */
 function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
   const [collapsed, setCollapsed] = useState(readCollapsed)
@@ -53,9 +54,17 @@ function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
       // Storage blocked: remembered until reload.
     }
   }
-  const auto = drawerOpen && narrow
+  const [beside, setBeside] = useState(false)
+  useEffect(() => {
+    if (!drawerOpen) setBeside(false)
+  }, [drawerOpen])
+  const auto = drawerOpen && narrow && !beside
   return {
     hidden: collapsed || auto,
+    showBeside: () => {
+      setAndRemember(false)
+      setBeside(true)
+    },
     open: () => {
       setAndRemember(false)
       if (auto) closeDrawer()
@@ -113,6 +122,27 @@ export default function App() {
   // How far the phone's sheets are pulled up: the left panel's starts open on a new trip; a city's opens to half.
   const [leftSnap, setLeftSnap] = useState<Snap>(plan ? 'peek' : 'half')
   const [drawerSnap, setDrawerSnap] = useState<Snap>('half')
+  // "Ask AI" in a city or journey panel: on a phone the left panel's sheet comes up over it, on the Assistant (it goes
+  // back to where it was when closed, or when another city is picked); elsewhere the left panel opens beside it.
+  const askRequest = useTrip((s) => s.askRequest)
+  const [asking, setAsking] = useState(false)
+  const [snapBefore, setSnapBefore] = useState<Snap>('peek')
+  useEffect(() => {
+    if (!askRequest) return
+    if (phone) {
+      setAsking(true)
+      setSnapBefore(leftSnap)
+      setLeftSnap('full')
+    } else sidebar.showBeside()
+    // Ready to type once it has slid in.
+    const id = setTimeout(() => document.querySelector<HTMLElement>('[data-assistant-input]')?.focus(), 350)
+    return () => clearTimeout(id)
+  }, [askRequest]) // (only on a new request)
+  const stopAsking = () => {
+    setAsking(false)
+    setLeftSnap(snapBefore)
+  }
+  useEffect(() => setAsking(false), [selected])
   // On a phone the top bar's contents are in a settings panel, opened from a gear over the map.
   const [settings, setSettings] = useState(false)
   const open = !!selected
@@ -207,7 +237,10 @@ export default function App() {
               </button>
               <SettingsPanel open={settings} onClose={() => setSettings(false)} />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while a city's is open. */}
-              <BottomSheet snap={leftSnap} onSnap={setLeftSnap} label={TAB_LABELS[tab]} hidden={!!selected} className="z-10 bg-panel">
+              <BottomSheet
+                snap={leftSnap} onSnap={setLeftSnap} onClose={asking ? stopAsking : undefined} label={TAB_LABELS[tab]}
+                hidden={!!selected && !asking} className={`bg-panel ${asking ? 'z-30' : 'z-10'}`}
+              >
                 <LeftPanel tab={tab} peek />
               </BottomSheet>
               {selected && (

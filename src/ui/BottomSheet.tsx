@@ -101,12 +101,14 @@ export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = 
   }
 
   const height = !opened ? 0 : dragHeight ?? heights[snap]
-  // Tell the controls over the map (MapControls) how much of it the sheet covers, so they sit above it.
+  // Tell the controls over the map (MapControls) how much of it the sheet covers, so they sit above it. A sheet that
+  // comes up over another (Ask AI) puts the other's height back when it goes.
   useEffect(() => {
     const parent = sheet.current?.parentElement
     if (hidden || !parent) return
+    const before = parent.style.getPropertyValue('--sheet-height')
     parent.style.setProperty('--sheet-height', `${height}px`)
-    return () => void parent.style.removeProperty('--sheet-height')
+    return () => void (before ? parent.style.setProperty('--sheet-height', before) : parent.style.removeProperty('--sheet-height'))
   }, [height, hidden])
   return (
     <div
