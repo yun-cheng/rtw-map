@@ -19,7 +19,7 @@ import { HoverTip, type Tip } from './ui/HoverTip'
 import { usePhone } from './ui/usePhone'
 
 const TAB_LABELS = { setup: 'Trip', prefs: 'Preferences', itinerary: 'Itinerary', assistant: 'Assistant' }
-/** The tabs' icons on the folded panel's strip. */
+/** The tabs' icons, on the tab bar and on the folded panel's strip. */
 const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, prefs: SlidersHorizontal, itinerary: ListOrdered, assistant: Sparkles }
 
 /** Whether the user folded the left panel away, remembered in this browser. */
@@ -77,11 +77,12 @@ function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
  *  the sheet's header). `onHide` folds it away. */
 function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?: boolean; onHide?: () => void }) {
   const { plan, setPanel } = useTrip()
+  const [tip, setTip] = useState<Tip | null>(null)
   return (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
         {(['setup', 'prefs', 'itinerary', 'assistant'] as const).map((t) => {
-          // In a phone's sheet, icons like the city panel's tabs: the open tab also has its name.
+          // Icons like the city panel's tabs: the open tab also has its name, the others show it on hover.
           const Icon = TAB_ICONS[t]
           return (
             <button
@@ -90,14 +91,17 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
               aria-selected={tab === t}
               aria-label={TAB_LABELS[t]}
               disabled={t === 'itinerary' && !plan}
-              onClick={() => setPanel(t)}
+              onMouseEnter={tab === t ? undefined : (e) => setTip({ content: { lines: [TAB_LABELS[t]] }, rect: e.currentTarget.getBoundingClientRect() })}
+              onMouseLeave={() => setTip(null)}
+              onClick={() => { setTip(null); setPanel(t) }}
               className={`-mb-px flex items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:flex-auto max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
-              {peek && <Icon size={18} />}
-              {(!peek || tab === t) && TAB_LABELS[t]}
+              <Icon size={peek ? 18 : 16} />
+              {tab === t && TAB_LABELS[t]}
             </button>
           )
         })}
+        <HoverTip tip={tip} />
         {onHide && (
           <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
             <ChevronsLeft size={16} />
