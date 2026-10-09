@@ -9,6 +9,7 @@ import { tripDay } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
+import { isPhone } from '../ui/usePhone'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
@@ -321,9 +322,11 @@ export function MapView() {
     const { width, height } = map.getContainer().getBoundingClientRect()
     const p = map.project([c.lon, c.lat])
     const margin = 40
-    const visible = p.x > margin && p.x < width - DRAWER_WIDTH - margin && p.y > margin + 80 && p.y < height - margin
+    // The panel covers the right of the map, or on a phone the bottom half (its sheet opens to half).
+    const cover = isPhone() ? { right: 0, bottom: height / 2 } : { right: DRAWER_WIDTH, bottom: 0 }
+    const visible = p.x > margin && p.x < width - cover.right - margin && p.y > margin + 80 && p.y < height - cover.bottom - margin
     // Centre it in the part of the map the panel doesn't cover.
-    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-DRAWER_WIDTH / 2, 0], duration: 700 })
+    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-cover.right / 2, -cover.bottom / 2], duration: 700 })
   }, [selected])
 
   // Zoom to the plan after generating or importing.

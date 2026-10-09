@@ -58,6 +58,38 @@ body,
   height: 100%;
 }
 
+/* On a phone, the height of the visible page (not counting the browser's bars), and no pull-to-refresh or
+   rubber-banding while dragging a sheet. */
+#root {
+  height: 100dvh;
+}
+body {
+  overscroll-behavior: none;
+}
+
+/* A bottom sheet's header drags the sheet up and down (see BottomSheet), so it doesn't scroll the page vertically;
+   its tab bar still scrolls sideways. */
+[data-sheet-peek] {
+  touch-action: pan-x;
+}
+
+/* On a phone the map's credits ride above the bottom sheet, like the map's dropdowns (see MapControls), and its zoom
+   buttons go (pinch to zoom). */
+@media (max-width: 767px) {
+  /* (`.maplibregl-map`: outranks MapLibre's own rule, which may load later.) */
+  .maplibregl-map .maplibregl-ctrl-bottom-right {
+    bottom: var(--sheet-height, 0px);
+    transition: bottom 300ms ease-out;
+  }
+  .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group {
+    display: none;
+  }
+  /* A sheet's header is for dragging, not selecting text. */
+  [data-sheet-peek] {
+    user-select: none;
+  }
+}
+
 body {
   margin: 0;
   background: var(--color-canvas);

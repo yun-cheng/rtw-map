@@ -591,17 +591,24 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
   // Sub-tabs that need attention, like their tab: paying when foreign cards don't work.
   const problemParts = new Set(moneyProblem ? ['paying'] : [])
-  // Keep the open tab in view when the tab bar scrolls sideways.
+  // Keep the open tab in view when the tab bar scrolls sideways (only the bar: scrollIntoView would also scroll the
+  // panel, e.g. while a phone's sheet is still opening).
   const activeTab = useRef<HTMLButtonElement>(null)
-  useEffect(() => {
-    activeTab.current?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-  }, [tabInfo.key])
   const tabBar = useSideScroll()
+  useEffect(() => {
+    const bar = tabBar.ref.current
+    const tab = activeTab.current
+    if (!bar || !tab) return
+    const b = bar.getBoundingClientRect()
+    const t = tab.getBoundingClientRect()
+    if (t.left < b.left) bar.scrollLeft -= b.left - t.left + 16
+    else if (t.right > b.right) bar.scrollLeft += t.right - b.right + 16
+  }, [tabInfo.key, tabBar.ref])
   const [tabTip, setTabTip] = useState<Tip | null>(null)
 
   return (
     <div className="pb-8">
-      <div className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3">
+      <div data-sheet-peek className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3 max-md:pt-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-semibold">{city.name}</h2>

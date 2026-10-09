@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { type CostKind, type SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
+import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
@@ -54,7 +55,8 @@ const COST_LEAD: Record<CostKind, () => { text: string; title: string }> = {
 }
 
 export function MapControls() {
-  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
+  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
+  const phone = usePhone()
   // The month picker: one row that scrolls sideways when it doesn't fit.
   const months = useSideScroll<HTMLDivElement>([layer === 'climate' || layer === 'air'])
   // Keep the picked month in view (e.g. December, opened from a link).
@@ -79,6 +81,95 @@ export function MapControls() {
     mobile: { text: 'Mobile Mbps', title: 'Typical download speed of mobile internet on phones in the city; the number on each stop' },
     cost: COST_LEAD[costKind](),
   }[layer as string]
+  // The legend: what the route's lines or the view's colours mean.
+  const legends = (
+    <>
+      {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} phone={phone} />}
+      {legend && (
+        <div className={LEGEND_BOX}>
+          {layer === 'climate' && !phone && <FeelsToggle />}
+          {layer === 'climate' ? !phone && (
+            // Days or nights: the colours, legend and numbers follow.
+            <span className="flex rounded-md border border-line p-px" role="group" aria-label="Colour by">
+              {(['high', 'low'] as const).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setWeatherBy(b)}
+                  title={b === 'high' ? 'Average daily high: how the days feel' : 'Average daily low: how the nights feel'}
+                  className={`rounded px-1.5 text-[11px] ${weatherBy === b ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
+                >
+                  {b === 'high' ? 'High' : 'Low'}
+                </button>
+              ))}
+            </span>
+          ) : lead && <span className="text-muted" title={lead.title}>{lead.text}</span>}
+          {legend.map((l) => (
+            <span key={l.label} className="flex items-center gap-1.5" title={l.title}>
+              <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
+              {l.label}
+            </span>
+          ))}
+          {layer === 'climate' && <RainRing />}
+          {layer === 'schengen' && plan && <SchengenDays s={plan.schengen} />}
+        </div>
+      )}
+    </>
+  )
+  if (phone) {
+    return (
+      // On a phone, the legend at the top of the map in one row that scrolls sideways, and at its bottom, just above
+      // its sheet (`--sheet-height`, see BottomSheet) and clear of the map's ⓘ credits, one row of dropdowns instead of
+      // rows of buttons and switches: the view, then its month or kind, and the legend's switches.
+      <>
+        <div className="pointer-events-none absolute inset-x-2 top-2 flex flex-col items-start">{legends}</div>
+        <div className="pointer-events-none absolute right-10 left-2 flex transition-[bottom] duration-300 ease-out" style={{ bottom: 'calc(var(--sheet-height, 0px) + 8px)' }}>
+          <div className="no-scrollbar pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto">
+            <Pick label="Map view" value={layer} onChange={(v) => setLayer(v as MapLayer)}>
+              {LAYERS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+            </Pick>
+            {(layer === 'climate' || layer === 'air') && (
+              <Pick label="Month" value={String(layerMonth)} onChange={(v) => setLayerMonth(Number(v))}>
+                <option value="0">Trip dates</option>
+                {MONTHS.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+              </Pick>
+            )}
+            {layer === 'nearby' && (
+              <Pick label="Places" value={nearbyKind} onChange={(v) => setNearbyKind(v as typeof nearbyKind)}>
+                {NEARBY_KINDS.map((k) => <option key={k} value={k}>{NEARBY_LABELS[k]}</option>)}
+              </Pick>
+            )}
+            {layer === 'cost' && (
+              <Pick label="Cost" value={costKind} onChange={(v) => setCostKind(v as CostKind)}>
+                {COST_GROUPS.map((g) => (
+                  <optgroup key={g.label} label={g.label}>
+                    {g.kinds.map((k) => <option key={k} value={k}>{COST_LABELS[k].label}</option>)}
+                  </optgroup>
+                ))}
+              </Pick>
+            )}
+            {layer === 'climate' && (
+              <>
+                <Pick label="Temperatures" value={tempFeels ? 'feels' : 'real'} onChange={(v) => setTempFeels(v === 'feels')}>
+                  <option value="feels">Feels like</option>
+                  <option value="real">Real</option>
+                </Pick>
+                <Pick label="Colour by" value={weatherBy} onChange={(v) => setWeatherBy(v as typeof weatherBy)}>
+                  <option value="high">High</option>
+                  <option value="low">Low</option>
+                </Pick>
+              </>
+            )}
+            {layer === 'none' && plan && (
+              <Pick label="Number in each stop" value={routeBy} onChange={(v) => setRouteBy(v as typeof routeBy)}>
+                <option value="day">Day</option>
+                <option value="nights">Nights</option>
+              </Pick>
+            )}
+          </div>
+        </div>
+      </>
+    )
+  }
   return (
     // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge and wrap.
     <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
@@ -158,36 +249,26 @@ export function MapControls() {
         </div>
         </div>
       )}
-      {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} />}
-      {legend && (
-        <div className="pointer-events-auto flex max-w-[min(34rem,100%)] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
-          {layer === 'climate' && <FeelsToggle />}
-          {layer === 'climate' ? (
-            // Days or nights: the colours, legend and numbers follow.
-            <span className="flex rounded-md border border-line p-px" role="group" aria-label="Colour by">
-              {(['high', 'low'] as const).map((b) => (
-                <button
-                  key={b}
-                  onClick={() => setWeatherBy(b)}
-                  title={b === 'high' ? 'Average daily high: how the days feel' : 'Average daily low: how the nights feel'}
-                  className={`rounded px-1.5 text-[11px] ${weatherBy === b ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
-                >
-                  {b === 'high' ? 'High' : 'Low'}
-                </button>
-              ))}
-            </span>
-          ) : lead && <span className="text-muted" title={lead.title}>{lead.text}</span>}
-          {legend.map((l) => (
-            <span key={l.label} className="flex items-center gap-1.5" title={l.title}>
-              <span className="h-2.5 w-2.5 rounded-full" style={{ background: l.color }} />
-              {l.label}
-            </span>
-          ))}
-          {layer === 'climate' && <RainRing />}
-          {layer === 'schengen' && plan && <SchengenDays s={plan.schengen} />}
-        </div>
-      )}
+      {legends}
     </div>
+  )
+}
+
+/** The legend's box: wraps beside the map; one row that scrolls sideways on a phone. */
+const LEGEND_BOX =
+  'no-scrollbar pointer-events-auto flex max-w-[min(34rem,100%)] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm max-md:max-w-full max-md:flex-nowrap max-md:overflow-x-auto max-md:whitespace-nowrap max-md:*:shrink-0'
+
+/** A phone's dropdown over the map, styled like the map's other controls. */
+function Pick({ label, value, onChange, children }: { label: string; value: string; onChange: (v: string) => void; children: ReactNode }) {
+  return (
+    <select
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className="rounded-lg border border-line bg-panel px-2 py-1.5 text-[13px] font-medium text-ink shadow-sm"
+    >
+      {children}
+    </select>
   )
 }
 
@@ -215,14 +296,14 @@ const Line = ({ color, dashed }: { color: string; dashed?: boolean }) => (
 )
 
 /** Legend for the Route view: how each journey is travelled and which times are estimates. */
-function RouteLegend({ modes }: { modes: Set<string> }) {
+function RouteLegend({ modes, phone }: { modes: Set<string>; phone: boolean }) {
   const used = MODES.filter((m) => m.modes.some((x) => modes.has(x)))
   const routeBy = useTrip((s) => s.routeBy)
   const setRouteBy = useTrip((s) => s.setRouteBy)
   return (
-    <div className="pointer-events-auto flex max-w-[min(34rem,100%)] flex-wrap gap-x-3 gap-y-1 rounded-lg border border-line bg-panel/95 px-2.5 py-1.5 text-[11px] shadow-sm">
-      {/* What the number in each stop is, styled like the Weather view's High | Low. */}
-      <span className="flex rounded-md border border-line p-px" role="group" aria-label="Number in each stop">
+    <div className={LEGEND_BOX}>
+      {/* What the number in each stop is, styled like the Weather view's High | Low (a dropdown on a phone). */}
+      {!phone && <span className="flex rounded-md border border-line p-px" role="group" aria-label="Number in each stop">
         {(['day', 'nights'] as const).map((b) => (
           <button
             key={b}
@@ -234,7 +315,7 @@ function RouteLegend({ modes }: { modes: Set<string> }) {
             {b === 'day' ? 'Day' : 'Nights'}
           </button>
         ))}
-      </span>
+      </span>}
       {used.map((m) => (
         <span key={m.label} className="flex items-center gap-1.5"><Line color={MODE_COLOR[m.modes[0]]} />{m.label}</span>
       ))}
