@@ -5,7 +5,7 @@ import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, stopsAsked, suggestedDays, tapWater, vaccinesFor, withDates, withStops, type Budget, type CountryMode, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -83,11 +83,10 @@ function prefsText(p: TravelPrefs): string {
   ].join('; ')
 }
 
-/** The number of stops wanted: a number give or take some (stopsAsked), as the assistant reads it. */
+/** The number of stops wanted, as the assistant reads it. */
 function stopsText(input: TripInput): string {
   const { minStops: min, maxStops: max } = input
-  const { count, flex } = stopsAsked(input)
-  return !min && !max ? 'any' : min === max ? `${max}` : input.stopsFlex ? `${count} ±${flex} (${min} to ${max})` : `${min ?? 'any'} to ${max ?? 'any'}`
+  return !min && !max ? 'any' : min === max ? `${max}` : `${min ?? 'any'} to ${max ?? 'any'}`
 }
 
 /** Flexible dates, as the assistant reads them. */
@@ -566,11 +565,11 @@ function updateSettings(args: Args): string {
   if (args.keep_region_order !== undefined) patch.keepGroupOrder = Boolean(args.keep_region_order)
   if (args.start_city !== undefined) patch.startCityId = args.start_city ? cityId(args.start_city) : null
   if (args.end_city !== undefined) patch.endCityId = args.end_city ? cityId(args.end_city) : null
-  if (args.stops !== undefined || args.stops_flex !== undefined) {
-    const was = stopsAsked(t.input)
-    const count = args.stops === undefined ? was.count : Number(args.stops) > 0 ? Math.min(MAX_STOPS, Math.round(Number(args.stops))) : null
-    const flex = args.stops_flex === undefined ? was.flex : Math.max(0, Math.min(MAX_STOPS_FLEX, Math.round(Number(args.stops_flex) || 0)))
-    Object.assign(patch, withStops(count, flex))
+  if (args.min_stops !== undefined || args.max_stops !== undefined) {
+    // 0 (or none) for no limit.
+    const stops = (v: unknown) => (Number(v) > 0 ? Math.min(MAX_STOPS, Math.round(Number(v))) : null)
+    if (args.min_stops !== undefined) patch.minStops = stops(args.min_stops)
+    if (args.max_stops !== undefined) patch.maxStops = stops(args.max_stops)
   }
   if (args.wishes !== undefined) patch.wishes = String(args.wishes).slice(0, 1000)
   if (args.schengen_days_before !== undefined) patch.schengenDaysBefore = Math.max(0, Math.min(90, Math.round(Number(args.schengen_days_before) || 0)))
@@ -874,7 +873,7 @@ export function describeChanges(before: TripSnapshot, after: TripSnapshot): stri
   if (a.passport !== b.passport) out.push(`Passport: ${a.passport} → ${b.passport}`)
   if (a.interests.join() !== b.interests.join()) out.push(`Interests: ${b.interests.join(', ') || 'none'}`)
   if ((a.wishes ?? '') !== (b.wishes ?? '')) out.push('Wishes updated')
-  if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null) || (a.stopsFlex ?? 0) !== (b.stopsFlex ?? 0)) out.push(`Number of stops: ${stopsText(b)}`)
+  if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null)) out.push(`Number of stops: ${stopsText(b)}`)
   // A new travel style resets its own preferences; those aren't listed one by one.
   const styleKeys = a.budget !== b.budget ? Object.keys(STYLES[0].prefs) : []
   for (const { key } of PREF_ARGS) {

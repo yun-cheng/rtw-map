@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, withStops, stopsAsked, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -667,18 +667,3 @@ describe('countries without cities', () => {
   })
 })
 
-describe('stops asked for', () => {
-  it('turns a number give or take some into the fewest and most', () => {
-    expect(withStops(30, 3)).toEqual({ minStops: 27, maxStops: 33, stopsFlex: 3 })
-    expect(withStops(2, 5)).toEqual({ minStops: 1, maxStops: 7, stopsFlex: 5 })
-    expect(withStops(null, 4)).toEqual({ minStops: null, maxStops: null, stopsFlex: 4 })
-  })
-  it('reads them back', () => {
-    const input = testTrip('US')
-    expect(stopsAsked({ ...input, ...withStops(30, 3) })).toEqual({ count: 30, flex: 3 })
-    expect(stopsAsked({ ...input, ...withStops(2, 5) })).toEqual({ count: 2, flex: 5 })
-    expect(stopsAsked({ ...input, ...withStops(null, 4) })).toEqual({ count: null, flex: 4 })
-    // A range from before stopsFlex: its most.
-    expect(stopsAsked({ ...input, minStops: 20, maxStops: 25 })).toEqual({ count: 25, flex: 0 })
-  })
-})

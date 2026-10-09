@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, citiesIn, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
+import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
@@ -41,7 +41,6 @@ export function SetupPanel() {
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
   const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
-  const wanted = stopsAsked(input)
   const nights = daysBetween(asked.start, asked.end)
   const setFlex = (start: number, end: number) =>
     setInput(start || end ? { flex: { ...asked, startDays: start, endDays: end } } : { flex: undefined, startDate: asked.start, endDate: asked.end })
@@ -142,8 +141,8 @@ export function SetupPanel() {
                             </button>
                             {c.mode !== 'excluded' && (
                               <Range unit="days" className="ml-auto shrink-0 text-[12px]">
-                                <AnyNumber value={c.minDays} max={MAX_COUNTRY_DAYS} label={`Fewest days in ${countryName(c.iso2)}`} onChange={(minDays) => setCountry({ minDays })} />
-                                <AnyNumber value={c.maxDays} min={c.minDays} max={MAX_COUNTRY_DAYS} label={`Most days in ${countryName(c.iso2)}`} onChange={(maxDays) => setCountry({ maxDays })} />
+                                <AnyNumber value={c.minDays} max={MAX_COUNTRY_DAYS} small label={`Fewest days in ${countryName(c.iso2)}`} onChange={(minDays) => setCountry({ minDays })} />
+                                <AnyNumber value={c.maxDays} min={c.minDays} max={MAX_COUNTRY_DAYS} small label={`Most days in ${countryName(c.iso2)}`} onChange={(maxDays) => setCountry({ maxDays })} />
                               </Range>
                             )}
                           </div>
@@ -164,24 +163,14 @@ export function SetupPanel() {
 
         <Card className="flex flex-col gap-4">
           <Field label="Number of stops (optional)">
-            <div className="flex items-center gap-2">
-              <input
-                type="number" min={1} max={MAX_STOPS} inputMode="numeric" aria-label="Number of stops" placeholder="Any"
-                value={wanted.count ?? ''}
-                onChange={(e) => {
-                  const n = Math.round(Number(e.target.value))
-                  setInput(withStops(e.target.value.trim() && n > 0 ? Math.min(MAX_STOPS, n) : null, wanted.flex))
-                }}
-                className={`${inputCls} max-w-20`}
-              />
-              <GiveOrTake unit="stops">
-                <Stepper value={wanted.flex} min={0} max={MAX_STOPS_FLEX} label="Stops more or fewer than that" onChange={(flex) => setInput(withStops(wanted.count, flex))} />
-              </GiveOrTake>
-            </div>
+            <Range unit="stops" className="text-[13px]">
+              <AnyNumber value={input.minStops} max={MAX_STOPS} label="Fewest stops" onChange={(minStops) => setInput({ minStops })} />
+              <AnyNumber value={input.maxStops} min={input.minStops} max={MAX_STOPS} label="Most stops" onChange={(maxStops) => setInput({ maxStops })} />
+            </Range>
           </Field>
 
           <Field label="Schengen days used before">
-            <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-20`} title="Days spent in the Schengen area in the 180 days before the trip" />
+            <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={numberCls} title="Days spent in the Schengen area in the 180 days before the trip" />
           </Field>
 
           <Field label="Anything else? (optional)">
@@ -235,6 +224,8 @@ function groupSummary(g: TripGroup) {
 const slashDate = (iso: string) => iso.replaceAll('-', '/')
 
 const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
+/** A number field: the stops' range and the Schengen days, the same size. */
+const numberCls = inputCls.replace('w-full', 'w-20')
 /** A date input that shares its line with the days either way, or has it to itself when they don't fit beside it. */
 const dateCls = inputCls.replace('w-full', 'min-w-0 flex-1 basis-36')
 
@@ -256,7 +247,7 @@ function Range({ unit, className = '', children: [from, to] }: { unit: string; c
 }
 
 /** One end of a range: a number from 1 to `max`, or empty for any. */
-function AnyNumber({ value, min, max, label, onChange }: { value?: number | null; min?: number | null; max: number; label: string; onChange: (n: number | null) => void }) {
+function AnyNumber({ value, min, max, small, label, onChange }: { value?: number | null; min?: number | null; max: number; small?: boolean; label: string; onChange: (n: number | null) => void }) {
   return (
     <input
       type="number" min={min || 1} max={max} inputMode="numeric" placeholder="Any" aria-label={label} title={`${label} (empty for any)`}
@@ -265,7 +256,8 @@ function AnyNumber({ value, min, max, label, onChange }: { value?: number | null
         const n = Math.round(Number(e.target.value))
         onChange(e.target.value.trim() && n > 0 ? Math.min(max, n) : null)
       }}
-      className="w-11 rounded-md border border-line bg-panel px-1 py-0.5 text-center text-[12px] text-ink outline-none [appearance:textfield] placeholder:text-muted focus:border-accent [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      // The small size fits beside a country's name; the usual one matches the panel's other number fields.
+      className={`${small ? 'w-11 px-1 py-0.5 text-center text-[12px]' : numberCls} rounded-md border border-line bg-panel text-ink outline-none [appearance:textfield] placeholder:text-muted focus:border-accent [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
     />
   )
 }

@@ -118,6 +118,14 @@ describe('assistant tools', () => {
     expect(runTool('delete_plan', { plan: 'Plan A' }).ok).toBe(false)
   })
 
+  it('sets the fewest and most stops', () => {
+    expect(runTool('update_settings', { min_stops: 20, max_stops: 25 }).ok).toBe(true)
+    expect(useTrip.getState().input).toMatchObject({ minStops: 20, maxStops: 25 })
+    expect(tripContext()).toContain('Number of stops wanted: 20 to 25')
+    expect(runTool('update_settings', { min_stops: 0 }).ok).toBe(true)
+    expect(useTrip.getState().input).toMatchObject({ minStops: null, maxStops: 25 })
+  })
+
   it('edits regions and country modes', () => {
     expect(runTool('add_region', { preset: 'East Asia' }).ok).toBe(true)
     expect(runTool('set_country_mode', { country: 'Japan', mode: 'excluded' }).ok).toBe(true)
