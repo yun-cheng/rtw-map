@@ -8,7 +8,7 @@ import { TripSwitcher } from './TripSwitcher'
 
 export function Header() {
   const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
-  const { currency, fmt } = useMoney()
+  const { currency } = useMoney()
 
   return (
     <header className="flex h-12 items-center gap-4 border-b border-line bg-panel px-4">
@@ -20,9 +20,6 @@ export function Header() {
       {plan && (
         <div className="flex min-w-0 items-center gap-4 overflow-hidden text-[13px] whitespace-nowrap">
           <span>{shortDate(input.startDate)} – {shortDate(input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
-          <span title="Estimated total for your budget style, including transport between cities">
-            <b>{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">(~{fmt(plan.cost.perDay)}/day)</span>
-          </span>
         </div>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-1.5">

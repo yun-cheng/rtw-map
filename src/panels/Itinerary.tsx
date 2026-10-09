@@ -3,7 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { tripDay, type Leg, type PlanWarning } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
-import { Badge, Button } from '../ui/kit'
+import { Badge, Button, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 
 export function Itinerary() {
@@ -19,6 +19,14 @@ export function Itinerary() {
         <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
         <Button onClick={rebalance} title="Re-assign nights to unlocked stops so they fill your dates">Rebalance</Button>
         <Button onClick={reoptimize} title="Re-order stops for the shortest route">Re-order</Button>
+      </div>
+      {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
+      <div className="px-4 pb-2">
+        <Named
+          label="Estimated cost"
+          hint="Each stop's daily cost (your choices in Preferences, or changed for a city in its Costs tab) for its nights, plus travel between cities and from home. A range, since prices vary."
+          aside={<span><b className="tabular-nums">{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">· ~{fmt(plan.cost.perDay)}/day</span></span>}
+        />
       </div>
 
       <Warnings warnings={plan.warnings} />
