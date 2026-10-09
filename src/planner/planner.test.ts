@@ -3,8 +3,8 @@ import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
-import { daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { addDays, daysBetween } from './dates'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -575,5 +575,41 @@ describe('Asia trip (Taiwan → Japan → Southeast Asia)', () => {
   it('flags the e-visa for Vietnam and no Schengen limit', () => {
     expect(plan.warnings.some((w) => w.kind === 'visa' && w.iso2 === 'VN')).toBe(true)
     expect(plan.schengen.days).toBe(0)
+  })
+})
+
+describe('flexible dates', () => {
+  const flex = { start: '2027-05-01', end: '2027-09-30', startDays: 7, endDays: 7 }
+  // How far the stays are from what each city suggests, per night.
+  const misfit = (input: TripInput) => {
+    const plan = generatePlan(ds, input)
+    return plan.stops.reduce((t, s) => t + Math.abs(s.nights - suggestedDays(ds, input, s.cityId)[input.pace]), 0) / plan.totalNights
+  }
+
+  it('picks dates within the flexible range, and fills them', () => {
+    const plan = generatePlan(ds, testTrip('TW', { flex }))
+    expect(daysBetween(addDays(flex.start, -7), plan.dates.start)).toBeGreaterThanOrEqual(0)
+    expect(daysBetween(plan.dates.start, addDays(flex.start, 7))).toBeGreaterThanOrEqual(0)
+    expect(daysBetween(addDays(flex.end, -7), plan.dates.end)).toBeGreaterThanOrEqual(0)
+    expect(daysBetween(plan.dates.end, addDays(flex.end, 7))).toBeGreaterThanOrEqual(0)
+    expect(plan.assignedNights).toBe(plan.totalNights)
+    expect(plan.stops[0].arrive).toBe(plan.dates.start)
+  })
+
+  it('fits the stops at least as well as the exact dates', () => {
+    for (const passport of ['TW', 'US']) {
+      expect(misfit(testTrip(passport, { flex }))).toBeLessThanOrEqual(misfit(testTrip(passport)) + 1e-9)
+    }
+  })
+
+  it('plans for the dates asked for when no days are allowed either way', () => {
+    const plan = generatePlan(ds, testTrip('TW', { startDate: '2027-05-03', flex: { ...flex, startDays: 0, endDays: 0 } }))
+    expect(plan.dates).toEqual({ start: '2027-05-03', end: '2027-09-30' })
+  })
+
+  it('moves the dates asked for along with new dates', () => {
+    const input = testTrip('TW', { flex })
+    expect(withDates(input, '2027-06-01', '2027-10-01')).toEqual({ startDate: '2027-06-01', endDate: '2027-10-01', flex: { ...flex, start: '2027-06-01', end: '2027-10-01' } })
+    expect(withDates(testTrip('TW'), '2027-06-01', '2027-10-01').flex).toBeUndefined()
   })
 })

@@ -117,6 +117,8 @@ export const TOOLS: FunctionDeclaration[] = [
     parametersJsonSchema: obj({
       start_date: str('YYYY-MM-DD'),
       end_date: str('YYYY-MM-DD, the day the trip ends'),
+      start_flex_days: { type: 'integer', description: 'How many days earlier or later the trip may start (0 = exactly on the start date, up to 14). Generating a plan then picks the dates.' },
+      end_flex_days: { type: 'integer', description: 'How many days earlier or later the trip may end (0 = exactly on the end date, up to 14)' },
       pace: str('Travel pace', { enum: ['chill', 'balanced', 'fast'] }),
       budget: str('Apply a travel style preset: sets the room, meals, drinks, getting around, travel between cities and sights in one go (each can then be changed)', { enum: ['shoestring', 'backpacker', 'private', 'midrange', 'comfort'] }),
       interests: { type: 'array', items: str('Interest'), description: 'Replaces the interests; see get_options' },

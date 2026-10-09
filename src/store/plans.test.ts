@@ -69,3 +69,13 @@ describe('plans in a trip', () => {
     expect(['Plan A', 'Plan B', 'Slow version', ' Beach  '].map(planMark)).toEqual(['A', 'B', 'Sl', 'Be'])
   })
 })
+
+describe('flexible dates', () => {
+  it('keeps the dates asked for, and uses the dates the plan picked', () => {
+    state().openTrip({ input: { ...testCaseInput(ds, 'US'), flex: { start: '2027-05-01', end: '2027-09-30', startDays: 5, endDays: 5 } }, stops: [] })
+    state().generate()
+    const { input, plan } = state()
+    expect(input.flex!.start).toBe('2027-05-01')
+    expect({ start: input.startDate, end: input.endDate }).toEqual(plan!.dates)
+  })
+})

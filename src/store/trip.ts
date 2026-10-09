@@ -208,7 +208,12 @@ export const useTrip = create<State>()(
         generate: () => {
           const { input } = get()
           if (!input.groups.length) return
-          apply(generatePlan(ds, input), { panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0 })
+          const plan = generatePlan(ds, input)
+          // With flexible dates, the plan's dates are the trip's from now on (the dates asked for stay in `flex`).
+          apply(plan, {
+            input: { ...input, startDate: plan.dates.start, endDate: plan.dates.end },
+            panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0,
+          })
         },
         loadTestCase: () => {
           const input = testCaseInput(ds, get().input.passport === 'EU' ? 'TW' : get().input.passport)

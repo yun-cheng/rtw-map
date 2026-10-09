@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, englishLevel,
-  groceryDay, likelyMonth, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, MAX_FLEX_DAYS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -79,11 +79,18 @@ function prefsText(p: TravelPrefs): string {
   ].join('; ')
 }
 
+/** Flexible dates, as the assistant reads them. */
+function flexText(input: TripInput): string {
+  const f = input.flex
+  if (!f || (!f.startDays && !f.endDays)) return ''
+  return ` (flexible: asked for ${f.start} ±${f.startDays} days to ${f.end} ±${f.endDays} days; generating a plan picks the dates within that)`
+}
+
 export function tripContext(): string {
   const { input, plan } = useTrip.getState()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
-    `Dates: ${input.startDate} to ${input.endDate}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    `Dates: ${input.startDate} to ${input.endDate}${flexText(input)}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
     ...(useTrip.getState().plans.length > 1 ? [`Plans in this trip: ${useTrip.getState().plans.map((p) => `${p.name}${p.id === useTrip.getState().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
     ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${input.minStops ?? 'any'} to ${input.maxStops ?? 'any'} (the planner keeps to this when it makes a plan).`] : []),
     ...(input.wishes?.trim() ? [`The user's wishes for this trip, in their words: "${input.wishes.trim()}"`] : []),
@@ -514,6 +521,15 @@ function updateSettings(args: Args): string {
     patch.endDate = String(args.end_date)
   }
   if ((patch.endDate ?? t.input.endDate) <= (patch.startDate ?? t.input.startDate)) throw new ToolError('The end date must be after the start date')
+  if (patch.startDate || patch.endDate) Object.assign(patch, withDates(t.input, patch.startDate ?? t.input.startDate, patch.endDate ?? t.input.endDate))
+  if (args.start_flex_days !== undefined || args.end_flex_days !== undefined) {
+    const days = (v: unknown, was = 0) => (v === undefined ? was : Math.max(0, Math.min(MAX_FLEX_DAYS, Math.round(Number(v) || 0))))
+    const start = patch.startDate ?? t.input.flex?.start ?? t.input.startDate
+    const end = patch.endDate ?? t.input.flex?.end ?? t.input.endDate
+    const startDays = days(args.start_flex_days, t.input.flex?.startDays)
+    const endDays = days(args.end_flex_days, t.input.flex?.endDays)
+    patch.flex = startDays || endDays ? { start, end, startDays, endDays } : undefined
+  }
   if (args.pace !== undefined) {
     if (!['chill', 'balanced', 'fast'].includes(String(args.pace))) throw new ToolError('pace must be chill, balanced or fast')
     patch.pace = args.pace as Pace

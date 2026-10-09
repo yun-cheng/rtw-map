@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { REGION_PRESETS, makeGroup } from '../data/presets'
-import { daysBetween, type CountryMode, type TripGroup } from '../planner'
+import { MAX_FLEX_DAYS, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
-import { flag } from '../ui/format'
+import { flag, shortDate } from '../ui/format'
 import { Button } from '../ui/kit'
 
 const MODE_STYLE: Record<CountryMode, string> = {
@@ -14,9 +14,11 @@ const MODE_STYLE: Record<CountryMode, string> = {
   excluded: 'border-line bg-canvas text-muted line-through',
 }
 const NEXT_MODE: Record<CountryMode, CountryMode> = { must: 'optional', optional: 'excluded', excluded: 'must' }
+/** How many days either way a flexible date may move. */
+const FLEX_DAYS = [0, 1, 2, 3, 5, 7, 10, MAX_FLEX_DAYS]
 
 export function SetupPanel() {
-  const { input, setInput, setPanel, generate, loadTestCase, stops } = useTrip()
+  const { input, setInput, setPanel, generate, loadTestCase, stops, plan } = useTrip()
   const user = useAccount((s) => s.user)
   const busy = useChat((s) => s.busy)
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
@@ -30,7 +32,13 @@ export function SetupPanel() {
       ? `Adjust the plan I just generated to my wishes: ${wishes}`
       : 'Check the plan I just generated against my preferences and interests, and improve it where it helps.', [], { think: true })
   }
-  const nights = daysBetween(input.startDate, input.endDate)
+  // The dates asked for (with flexible dates, the plan's own may differ within them).
+  const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
+  const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
+  const nights = daysBetween(asked.start, asked.end)
+  const setFlex = (start: number, end: number) =>
+    setInput(start || end ? { flex: { ...asked, startDays: start, endDays: end } } : { flex: undefined, startDate: asked.start, endDate: asked.end })
+  const planned = plan && input.flex && (input.startDate !== asked.start || input.endDate !== asked.end)
   const [adding, setAdding] = useState('')
 
   const updateGroup = (id: string, fn: (g: TripGroup) => TripGroup) =>
@@ -60,12 +68,24 @@ export function SetupPanel() {
       </div>
 
       <Field label="Dates">
-        <div className="flex items-center gap-2">
-          <input type="date" value={input.startDate} onChange={(e) => e.target.value && setInput({ startDate: e.target.value })} className={inputCls} />
-          <span className="text-muted">→</span>
-          <input type="date" value={input.endDate} min={input.startDate} onChange={(e) => e.target.value && setInput({ endDate: e.target.value })} className={inputCls} />
+        <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1.5">
+          <input type="date" aria-label="Start date" value={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, e.target.value, asked.end))} className={inputCls} />
+          <FlexDays value={flex.start} label="start" onChange={(d) => setFlex(d, flex.end)} />
+          <input type="date" aria-label="End date" value={asked.end} min={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, asked.start, e.target.value))} className={inputCls} />
+          <FlexDays value={flex.end} label="end" onChange={(d) => setFlex(flex.start, d)} />
         </div>
-        <p className="mt-1 text-[12px] text-muted">{nights > 0 ? `${nights + 1} days · ${nights} nights` : 'End date must be after the start date'}</p>
+        <p className="mt-1 text-[12px] text-muted">
+          {nights <= 0
+            ? 'End date must be after the start date'
+            : flex.start || flex.end
+              ? `${nights} nights, or ${Math.max(1, nights - flex.start - flex.end)}–${nights + flex.start + flex.end}: the plan picks dates within these so the trip fits its stops`
+              : `${nights + 1} days · ${nights} nights`}
+        </p>
+        {planned && (
+          <p className="mt-0.5 text-[12px]">
+            Planned: <b>{shortDate(input.startDate)} – {shortDate(input.endDate)}</b> · {daysBetween(input.startDate, input.endDate)} nights
+          </p>
+        )}
       </Field>
 
       <Field label="Where (in order)">
@@ -208,6 +228,19 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <div className="mb-1.5 text-[11px] font-semibold tracking-wider text-muted uppercase">{label}</div>
       {children}
     </div>
+  )
+}
+
+/** How many days earlier or later a date may be: exact, or ± a few days. */
+function FlexDays({ value, label, onChange }: { value: number; label: string; onChange: (days: number) => void }) {
+  return (
+    <select
+      value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={`How flexible the ${label} date is`}
+      title={`How many days earlier or later the trip may ${label}`}
+      className="rounded-md border border-line bg-panel px-1.5 py-1.5 text-[13px] outline-none focus:border-accent"
+    >
+      {FLEX_DAYS.map((d) => <option key={d} value={d}>{d ? `± ${d} day${d > 1 ? 's' : ''}` : 'Exact'}</option>)}
+    </select>
   )
 }
 

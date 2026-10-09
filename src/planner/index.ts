@@ -376,9 +376,41 @@ function takeNight(stops: Stop[], target: Stop): Stop[] | null {
 
 // ---------------------------------------------------------------- public API
 
-/** Builds a full plan from the trip input: picks cities, orders them and assigns nights. */
+/**
+ * Builds a full plan from the trip input: picks cities, orders them and assigns nights. With flexible dates it plans
+ * for the dates asked for, then moves the end (and if that's not enough, the start) by up to the days allowed so the
+ * trip is as long as its stops' suggested stays add up to, rather than stretching or squeezing them, and plans again
+ * for those dates. (Trying every pair of dates would take seconds: each plan takes a few hundred ms.)
+ */
 export function generatePlan(ds: Dataset, input: TripInput): Plan {
-  const ctx = makeContext(ds, input)
+  const { flex } = input
+  if (!flex || (!flex.startDays && !flex.endDays)) return planFor(makeContext(ds, input))
+  const asked = { ...input, startDate: flex.start, endDate: flex.end }
+  const ctx = makeContext(ds, asked)
+  const first = planFor(ctx)
+  const wanted = Math.round(first.stops.reduce((t, s, i) => t + allocItem(ctx, s, first.legs[i - 1], 0).base, 0)) + first.legs.filter((l) => l.overnight).length
+  const clamp = (n: number, d: number) => Math.max(-d, Math.min(d, n))
+  // More nights wanted: end later, then start earlier; fewer: end earlier, then start later.
+  let diff = wanted - ctx.totalNights
+  const endMove = clamp(diff, flex.endDays)
+  diff -= endMove
+  const startMove = -clamp(diff, flex.startDays)
+  const startDate = addDays(flex.start, startMove)
+  const endDate = addDays(flex.end, endMove)
+  if ((!startMove && !endMove) || daysBetween(startDate, endDate) < 1) return first
+  return planFor(makeContext(ds, { ...input, startDate, endDate }))
+}
+
+/** The most days a flexible date may move either way. */
+export const MAX_FLEX_DAYS = 14
+
+/** The dates to set when the traveller enters new ones: with flexible dates, those are the dates asked for. */
+export function withDates(input: TripInput, startDate: string, endDate: string): Pick<TripInput, 'startDate' | 'endDate' | 'flex'> {
+  return { startDate, endDate, flex: input.flex && { ...input.flex, start: startDate, end: endDate } }
+}
+
+function planFor(ctx: Ctx): Plan {
+  const { input } = ctx
   let months = guessMonths(ctx)
   let result: Fit = { stops: [], dropped: [] }
 
@@ -727,5 +759,5 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     perDay: Math.round((stay + (legMin + legMax) / 2) / Math.max(1, ctx.totalNights)),
   }
 
-  return { stops: sched, legs, warnings, schengen, cost, home, totalNights: ctx.totalNights, assignedNights, dropped }
+  return { stops: sched, legs, warnings, schengen, cost, home, dates: { start: input.startDate, end: input.endDate }, totalNights: ctx.totalNights, assignedNights, dropped }
 }

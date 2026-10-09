@@ -283,9 +283,12 @@ export type DayChoices = {
   taxis: 0 | 1 | 2 | 3
 }
 
+export type DateFlex = { start: string; end: string; startDays: number; endDays: number }
+
 export type CountryMode = 'must' | 'optional' | 'excluded'
 
-/** An ordered part of the trip, e.g. "Western Balkans" then "Poland". */
+/** A part of the trip, e.g. "Balkans" or "Poland": a region or a country added on its own (visited in the order
+ *  they're listed only with `keepGroupOrder`). */
 export type TripGroup = {
   id: string
   name: string
@@ -294,8 +297,12 @@ export type TripGroup = {
 }
 
 export type TripInput = {
+  /** The trip's dates: as entered, or with `flex` the ones the plan was made for (within the flexible range). */
   startDate: string // YYYY-MM-DD
   endDate: string // YYYY-MM-DD (departure day from the last stop)
+  /** Flexible dates: the dates asked for and how many days earlier or later each may be. Generating a plan picks
+   *  `startDate` and `endDate` within them so the trip fits its stops (see generatePlan). */
+  flex?: DateFlex
   groups: TripGroup[]
   keepGroupOrder: boolean
   startCityId: string | null
@@ -384,6 +391,8 @@ export type Plan = {
   cost: { min: number; max: number; perDay: number }
   /** Getting from home to the first stop, and from the last stop back home (null without a home city). */
   home: { out: Leg | null; back: Leg | null }
+  /** The trip's dates (with flexible dates, the ones picked when it was generated). */
+  dates: { start: string; end: string }
   totalNights: number
   assignedNights: number
   dropped: string[]
