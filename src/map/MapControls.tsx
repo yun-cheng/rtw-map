@@ -57,18 +57,6 @@ const COST_ABOUT: Record<CostKind, string> = {
 export function MapControls() {
   const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
   const phone = usePhone()
-  // The month picker: one row that scrolls sideways when it doesn't fit.
-  const months = useSideScroll<HTMLDivElement>([layer === 'climate' || layer === 'air'])
-  // Keep the picked month in view (e.g. December, opened from a link).
-  useEffect(() => {
-    const bar = months.ref.current
-    const on = bar?.querySelector<HTMLElement>('[aria-pressed="true"]')
-    if (!bar || !on) return
-    const b = bar.getBoundingClientRect()
-    const r = on.getBoundingClientRect()
-    if (r.left < b.left) bar.scrollLeft -= b.left - r.left + 16
-    else if (r.right > b.right) bar.scrollLeft += r.right - b.right + 16
-  }, [layer, layerMonth, months.ref])
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
@@ -171,63 +159,66 @@ export function MapControls() {
     )
   }
   return (
-    // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge and wrap.
+    // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge (their rows scroll sideways).
     <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
-      <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+      <SwitchRow picked={layer} width={selected}>
         {LAYERS.map((l) => (
           <button
             key={l.value}
             onClick={() => setLayer(l.value)}
-            className={`rounded-md px-2.5 py-1 text-[12px] font-medium ${layer === l.value ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
+            aria-pressed={layer === l.value}
+            className={`shrink-0 rounded-md px-2.5 py-1 text-[12px] font-medium whitespace-nowrap ${layer === l.value ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
           >
             {l.label}
           </button>
         ))}
-      </div>
+      </SwitchRow>
       {layer === 'nearby' && (
-        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <SwitchRow picked={nearbyKind} width={selected}>
           {NEARBY_KINDS.map((k) => (
             <button
               key={k}
               onClick={() => setNearbyKind(k)}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium ${nearbyKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+              aria-pressed={nearbyKind === k}
+              className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap ${nearbyKind === k ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
             >
               {NEARBY_LABELS[k]}
             </button>
           ))}
-        </div>
+        </SwitchRow>
       )}
       {layer === 'cost' && (
         <>
-        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <SwitchRow picked={costGroup.label} width={selected}>
           {COST_GROUPS.map((g) => (
             <button
               key={g.label}
               onClick={() => setCostKind(g === costGroup ? costKind : groupKind[g.label] ?? g.kinds[0])}
-              className={`rounded-md px-2 py-1 text-[11px] font-medium ${g === costGroup ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+              aria-pressed={g === costGroup}
+              className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap ${g === costGroup ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
             >
               {g.label}
             </button>
           ))}
-        </div>
+        </SwitchRow>
         {costGroup.kinds.length > 1 && (
-          <div className="pointer-events-auto flex max-w-full flex-wrap gap-0.5 rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+          <SwitchRow picked={costKind} width={selected} gap>
             {costGroup.kinds.map((k) => (
               <button
                 key={k}
                 onClick={() => { setCostKind(k); setGroupKind({ ...groupKind, [costGroup.label]: k }) }}
-                className={`rounded-md px-2 py-1 text-[11px] font-medium ${costKind === k ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
+                aria-pressed={costKind === k}
+                className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap ${costKind === k ? 'bg-accent-soft text-accent' : 'text-muted hover:text-ink'}`}
               >
                 {COST_LABELS[k].label}
               </button>
             ))}
-          </div>
+          </SwitchRow>
         )}
         </>
       )}
       {(layer === 'climate' || layer === 'air') && (
-        <div className="pointer-events-auto max-w-full rounded-lg border border-line bg-panel p-0.5 shadow-sm">
-        <div ref={months.ref} style={months.mask} className="no-scrollbar flex overflow-x-auto">
+        <SwitchRow picked={layerMonth} width={selected}>
           <button
             onClick={() => setLayerMonth(0)}
             aria-pressed={layerMonth === 0}
@@ -246,10 +237,32 @@ export function MapControls() {
               {m}
             </button>
           ))}
-        </div>
-        </div>
+        </SwitchRow>
       )}
       {legends}
+    </div>
+  )
+}
+
+/**
+ * A row of switch buttons over the map: one line that scrolls sideways when it doesn't fit, keeping the pressed
+ * button (`aria-pressed`) in sight when `picked` changes (e.g. December, opened from a link) or when the room for
+ * it does (`width`: anything that changes it, like a city panel opening).
+ */
+function SwitchRow({ picked, width, gap, children }: { picked: unknown; width?: unknown; gap?: boolean; children: ReactNode }) {
+  const row = useSideScroll<HTMLDivElement>()
+  useEffect(() => {
+    const bar = row.ref.current
+    const on = bar?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (!bar || !on) return
+    const b = bar.getBoundingClientRect()
+    const r = on.getBoundingClientRect()
+    if (r.left < b.left) bar.scrollLeft -= b.left - r.left + 16
+    else if (r.right > b.right) bar.scrollLeft += r.right - b.right + 16
+  }, [picked, width, row.ref])
+  return (
+    <div className="pointer-events-auto max-w-full rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+      <div ref={row.ref} style={row.mask} className={`no-scrollbar flex overflow-x-auto ${gap ? 'gap-0.5' : ''}`}>{children}</div>
     </div>
   )
 }
