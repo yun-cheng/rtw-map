@@ -289,13 +289,16 @@ export type DateFlex = { start: string; end: string; startDays: number; endDays:
 
 export type CountryMode = 'must' | 'optional' | 'excluded'
 
+/** A country of the trip: must visit, optional or left out, and the days to spend there if it's visited (the nights at
+ *  its stops; either end may be left open). */
+export type TripCountry = { iso2: string; mode: CountryMode; minDays?: number | null; maxDays?: number | null }
+
 /** A part of the trip, e.g. "Balkans" or "Poland": a region or a country added on its own (visited in the order
  *  they're listed only with `keepGroupOrder`). */
 export type TripGroup = {
   id: string
   name: string
-  countries: { iso2: string; mode: CountryMode }[]
-  longer: boolean
+  countries: TripCountry[]
 }
 
 export type TripInput = {

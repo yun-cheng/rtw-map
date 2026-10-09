@@ -25,7 +25,6 @@ export { AIRPORT_MIN } from './graph'
 
 const PACE_MULT: Record<Pace, number> = { chill: 1.4, balanced: 1, fast: 0.7 }
 const LONG_LEG_MIN: Record<Pace, number> = { chill: 240, balanced: 300, fast: 420 }
-const LONGER_MULT = 1.6
 
 type Ctx = {
   ds: Dataset
@@ -38,12 +37,17 @@ type Ctx = {
   blocked: { iso2: string; reason: string }[]
   /** Each candidate's daily cost on the trip's travel style, relative to the median candidate (1 = typical). */
   costRatio: Map<string, number>
+  /** The days asked for in a country (iso2 → the fewest and most nights there), for countries with either set. */
+  dayRange: Map<string, DayRange>
 }
+
+type DayRange = { min: number; max: number }
 
 // ---------------------------------------------------------------- context
 
 function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []): Ctx {
   const groupIndex = new Map<string, number>()
+  const dayRange = new Map<string, DayRange>()
   const blocked: Ctx['blocked'] = []
   const mustCountries: string[] = []
   const groupCountries: string[][] = input.groups.map(() => [])
@@ -55,6 +59,7 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
         continue
       }
       groupIndex.set(c.iso2, input.keepGroupOrder ? gi : 0)
+      if (c.minDays || c.maxDays) dayRange.set(c.iso2, { min: c.minDays || 0, max: Math.max(c.minDays || 0, c.maxDays || Infinity) })
       groupCountries[gi].push(c.iso2)
       if (c.mode === 'must') mustCountries.push(c.iso2)
     }
@@ -77,7 +82,7 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   const daily = candidates.map((id) => dailyCost(ds, id, input)).filter((d) => d > 0).sort((a, b) => a - b)
   const median = daily[daily.length >> 1] || 1
   const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, input) || median) / median]))
-  const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, costRatio }
+  const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, costRatio, dayRange }
   const requireBestIn = (countries: string[]) => {
     if ([...required].some((id) => countries.includes(ds.cities[id].iso2))) return
     const best = candidates.filter((id) => countries.includes(ds.cities[id].iso2)).sort((a, b) => baseScore(ctx, b) - baseScore(ctx, a))[0]
@@ -101,10 +106,7 @@ export function citiesIn(ds: Dataset): Set<string> {
 }
 
 const groupOf = (ctx: Ctx, cityId: string) => ctx.groupIndex.get(ctx.ds.cities[cityId].iso2) ?? 0
-const isLonger = (ctx: Ctx, cityId: string) => {
-  const g = ctx.input.groups[groupOf(ctx, cityId)]
-  return ctx.input.keepGroupOrder ? !!g?.longer : ctx.input.groups.some((x) => x.longer && x.countries.some((c) => c.iso2 === ctx.ds.cities[cityId].iso2))
-}
+const isoOf = (ctx: Ctx, cityId: string) => ctx.ds.cities[cityId].iso2
 const inSchengen = (ctx: Ctx, cityId: string) => !!ctx.ds.countries[ctx.ds.cities[cityId].iso2]?.schengen
 
 // ---------------------------------------------------------------- scoring
@@ -119,7 +121,7 @@ function baseScore(ctx: Ctx, cityId: string): number {
   // "Top highlights" weighs popularity more, so famous places win over pleasant smaller ones.
   const popular = (city.popularity / 5) ** (prefs.focus === 'highlights' ? 2.5 : 1)
   const expensive = prefs.expensive === 'skip' && (ctx.costRatio.get(cityId) ?? 1) > EXPENSIVE ? 0.3 : 1
-  return popular * (0.6 + 0.4 * Math.min(1, match)) * (isLonger(ctx, cityId) ? 1.3 : 1) * expensive
+  return popular * (0.6 + 0.4 * Math.min(1, match)) * expensive
 }
 
 function score(ctx: Ctx, cityId: string, month: number): number {
@@ -132,16 +134,12 @@ function score(ctx: Ctx, cityId: string, month: number): number {
   return baseScore(ctx, cityId) * (0.5 + 0.5 * m.comfort) * limits
 }
 
-/** First guess of when each group is visited: time split evenly, longer groups get more. */
+/** First guess of when each group is visited: time split evenly. */
 function guessMonths(ctx: Ctx): Map<string, number> {
   const n = ctx.input.keepGroupOrder ? ctx.input.groups.length : 1
-  const weights = Array.from({ length: n }, (_, i) => (ctx.input.keepGroupOrder && ctx.input.groups[i]?.longer ? LONGER_MULT : 1))
-  const total = weights.reduce((a, b) => a + b, 0)
   const months = new Map<string, number>()
   for (const id of ctx.candidates) {
-    const gi = groupOf(ctx, id)
-    const before = weights.slice(0, gi).reduce((a, b) => a + b, 0)
-    const mid = ((before + weights[gi] / 2) / total) * ctx.totalNights
+    const mid = ((groupOf(ctx, id) + 0.5) / n) * ctx.totalNights
     months.set(id, monthOf(addDays(ctx.input.startDate, Math.round(mid))))
   }
   return months
@@ -158,27 +156,21 @@ function arrivalPenalty(leg: Leg | undefined, pace: Pace): number {
 function allocItem(ctx: Ctx, stop: Stop, legIn: Leg | undefined, s: number): AllocItem {
   const city = ctx.ds.cities[stop.cityId]
   const pace = PACE_MULT[ctx.input.pace]
-  const w = isLonger(ctx, stop.cityId) ? LONGER_MULT : 1
   const pen = arrivalPenalty(legIn, ctx.input.pace)
   // "Shorter stays in expensive places": fewer nights the pricier a place is, down to 60%.
   const ratio = ctx.costRatio.get(stop.cityId) ?? 1
   const thrift = ctx.input.prefs.expensive === 'shorter' && ratio > EXPENSIVE ? Math.max(0.6, 1 / ratio) : 1
-  const base = Math.max(1, city.days.ideal * pace * w * thrift) + pen
+  const base = Math.max(1, city.days.ideal * pace * thrift) + pen
   return {
     base,
     lo: Math.max(1, Math.round(city.days.min * Math.min(1, pace))) + (pen >= 1 ? 1 : 0),
     // "Top highlights" lets famous places take longer stays instead of adding lesser-known ones.
-    hi: Math.max(base, city.days.max * (ctx.input.pace === 'chill' ? 1.3 : 1) * w * (ctx.input.prefs.focus === 'highlights' && city.popularity > 3 ? 1.5 : 1) + pen),
+    hi: Math.max(base, city.days.max * (ctx.input.pace === 'chill' ? 1.3 : 1) * (ctx.input.prefs.focus === 'highlights' && city.popularity > 3 ? 1.5 : 1) + pen),
     locked: stop.locked ? stop.nights : null,
     spill: (city.longStay ? 3 : 1) * s,
   }
 }
 
-/**
- * Suggested days in a city for each pace, before travel time is taken into account: the same
- * starting point the planner uses when it assigns nights. Includes the extra time for regions
- * marked "Longer" (`longer` names that region).
- */
 let everywhere: { ds: Dataset; graph: Graph } | null = null
 
 /** The best way between any two cities in the app, through any others (the planner's routing, without its region limits). */
@@ -234,17 +226,19 @@ export function likelyMonth(ds: Dataset, plan: Plan | null, input: Pick<TripInpu
   return stayMonth(stops.reduce((best, s) => (dist(s.cityId) < dist(best.cityId) ? s : best)))
 }
 
-export function suggestedDays(ds: Dataset, input: TripInput, cityId: string): Record<Pace, number> & { longer: string | null } {
+/**
+ * Suggested days in a city for each pace, before travel time is taken into account: the same starting point the
+ * planner uses when it assigns nights.
+ */
+export function suggestedDays(ds: Dataset, cityId: string): Record<Pace, number> {
   const city = ds.cities[cityId]
-  const group = input.groups.find((g) => g.longer && g.countries.some((c) => c.iso2 === city.iso2 && c.mode !== 'excluded'))
-  const w = group ? LONGER_MULT : 1
   const days = (pace: Pace) => {
     const mult = PACE_MULT[pace]
     const lo = Math.max(1, Math.round(city.days.min * Math.min(1, mult)))
-    const hi = city.days.max * (pace === 'chill' ? 1.3 : 1) * w
-    return Math.max(1, Math.round(Math.min(hi, Math.max(lo, city.days.ideal * mult * w))))
+    const hi = city.days.max * (pace === 'chill' ? 1.3 : 1)
+    return Math.max(1, Math.round(Math.min(hi, Math.max(lo, city.days.ideal * mult))))
   }
-  return { chill: days('chill'), balanced: days('balanced'), fast: days('fast'), longer: group?.name ?? null }
+  return { chill: days('chill'), balanced: days('balanced'), fast: days('fast') }
 }
 
 const legsFor = (ctx: Ctx, stops: Stop[]) => stops.slice(1).map((s, i) => legBetween(ctx.graph, stops[i].cityId, s.cityId))
@@ -314,6 +308,7 @@ function fit(ctx: Ctx, initial: Stop[], scores: Map<string, number>, canChangeSe
       const inPlan = new Set(stops.map((s) => s.cityId))
       const next = ctx.candidates
         .filter((id) => !inPlan.has(id) && !dropped.includes(id) && legBetween(ctx.graph, stops[0]?.cityId ?? id, id).reachable)
+        .filter((id) => roomIn(ctx, stops, items, id))
         .filter((id) => ctx.input.prefs.focus !== 'highlights' || ctx.ds.cities[id].popularity > 3)
         .sort((a, b) => sc(b) - sc(a))[0]
       if (next) {
@@ -322,10 +317,59 @@ function fit(ctx: Ctx, initial: Stop[], scores: Map<string, number>, canChangeSe
       }
     }
     const nights = allocate(items, avail)
-    stops = stops.map((s, i) => ({ ...s, nights: nights[i] }))
+    stops = keepCountryDays(ctx, stops.map((s, i) => ({ ...s, nights: nights[i] })), items)
     break
   }
   return { stops: enforceSchengen(ctx, stops, sc, canChangeSet, dropped), dropped }
+}
+
+const nightsIn = (ctx: Ctx, stops: Stop[], iso2: string) => stops.reduce((t, s) => t + (isoOf(ctx, s.cityId) === iso2 ? s.nights : 0), 0)
+/** Whether a stop can give up a night without its country going under the days asked for there. */
+const canGive = (ctx: Ctx, stops: Stop[], s: Stop) => nightsIn(ctx, stops, isoOf(ctx, s.cityId)) > (ctx.dayRange.get(isoOf(ctx, s.cityId))?.min ?? 0)
+/** Whether a stop can take another night without its country going over the days asked for there. */
+const canTake = (ctx: Ctx, stops: Stop[], s: Stop) => nightsIn(ctx, stops, isoOf(ctx, s.cityId)) < (ctx.dayRange.get(isoOf(ctx, s.cityId))?.max ?? Infinity)
+
+/** Whether a city's country has room for another stop's shortest stay within the days asked for there. */
+function roomIn(ctx: Ctx, stops: Stop[], items: AllocItem[], cityId: string): boolean {
+  const max = ctx.dayRange.get(isoOf(ctx, cityId))?.max
+  if (max === undefined) return true
+  const taken = stops.reduce((t, s, i) => t + (isoOf(ctx, s.cityId) === isoOf(ctx, cityId) ? (items[i]?.locked ?? items[i]?.lo ?? 1) : 0), 0)
+  return taken + allocItem(ctx, { cityId, nights: 1, locked: false, groupId: '' }, undefined, 1).lo <= max
+}
+
+/**
+ * Moves nights between unlocked stops until each country's days are within the range asked for there, where the trip
+ * allows: a country over its most gives nights from its fullest stops to the least full ones elsewhere, and one under
+ * its fewest takes them from the fullest stops elsewhere (never below a night, or another country's fewest).
+ */
+function keepCountryDays(ctx: Ctx, input: Stop[], items: AllocItem[]): Stop[] {
+  if (!ctx.dayRange.size) return input
+  const stops = input.map((s) => ({ ...s }))
+  const fill = (s: Stop) => s.nights / items[stops.indexOf(s)].hi
+  const fullest = (list: Stop[]) => list.reduce((a, b) => (fill(b) > fill(a) ? b : a))
+  const emptiest = (list: Stop[]) => list.reduce((a, b) => (fill(b) < fill(a) ? b : a))
+  const stuck = new Set<string>()
+  for (let iter = 0; iter < 2000; iter++) {
+    const off = [...ctx.dayRange].find(([iso2, r]) => {
+      if (stuck.has(iso2)) return false
+      const n = nightsIn(ctx, stops, iso2)
+      return n > r.max || (n > 0 && n < r.min)
+    })
+    if (!off) break
+    const [iso2, r] = off
+    const own = stops.filter((s) => !s.locked && isoOf(ctx, s.cityId) === iso2)
+    const others = stops.filter((s) => !s.locked && isoOf(ctx, s.cityId) !== iso2)
+    const over = nightsIn(ctx, stops, iso2) > r.max
+    const from = over ? own.filter((s) => s.nights > 1) : others.filter((s) => s.nights > 1 && canGive(ctx, stops, s))
+    const to = over ? others.filter((s) => canTake(ctx, stops, s)) : own
+    if (!from.length || !to.length) {
+      stuck.add(iso2)
+      continue
+    }
+    fullest(from).nights--
+    emptiest(to).nights++
+  }
+  return stops
 }
 
 /** Moves nights from Schengen stops to non-Schengen stops until the 90/180 rule holds. */
@@ -337,20 +381,26 @@ function enforceSchengen(ctx: Ctx, input: Stop[], sc: (id: string) => number, ca
     const sum = schengenSummary(ctx.ds, schedule(ctx, stops, legs), ctx.input.passport, ctx.input.schengenDaysBefore)
     if (sum.maxInWindow <= SCHENGEN_LIMIT) break
 
-    let receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId))
+    // Nights go outside Schengen, to countries with room for them, else to a new stop, else over a country's most
+    // (the visa rules come first).
+    const outside = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId))
+    let receivers = outside.filter((s) => canTake(ctx, stops, s))
     if (!receivers.length && canChangeSet) {
       const inPlan = new Set(stops.map((s) => s.cityId))
-      const extra = ctx.candidates.filter((id) => !inPlan.has(id) && !inSchengen(ctx, id)).sort((a, b) => sc(b) - sc(a))[0]
-      if (!extra) break
-      stops = insertCheapest(ctx, stops, extra, groupIdFor(ctx, extra))
-      stops = takeNight(stops, stops.find((s) => s.cityId === extra)!) ?? stops
-      continue
+      const room = (id: string) => nightsIn(ctx, stops, isoOf(ctx, id)) < (ctx.dayRange.get(isoOf(ctx, id))?.max ?? Infinity)
+      const extra = ctx.candidates.filter((id) => !inPlan.has(id) && !inSchengen(ctx, id) && room(id)).sort((a, b) => sc(b) - sc(a))[0]
+      if (extra) {
+        stops = insertCheapest(ctx, stops, extra, groupIdFor(ctx, extra))
+        stops = takeNight(stops, stops.find((s) => s.cityId === extra)!) ?? stops
+        continue
+      }
     }
+    if (!receivers.length) receivers = outside
     if (!receivers.length) break
 
     const donors = stops
       .map((s, i) => ({ s, item: allocItem(ctx, s, legs[i - 1], sc(s.cityId)) }))
-      .filter(({ s, item }) => !s.locked && inSchengen(ctx, s.cityId) && s.nights > item.lo)
+      .filter(({ s, item }) => !s.locked && inSchengen(ctx, s.cityId) && s.nights > item.lo && canGive(ctx, stops, s))
     if (!donors.length) {
       const droppable = stops.filter((s) => !s.locked && inSchengen(ctx, s.cityId) && !ctx.required.has(s.cityId))
       if (!canChangeSet || !droppable.length) break
@@ -358,7 +408,9 @@ function enforceSchengen(ctx: Ctx, input: Stop[], sc: (id: string) => number, ca
       const freed = worst.nights
       stops = stops.filter((s) => s !== worst)
       dropped.push(worst.cityId)
-      receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId))
+      receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId) && canTake(ctx, stops, s))
+      if (!receivers.length) receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId))
+      if (!receivers.length) break
       for (let k = 0; k < freed; k++) pickReceiver(ctx, receivers, legs, sc).nights++
       continue
     }
@@ -399,7 +451,11 @@ export function generatePlan(ds: Dataset, input: TripInput): Plan {
   const asked = { ...input, startDate: flex.start, endDate: flex.end }
   const ctx = makeContext(ds, asked)
   const first = planFor(ctx)
-  const wanted = Math.round(first.stops.reduce((t, s, i) => t + allocItem(ctx, s, first.legs[i - 1], 0).base, 0)) + first.legs.filter((l) => l.overnight).length
+  // The stops' suggested stays, each country's kept within the days asked for there.
+  const byCountry = new Map<string, number>()
+  first.stops.forEach((s, i) => byCountry.set(isoOf(ctx, s.cityId), (byCountry.get(isoOf(ctx, s.cityId)) ?? 0) + allocItem(ctx, s, first.legs[i - 1], 0).base))
+  const stays = [...byCountry].reduce((t, [iso2, n]) => t + Math.max(ctx.dayRange.get(iso2)?.min ?? 0, Math.min(ctx.dayRange.get(iso2)?.max ?? Infinity, n)), 0)
+  const wanted = Math.round(stays) + first.legs.filter((l) => l.overnight).length
   const clamp = (n: number, d: number) => Math.max(-d, Math.min(d, n))
   // More nights wanted: end later, then start earlier; fewer: end earlier, then start later.
   let diff = wanted - ctx.totalNights
@@ -421,6 +477,8 @@ export function withDates(input: TripInput, startDate: string, endDate: string):
 }
 
 export const MAX_STOPS = 200
+/** The most days that can be asked for in one country. */
+export const MAX_COUNTRY_DAYS = 365
 export const MAX_STOPS_FLEX = 20
 
 /** The number of stops asked for (null: as many as fit) and how many more or fewer are fine. */
@@ -498,6 +556,13 @@ export function evaluatePlan(ds: Dataset, input: TripInput, stops: Stop[]): Plan
   return evaluate(makeContext(ds, input, stops.map((s) => s.cityId)), stops, [])
 }
 
+/** A country's days asked for, as words: "5–7 days", "at least 5 days", "at most 7 days". */
+export function dayRangeText(r: { min?: number | null; max?: number | null }): string {
+  const max = r.max === Infinity ? null : r.max
+  if (r.min && max) return r.min === max ? `${max} days` : `${r.min}–${max} days`
+  return r.min ? `at least ${r.min} days` : max ? `at most ${max} days` : 'any number of days'
+}
+
 /** The trip's range of stops, made consistent: at most one stop per night, and the minimum no higher than the maximum. */
 function stopRange(ctx: Ctx): { min: number; max: number } {
   const max = Math.min(ctx.input.maxStops || Infinity, ctx.totalNights)
@@ -510,17 +575,38 @@ function select(ctx: Ctx, scores: Map<string, number>): string[] {
   const { focus } = ctx.input.prefs
   // "More countries" plans shorter stays, so more places fit.
   const short = focus === 'countries' ? 0.75 : 1
-  const cost = (id: string) => Math.max(1, ctx.ds.cities[id].days.ideal * pace * short * (isLonger(ctx, id) ? LONGER_MULT : 1)) + 0.5
+  const cost = (id: string) => Math.max(1, ctx.ds.cities[id].days.ideal * pace * short) + 0.5
   const chosen = [...ctx.required]
   let used = chosen.reduce((s, id) => s + cost(id), 0)
   const rest = ctx.candidates.filter((id) => !ctx.required.has(id)).sort((a, b) => (scores.get(b) ?? 0) - (scores.get(a) ?? 0))
+  // The days asked for in a country: no more cities there than fit its most (though always one), and more cities in
+  // one visited for fewer days than its fewest.
+  const inCountry = (iso2: string) => chosen.filter((id) => isoOf(ctx, id) === iso2).reduce((t, id) => t + cost(id), 0)
+  const full = (id: string) => {
+    const r = ctx.dayRange.get(isoOf(ctx, id))
+    const now = inCountry(isoOf(ctx, id))
+    return !!r && now > 0 && now + cost(id) > r.max
+  }
+  const fillCountries = () => {
+    for (const [iso2, r] of ctx.dayRange) {
+      for (const id of rest) {
+        const now = inCountry(iso2)
+        if (!now || now >= r.min || chosen.length >= range.max) break
+        if (isoOf(ctx, id) === iso2 && !chosen.includes(id)) {
+          chosen.push(id)
+          used += cost(id)
+        }
+      }
+    }
+  }
+  fillCountries()
   if (focus === 'countries') {
     // Best city in each country not yet visited first, then the rest by score.
     const countries = new Set(chosen.map((id) => ctx.ds.cities[id].iso2))
     for (const id of rest) {
       const iso2 = ctx.ds.cities[id].iso2
       if (chosen.length >= range.max) break
-      if (countries.has(iso2) || used + cost(id) > ctx.totalNights) continue
+      if (countries.has(iso2) || used + cost(id) > ctx.totalNights || full(id)) continue
       chosen.push(id)
       countries.add(iso2)
       used += cost(id)
@@ -528,16 +614,17 @@ function select(ctx: Ctx, scores: Map<string, number>): string[] {
   }
   for (const id of rest) {
     if (chosen.length >= range.max) break
-    if (chosen.includes(id) || used + cost(id) > ctx.totalNights) continue
+    if (chosen.includes(id) || used + cost(id) > ctx.totalNights || full(id)) continue
     // "Top highlights" leaves out lesser-known places (unless picked by hand), giving their time to the famous ones.
     if (focus === 'highlights' && ctx.ds.cities[id].popularity <= 3) continue
     chosen.push(id)
     used += cost(id)
   }
+  fillCountries()
   // Fewer stops than the minimum: add the next best places anyway; every stop then gets a shorter stay.
   for (const id of rest) {
     if (chosen.length >= range.min) break
-    if (!chosen.includes(id)) chosen.push(id)
+    if (!chosen.includes(id) && !full(id)) chosen.push(id)
   }
   return chosen
 }
@@ -757,6 +844,21 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
         ? 'Places you required (must-visit countries, start and end cities, cities added by hand) or the Schengen limit need more stops.'
         : 'There are not enough nights or cities in the chosen regions for more stops.',
     })
+  }
+
+  // The days asked for in a country
+  for (const iso2 of countries) {
+    const r = ctx.dayRange.get(iso2)
+    const n = nightsIn(ctx, stops, iso2)
+    if (r && (n < r.min || n > r.max)) {
+      warnings.push({
+        kind: 'time', severity: 'warn', iso2,
+        title: `${ds.countries[iso2].name}: ${n} day${n === 1 ? '' : 's'}, you asked for ${dayRangeText(r)}`,
+        detail: n > r.max
+          ? 'Locked stops, cities added by hand or the Schengen limit need the time there.'
+          : 'There are not enough nights left after the other countries\' days and locked stops.',
+      })
+    }
   }
 
   // Pace: three or more one-night stops in a row

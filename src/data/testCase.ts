@@ -4,9 +4,11 @@ import { makeGroup } from './presets'
 
 /**
  * The end-to-end test case from PLAN.md §3.3:
- * May–Sept 2027, Balkans → Eastern Europe → Poland (longer) → Baltic States → Russia.
+ * May–Sept 2027, Balkans → Eastern Europe → Poland (two to three weeks) → Baltic States → Russia.
  */
 export function testCaseInput(ds: Dataset, passport = 'TW'): TripInput {
+  const poland = makeGroup(ds, 'Poland', ['PL'])
+  poland.countries[0] = { ...poland.countries[0], minDays: 14, maxDays: 21 }
   const russia = makeGroup(ds, 'Russia', ['RU'])
   russia.countries[0].mode = 'must' // explicitly chosen despite the advisory
   return {
@@ -15,7 +17,7 @@ export function testCaseInput(ds: Dataset, passport = 'TW'): TripInput {
     groups: [
       makeGroup(ds, 'Balkans', ['AL', 'ME', 'BA', 'RS', 'XK', 'MK', 'HR', 'SI', 'GR']),
       makeGroup(ds, 'Central & Eastern Europe', ['BG', 'RO', 'MD', 'HU', 'SK', 'CZ', 'AT', 'UA', 'BY']),
-      makeGroup(ds, 'Poland', ['PL'], true),
+      poland,
       makeGroup(ds, 'Baltic States', ['LT', 'LV', 'EE']),
       russia,
     ],

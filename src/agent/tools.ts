@@ -4,8 +4,8 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
-  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, englishLevel,
-  groceryDay, likelyMonth, MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, stopsAsked, suggestedDays, tapWater, vaccinesFor, withDates, withStops, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
+  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
+  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, stopsAsked, suggestedDays, tapWater, vaccinesFor, withDates, withStops, type Budget, type CountryMode, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -52,7 +52,7 @@ const shortDate = (iso: string) => `${Number(iso.slice(8))} ${monthName(Number(i
 function regionsText(input: TripInput): string {
   if (!input.groups.length) return 'none yet'
   return input.groups.map((g, i) =>
-    `${i + 1}. ${g.name}${g.longer ? ' (longer)' : ''}: ${g.countries.map((c) => `${countryName(c.iso2)} ${c.mode}`).join(', ')}`).join('\n')
+    `${i + 1}. ${g.name}: ${g.countries.map((c) => `${countryName(c.iso2)} ${c.mode}${hasDays(c) ? ` (${dayRangeText({ min: c.minDays, max: c.maxDays })})` : ''}`).join(', ')}`).join('\n')
 }
 
 /** A compact description of the trip, sent with every message so the assistant knows the current state. */
@@ -136,7 +136,7 @@ function tripDetails(): ToolResult {
       passport: input.passport, keep_region_order: input.keepGroupOrder, start_city: input.startCityId && cityName(input.startCityId),
       end_city: input.endCityId && cityName(input.endCityId), schengen_days_before: input.schengenDaysBefore,
     },
-    regions: input.groups.map((g) => ({ name: g.name, longer: g.longer, countries: g.countries.map((c) => ({ country: countryName(c.iso2), mode: c.mode })) })),
+    regions: input.groups.map((g) => ({ name: g.name, countries: g.countries.map((c) => ({ country: countryName(c.iso2), mode: c.mode, min_days: c.minDays ?? null, max_days: c.maxDays ?? null })) })),
     itinerary: plan && {
       stops: plan.stops.map((s) => ({ city: cityName(s.cityId), id: s.cityId, country: countryName(ds.cities[s.cityId].iso2), arrive: s.arrive, depart: s.depart, nights: s.nights, locked: s.locked })),
       legs: plan.legs.map((l) => ({
@@ -158,7 +158,7 @@ function tripDetails(): ToolResult {
 // ---------------------------------------------------------------- reading
 
 function findCities(args: Args): ToolResult {
-  const { input, stops } = useTrip.getState()
+  const { stops } = useTrip.getState()
   const iso2 = args.country ? countryCode(args.country) : null
   const tag = args.tag ? String(args.tag).toLowerCase() : null
   const q = args.query ? key(String(args.query)) : null
@@ -169,7 +169,7 @@ function findCities(args: Args): ToolResult {
     count: cities.length,
     cities: cities.slice(0, 60).map((c) => ({
       id: c.id, name: c.name, country: countryName(c.iso2), tags: c.tags, popularity: c.popularity, blurb: c.blurb,
-      suggested_days: suggestedDays(ds, input, c.id), in_itinerary: stops.some((s) => s.cityId === c.id),
+      suggested_days: suggestedDays(ds, c.id), in_itinerary: stops.some((s) => s.cityId === c.id),
     })),
   }
 }
@@ -211,7 +211,7 @@ function cityInfo(args: Args): ToolResult {
   const pay = ds.payments.countries[city.iso2]
   return {
     name: city.name, country: country.name, schengen: country.schengen, currency: country.currency, blurb: city.blurb, tags: city.tags,
-    suggested_days: suggestedDays(ds, input, id),
+    suggested_days: suggestedDays(ds, id),
     in_itinerary: stop ? { arrive: stop.arrive, depart: stop.depart, nights: stop.nights, locked: stop.locked } : false,
     weather: clim && {
       month: monthName(month),
@@ -390,7 +390,7 @@ function compareCities(args: Args): ToolResult {
       if (f === 'mobile_internet') row.mobile_internet = mobileView(id)
       if (f === 'travel_advice') row.uk_advice_level = ds.advisories[c.iso2]?.level
       if (f === 'tap_water') row.tap_water = TAP_WATER_LABELS[tapWater(ds, id)?.level ?? '']?.short
-      if (f === 'suggested_days') row.suggested_days = suggestedDays(ds, input, id)[input.pace]
+      if (f === 'suggested_days') row.suggested_days = suggestedDays(ds, id)[input.pace]
       if (f === 'population') row.population = c.population
     }
     return row
@@ -605,7 +605,7 @@ function addRegion(args: Args): string {
   const taken = new Set(input.groups.flatMap((g) => g.countries.map((c) => c.iso2)))
   const fresh = countries.filter((c) => !taken.has(c))
   if (!fresh.length) throw new ToolError('Those countries are already in the trip')
-  setInput({ groups: [...input.groups, makeGroup(ds, name, fresh, Boolean(args.longer))] })
+  setInput({ groups: [...input.groups, makeGroup(ds, name, fresh)] })
   return `Added region ${name}`
 }
 
@@ -616,20 +616,29 @@ function updateRegion(args: Args): string {
     setInput({ groups: input.groups.filter((x) => x.id !== g.id) })
     return `Removed region ${g.name}`
   }
-  if (args.longer === undefined) throw new ToolError('Nothing to change')
-  setInput({ groups: input.groups.map((x) => (x.id === g.id ? { ...x, longer: Boolean(args.longer) } : x)) })
-  return `${g.name}: ${args.longer ? 'longer' : 'normal'} stay`
+  throw new ToolError('Nothing to change: give remove')
 }
 
 function setCountryMode(args: Args): string {
   const iso2 = countryCode(args.country)
-  const mode = String(args.mode)
-  if (!['must', 'optional', 'excluded'].includes(mode)) throw new ToolError('mode must be must, optional or excluded')
   const { input, setInput } = useTrip.getState()
-  if (!input.groups.some((g) => g.countries.some((c) => c.iso2 === iso2))) throw new ToolError(`${countryName(iso2)} is in no region; add it with add_region first`)
-  setInput({ groups: input.groups.map((g) => ({ ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? { ...c, mode: mode as 'must' } : c)) })) })
-  return `${countryName(iso2)}: ${mode}`
+  const country = input.groups.flatMap((g) => g.countries).find((c) => c.iso2 === iso2)
+  if (!country) throw new ToolError(`${countryName(iso2)} is in no region; add it with add_region first`)
+  const next: TripCountry = { ...country }
+  if (args.mode !== undefined) {
+    if (!['must', 'optional', 'excluded'].includes(String(args.mode))) throw new ToolError('mode must be must, optional or excluded')
+    next.mode = args.mode as CountryMode
+  }
+  // 0 (or none) for no limit.
+  const days = (v: unknown) => (Number(v) > 0 ? Math.min(MAX_COUNTRY_DAYS, Math.round(Number(v))) : null)
+  if (args.min_days !== undefined) next.minDays = days(args.min_days)
+  if (args.max_days !== undefined) next.maxDays = days(args.max_days)
+  if (args.mode === undefined && args.min_days === undefined && args.max_days === undefined) throw new ToolError('Nothing to change')
+  setInput({ groups: input.groups.map((g) => ({ ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? next : c)) })) })
+  return `${countryName(iso2)}: ${next.mode}${hasDays(next) ? `, ${dayRangeText({ min: next.minDays, max: next.maxDays })}` : ''}`
 }
+
+const hasDays = (c: TripCountry) => !!(c.minDays || c.maxDays)
 
 /** Index to pass to moveStop so that the stop ends up right after `after` ("start" = first). */
 function targetIndex(from: number, after: unknown): number {
@@ -880,10 +889,10 @@ export function describeChanges(before: TripSnapshot, after: TripSnapshot): stri
   for (const g of b.groups) {
     const old = a.groups.find((x) => x.id === g.id)
     if (!old) { out.push(`Added region ${g.name}`); continue }
-    if (old.longer !== g.longer) out.push(`${g.name}: ${g.longer ? 'longer stay' : 'normal stay'}`)
     for (const c of g.countries) {
-      const was = old.countries.find((x) => x.iso2 === c.iso2)?.mode
-      if (was && was !== c.mode) out.push(`${countryName(c.iso2)}: ${was} → ${c.mode}`)
+      const was = old.countries.find((x) => x.iso2 === c.iso2)
+      if (was && was.mode !== c.mode) out.push(`${countryName(c.iso2)}: ${was.mode} → ${c.mode}`)
+      if (was && ((was.minDays ?? null) !== (c.minDays ?? null) || (was.maxDays ?? null) !== (c.maxDays ?? null))) out.push(`${countryName(c.iso2)}: ${dayRangeText({ min: c.minDays, max: c.maxDays })}`)
     }
   }
   for (const g of a.groups) if (!b.groups.some((x) => x.id === g.id)) out.push(`Removed region ${g.name}`)

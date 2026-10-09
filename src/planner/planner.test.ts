@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, withStops, stopsAsked, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, withStops, stopsAsked, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -59,12 +59,11 @@ describe.each(['TW', 'US', 'EU'])('test case trip, %s passport', (passport) => {
     expect(plan.schengen.maxInWindow).toBeLessThanOrEqual(passport === 'EU' ? Infinity : 90)
   })
 
-  it('gives Poland more time per city than the average', () => {
-    const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length
-    const pl = plan.stops.filter((s) => iso(s.cityId) === 'PL').map((s) => s.nights)
-    const other = plan.stops.filter((s) => iso(s.cityId) !== 'PL').map((s) => s.nights)
-    expect(pl.length).toBeGreaterThan(0)
-    expect(avg(pl)).toBeGreaterThan(avg(other))
+  it('keeps Poland to the 14–21 days asked for', () => {
+    const pl = plan.stops.filter((s) => iso(s.cityId) === 'PL').reduce((t, s) => t + s.nights, 0)
+    expect(pl).toBeGreaterThanOrEqual(14)
+    expect(pl).toBeLessThanOrEqual(21)
+    expect(plan.warnings.some((w) => w.iso2 === 'PL' && w.kind === 'time')).toBe(false)
   })
 
   it('reaches Russia and warns about the advisory', () => {
@@ -528,23 +527,51 @@ describe('price levels and estimated costs', () => {
   })
 })
 
+describe('days in a country', () => {
+  const nightsIn = (plan: ReturnType<typeof generatePlan>, iso2: string) => plan.stops.filter((s) => iso(s.cityId) === iso2).reduce((t, s) => t + s.nights, 0)
+  const withDays = (iso2: string, minDays: number | null, maxDays: number | null) => {
+    const input = testTrip('US')
+    return { ...input, groups: input.groups.map((g) => ({ ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? { ...c, mode: 'must' as const, minDays, maxDays } : c)) })) }
+  }
+
+  it('keeps a country to its most', () => {
+    const plan = generatePlan(ds, withDays('HR', null, 3))
+    expect(nightsIn(plan, 'HR')).toBeGreaterThan(0)
+    expect(nightsIn(plan, 'HR')).toBeLessThanOrEqual(3)
+  })
+
+  it('gives a country at least its fewest, with more cities there', () => {
+    const plain = generatePlan(ds, testTrip('US'))
+    const plan = generatePlan(ds, withDays('RO', 18, null))
+    expect(nightsIn(plan, 'RO')).toBeGreaterThanOrEqual(18)
+    expect(plan.stops.filter((s) => iso(s.cityId) === 'RO').length).toBeGreaterThan(plain.stops.filter((s) => iso(s.cityId) === 'RO').length)
+    expect(plan.assignedNights).toBe(plan.totalNights)
+  })
+
+  it('warns when the trip has no room for the days asked for', () => {
+    const plan = generatePlan(ds, { ...withDays('RO', 40, null), endDate: '2027-05-30' })
+    // A 29-night trip.
+    expect(nightsIn(plan, 'RO')).toBeLessThan(40)
+    expect(plan.warnings.some((w) => w.kind === 'time' && w.iso2 === 'RO')).toBe(true)
+  })
+
+  it('says the range in words', () => {
+    expect(dayRangeText({ min: 5, max: 7 })).toBe('5–7 days')
+    expect(dayRangeText({ min: 5, max: 5 })).toBe('5 days')
+    expect(dayRangeText({ min: 5 })).toBe('at least 5 days')
+    expect(dayRangeText({ max: 7 })).toBe('at most 7 days')
+    expect(dayRangeText({ min: 5, max: Infinity })).toBe('at least 5 days')
+  })
+})
+
 describe('suggested days per pace', () => {
   it('gives more days for a chill pace and fewer for fast, within the city limits', () => {
-    const input = { ...testTrip('US'), groups: [] }
     for (const id of Object.keys(ds.cities)) {
-      const s = suggestedDays(ds, input, id)
+      const s = suggestedDays(ds, id)
       expect(s.chill, id).toBeGreaterThanOrEqual(s.balanced)
       expect(s.balanced, id).toBeGreaterThanOrEqual(s.fast)
       expect(s.fast, id).toBeGreaterThanOrEqual(1)
-      expect(s.longer).toBeNull()
     }
-  })
-
-  it('adds extra time when the region is marked "Longer"', () => {
-    const plain = suggestedDays(ds, { ...testTrip('US'), groups: [] }, 'krakow')
-    const longer = suggestedDays(ds, testTrip('US'), 'krakow') // Poland is "Longer" in the test case
-    expect(longer.longer).toBe('Poland')
-    expect(longer.balanced).toBeGreaterThan(plain.balanced)
   })
 })
 
@@ -554,8 +581,8 @@ describe('Asia trip (Taiwan → Japan → Southeast Asia)', () => {
     startDate: '2027-10-01',
     endDate: '2027-12-15',
     groups: [
-      { id: 'ea', name: 'East Asia', countries: [{ iso2: 'TW', mode: 'must' }, { iso2: 'JP', mode: 'must' }], longer: false },
-      { id: 'sea', name: 'Southeast Asia', countries: ['TH', 'VN', 'MY', 'SG', 'KH'].map((iso2) => ({ iso2, mode: 'must' as const })), longer: false },
+      { id: 'ea', name: 'East Asia', countries: [{ iso2: 'TW', mode: 'must' }, { iso2: 'JP', mode: 'must' }] },
+      { id: 'sea', name: 'Southeast Asia', countries: ['TH', 'VN', 'MY', 'SG', 'KH'].map((iso2) => ({ iso2, mode: 'must' as const })) },
     ],
   }
   const plan = generatePlan(ds, asia)
@@ -583,7 +610,7 @@ describe('flexible dates', () => {
   // How far the stays are from what each city suggests, per night.
   const misfit = (input: TripInput) => {
     const plan = generatePlan(ds, input)
-    return plan.stops.reduce((t, s) => t + Math.abs(s.nights - suggestedDays(ds, input, s.cityId)[input.pace]), 0) / plan.totalNights
+    return plan.stops.reduce((t, s) => t + Math.abs(s.nights - suggestedDays(ds, s.cityId)[input.pace]), 0) / plan.totalNights
   }
 
   it('picks dates within the flexible range, and fills them', () => {

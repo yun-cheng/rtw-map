@@ -123,11 +123,11 @@ Taiwan (Taipei, Taichung, Tainan, Kaohsiung, Hualien), Japan (Tokyo, Hakone, Kyo
 ### 3.3 Test case: the Balkans → Russia trip (May–Sept 2027)
 The website itself plans this trip. We use it as the main end-to-end test to find bugs and gaps. We do not hand-plan it here.
 
-**Test input:** May–Sept 2027 · Balkans → Eastern Europe → Poland (longer stay) → Baltics → Russia · pace/budget/passport set at test time.
+**Test input:** May–Sept 2027 · Balkans → Eastern Europe → Poland (14–21 days) → Baltics → Russia · pace/budget/passport set at test time.
 
 **What the website should do (acceptance checks):**
 - [ ] Turns the rough country list into a city route with suggested days per city, in a sensible geographic order
-- [ ] Gives Poland noticeably more days when it's marked as a longer stay
+- [ ] Gives Poland the days asked for there (14–21)
 - [ ] Keeps Schengen days ≤ 90 in every 180-day window, rebalancing towards non-Schengen countries if needed, and explains why
 - [ ] Shows weather fit per stop for the actual month (e.g., warns about inland Balkan heat in midsummer)
 - [ ] Shows visa requirements and the Russia warnings for the chosen passport
@@ -488,6 +488,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Trip tab, simpler:** the flexible days and the number of stops are set with − / + (a number, give or take some stops: `stopsFlex`, the fewest and most following from it); the planned dates, nights and stops sit under the tab's title instead of lines under the dates; the explanations under Where and the dates (now in the chips' hover text), Load test case, and start / end city are gone from the form (the planner and the assistant still take a start or end city).
 - **Trip and preferences in one tab:** the Preferences tab is gone; its topics are folded cards under the Trip tab's own (each says in a line what's set), the trip's parts are cards too, and Generate plan / Plan with AI are pinned to the panel's bottom. Old links and saved state with `panel=prefs` open the Trip tab. Preference cards open one at a time. The left panel's three tabs each show their name, the same width.
 - **Region cards fold:** the Trip tab's region cards fold to their name and a line counting their must, optional and excluded countries, one open at a time. Pointing at a region or country (the trip's own, or in the add list) brings it into view zooming out to fit it but never in, so moving down a list stays calm.
+- **Days per country, instead of "Longer" regions:** each country of the trip can have a fewest and a most days (the nights at its stops; empty for any), set in its region's card or by the assistant (`set_country_mode` with `min_days` / `max_days`). The planner picks no more cities in a country than fit its most (always one), adds cities in one visited for fewer days than its fewest, moves nights between unlocked stops after assigning them (`keepCountryDays`), keeps the Schengen fix-up and flexible dates within the ranges where it can (Schengen first), and Checks warns about a country outside its range. The region-wide "Longer" option is gone; the test case asks for 14–21 days in Poland.
 - **Next:** verify the seed costs and connections; the offline part of Phase 3 (PWA) and a "today" screen.
 
 ---

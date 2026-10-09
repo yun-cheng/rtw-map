@@ -168,18 +168,22 @@ export const TOOLS: FunctionDeclaration[] = [
       preset: str('Region name from get_options, e.g. "Balkans"'),
       countries: { type: 'array', items: str('Country name or ISO code'), description: 'Countries, if not adding one of the regions' },
       name: str('Name for a list of countries'),
-      longer: { type: 'boolean', description: 'Spend longer in this region' },
     }),
   },
   {
     name: 'update_region',
-    description: 'Change a region: spend longer there, or remove it.',
-    parametersJsonSchema: obj({ region: str('Region name'), longer: { type: 'boolean' }, remove: { type: 'boolean' } }, ['region']),
+    description: 'Remove a region from the trip setup.',
+    parametersJsonSchema: obj({ region: str('Region name'), remove: { type: 'boolean' } }, ['region', 'remove']),
   },
   {
     name: 'set_country_mode',
-    description: 'Whether a country must be visited, may be visited, or is left out. Applies when the plan is generated.',
-    parametersJsonSchema: obj({ country: str('Country name or ISO code'), mode: str('Mode', { enum: ['must', 'optional', 'excluded'] }) }, ['country', 'mode']),
+    description: 'Whether a country must be visited, may be visited, or is left out, and the days to spend there if it is visited (the nights at its stops). Applies when the plan is generated.',
+    parametersJsonSchema: obj({
+      country: str('Country name or ISO code'),
+      mode: str('Mode', { enum: ['must', 'optional', 'excluded'] }),
+      min_days: { type: 'integer', description: 'Fewest days there; 0 for no limit' },
+      max_days: { type: 'integer', description: 'Most days there; 0 for no limit' },
+    }, ['country']),
   },
   {
     name: 'generate_plan',

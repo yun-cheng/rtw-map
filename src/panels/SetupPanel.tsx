@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, citiesIn, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
+import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, citiesIn, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
@@ -116,10 +116,6 @@ export function SetupPanel() {
                           {!open && <span className="block truncate text-[12px] text-muted">{groupSummary(g)}</span>}
                         </span>
                       </button>
-                      <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
-                        <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
-                        Longer
-                      </label>
                       {ordered && (
                         <>
                           <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
@@ -128,20 +124,29 @@ export function SetupPanel() {
                       )}
                       <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
                     </div>
-                    {open && <div className="flex flex-wrap gap-1">
+                    {/* Each country: click it to change whether it's a must visit, and the days to spend there. */}
+                    {open && <div className="flex flex-col gap-1">
                       {g.countries.map((c) => {
                         const adv = ds.advisories[c.iso2]
+                        const setCountry = (patch: Partial<TripCountry>) => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, ...patch } : y)) }))
                         return (
-                          <button
-                            key={c.iso2}
-                            onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
-                            onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
-                            className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
-                            title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
-                          >
-                            {flag(c.iso2)} {countryName(c.iso2)}
-                            {adv?.excludedByDefault && ' ⚠'}
-                          </button>
+                          <div key={c.iso2} className="flex items-center gap-2">
+                            <button
+                              onClick={() => setCountry({ mode: NEXT_MODE[c.mode] })}
+                              onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
+                              className={`min-w-0 truncate rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
+                              title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
+                            >
+                              {flag(c.iso2)} {countryName(c.iso2)}
+                              {adv?.excludedByDefault && ' ⚠'}
+                            </button>
+                            {c.mode !== 'excluded' && (
+                              <Range unit="days" className="ml-auto shrink-0 text-[12px]">
+                                <AnyNumber value={c.minDays} max={MAX_COUNTRY_DAYS} label={`Fewest days in ${countryName(c.iso2)}`} onChange={(minDays) => setCountry({ minDays })} />
+                                <AnyNumber value={c.maxDays} min={c.minDays} max={MAX_COUNTRY_DAYS} label={`Most days in ${countryName(c.iso2)}`} onChange={(maxDays) => setCountry({ maxDays })} />
+                              </Range>
+                            )}
+                          </div>
                         )
                       })}
                     </div>}
@@ -242,6 +247,26 @@ function Field({ label, aside, children }: { label: string; aside?: React.ReactN
       </div>
       {children}
     </div>
+  )
+}
+
+/** A fewest and a most, between a dash and before their unit: "[Any] – [Any] days". */
+function Range({ unit, className = '', children: [from, to] }: { unit: string; className?: string; children: [React.ReactNode, React.ReactNode] }) {
+  return <span className={`flex items-center gap-1 text-muted ${className}`}>{from}–{to}{unit}</span>
+}
+
+/** One end of a range: a number from 1 to `max`, or empty for any. */
+function AnyNumber({ value, min, max, label, onChange }: { value?: number | null; min?: number | null; max: number; label: string; onChange: (n: number | null) => void }) {
+  return (
+    <input
+      type="number" min={min || 1} max={max} inputMode="numeric" placeholder="Any" aria-label={label} title={`${label} (empty for any)`}
+      value={value ?? ''}
+      onChange={(e) => {
+        const n = Math.round(Number(e.target.value))
+        onChange(e.target.value.trim() && n > 0 ? Math.min(max, n) : null)
+      }}
+      className="w-11 rounded-md border border-line bg-panel px-1 py-0.5 text-center text-[12px] text-ink outline-none [appearance:textfield] placeholder:text-muted focus:border-accent [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+    />
   )
 }
 

@@ -10,12 +10,11 @@ export function defaultMode(ds: Dataset, iso2: string, single: boolean): Country
 }
 
 let nextId = 1
-export function makeGroup(ds: Dataset, name: string, countries: string[], longer = false): TripGroup {
+export function makeGroup(ds: Dataset, name: string, countries: string[]): TripGroup {
   return {
     id: `g${Date.now().toString(36)}${nextId++}`,
     name,
     countries: countries.map((iso2) => ({ iso2, mode: defaultMode(ds, iso2, countries.length === 1) })),
-    longer,
   }
 }
 

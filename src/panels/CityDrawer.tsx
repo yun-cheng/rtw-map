@@ -104,7 +104,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const passportName = ds.visa.passports.find((p) => p.code === input.passport)?.name
   const pop = ds.population[city.iso2]
   const english = englishLevel(ds, cityId)
-  const suggested = suggestedDays(ds, input, cityId)
+  const suggested = suggestedDays(ds, cityId)
   const transit = ds.localTransport.cities[cityId]
   const taxi = ds.localTransport.countries[city.iso2]?.taxi
   const taxiRide = taxiEstimate(ds, cityId)
@@ -690,7 +690,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               </span>
             ))}
           </div>
-          {suggested.longer && <p className="mt-1 text-[11px] text-muted">Includes extra time because {suggested.longer} is marked "Longer".</p>}
         </Section>
 
         <Section title="At a glance">
