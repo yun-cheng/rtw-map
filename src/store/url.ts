@@ -9,7 +9,7 @@ import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type 
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
-const PANELS = ['setup', 'prefs', 'itinerary', 'assistant'] as const
+const PANELS = ['setup', 'itinerary', 'assistant'] as const
 const TABS: CityTab[] = ['overview', 'transport', 'weather', 'costs', 'daily', 'phrases', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
@@ -34,6 +34,8 @@ export function readUrl(search = window.location.search) {
 
   const panel = q.get('panel') as (typeof PANELS)[number]
   if (PANELS.includes(panel)) patch.panel = panel
+  // Preferences were a tab of their own; now they're in the Trip tab.
+  else if ((panel as string) === 'prefs') patch.panel = 'setup'
 
   const city = q.get('city')
   const leg = Number(q.get('leg'))

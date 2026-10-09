@@ -227,7 +227,7 @@ export type Pace = 'chill' | 'balanced' | 'fast'
 export type Budget = 'shoestring' | 'backpacker' | 'private' | 'midrange' | 'comfort'
 
 /**
- * How someone likes to travel (the Preferences tab). A travel style preset (input.budget) can fill in the style
+ * How someone likes to travel (the preferences in the Trip tab). A travel style preset (input.budget) can fill in the style
  * fields; all are the traveller's to change. Amounts are in EUR, like all prices.
  */
 export type TravelPrefs = {

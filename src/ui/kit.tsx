@@ -1,4 +1,4 @@
-import { Info, Minus, Plus } from 'lucide-react'
+import { ChevronRight, Info, Minus, Plus } from 'lucide-react'
 import { useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { levelColor } from './format'
@@ -26,6 +26,41 @@ export function Section({ title, children, aside }: { title?: string; children: 
         </div>
       )}
       {children}
+    </section>
+  )
+}
+
+/**
+ * A card like `Section` that folds to its title and a line saying what's in it (`summary`); starts folded. With `open`
+ * and `onToggle` its parent decides (e.g. one card open at a time).
+ */
+export function Fold({ title, summary, open: shown, onToggle, children }: { title: string; summary: ReactNode; open?: boolean; onToggle?: () => void; children: ReactNode }) {
+  const [own, setOwn] = useState(false)
+  const open = shown ?? own
+  const setOpen = (v: boolean) => (onToggle ? onToggle() : setOwn(v))
+  // Opened by a click: its top kept in view, as another card folding above it can move it up out of sight (or a
+  // pinned bar can cover the bottom of the panel).
+  const card = useRef<HTMLElement>(null)
+  const clicked = useRef(false)
+  useLayoutEffect(() => {
+    const el = card.current
+    const view = el?.closest('.overflow-y-auto')?.getBoundingClientRect()
+    if (el && view && open && clicked.current) {
+      const top = el.getBoundingClientRect().top
+      if (top < view.top || top > view.bottom - 120) el.scrollIntoView({ block: 'start' })
+    }
+    clicked.current = false
+  }, [open])
+  return (
+    <section ref={card} className="scroll-mt-3 rounded-xl bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
+      <button onClick={() => { clicked.current = true; setOpen(!open) }} aria-expanded={open} className="flex w-full items-start gap-2 px-4 py-3 text-left">
+        <ChevronRight size={14} className={`mt-0.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+        <span className="min-w-0 flex-1">
+          <span className="block text-[13px] font-semibold">{title}</span>
+          {!open && <span className="mt-0.5 block truncate text-[12px] text-muted">{summary}</span>}
+        </span>
+      </button>
+      {open && <div className="px-4 pb-3">{children}</div>}
     </section>
   )
 }

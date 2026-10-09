@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, Settings, SlidersHorizontal, Sparkles, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, Settings, Sparkles, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { MapControls } from './map/MapControls'
 import { BOTH_PANELS_MIN_WIDTH, DRAWER_WIDTH, SIDEBAR_WIDTH } from './ui/layout'
@@ -9,7 +9,6 @@ import { Header } from './panels/Header'
 import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
 import { PlanBar } from './panels/PlanBar'
-import { PrefsPanel } from './panels/PrefsPanel'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { SetupPanel } from './panels/SetupPanel'
 import { Timeline } from './panels/Timeline'
@@ -18,9 +17,9 @@ import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { usePhone } from './ui/usePhone'
 
-const TAB_LABELS = { setup: 'Trip', prefs: 'Preferences', itinerary: 'Itinerary', assistant: 'Assistant' }
+const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', assistant: 'Assistant' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
-const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, prefs: SlidersHorizontal, itinerary: ListOrdered, assistant: Sparkles }
+const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, itinerary: ListOrdered, assistant: Sparkles }
 
 /** Whether the user folded the left panel away, remembered in this browser. */
 const COLLAPSED_KEY = 'rtw-map-sidebar-collapsed'
@@ -77,31 +76,26 @@ function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
  *  the sheet's header). `onHide` folds it away. */
 function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?: boolean; onHide?: () => void }) {
   const { plan, setPanel } = useTrip()
-  const [tip, setTip] = useState<Tip | null>(null)
   return (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
-        {(['setup', 'prefs', 'itinerary', 'assistant'] as const).map((t) => {
-          // Icons like the city panel's tabs: the open tab also has its name, the others show it on hover.
+        {(['setup', 'itinerary', 'assistant'] as const).map((t) => {
+          // Each with its icon and name.
           const Icon = TAB_ICONS[t]
           return (
             <button
               key={t}
               role="tab"
               aria-selected={tab === t}
-              aria-label={TAB_LABELS[t]}
               disabled={t === 'itinerary' && !plan}
-              onMouseEnter={tab === t ? undefined : (e) => setTip({ content: { lines: [TAB_LABELS[t]] }, rect: e.currentTarget.getBoundingClientRect() })}
-              onMouseLeave={() => setTip(null)}
-              onClick={() => { setTip(null); setPanel(t) }}
-              className={`-mb-px flex items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:flex-auto max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              onClick={() => setPanel(t)}
+              className={`-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
               <Icon size={peek ? 18 : 16} />
-              {tab === t && TAB_LABELS[t]}
+              {TAB_LABELS[t]}
             </button>
           )
         })}
-        <HoverTip tip={tip} />
         {onHide && (
           <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
             <ChevronsLeft size={16} />
@@ -112,7 +106,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
       {tab === 'assistant' ? (
         <div className="min-h-0 flex-1"><AssistantPanel /></div>
       ) : (
-        <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : tab === 'prefs' ? <PrefsPanel /> : <Itinerary />}</div>
+        <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : <Itinerary />}</div>
       )}
     </>
   )
@@ -120,7 +114,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
 
 export default function App() {
   const { panel, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTrip()
-  const tab = plan || panel === 'assistant' || panel === 'prefs' ? panel : 'setup'
+  const tab = plan || panel === 'assistant' ? panel : 'setup'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
   const picking = useTrip((s) => s.picking)
@@ -185,7 +179,7 @@ export default function App() {
               <ChevronsRight size={16} />
             </button>
             <div className="my-0.5 h-px w-6 bg-line" />
-            {(['setup', 'prefs', 'itinerary', 'assistant'] as const).map((t) => {
+            {(['setup', 'itinerary', 'assistant'] as const).map((t) => {
               const Icon = TAB_ICONS[t]
               return (
                 <button

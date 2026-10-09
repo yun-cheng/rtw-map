@@ -3,8 +3,8 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS } from '../data/presets'
 import { prefsDay, type DayChoices, type Pace, type TravelPrefs } from '../planner'
 import { useTrip } from '../store/trip'
-import { tempValue, type TempUnit } from '../ui/format'
-import { Named, Segmented } from '../ui/kit'
+import { money, tempValue, type TempUnit } from '../ui/format'
+import { Fold, Named, Segmented } from '../ui/kit'
 import { Counter, DAY_FIELDS, DaySwitch } from './CostDay'
 
 /** The preference behind each of the day's choices (taxi rides are chosen per city, not here). */
@@ -12,13 +12,28 @@ const PREF_OF: Partial<Record<keyof DayChoices, keyof TravelPrefs>> = {
   bed: 'room', breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', coffees: 'coffees', beers: 'beers',
 }
 
-/** How the user likes to travel. Saved with the trip. */
-export function PrefsPanel() {
+type Options<T> = { value: T; label: string }[]
+const TRAVELLERS: Options<TravelPrefs['travellers']> = [{ value: 1, label: 'Solo' }, { value: 2, label: 'Two, one room' }, { value: 4, label: '3–4' }]
+const FOCUS: Options<TravelPrefs['focus']> = [{ value: 'balanced', label: 'Balanced' }, { value: 'countries', label: 'More countries' }, { value: 'highlights', label: 'Top highlights' }]
+const EXPENSIVE: Options<TravelPrefs['expensive']> = [{ value: 'ignore', label: "Don't mind" }, { value: 'shorter', label: 'Shorter stays' }, { value: 'skip', label: 'Skip if optional' }]
+const PACES: Options<Pace> = [{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]
+const BETWEEN: Options<TravelPrefs['betweenCities']> = [{ value: 'cheapest', label: 'Cheapest' }, { value: 'balanced', label: 'Balanced' }, { value: 'fastest', label: 'Fastest' }]
+const HOURS: Options<TravelPrefs['maxTravelHours']> = [{ value: 3, label: '3 h' }, { value: 5, label: '5 h' }, { value: 8, label: '8 h' }, { value: null, label: 'No limit' }]
+const SIGHTS: Options<TravelPrefs['sights']> = [{ value: 'few', label: 'A few' }, { value: 'daily', label: 'One a day' }, { value: 'lots', label: 'Lots + tours' }]
+const labelOf = <T,>(options: Options<T>, value: T) => options.find((o) => o.value === value)?.label ?? String(value)
+/** A label in lower case for the middle of a summary, except an abbreviation ("DIY"). */
+const lower = (label: string) => (/^[A-Z]{2,}$/.test(label) ? label : label.toLowerCase())
+
+/**
+ * How the user likes to travel, in the Trip tab: a folded card per topic, each saying in a line what's set. Saved
+ * with the trip; a new trip starts from these.
+ */
+export function PrefsCards() {
   const { input, setInput, setPrefs, currency, tempUnit } = useTrip()
   const p = input.prefs
   const day = prefsDay(p)
   // A segmented control for one preference.
-  const choose = <K extends keyof TravelPrefs>(key: K, options: { value: TravelPrefs[K]; label: string }[]) => (
+  const choose = <K extends keyof TravelPrefs>(key: K, options: Options<TravelPrefs[K]>) => (
     <Segmented
       value={String(p[key])}
       onChange={(v) => setPrefs({ [key]: options.find((o) => String(o.value) === v)!.value } as Partial<TravelPrefs>)}
@@ -31,15 +46,49 @@ export function PrefsPanel() {
       {label}
     </label>
   )
+  const temps = (min: number | null, max: number | null) =>
+    min == null && max == null ? 'any' : `${min == null ? 'any' : `${tempValue(min, tempUnit)}°`}–${max == null ? 'any' : `${tempValue(max, tempUnit)}°${tempUnit}`}`
+  const home = p.homeCityId ? ds.cities[p.homeCityId]?.name : null
+
+  const summary = {
+    who: [`${ds.visa.passports.find((x) => x.code === input.passport)?.name ?? input.passport} passport`, labelOf(TRAVELLERS, p.travellers), home && `from ${home}`],
+    goals: [labelOf(FOCUS, p.focus), `expensive places: ${labelOf(EXPENSIVE, p.expensive).toLowerCase()}`],
+    day: [
+      ...DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
+        const v = day[f.key]
+        if (f.max !== undefined) return Number(v) > 0 && `${f.label.toLowerCase()} ×${v}`
+        const label = f.options!().find((o) => o.value === v)?.label ?? String(v)
+        return f.key === 'bed' ? label : `${f.label.toLowerCase()} ${lower(label)}`
+      }),
+      p.maxPerNight != null && `up to ${money(p.maxPerNight, currency)} a night`,
+    ],
+    around: [`${labelOf(PACES, input.pace).split(' ')[1]} pace`, `${lower(labelOf(BETWEEN, p.betweenCities))} between cities`, p.maxTravelHours ? `up to ${p.maxTravelHours} h a day` : 'no limit a day', p.overnight && 'overnight OK'],
+    do: [input.interests.join(', ') || 'No interests', `${labelOf(SIGHTS, p.sights).toLowerCase()} paid sights`],
+    comfort: [
+      p.minHighC == null && p.maxHeatC == null && p.minLowC == null && p.maxLowC == null && 'any temperature',
+      (p.minHighC != null || p.maxHeatC != null) && `highs ${temps(p.minHighC, p.maxHeatC)}`,
+      (p.minLowC != null || p.maxLowC != null) && `lows ${temps(p.minLowC, p.maxLowC)}`,
+      p.avoidRain && 'no rainy months',
+      p.needInternet && 'fast internet',
+    ],
+    money: [p.dailyBudget != null ? `${money(p.dailyBudget, currency)} a day` : 'No daily budget'],
+  }
+  // One card open at a time: opening one folds the one that was open.
+  const [open, setOpen] = useState<string | null>(null)
+  const fold = (title: string) => ({ open: open === title, onToggle: () => setOpen(open === title ? null : title) })
+  const line = (parts: unknown[]) => {
+    const text = parts.filter(Boolean).join(' · ')
+    return text.charAt(0).toUpperCase() + text.slice(1)
+  }
 
   return (
-    <div className="flex flex-col gap-5 p-4">
-      <div>
+    <>
+      <div className="mt-2 px-1">
         <h2 className="text-[15px] font-semibold">Preferences</h2>
         <p className="mt-0.5 text-[12px] text-muted">How you like to travel. Saved with this trip; a new trip starts from these.</p>
       </div>
 
-      <Group title="Who">
+      <Fold title="Who" {...fold('Who')} summary={line(summary.who)}>
         <Label>Passport</Label>
         <select value={input.passport} onChange={(e) => setInput({ passport: e.target.value })} className={inputCls}>
           {ds.visa.passports.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
@@ -51,23 +100,23 @@ export function PrefsPanel() {
         </select>
         {p.homeCityId && <div className="mt-1.5">{toggle('returnHome', 'Return home at the end')}</div>}
         <Label>Travellers</Label>
-        {choose('travellers', [{ value: 1, label: 'Solo' }, { value: 2, label: 'Two, one room' }, { value: 4, label: '3–4' }])}
-      </Group>
+        {choose('travellers', TRAVELLERS)}
+      </Fold>
 
-      <Group title="Trip goals">
-        <p className="-mt-0.5 mb-1 text-[12px] text-muted">How the planner picks places when it makes the plan.</p>
+      <Fold title="Trip goals" {...fold('Trip goals')} summary={line(summary.goals)}>
+        <p className="mb-1 text-[12px] text-muted">How the planner picks places when it makes the plan.</p>
         <Label>What matters most</Label>
-        {choose('focus', [{ value: 'balanced', label: 'Balanced' }, { value: 'countries', label: 'More countries' }, { value: 'highlights', label: 'Top highlights' }])}
+        {choose('focus', FOCUS)}
         <Label>Expensive places</Label>
-        {choose('expensive', [{ value: 'ignore', label: "Don't mind" }, { value: 'shorter', label: 'Shorter stays' }, { value: 'skip', label: 'Skip if optional' }])}
-      </Group>
+        {choose('expensive', EXPENSIVE)}
+      </Fold>
 
-      <Group title="A day in a city">
-        <p className="-mt-0.5 mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Costs tab.</p>
+      <Fold title="A day in a city" {...fold('A day in a city')} summary={line(summary.day)}>
+        <p className="mb-1 text-[12px] text-muted">What the daily cost counts in every city. Change it for one city in that city's Costs tab.</p>
         {DAY_FIELDS.filter((f) => PREF_OF[f.key]).map((f) => {
           const set = (v: unknown) => setPrefs({ [PREF_OF[f.key]!]: v } as Partial<TravelPrefs>)
           return (
-            <div key={f.key} className="mt-2.5 first-of-type:mt-0">
+            <div key={f.key} className="mt-2.5">
               <Named
                 label={f.label}
                 hint={f.hint?.(day[f.key])}
@@ -81,19 +130,19 @@ export function PrefsPanel() {
         })}
         <Label>Most you'd pay per night (optional)</Label>
         <MoneyInput value={p.maxPerNight} currency={currency} onChange={(maxPerNight) => setPrefs({ maxPerNight })} />
-      </Group>
+      </Fold>
 
-      <Group title="Get around">
+      <Fold title="Get around" {...fold('Get around')} summary={line(summary.around)}>
         <Label>Pace</Label>
-        <Segmented<Pace> value={input.pace} onChange={(pace) => setInput({ pace })} options={[{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]} />
+        <Segmented<Pace> value={input.pace} onChange={(pace) => setInput({ pace })} options={PACES} />
         <Label>Between cities (fastest allows flights)</Label>
-        {choose('betweenCities', [{ value: 'cheapest', label: 'Cheapest' }, { value: 'balanced', label: 'Balanced' }, { value: 'fastest', label: 'Fastest' }])}
+        {choose('betweenCities', BETWEEN)}
         <Label>Longest travel day</Label>
-        {choose('maxTravelHours', [{ value: 3, label: '3 h' }, { value: 5, label: '5 h' }, { value: 8, label: '8 h' }, { value: null, label: 'No limit' }])}
+        {choose('maxTravelHours', HOURS)}
         <div className="mt-2">{toggle('overnight', 'Overnight buses and trains are OK')}</div>
-      </Group>
+      </Fold>
 
-      <Group title="Do">
+      <Fold title="Do" {...fold('Do')} summary={line(summary.do)}>
         <Label>Interests</Label>
         <div className="flex flex-wrap gap-1">
           {INTERESTS.map((t) => {
@@ -107,10 +156,10 @@ export function PrefsPanel() {
           })}
         </div>
         <Label>Paid sights and tours</Label>
-        {choose('sights', [{ value: 'few', label: 'A few' }, { value: 'daily', label: 'One a day' }, { value: 'lots', label: 'Lots + tours' }])}
-      </Group>
+        {choose('sights', SIGHTS)}
+      </Fold>
 
-      <Group title="Comfort">
+      <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
         <Label>Comfortable daily highs</Label>
         <TempRange
           unit={tempUnit} min={p.minHighC} max={p.maxHeatC} lows={range(0, 26)} highs={range(20, 40)}
@@ -126,13 +175,13 @@ export function PrefsPanel() {
           {toggle('avoidRain', 'Avoid rainy months')}
           {toggle('needInternet', 'I need fast internet (working on the road)')}
         </div>
-      </Group>
+      </Fold>
 
-      <Group title="Money">
+      <Fold title="Money" {...fold('Money')} summary={line(summary.money)}>
         <Label>Daily budget per person (optional)</Label>
         <MoneyInput value={p.dailyBudget} currency={currency} onChange={(dailyBudget) => setPrefs({ dailyBudget })} />
-      </Group>
-    </div>
+      </Fold>
+    </>
   )
 }
 
@@ -165,15 +214,6 @@ function TempRange({ unit, min, max, lows, highs, onChange }: {
 const HOME_CITIES = Object.values(ds.cities).sort((a, b) => a.name.localeCompare(b.name))
 
 const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
-
-function Group({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section>
-      <h3 className="mb-1.5 text-[11px] font-semibold tracking-wider text-muted uppercase">{title}</h3>
-      {children}
-    </section>
-  )
-}
 
 const Label = ({ children }: { children: ReactNode }) => <div className="mt-2.5 mb-1 text-[12px] text-muted first:mt-0">{children}</div>
 

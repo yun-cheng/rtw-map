@@ -134,7 +134,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'update_preferences',
-    description: 'Change how the user likes to travel (the Preferences tab); give only what changes. Trip goals and the heat, cold and rain limits shape the plan the next time it is made: after changing them, offer generate_plan (which replaces the itinerary), or run it if the user asked for the plan to change. To change the travel style itself, use update_settings budget.',
+    description: 'Change how the user likes to travel (the preferences in the Trip tab); give only what changes. Trip goals and the heat, cold and rain limits shape the plan the next time it is made: after changing them, offer generate_plan (which replaces the itinerary), or run it if the user asked for the plan to change. To change the travel style itself, use update_settings budget.',
     parametersJsonSchema: obj({
       home_city: str('Home city the trip starts from (and returns to): any city find_cities knows, or "" for none; it is not a stop'),
       return_home: { type: 'boolean', description: 'Return home at the end (false: one way)' },

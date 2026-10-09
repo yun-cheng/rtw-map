@@ -6,6 +6,7 @@ import { MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, cities
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
+import { PrefsCards } from './PrefsCards'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
 
@@ -56,148 +57,157 @@ export function SetupPanel() {
   const ordered = input.keepGroupOrder
 
   return (
-    <div className="flex flex-col gap-4 p-4">
-      <div>
-        <h2 className="text-[15px] font-semibold">Trip</h2>
-        {plan && (
-          <p className="mt-0.5 text-[12px] text-muted">
-            <b className="text-ink">{slashDate(input.startDate)} – {slashDate(input.endDate)}</b> · <b className="text-ink">{plan.totalNights}</b> nights · <b className="text-ink">{plan.stops.length}</b> stops
-          </p>
-        )}
-      </div>
-
-      <Field label="Dates">
-        {/* On a narrow phone the days either way go under their date. */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <input type="date" aria-label="Start date" value={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, e.target.value, asked.end))} className={dateCls} />
-            <FlexDays value={flex.start} label="start" onChange={(d) => setFlex(d, flex.end)} />
-          </div>
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <input type="date" aria-label="End date" value={asked.end} min={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, asked.start, e.target.value))} className={dateCls} />
-            <FlexDays value={flex.end} label="end" onChange={(d) => setFlex(flex.start, d)} />
-          </div>
-        </div>
-        {nights <= 0 && <p className="mt-1 text-[12px] text-danger">End date must be after the start date</p>}
-      </Field>
-
-      <Field
-        label="Where"
-        aside={input.groups.length > 1 && (
-          <label className="flex items-center gap-1.5 text-[12px] text-muted" title="Otherwise the planner picks the order with the shortest travel">
-            <input type="checkbox" checked={ordered} onChange={(e) => setInput({ keepGroupOrder: e.target.checked })} />
-            In this order
-          </label>
-        )}
-      >
-        <div className="flex flex-col gap-2">
-          {input.groups.map((g, i) => {
-            return (
-              // Pointing at a region's card (or one of its countries) shows it on the map.
-              <div
-                key={g.id} className="rounded-lg border border-line bg-panel p-2.5 hover:border-point"
-                onMouseEnter={() => setHovered(g.countries.map((c) => c.iso2))} onMouseLeave={() => setHovered([])}
-              >
-                <div className="mb-2 flex items-center gap-1">
-                  {ordered && <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>}
-                  <span className="flex-1 font-semibold">{g.name}</span>
-                  <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
-                    <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
-                    Longer
-                  </label>
-                  {ordered && (
-                    <>
-                      <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
-                      <IconBtn disabled={i === input.groups.length - 1} onClick={() => moveGroup(i, 1)} label="Move down">↓</IconBtn>
-                    </>
-                  )}
-                  <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {g.countries.map((c) => {
-                    const adv = ds.advisories[c.iso2]
-                    return (
-                      <button
-                        key={c.iso2}
-                        onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
-                        onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
-                        className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
-                        title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
-                      >
-                        {flag(c.iso2)} {countryName(c.iso2)}
-                        {adv?.excludedByDefault && ' ⚠'}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-          {picking ? (
-            <Picker />
-          ) : (
-            <Button onClick={() => setPicking(input.groups.length ? 'country' : 'region')} className="py-1.5">+ Add regions or countries</Button>
+    <div className="flex min-h-full flex-col bg-canvas">
+      <div className="flex flex-1 flex-col gap-3 p-3">
+        <div className="px-1">
+          <h2 className="text-[15px] font-semibold">Trip</h2>
+          {plan && (
+            <p className="mt-0.5 text-[12px] text-muted">
+              <b className="text-ink">{slashDate(input.startDate)} – {slashDate(input.endDate)}</b> · <b className="text-ink">{plan.totalNights}</b> nights · <b className="text-ink">{plan.stops.length}</b> stops
+            </p>
           )}
         </div>
-      </Field>
 
-      <Field label="Number of stops (optional)">
-        <div className="flex items-center gap-2">
-          <input
-            type="number" min={1} max={MAX_STOPS} inputMode="numeric" aria-label="Number of stops" placeholder="Any"
-            value={wanted.count ?? ''}
-            onChange={(e) => {
-              const n = Math.round(Number(e.target.value))
-              setInput(withStops(e.target.value.trim() && n > 0 ? Math.min(MAX_STOPS, n) : null, wanted.flex))
-            }}
-            className={`${inputCls} max-w-20`}
-          />
-          <GiveOrTake unit="stops">
-            <Stepper value={wanted.flex} min={0} max={MAX_STOPS_FLEX} label="Stops more or fewer than that" onChange={(flex) => setInput(withStops(wanted.count, flex))} />
-          </GiveOrTake>
-        </div>
-      </Field>
+        <Card>
+          <Field label="Dates">
+            {/* On a narrow phone the days either way go under their date. */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <input type="date" aria-label="Start date" value={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, e.target.value, asked.end))} className={dateCls} />
+                <FlexDays value={flex.start} label="start" onChange={(d) => setFlex(d, flex.end)} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+                <input type="date" aria-label="End date" value={asked.end} min={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, asked.start, e.target.value))} className={dateCls} />
+                <FlexDays value={flex.end} label="end" onChange={(d) => setFlex(flex.start, d)} />
+              </div>
+            </div>
+            {nights <= 0 && <p className="mt-1 text-[12px] text-danger">End date must be after the start date</p>}
+          </Field>
+        </Card>
 
-      <Field label="Schengen days used before">
-        <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-20`} title="Days spent in the Schengen area in the 180 days before the trip" />
-      </Field>
+        <Card>
+          <Field
+            label="Where"
+            aside={input.groups.length > 1 && (
+              <label className="flex items-center gap-1.5 text-[12px] text-muted" title="Otherwise the planner picks the order with the shortest travel">
+                <input type="checkbox" checked={ordered} onChange={(e) => setInput({ keepGroupOrder: e.target.checked })} />
+                In this order
+              </label>
+            )}
+          >
+            <div className="flex flex-col gap-2">
+              {input.groups.map((g, i) => {
+                return (
+                  // Pointing at a region's card (or one of its countries) shows it on the map.
+                  <div
+                    key={g.id} className="rounded-lg border border-line bg-panel p-2.5 hover:border-point"
+                    onMouseEnter={() => setHovered(g.countries.map((c) => c.iso2))} onMouseLeave={() => setHovered([])}
+                  >
+                    <div className="mb-2 flex items-center gap-1">
+                      {ordered && <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>}
+                      <span className="flex-1 font-semibold">{g.name}</span>
+                      <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
+                        <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
+                        Longer
+                      </label>
+                      {ordered && (
+                        <>
+                          <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
+                          <IconBtn disabled={i === input.groups.length - 1} onClick={() => moveGroup(i, 1)} label="Move down">↓</IconBtn>
+                        </>
+                      )}
+                      <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {g.countries.map((c) => {
+                        const adv = ds.advisories[c.iso2]
+                        return (
+                          <button
+                            key={c.iso2}
+                            onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
+                            onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
+                            className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
+                            title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
+                          >
+                            {flag(c.iso2)} {countryName(c.iso2)}
+                            {adv?.excludedByDefault && ' ⚠'}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })}
+              {picking ? (
+                <Picker />
+              ) : (
+                <Button onClick={() => setPicking(input.groups.length ? 'country' : 'region')} className="py-1.5">+ Add regions or countries</Button>
+              )}
+            </div>
+          </Field>
+        </Card>
 
-      <p className="text-[12px] text-muted">
-        Passport, pace, interests and what a day costs:{' '}
-        <button onClick={() => setPanel('prefs')} className="text-accent hover:underline">Preferences</button>
-      </p>
+        <Card className="flex flex-col gap-4">
+          <Field label="Number of stops (optional)">
+            <div className="flex items-center gap-2">
+              <input
+                type="number" min={1} max={MAX_STOPS} inputMode="numeric" aria-label="Number of stops" placeholder="Any"
+                value={wanted.count ?? ''}
+                onChange={(e) => {
+                  const n = Math.round(Number(e.target.value))
+                  setInput(withStops(e.target.value.trim() && n > 0 ? Math.min(MAX_STOPS, n) : null, wanted.flex))
+                }}
+                className={`${inputCls} max-w-20`}
+              />
+              <GiveOrTake unit="stops">
+                <Stepper value={wanted.flex} min={0} max={MAX_STOPS_FLEX} label="Stops more or fewer than that" onChange={(flex) => setInput(withStops(wanted.count, flex))} />
+              </GiveOrTake>
+            </div>
+          </Field>
 
-      <Field label="Anything else? (optional)">
-        <textarea
-          value={input.wishes ?? ''}
-          onChange={(e) => setInput({ wishes: e.target.value })}
-          rows={3}
-          maxLength={1000}
-          placeholder="Wishes for Plan with AI, e.g. a beach week in July, meeting a friend in Vienna 12–15 June, fewer capitals"
-          className={`${inputCls} resize-y`}
-        />
-      </Field>
+          <Field label="Schengen days used before">
+            <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-20`} title="Days spent in the Schengen area in the 180 days before the trip" />
+          </Field>
 
-      <div className="flex gap-2">
-        <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!canPlan} onClick={generate}>
-          {stops.length ? 'Regenerate plan' : 'Generate plan'}
-        </Button>
-        <Button
-          className="flex-1 py-2 text-[14px]"
-          disabled={!canPlan || !user || busy}
-          title={user ? 'Generate the plan, then let the assistant adjust it to your wishes and preferences' : 'Sign in to use the assistant'}
-          onClick={planWithAi}
-        >
-          ✨ Plan with AI
-        </Button>
+          <Field label="Anything else? (optional)">
+            <textarea
+              value={input.wishes ?? ''}
+              onChange={(e) => setInput({ wishes: e.target.value })}
+              rows={3}
+              maxLength={1000}
+              placeholder="Wishes for Plan with AI, e.g. a beach week in July, meeting a friend in Vienna 12–15 June, fewer capitals"
+              className={`${inputCls} resize-y`}
+            />
+          </Field>
+        </Card>
+
+        <PrefsCards />
       </div>
-      <p className="-mt-2 text-[11px] text-muted">
-        {stops.length ? 'Both replace your current stops and edits. ' : ''}
-        Plan with AI starts from the same plan, then the assistant adjusts it to your wishes{user ? '' : ' (sign in to use it)'}.
-      </p>
+
+      {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled. */}
+      <div className="sticky bottom-0 border-t border-line bg-panel p-3">
+        <div className="flex gap-2">
+          <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!canPlan} onClick={generate} title={stops.length ? 'Make a new plan; replaces your current stops and edits' : undefined}>
+            {stops.length ? 'Regenerate plan' : 'Generate plan'}
+          </Button>
+          <Button
+            className="flex-1 py-2 text-[14px]"
+            disabled={!canPlan || !user || busy}
+            title={user ? `Generate the plan, then let the assistant adjust it to your wishes and preferences${stops.length ? '; replaces your current stops and edits' : ''}` : 'Sign in to use the assistant'}
+            onClick={planWithAi}
+          >
+            ✨ Plan with AI
+          </Button>
+        </div>
+      </div>
     </div>
   )
 }
+
+/** A card of the Trip tab, on its darker background. */
+const Card = ({ className = '', children }: { className?: string; children: React.ReactNode }) => (
+  <section className={`rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)] ${className}`}>{children}</section>
+)
 
 /** A date as the date inputs show it: 2027/05/08. */
 const slashDate = (iso: string) => iso.replaceAll('-', '/')

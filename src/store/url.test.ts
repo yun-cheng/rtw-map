@@ -17,6 +17,12 @@ describe('address bar state', () => {
     expect(parseMapView(null)).toBeNull()
   })
 
+  it('opens the Trip tab for a link to the old Preferences tab', () => {
+    useTrip.setState({ panel: 'itinerary' })
+    readUrl('?panel=prefs')
+    expect(useTrip.getState().panel).toBe('setup')
+  })
+
   it('round-trips the open city, its tab, the left panel and a monthly map layer', () => {
     readUrl('?panel=itinerary&city=tirana&tab=weather&layer=climate&month=7&map=6.00/41.300/19.800')
     const s = useTrip.getState()

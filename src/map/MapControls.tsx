@@ -40,7 +40,7 @@ const MODES = [
 const FIFTH = 'Each colour holds about a fifth of all cities.'
 /** What the Cost view's legend numbers are, for each kind of cost (the legend's hover text). */
 const COST_ABOUT: Record<CostKind, string> = {
-  day: `A day on your choices (Preferences, or changed for a city in its Costs tab): bed, meals, drinks and getting around. ${FIFTH}`,
+  day: `A day on your choices (the Trip tab's preferences, or changed for a city in its Costs tab): bed, meals, drinks and getting around. ${FIFTH}`,
   dorm: `A bed in a hostel dorm for one night. ${FIFTH}`,
   private: `A private room (guesthouse or budget hotel) for one night. ${FIFTH}`,
   meal: `A main dish and a soft drink at a simple place where locals eat (street stall, canteen, noodle shop). ${FIFTH}`,

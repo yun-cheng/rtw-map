@@ -59,7 +59,7 @@ type State = {
   weatherBy: 'high' | 'low'
   /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
   routeBy: 'day' | 'nights'
-  panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
+  panel: 'setup' | 'itinerary' | 'assistant'
   /** Adding places to the trip (the Trip tab's picker): whole regions or single countries, from its list or the map. */
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
@@ -367,6 +367,8 @@ export const useTrip = create<State>()(
         const merged = { ...current, ...(persisted as Partial<State>) }
         // A map view that has since been removed (Cards, English, Safety).
         if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
+        // Preferences were a tab of their own; now they're in the Trip tab.
+        if ((merged.panel as string) === 'prefs') merged.panel = 'setup'
         try {
           merged.input = withPrefs(merged.input)
           // Trips saved before plans existed: one plan, the trip itself.

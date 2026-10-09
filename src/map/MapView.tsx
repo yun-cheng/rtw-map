@@ -359,7 +359,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
           geometry: { type: 'LineString' as const, coordinates: [[ds.cities[h.from].lon, ds.cities[h.from].lat], [ds.cities[h.to].lon, ds.cities[h.to].lat]] },
         })),
       )
-      // From home and back (set in Preferences): drawn dashed, not clickable (leg -1), and left out when fitting the map.
+      // From home and back (set in the Trip tab's preferences): drawn dashed, not clickable (leg -1), and left out when fitting the map.
       const homeFeatures = [plan?.home.out, plan?.home.back].flatMap((leg) => (leg ? leg.hops : [])).map((h) => ({
         type: 'Feature' as const,
         properties: { leg: -1, selected: false, color: INK[shownTheme.current].route, estimated: true },

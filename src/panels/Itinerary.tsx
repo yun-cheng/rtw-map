@@ -24,7 +24,7 @@ export function Itinerary() {
       <div className="px-4 pb-2">
         <Named
           label="Estimated cost"
-          hint="Each stop's daily cost (your choices in Preferences, or changed for a city in its Costs tab) for its nights, plus travel between cities and from home. A range, since prices vary."
+          hint="Each stop's daily cost (your choices in the Trip tab's preferences, or changed for a city in its Costs tab) for its nights, plus travel between cities and from home. A range, since prices vary."
           aside={<span><b className="tabular-nums">{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">· ~{fmt(plan.cost.perDay)}/day</span></span>}
         />
       </div>
@@ -99,7 +99,7 @@ export function Itinerary() {
   )
 }
 
-/** Getting from home to the first stop, or from the last stop back home (set in Preferences; not a stop). */
+/** Getting from home to the first stop, or from the last stop back home (set in the Trip tab's preferences; not a stop). */
 function HomeRow({ leg, label, when }: { leg: Leg; label: string; when: string }) {
   const { fmt } = useMoney()
   return (
