@@ -1,5 +1,6 @@
 import advisoriesJson from '../../data/gen/advisories.json'
 import bigMacJson from '../../data/gen/big-mac.json'
+import boundariesJson from '../../data/gen/boundaries.json'
 import cdcJson from '../../data/gen/cdc.json'
 import airJson from '../../data/gen/air.json'
 import amenitiesJson from '../../data/gen/amenities.json'
@@ -28,6 +29,7 @@ const byKey = <T, K extends keyof T>(xs: T[], k: K) => Object.fromEntries(xs.map
 
 export const dataset: Dataset = {
   countries: byKey(countriesJson.countries, 'iso2'),
+  world: Object.fromEntries(boundariesJson.features.map((f) => [f.properties.iso2, f.properties.name])),
   cities: byKey(citiesJson.cities, 'id'),
   climate: climateJson.climate as Dataset['climate'],
   // Stored in local money; converted at the current exchange rates.
@@ -61,6 +63,7 @@ export const dataset: Dataset = {
     advisories: advisoriesJson._meta,
     fx: fxJson._meta,
     countries: countriesJson._meta,
+    world: boundariesJson._meta,
     population: populationJson._meta,
     localTransport: localTransportJson._meta,
     health: healthJson._meta,

@@ -1,7 +1,8 @@
 // Runs the trip assistant's tools on the trip in the browser, using the same store actions as the app's own buttons,
 // and describes the trip for the assistant.
 import { dataset as ds } from '../data/dataset'
-import { INTERESTS, REGION_PRESETS, makeGroup } from '../data/presets'
+import { INTERESTS, makeGroup } from '../data/presets'
+import { REGIONS } from '../data/regions'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, englishLevel,
   groceryDay, likelyMonth, MAX_FLEX_DAYS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type TravelPrefs, type Leg, type Pace, type Stop, type TripInput,
@@ -15,7 +16,7 @@ export type ToolResult = Record<string, unknown>
 
 const key = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().replace(/[^a-z0-9]/g, '')
 const cityName = (id: string) => ds.cities[id]?.name ?? id
-const countryName = (iso2: string) => ds.countries[iso2]?.name ?? iso2
+const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
 
 class ToolError extends Error {}
 
@@ -30,7 +31,10 @@ function countryCode(ref: unknown): string {
   const k = key(String(ref ?? ''))
   const c = Object.values(ds.countries).find((x) => key(x.iso2) === k || key(x.name) === k)
   if (c) return c.iso2
-  throw new ToolError(`"${ref}" is not a country in the app. Use get_options to see the countries.`)
+  // Any country in the world can be part of a trip, even with no cities in the app yet.
+  const other = Object.entries(ds.world).find(([iso2, name]) => key(iso2) === k || key(name) === k)
+  if (other) return other[0]
+  throw new ToolError(`"${ref}" is not a country. Use get_options to see the countries.`)
 }
 
 function stopIndex(ref: unknown): number {
@@ -496,8 +500,10 @@ function sharedViewTool(args: Args): ToolResult {
 
 function options(): ToolResult {
   return {
-    region_presets: REGION_PRESETS.map((p) => ({ name: p.name, countries: p.countries.map(countryName) })),
+    regions: REGIONS.map((r) => ({ name: r.name, countries: r.countries.map(countryName) })),
     countries: Object.values(ds.countries).map((c) => ({ code: c.iso2, name: c.name })),
+    // Can be added to a trip, but the planner has no cities there yet.
+    countries_without_cities: Object.keys(ds.world).filter((iso2) => !ds.countries[iso2]).map(countryName),
     interests: INTERESTS,
     passports: ds.visa.passports,
     paces: ['chill', 'balanced', 'fast'],
@@ -576,8 +582,8 @@ function addRegion(args: Args): string {
   let name: string
   let countries: string[]
   if (args.preset) {
-    const preset = REGION_PRESETS.find((p) => key(p.name) === key(String(args.preset)))
-    if (!preset) throw new ToolError(`Unknown preset. Presets: ${REGION_PRESETS.map((p) => p.name).join(', ')}`)
+    const preset = REGIONS.find((p) => key(p.name) === key(String(args.preset)))
+    if (!preset) throw new ToolError(`Unknown region. Regions: ${REGIONS.map((p) => p.name).join(', ')}`)
     name = preset.name
     countries = preset.countries
   } else {

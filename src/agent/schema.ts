@@ -107,7 +107,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_options',
-    description: 'Region presets, countries in the app, interests, passports, paces and budgets that the settings accept.',
+    description: 'The world\'s regions (each with its countries), the countries with cities in the app and those without yet, interests, passports, paces and budgets that the settings accept.',
     parametersJsonSchema: obj(),
   },
   // ---- change the setup
@@ -163,11 +163,11 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'add_region',
-    description: 'Add a region to the trip setup, from a preset name or a list of countries. Countries in a region start optional; a single country starts as must-visit.',
+    description: 'Add a region to the trip setup, one of the world\'s regions by name or a list of countries. Countries in a region start optional; a single country starts as must-visit. Countries without cities in the app yet can be added, but the planner leaves them out.',
     parametersJsonSchema: obj({
-      preset: str('Preset name from get_options, e.g. "Balkans"'),
-      countries: { type: 'array', items: str('Country name or ISO code'), description: 'Countries, if not using a preset' },
-      name: str('Region name, if not using a preset'),
+      preset: str('Region name from get_options, e.g. "Balkans"'),
+      countries: { type: 'array', items: str('Country name or ISO code'), description: 'Countries, if not adding one of the regions' },
+      name: str('Name for a list of countries'),
       longer: { type: 'boolean', description: 'Spend longer in this region' },
     }),
   },

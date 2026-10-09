@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { REGION_PRESETS, makeGroup } from '../data/presets'
-import { MAX_FLEX_DAYS, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
+import { makeGroup } from '../data/presets'
+import { REGIONS } from '../data/regions'
+import { MAX_FLEX_DAYS, citiesIn, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
@@ -16,6 +17,9 @@ const MODE_STYLE: Record<CountryMode, string> = {
 const NEXT_MODE: Record<CountryMode, CountryMode> = { must: 'optional', optional: 'excluded', excluded: 'must' }
 /** How many days either way a flexible date may move. */
 const FLEX_DAYS = [0, 1, 2, 3, 5, 7, 10, MAX_FLEX_DAYS]
+
+const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
+const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
 
 export function SetupPanel() {
   const { input, setInput, setPanel, generate, loadTestCase, stops, plan } = useTrip()
@@ -50,8 +54,8 @@ export function SetupPanel() {
     setInput({ groups })
   }
   const addGroup = (value: string) => {
-    const preset = REGION_PRESETS.find((p) => p.name === value)
-    const group = preset ? makeGroup(ds, preset.name, preset.countries) : makeGroup(ds, ds.countries[value].name, [value])
+    const region = REGIONS.find((r) => r.name === value)
+    const group = region ? makeGroup(ds, region.name, region.countries) : makeGroup(ds, countryName(value), [value])
     setInput({ groups: [...input.groups, group] })
     setAdding('')
   }
@@ -90,45 +94,53 @@ export function SetupPanel() {
 
       <Field label="Where (in order)">
         <div className="flex flex-col gap-2">
-          {input.groups.map((g, i) => (
-            <div key={g.id} className="rounded-lg border border-line bg-panel p-2.5">
-              <div className="mb-2 flex items-center gap-1">
-                <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>
-                <span className="flex-1 font-semibold">{g.name}</span>
-                <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
-                  <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
-                  Longer
-                </label>
-                <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
-                <IconBtn disabled={i === input.groups.length - 1} onClick={() => moveGroup(i, 1)} label="Move down">↓</IconBtn>
-                <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
+          {input.groups.map((g, i) => {
+            const empty = g.countries.filter((c) => c.mode !== 'excluded' && !hasCities(c.iso2))
+            return (
+              <div key={g.id} className="rounded-lg border border-line bg-panel p-2.5">
+                <div className="mb-2 flex items-center gap-1">
+                  <span className="mr-1 flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[11px] font-semibold text-panel">{i + 1}</span>
+                  <span className="flex-1 font-semibold">{g.name}</span>
+                  <label className="mr-1 flex items-center gap-1 text-[12px] text-muted" title="Spend more time here">
+                    <input type="checkbox" checked={g.longer} onChange={(e) => updateGroup(g.id, (x) => ({ ...x, longer: e.target.checked }))} />
+                    Longer
+                  </label>
+                  <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
+                  <IconBtn disabled={i === input.groups.length - 1} onClick={() => moveGroup(i, 1)} label="Move down">↓</IconBtn>
+                  <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {g.countries.map((c) => {
+                    const adv = ds.advisories[c.iso2]
+                    return (
+                      <button
+                        key={c.iso2}
+                        onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
+                        className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
+                        title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
+                      >
+                        {flag(c.iso2)} {countryName(c.iso2)}
+                        {adv?.excludedByDefault && ' ⚠'}
+                      </button>
+                    )
+                  })}
+                </div>
+                {empty.length > 0 && (
+                  <p className="mt-1.5 text-[11px] text-muted">
+                    No cities yet in {empty.length === g.countries.length && g.countries.length > 1 ? 'any of these' : empty.map((c) => countryName(c.iso2)).join(', ')}: the plan leaves {empty.length > 1 ? 'them' : 'it'} out for now.
+                  </p>
+                )}
               </div>
-              <div className="flex flex-wrap gap-1">
-                {g.countries.map((c) => {
-                  const adv = ds.advisories[c.iso2]
-                  return (
-                    <button
-                      key={c.iso2}
-                      onClick={() => updateGroup(g.id, (x) => ({ ...x, countries: x.countries.map((y) => (y.iso2 === c.iso2 ? { ...y, mode: NEXT_MODE[y.mode] } : y)) }))}
-                      className={`rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]}`}
-                      title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''} (click to change)`}
-                    >
-                      {flag(c.iso2)} {ds.countries[c.iso2].name}
-                      {adv?.excludedByDefault && ' ⚠'}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          ))}
+            )
+          })}
           <select value={adding} onChange={(e) => e.target.value && addGroup(e.target.value)} className={inputCls}>
             <option value="">+ Add a region or country…</option>
             <optgroup label="Regions">
-              {REGION_PRESETS.map((p) => <option key={p.name} value={p.name}>{p.name}</option>)}
+              {REGIONS.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
             </optgroup>
             <optgroup label="Countries">
-              {Object.values(ds.countries).sort((a, b) => a.name.localeCompare(b.name)).map((c) => (
-                <option key={c.iso2} value={c.iso2}>{c.name}</option>
+              {Object.keys(ds.world).sort((a, b) => countryName(a).localeCompare(countryName(b))).map((iso2) => (
+                <option key={iso2} value={iso2}>{countryName(iso2)}{hasCities(iso2) ? '' : ' (no cities yet)'}</option>
               ))}
             </optgroup>
           </select>

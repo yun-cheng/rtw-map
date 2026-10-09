@@ -192,6 +192,8 @@ export type Notice = { id: string; appliesTo: string; title: string; text: strin
 
 export type Dataset = {
   countries: Record<string, Country>
+  /** Every country in the world by code: its name (Natural Earth), including the many with no cities in the app yet. */
+  world: Record<string, string>
   cities: Record<string, City>
   climate: Record<string, ClimateMonth[]>
   costs: Record<string, CostProfile>
@@ -360,7 +362,7 @@ export type Leg = {
 export type ScheduledStop = Stop & { arrive: string; depart: string }
 
 export type WarningKind =
-  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health' | 'money'
+  | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health' | 'money' | 'coverage'
 
 export type PlanWarning = {
   kind: WarningKind

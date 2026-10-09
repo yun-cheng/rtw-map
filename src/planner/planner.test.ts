@@ -613,3 +613,13 @@ describe('flexible dates', () => {
     expect(withDates(testTrip('TW'), '2027-06-01', '2027-10-01').flex).toBeUndefined()
   })
 })
+
+describe('countries without cities', () => {
+  it('plans the rest of the trip and says which countries were left out', () => {
+    const input = testTrip('TW', { groups: [makeGroup(ds, 'Balkans', ['AL', 'ME', 'HR']), makeGroup(ds, 'Brazil', ['BR'])] })
+    const plan = generatePlan(ds, input)
+    expect(plan.stops.length).toBeGreaterThan(0)
+    expect(plan.stops.every((s) => ['AL', 'ME', 'HR'].includes(iso(s.cityId)))).toBe(true)
+    expect(plan.warnings.find((w) => w.kind === 'coverage')?.title).toBe('No cities yet in Brazil')
+  })
+})

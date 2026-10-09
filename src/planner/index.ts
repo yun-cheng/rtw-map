@@ -89,6 +89,14 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   return ctx
 }
 
+/** The countries the app has cities in. */
+const covered = new WeakMap<Dataset, Set<string>>()
+export function citiesIn(ds: Dataset): Set<string> {
+  let set = covered.get(ds)
+  if (!set) covered.set(ds, (set = new Set(Object.values(ds.cities).map((c) => c.iso2))))
+  return set
+}
+
 const groupOf = (ctx: Ctx, cityId: string) => ctx.groupIndex.get(ctx.ds.cities[cityId].iso2) ?? 0
 const isLonger = (ctx: Ctx, cityId: string) => {
   const g = ctx.input.groups[groupOf(ctx, cityId)]
@@ -648,6 +656,17 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
   }
   for (const b of ctx.blocked) {
     warnings.push({ kind: 'visa', severity: 'warn', iso2: b.iso2, title: `${ds.countries[b.iso2]?.name ?? b.iso2} left out: ${b.reason}` })
+  }
+  // Countries picked that the app has no cities in yet (it covers the world region by region).
+  const uncovered = [...new Set(input.groups.flatMap((g) => g.countries.filter((c) => c.mode !== 'excluded').map((c) => c.iso2)))]
+    .filter((iso2) => !citiesIn(ds).has(iso2))
+  if (uncovered.length) {
+    const names = uncovered.map((iso2) => ds.world[iso2] ?? iso2)
+    warnings.push({
+      kind: 'coverage', severity: 'warn',
+      title: `No cities yet in ${names.length > 4 ? `${names.slice(0, 3).join(', ')} and ${names.length - 3} more` : names.join(', ')}`,
+      detail: `The app doesn't cover ${uncovered.length > 1 ? 'these countries' : 'this country'} yet, so the plan leaves ${uncovered.length > 1 ? 'them' : 'it'} out. ${uncovered.length > 1 ? 'They stay' : 'It stays'} in your trip for when it does.`,
+    })
   }
   if (schengen.applies && sched.some((s) => inSchengen(ctx, s.cityId))) {
     for (const n of ds.notices) {

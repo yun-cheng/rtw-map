@@ -127,7 +127,8 @@ export function MapView() {
       map.addSource('stops', { type: 'geojson', data: empty() })
 
       map.addLayer({ id: 'country-fill', type: 'fill', source: 'countries', paint: { 'fill-color': 'transparent', 'fill-opacity': 0.25 } })
-      map.addLayer({ id: 'country-line', type: 'line', source: 'countries', paint: { 'line-color': ink.border, 'line-width': 0.6 } })
+      // Outlines of the countries the app has cities in.
+      map.addLayer({ id: 'country-line', type: 'line', source: 'countries', filter: ['in', ['get', 'iso2'], ['literal', Object.keys(ds.countries)]], paint: { 'line-color': ink.border, 'line-width': 0.6 } })
       map.addLayer({
         id: 'route-solid', type: 'line', source: 'route', filter: ['!', ['get', 'estimated']],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
