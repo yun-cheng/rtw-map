@@ -18,7 +18,7 @@ const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label
  * from the right, opened from the gear over the map; the map gets the top bar's room.
  */
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
+  const { plan, input, setCurrency, tempUnit, setTempUnit, localNames, setLocalNames } = useTrip()
   const { currency } = useMoney()
   const { choice, setChoice } = useTheme()
   const user = useAccount((s) => s.user)
@@ -68,6 +68,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-muted">Theme</span>
                   <div className="w-48"><Segmented value={choice} onChange={setChoice} options={THEMES} /></div>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-muted">Local names on the map</span>
+                  <div className="w-32"><Segmented value={localNames ? 'show' : 'hide'} onChange={(v) => setLocalNames(v === 'show')} options={[{ value: 'show', label: 'Show' }, { value: 'hide', label: 'Hide' }]} /></div>
                 </div>
               </div>
             </Section>

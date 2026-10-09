@@ -14,6 +14,7 @@ import { isPhone } from '../ui/usePhone'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
+import { showLocalNames, withLabels } from './baseLabels'
 import { cityMetrics, cityTip, stopTip } from './cityMetric'
 import { shapeOf } from './shapes'
 import { tipElement } from '../ui/tipBody'
@@ -74,9 +75,15 @@ function drawRing(id: string, theme: Theme): ImageData | null {
   return ctx.getImageData(0, 0, canvas.width, canvas.height)
 }
 
-/** Load the base map for the theme; the dark one is recoloured as it loads. */
+/** Load the base map for the theme, with its labels as set (baseLabels.ts); the dark one is recoloured as it loads. */
 function showBaseMap(map: MlMap, theme: Theme) {
-  map.setStyle(STYLE[theme], { diff: false, transformStyle: theme === 'dark' ? (_, next) => recolorDark(next) : undefined })
+  map.setStyle(STYLE[theme], {
+    diff: false,
+    transformStyle: (_, next) => {
+      const style = withLabels(next, useTrip.getState().localNames)
+      return theme === 'dark' ? recolorDark(style) : style
+    },
+  })
 }
 const FONT = ['Noto Sans Bold']
 /** Width of the city/leg panel that covers the right of the map (App.tsx). */
@@ -103,7 +110,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, picking } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, picking, localNames } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -207,6 +214,8 @@ export function MapView({ editing = false }: { editing?: boolean }) {
         id: 'stop-boxes', type: 'symbol', source: 'stops',
         layout: { 'icon-image': 'stop-box', 'icon-size': ['get', 'radius'], 'icon-allow-overlap': true },
       })
+      // (In case the setting changed while it loaded.)
+      showLocalNames(map, useTrip.getState().localNames)
       loaded.current = true
       refresh.current?.()
     })
@@ -273,6 +282,12 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     loaded.current = false
     showBaseMap(map, theme)
   }, [theme])
+
+  // Base map labels with or without local names. (A base map still loading takes the setting when it's loaded.)
+  useEffect(() => {
+    const map = mapRef.current
+    if (map && loaded.current) showLocalNames(map, localNames)
+  }, [localNames])
 
   // Push data whenever the plan, layer or selection changes.
   useEffect(() => {

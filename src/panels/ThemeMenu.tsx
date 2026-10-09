@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTrip } from '../store/trip'
 import { useTheme, type ThemeChoice } from '../ui/theme'
 
 const OPTIONS: { value: ThemeChoice; label: string }[] = [
@@ -19,9 +20,11 @@ const Moon = () => (
   </svg>
 )
 
-/** Header button for the light/dark theme: shows the current one, with a menu to pick light, dark or the device setting. */
+/** Header button for the light/dark theme: shows the current one, with a menu to pick light, dark or the device setting,
+ *  and whether the map's labels give local names. */
 export function ThemeMenu() {
   const { choice, theme, setChoice } = useTheme()
+  const { localNames, setLocalNames } = useTrip()
   const [open, setOpen] = useState(false)
   const box = useRef<HTMLDivElement>(null)
 
@@ -43,14 +46,14 @@ export function ThemeMenu() {
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"
         aria-expanded={open}
-        aria-label="Theme"
-        title="Light or dark theme"
+        aria-label="Theme and map labels"
+        title="Light or dark theme, map labels"
         className="flex h-[30px] w-[30px] items-center justify-center rounded-md border border-line text-muted hover:bg-canvas hover:text-ink"
       >
         {theme === 'dark' ? <Moon /> : <Sun />}
       </button>
       {open && (
-        <div role="menu" className="absolute top-full right-0 z-30 mt-1 w-44 rounded-lg border border-line bg-panel py-1.5 text-[13px] shadow-lg">
+        <div role="menu" className="absolute top-full right-0 z-30 mt-1 w-52 rounded-lg border border-line bg-panel py-1.5 text-[13px] shadow-lg">
           {OPTIONS.map((o) => (
             <button
               key={o.value}
@@ -66,6 +69,17 @@ export function ThemeMenu() {
               {o.label}
             </button>
           ))}
+          <div className="my-1.5 border-t border-line" />
+          <button
+            role="menuitemcheckbox"
+            aria-checked={localNames}
+            onClick={() => setLocalNames(!localNames)}
+            title="Map labels also in the local script, like Αθήνα under Athens"
+            className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-canvas"
+          >
+            <span className="w-3 shrink-0 text-accent">{localNames ? '✓' : ''}</span>
+            Local names on the map
+          </button>
         </div>
       )}
     </div>
