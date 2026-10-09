@@ -614,6 +614,22 @@ describe('flexible dates', () => {
   })
 })
 
+describe('a country added on its own as optional', () => {
+  it('may be left out, unlike one that is a must visit', () => {
+    const japan = (mode: 'must' | 'optional') => {
+      const g = makeGroup(ds, 'Japan', ['JP'])
+      g.countries[0].mode = mode
+      return g
+    }
+    // A short trip already full with must-visit countries.
+    const balkans = makeGroup(ds, 'Balkans', ['AL', 'ME', 'HR', 'GR', 'MK', 'RS'])
+    balkans.countries.forEach((c) => (c.mode = 'must'))
+    const trip = (mode: 'must' | 'optional') => testTrip('TW', { endDate: '2027-05-08', keepGroupOrder: false, groups: [balkans, japan(mode)] })
+    expect(generatePlan(ds, trip('must')).stops.some((s) => iso(s.cityId) === 'JP')).toBe(true)
+    expect(generatePlan(ds, trip('optional')).stops.some((s) => iso(s.cityId) === 'JP')).toBe(false)
+  })
+})
+
 describe('countries without cities', () => {
   it('plans the rest of the trip and says which countries were left out', () => {
     const input = testTrip('TW', { groups: [makeGroup(ds, 'Balkans', ['AL', 'ME', 'HR']), makeGroup(ds, 'Brazil', ['BR'])] })

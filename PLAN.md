@@ -46,7 +46,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Input | Options |
 |---|---|
 | Duration | Fixed dates, each optionally ± a few days · "~N days starting around <month>" · open-ended |
-| Where | Countries, regions ("Balkans") or specific cities, each marked *must* or *nice to have*. Countries in a region start as nice to have (every region still gets at least one stop); a country added on its own starts as must |
+| Where | Countries, regions ("Balkans") or specific cities, each marked *must* or *nice to have*. Countries in a region start as nice to have (every region still gets at least one stop); a country added on its own starts as must or nice to have, as chosen |
 | Start / end | Start city; end city or "anywhere" |
 | Pace | 🐢 Chill · ⚖️ Balanced · 🐇 Fast |
 | Budget | Shoestring · Backpacker · Mid-range · Comfort |
@@ -483,6 +483,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Map switch rows scroll sideways:** like the month picker, the rows of buttons over the map (the views; the Nearby places; the cost groups and each group's kinds) are one line that scrolls sideways when it doesn't fit (beside a city panel, or a narrow window) instead of wrapping. One `SwitchRow` in `MapControls.tsx` holds them all, months included, and keeps the pressed button in sight when it changes, a link opens it, or a panel narrows the room.
 - **Flexible dates:** each of the trip's dates can be exact or flexible by ± 1–14 days (`flex` in the trip input: the dates asked for and the days either way). Generating plans for the dates asked for, then moves the end (and if that's not enough, the start) within them so the trip is as long as its stops' suggested stays add up to, rather than stretching or squeezing them, and plans again for those dates: two runs, since each takes a few hundred ms and trying every pair of dates would take seconds. The plan's dates become the trip's (`startDate`/`endDate`, `Plan.dates`); the Trip tab shows both. Not used for better weather: a few days hardly change the month.
 - **The whole world to pick from:** every country (232, Natural Earth's outlines with names and population, `ds.world`) in 29 travellers' regions (`data/regions.ts`: based on the UN subregions, the broad ones split, e.g. Southern Europe into Iberia, Italy & Malta and the Balkans; a test checks each country is in exactly one). Countries without cities in the app yet can be added; the plan leaves them out and Checks lists them (`coverage`). Replaces the seven region presets; the assistant's tools take any region or country.
+- **Picking places on the map:** the Trip tab adds regions or single countries (chosen first, then any number) from a searchable list or by clicking the map, which while the tab is open shows the trip's countries (must visit strong, optional faint, excluded grey) instead of its route and stops, every country's outline while adding, and what a click would do on hover. A country can be added as must visit or optional (an optional one on its own is the planner's choice; only regions are always visited). Regions are in no particular order unless **In this order** is ticked; a click on a country goes optional → must → excluded.
 - **Next:** verify the seed costs and connections; the offline part of Phase 3 (PWA) and a "today" screen.
 
 ---

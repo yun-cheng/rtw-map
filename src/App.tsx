@@ -123,6 +123,9 @@ export default function App() {
   const tab = plan || panel === 'assistant' || panel === 'prefs' ? panel : 'setup'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
+  const picking = useTrip((s) => s.picking)
+  // The trip's setup is showing: the map shows its countries instead of its route (MapView).
+  const editing = tab === 'setup' && (phone ? !selected : !sidebar.hidden)
   // How far the phone's sheets are pulled up: the left panel's starts open on a new trip; a city's opens to half.
   const [leftSnap, setLeftSnap] = useState<Snap>(plan ? 'peek' : 'half')
   const [drawerSnap, setDrawerSnap] = useState<Snap>('half')
@@ -221,12 +224,12 @@ export default function App() {
           </aside>
         )}
         <main className="relative min-w-0 flex-1">
-          <MapView />
-          <MapControls />
-          {!plan && !phone && (
+          <MapView editing={editing} />
+          <MapControls editing={editing} />
+          {!plan && !phone && !picking && (
             <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
               <div className="rounded-lg border border-line bg-panel/95 px-4 py-2 text-[13px] shadow-sm">
-                Add regions on the left and press <b>Generate plan</b>. Click any city on the map for details.
+                Add regions or countries on the left and press <b>Generate plan</b>. Click any city on the map for details.
               </div>
             </div>
           )}

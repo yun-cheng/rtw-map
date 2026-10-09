@@ -1,6 +1,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { dataset as ds } from '../data/dataset'
+import { makeGroup } from '../data/presets'
+import { REGIONS } from '../data/regions'
 import { testCaseInput } from '../data/testCase'
 import type { TempUnit } from '../ui/format'
 import {
@@ -59,6 +61,10 @@ type State = {
   /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
   routeBy: 'day' | 'nights'
   panel: 'setup' | 'prefs' | 'itinerary' | 'assistant'
+  /** Adding places to the trip (the Trip tab's picker): whole regions or single countries, from its list or the map. */
+  picking: 'region' | 'country' | null
+  /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
+  addAs: 'must' | 'optional'
   fitRequest: number
   /** Counts "Ask AI" presses in a city or journey panel: the app shows the Assistant beside it (see App). */
   askRequest: number
@@ -99,6 +105,14 @@ type State = {
   setRouteBy: (by: 'day' | 'nights') => void
   setWeatherBy: (by: 'high' | 'low') => void
   setPanel: (p: State['panel']) => void
+  setPicking: (p: State['picking']) => void
+  /** Adds one of the world's regions to the trip, or takes it out if it's in (countries already added on their own
+   *  stay as they are). */
+  toggleRegion: (name: string) => void
+  /** Adds a country on its own (as `addAs`), or takes it out: a country added on its own is removed, one in a region
+   *  is excluded (and back to `addAs` when picked again). */
+  toggleCountry: (iso2: string) => void
+  setAddAs: (mode: State['addAs']) => void
   /** Opens the Assistant about the open city or journey panel ("Ask AI"). */
   askAssistant: () => void
   setCurrency: (c: string) => void
@@ -131,7 +145,7 @@ const emptyInput: TripInput = {
   startDate: '',
   endDate: '',
   groups: [],
-  keepGroupOrder: true,
+  keepGroupOrder: false,
   startCityId: null,
   endCityId: null,
   mustCities: [],
@@ -189,6 +203,8 @@ export const useTrip = create<State>()(
         weatherBy: 'high',
         routeBy: 'day',
         panel: 'setup',
+        picking: null,
+        addAs: 'must',
         fitRequest: 0,
         askRequest: 0,
         currency: 'USD',
@@ -251,7 +267,32 @@ export const useTrip = create<State>()(
         setCostKind: (costKind) => set({ costKind }),
         setWeatherBy: (weatherBy) => set({ weatherBy }),
         setRouteBy: (routeBy) => set({ routeBy }),
-        setPanel: (panel) => set({ panel }),
+        setPanel: (panel) => set({ panel, ...(panel !== 'setup' && { picking: null }) }),
+        setPicking: (picking) => set({ picking }),
+        setAddAs: (addAs) => set({ addAs }),
+        toggleRegion: (name) => {
+          const { input, setInput } = get()
+          const region = REGIONS.find((r) => r.name === name)
+          if (!region) return
+          if (input.groups.some((g) => g.name === name)) return setInput({ groups: input.groups.filter((g) => g.name !== name) })
+          const taken = new Set(input.groups.flatMap((g) => g.countries.map((c) => c.iso2)))
+          const countries = region.countries.filter((c) => !taken.has(c))
+          if (countries.length) setInput({ groups: [...input.groups, makeGroup(ds, name, countries)] })
+        },
+        toggleCountry: (iso2) => {
+          const { input, setInput } = get()
+          const group = input.groups.find((g) => g.countries.some((c) => c.iso2 === iso2))
+          const { addAs } = get()
+          if (!group) {
+            const added = makeGroup(ds, ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2, [iso2])
+            // (A country with a do-not-travel advisory still starts excluded.)
+            if (added.countries[0].mode === 'must') added.countries[0].mode = addAs
+            return setInput({ groups: [...input.groups, added] })
+          }
+          if (group.countries.length === 1) return setInput({ groups: input.groups.filter((g) => g !== group) })
+          const mode = group.countries.find((c) => c.iso2 === iso2)!.mode === 'excluded' ? addAs : 'excluded'
+          setInput({ groups: input.groups.map((g) => (g === group ? { ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? { ...c, mode } : c)) } : g)) })
+        },
         askAssistant: () => set({ panel: 'assistant', askRequest: get().askRequest + 1 }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),

@@ -79,3 +79,46 @@ describe('flexible dates', () => {
     expect({ start: input.startDate, end: input.endDate }).toEqual(plan!.dates)
   })
 })
+
+describe('adding places', () => {
+  const groups = () => state().input.groups
+  const modeOf = (iso2: string) => groups().flatMap((g) => g.countries).find((c) => c.iso2 === iso2)?.mode
+
+  it('adds and removes a whole region', () => {
+    state().openTrip(null)
+    state().toggleRegion('Caucasus')
+    expect(groups().map((g) => g.name)).toEqual(['Caucasus'])
+    expect(groups()[0].countries.map((c) => c.mode)).toEqual(['optional', 'optional', 'optional'])
+    state().toggleRegion('Caucasus')
+    expect(groups()).toEqual([])
+  })
+
+  it('adds a country on its own, and excludes or includes one in a region', () => {
+    state().openTrip(null)
+    state().toggleCountry('JP')
+    expect(groups().map((g) => g.name)).toEqual(['Japan'])
+    expect(modeOf('JP')).toBe('must')
+    // A region added later leaves Japan where it is.
+    state().toggleRegion('East Asia')
+    expect(groups()[1].countries.some((c) => c.iso2 === 'JP')).toBe(false)
+    state().toggleCountry('KR')
+    expect(modeOf('KR')).toBe('excluded')
+    state().toggleCountry('KR')
+    expect(modeOf('KR')).toBe('must')
+    state().toggleCountry('JP')
+    expect(groups().map((g) => g.name)).toEqual(['East Asia'])
+  })
+
+  it('adds a country as optional when asked', () => {
+    state().openTrip(null)
+    state().setAddAs('optional')
+    state().toggleCountry('JP')
+    expect(modeOf('JP')).toBe('optional')
+    state().setAddAs('must')
+  })
+
+  it('starts a new trip with the regions in no particular order', () => {
+    state().openTrip(null)
+    expect(state().input.keepGroupOrder).toBe(false)
+  })
+})

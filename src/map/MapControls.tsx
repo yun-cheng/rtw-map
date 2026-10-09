@@ -54,8 +54,9 @@ const COST_ABOUT: Record<CostKind, string> = {
   scooter: `A scooter or small motorbike for one day (the same across a country). Grey where renting one isn't usual. ${FIFTH}`,
 }
 
-export function MapControls() {
-  const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
+/** `editing`: the trip's setup is open, and the map shows its countries (see MapView) instead of a map view. */
+export function MapControls({ editing = false }: { editing?: boolean }) {
+  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
   const phone = usePhone()
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
@@ -102,6 +103,21 @@ export function MapControls() {
       )}
     </>
   )
+  if (editing) {
+    return (
+      <div className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: selected ? DRAWER_WIDTH + 12 : 12 }}>
+        <div className={LEGEND_BOX}>
+          {(['must', 'optional', 'excluded'] as const).map((m) => (
+            <span key={m} className="flex items-center gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: PICK_SWATCH[m] }} />
+              {m === 'must' ? 'Must visit' : m === 'optional' ? 'Optional' : 'Excluded'}
+            </span>
+          ))}
+          {picking && <span className="text-muted">Click {picking === 'region' ? 'a region' : 'a country'} to add or remove it</span>}
+        </div>
+      </div>
+    )
+  }
   if (phone) {
     return (
       // On a phone, the legend at the top of the map in one row that scrolls sideways, and at its bottom, just above
@@ -266,6 +282,9 @@ function SwitchRow({ picked, width, gap, children }: { picked: unknown; width?: 
     </div>
   )
 }
+
+/** The trip's countries on the map while editing it (MapView's PICK_COLOR, opaque). */
+const PICK_SWATCH = { must: 'rgb(20,184,166)', optional: 'rgba(15,118,110,0.45)', excluded: 'rgba(120,113,108,0.55)' }
 
 /** The legend's box: wraps beside the map; one row that scrolls sideways on a phone. */
 const LEGEND_BOX =

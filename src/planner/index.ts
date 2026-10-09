@@ -84,8 +84,11 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
     if (best) required.add(best)
   }
   for (const iso2 of mustCountries) requireBestIn([iso2])
-  // Every region the user added is visited, even when all its countries are optional.
-  for (const countries of groupCountries) requireBestIn(countries)
+  // Every region the user added is visited, even when all its countries are optional; a country added on its own as
+  // optional is the planner's choice (one marked must visit is required above).
+  groupCountries.forEach((countries, gi) => {
+    if (input.groups[gi].countries.length > 1) requireBestIn(countries)
+  })
   return ctx
 }
 

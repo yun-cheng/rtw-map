@@ -5,7 +5,8 @@ import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMous
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
-import { tripDay } from '../planner'
+import { REGIONS, REGION_OF } from '../data/regions'
+import { citiesIn, tripDay, type TripInput } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
@@ -80,15 +81,27 @@ const FONT = ['Noto Sans Bold']
 /** Width of the city/leg panel that covers the right of the map (App.tsx). */
 const CITY_LAYERS = ['stop-circles', 'city-dots']
 const ROUTE_LAYERS = ['route-solid', 'route-dashed']
+const STOP_LAYERS = ['stop-rain', 'stop-circles', 'stop-numbers', 'stop-names', 'stop-boxes']
+/** The country or region under the pointer while adding places: blue, unlike the trip's own colours. */
+const HOVER_COLOR = 'rgba(59,130,246,0.55)'
+/** Colours of the trip's countries while its setup is open, by how they're picked: must visit strong and optional
+ *  faint, so they're easy to tell apart. */
+const PICK_COLOR = { must: 'rgba(20,184,166,0.8)', optional: 'rgba(15,118,110,0.2)', excluded: 'rgba(120,113,108,0.25)' }
 
 type FC = FeatureCollection
 
-export function MapView() {
+/**
+ * `editing`: the trip's setup (the Trip tab) is open. The map then shows the trip's countries instead of its route and
+ * stops, and while adding places (`picking`) a click adds or removes the country or region under it.
+ */
+export function MapView({ editing = false }: { editing?: boolean }) {
   const container = useRef<HTMLDivElement>(null)
+  const editingRef = useRef(editing)
+  editingRef.current = editing
   const mapRef = useRef<MlMap | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, picking } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -127,8 +140,15 @@ export function MapView() {
       map.addSource('stops', { type: 'geojson', data: empty() })
 
       map.addLayer({ id: 'country-fill', type: 'fill', source: 'countries', paint: { 'fill-color': 'transparent', 'fill-opacity': 0.25 } })
-      // Outlines of the countries the app has cities in.
+      // Outlines of the countries the app has cities in (all of them while editing the trip, see pick-line).
       map.addLayer({ id: 'country-line', type: 'line', source: 'countries', filter: ['in', ['get', 'iso2'], ['literal', Object.keys(ds.countries)]], paint: { 'line-color': ink.border, 'line-width': 0.6 } })
+      map.addLayer({ id: 'pick-fill', type: 'fill', source: 'countries', layout: { visibility: 'none' }, paint: { 'fill-color': 'transparent' } })
+      // The country or region a click would add or remove, shaded over its colour (under the borders).
+      map.addLayer({
+        id: 'pick-hover', type: 'fill', source: 'countries', filter: ['in', ['get', 'iso2'], ['literal', []]], layout: { visibility: 'none' },
+        paint: { 'fill-color': HOVER_COLOR },
+      })
+      map.addLayer({ id: 'pick-line', type: 'line', source: 'countries', layout: { visibility: 'none' }, paint: { 'line-color': ink.border, 'line-width': 0.5 } })
       map.addLayer({
         id: 'route-solid', type: 'line', source: 'route', filter: ['!', ['get', 'estimated']],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -200,19 +220,46 @@ export function MapView() {
     }
     const isCity = (f: MapGeoJSONFeature) => CITY_LAYERS.includes(f.layer.id)
     const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+    // Adding places: the country under the pointer, and the countries a click would add (it, or its whole region).
+    const picked = (p: maplibregl.Point) => {
+      const how = useTrip.getState().picking
+      if (!how || !editingRef.current || !loaded.current) return null
+      const iso2 = map.queryRenderedFeatures(p, { layers: ['pick-fill'] })[0]?.properties.iso2 as string | undefined
+      if (!iso2) return null
+      const region = REGIONS.find((r) => r.name === REGION_OF[iso2])
+      return { how, iso2, region, countries: how === 'region' && region ? region.countries : [iso2] }
+    }
+    const showPick = (e: MapMouseEvent) => {
+      const p = picked(e.point)
+      map.setFilter('pick-hover', ['in', ['get', 'iso2'], ['literal', p?.countries ?? []]])
+      map.getCanvas().style.cursor = p ? 'pointer' : ''
+      if (p) popup.setLngLat(e.lngLat).setDOMContent(tipElement(pickTip(useTrip.getState().input, p.how, p.iso2))).addTo(map)
+      else popup.remove()
+    }
     map.on('click', (e: MapMouseEvent) => {
+      if (useTrip.getState().picking && editingRef.current) {
+        const p = picked(e.point)
+        if (p?.how === 'region' && p.region) useTrip.getState().toggleRegion(p.region.name)
+        else if (p) useTrip.getState().toggleCountry(p.iso2)
+        // The hover box now says the opposite (added ↔ not).
+        return showPick(e)
+      }
       const f = hit(e.point)
       if (!f || (!isCity(f) && Number(f.properties.leg) < 0)) return
       useTrip.getState().select(isCity(f) ? { type: 'city', id: String(f.properties.id) } : { type: 'leg', index: Number(f.properties.leg) })
     })
     map.on('mousemove', (e: MapMouseEvent) => {
+      if (useTrip.getState().picking && editingRef.current) return showPick(e)
       const f = hit(e.point)
       map.getCanvas().style.cursor = f && (isCity(f) || Number(f.properties.leg) >= 0) ? 'pointer' : ''
       // Each city carries its hover box content (see cityTip / stopTip), laid out like the timeline's.
       if (f && isCity(f)) popup.setLngLat((f.geometry as Point).coordinates as [number, number]).setDOMContent(tipElement(JSON.parse(String(f.properties.tip)))).addTo(map)
       else popup.remove()
     })
-    map.getCanvas().addEventListener('mouseleave', () => popup.remove())
+    map.getCanvas().addEventListener('mouseleave', () => {
+      popup.remove()
+      if (loaded.current) map.setFilter('pick-hover', ['in', ['get', 'iso2'], ['literal', []]])
+    })
     return () => map.remove()
   }, [])
 
@@ -233,11 +280,12 @@ export function MapView() {
       const inPlan = new Map(plan?.stops.map((s, i) => [s.cityId, i]) ?? [])
       const tripCountries = new Set(input.groups.flatMap((g) => g.countries.filter((c) => c.mode !== 'excluded').map((c) => c.iso2)))
 
+      // While editing the trip, the stops aren't shown, so every city is a dot, in plain colour (no map view's legend).
       const cityFeatures = Object.values(ds.cities)
-        .filter((c) => !inPlan.has(c.id))
+        .filter((c) => editing || !inPlan.has(c.id))
         .map((c) => {
           const m = metric(c.id)
-          return point([c.lon, c.lat], { id: c.id, name: c.name, tip: JSON.stringify(cityTip(c.id, m)), ...(m.color ? { color: m.color } : {}) })
+          return point([c.lon, c.lat], { id: c.id, name: c.name, tip: JSON.stringify(cityTip(c.id, m)), ...(m.color && !editing ? { color: m.color } : {}) })
         })
       ;(map.getSource('cities') as GeoJSONSource).setData({ type: 'FeatureCollection', features: cityFeatures })
 
@@ -302,16 +350,25 @@ export function MapView() {
       }))
       ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [...homeFeatures, ...routeFeatures] })
 
-      map.setPaintProperty('country-fill', 'fill-color', countryFill(layer, tripCountries))
+      map.setPaintProperty('country-fill', 'fill-color', editing ? 'transparent' : countryFill(layer, tripCountries))
       // Country tints need a little more strength to show on the dark map.
       map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
+
+      // Editing the trip: its countries instead of its route and stops; while adding places, every country's outline.
+      const show = (ids: string[], on: boolean) => ids.forEach((id) => map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'))
+      show([...ROUTE_LAYERS, ...STOP_LAYERS], !editing)
+      show(['pick-fill'], editing)
+      show(['pick-line'], editing && !!picking)
+      show(['pick-hover'], editing)
+      show(['city-dots'], !(editing && picking))
+      if (editing) map.setPaintProperty('pick-fill', 'fill-color', pickFill(input))
     }
 
     const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels })
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels])
+  }, [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels, editing, picking])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).
@@ -382,6 +439,40 @@ const empty = (): FC => ({ type: 'FeatureCollection', features: [] })
 const point = (coordinates: number[], properties: Record<string, unknown>) => ({
   type: 'Feature' as const, properties, geometry: { type: 'Point' as const, coordinates },
 })
+
+/** The trip's countries by how they're picked (must visit, optional, excluded), for editing its setup. */
+function pickFill(input: TripInput): ExpressionSpecification | string {
+  const modes = new Map(input.groups.flatMap((g) => g.countries.map((c) => [c.iso2, c.mode] as const)))
+  if (!modes.size) return 'transparent'
+  return ['match', ['get', 'iso2'], ...[...modes].flatMap(([iso2, mode]) => [iso2, PICK_COLOR[mode]]), 'transparent'] as unknown as ExpressionSpecification
+}
+
+/** What a click would do while adding places: the country or region under the pointer, and whether it's in the trip. */
+function pickTip(input: TripInput, how: 'region' | 'country', iso2: string) {
+  const name = ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
+  const covered = citiesIn(ds)
+  const mode = input.groups.flatMap((g) => g.countries).find((c) => c.iso2 === iso2)?.mode
+  if (how === 'region') {
+    const region = REGIONS.find((r) => r.name === REGION_OF[iso2])
+    if (!region) return { title: name }
+    const added = input.groups.some((g) => g.name === region.name)
+    const withCities = region.countries.filter((c) => covered.has(c)).length
+    return {
+      title: region.name,
+      lines: [
+        `${region.countries.length} ${region.countries.length > 1 ? 'countries' : 'country'}${withCities === region.countries.length ? '' : withCities ? `, ${withCities} with cities` : ', no cities yet'}`,
+        added ? 'In your trip: click to remove' : 'Click to add',
+      ],
+    }
+  }
+  return {
+    title: name,
+    lines: [
+      ...(covered.has(iso2) ? [] : ['No cities yet']),
+      mode && mode !== 'excluded' ? 'In your trip: click to remove' : mode === 'excluded' ? 'Excluded: click to add' : 'Click to add',
+    ],
+  }
+}
 
 function countryFill(layer: string, tripCountries: Set<string>): ExpressionSpecification | string {
   const entries = Object.values(ds.countries).flatMap((c) => {
