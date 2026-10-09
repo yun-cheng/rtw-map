@@ -3,7 +3,6 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
-import { testCaseInput } from '../data/testCase'
 import type { TempUnit } from '../ui/format'
 import {
   DEFAULT_PREFS, addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize, stylePrefs, withPrefs,
@@ -92,7 +91,6 @@ type State = {
   setStyle: (style: Budget) => void
   setPrefs: (patch: Partial<TravelPrefs>) => void
   generate: () => void
-  loadTestCase: () => void
   setNights: (index: number, nights: number) => void
   toggleLock: (index: number) => void
   removeStop: (index: number) => void
@@ -239,10 +237,6 @@ export const useTrip = create<State>()(
             input: { ...input, startDate: plan.dates.start, endDate: plan.dates.end },
             panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0,
           })
-        },
-        loadTestCase: () => {
-          const input = testCaseInput(ds, get().input.passport === 'EU' ? 'TW' : get().input.passport)
-          set({ input, stops: [], plan: null, panel: 'setup', selected: null })
         },
         setNights: (index, nights) => edit((stops) => {
           stops[index] = { ...stops[index], nights: Math.max(1, nights), locked: true }

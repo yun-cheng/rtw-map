@@ -2,12 +2,12 @@ import { useEffect, useState } from 'react'
 import { Check, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_FLEX_DAYS, citiesIn, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
+import { MAX_FLEX_DAYS, MAX_STOPS, MAX_STOPS_FLEX, stopsAsked, withStops, citiesIn, daysBetween, withDates, type CountryMode, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
-import { flag, shortDate } from '../ui/format'
-import { Button, Segmented } from '../ui/kit'
+import { flag } from '../ui/format'
+import { Button, Segmented, Stepper } from '../ui/kit'
 
 const MODE_STYLE: Record<CountryMode, string> = {
   must: 'border-accent bg-accent-soft text-accent',
@@ -16,14 +16,12 @@ const MODE_STYLE: Record<CountryMode, string> = {
 }
 /** A click on a country: an optional one (as countries in a region start) becomes a must visit first. */
 const NEXT_MODE: Record<CountryMode, CountryMode> = { optional: 'must', must: 'excluded', excluded: 'optional' }
-/** How many days either way a flexible date may move. */
-const FLEX_DAYS = [0, 1, 2, 3, 5, 7, 10, MAX_FLEX_DAYS]
 
 const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
 const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
 
 export function SetupPanel() {
-  const { input, setInput, setPanel, generate, loadTestCase, stops, plan, picking, setPicking, setHovered } = useTrip()
+  const { input, setInput, setPanel, generate, stops, plan, picking, setPicking, setHovered } = useTrip()
   // Nothing stays highlighted on the map once the tab closes.
   useEffect(() => () => setHovered([]), [setHovered])
   const user = useAccount((s) => s.user)
@@ -42,10 +40,10 @@ export function SetupPanel() {
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
   const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
+  const wanted = stopsAsked(input)
   const nights = daysBetween(asked.start, asked.end)
   const setFlex = (start: number, end: number) =>
     setInput(start || end ? { flex: { ...asked, startDays: start, endDays: end } } : { flex: undefined, startDate: asked.start, endDate: asked.end })
-  const planned = plan && input.flex && (input.startDate !== asked.start || input.endDate !== asked.end)
 
   const updateGroup = (id: string, fn: (g: TripGroup) => TripGroup) =>
     setInput({ groups: input.groups.map((g) => (g.id === id ? fn(g) : g)) })
@@ -56,37 +54,31 @@ export function SetupPanel() {
     setInput({ groups })
   }
   const ordered = input.keepGroupOrder
-  const used = new Set(input.groups.flatMap((g) => g.countries.map((c) => c.iso2)))
-  const cityOptions = Object.values(ds.cities)
-    .filter((c) => used.has(c.iso2))
-    .sort((a, b) => a.name.localeCompare(b.name))
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h2 className="text-[15px] font-semibold">Trip</h2>
-        <Button variant="ghost" onClick={loadTestCase} title="Fill in the Balkans → Russia test trip">Load test case</Button>
+        {plan && (
+          <p className="mt-0.5 text-[12px] text-muted">
+            <b className="text-ink">{slashDate(input.startDate)} – {slashDate(input.endDate)}</b> · <b className="text-ink">{plan.totalNights}</b> nights · <b className="text-ink">{plan.stops.length}</b> stops
+          </p>
+        )}
       </div>
 
       <Field label="Dates">
-        <div className="grid grid-cols-[1fr_auto] items-center gap-x-2 gap-y-1.5">
-          <input type="date" aria-label="Start date" value={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, e.target.value, asked.end))} className={inputCls} />
-          <FlexDays value={flex.start} label="start" onChange={(d) => setFlex(d, flex.end)} />
-          <input type="date" aria-label="End date" value={asked.end} min={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, asked.start, e.target.value))} className={inputCls} />
-          <FlexDays value={flex.end} label="end" onChange={(d) => setFlex(flex.start, d)} />
+        {/* On a narrow phone the days either way go under their date. */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <input type="date" aria-label="Start date" value={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, e.target.value, asked.end))} className={dateCls} />
+            <FlexDays value={flex.start} label="start" onChange={(d) => setFlex(d, flex.end)} />
+          </div>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <input type="date" aria-label="End date" value={asked.end} min={asked.start} onChange={(e) => e.target.value && setInput(withDates(input, asked.start, e.target.value))} className={dateCls} />
+            <FlexDays value={flex.end} label="end" onChange={(d) => setFlex(flex.start, d)} />
+          </div>
         </div>
-        <p className="mt-1 text-[12px] text-muted">
-          {nights <= 0
-            ? 'End date must be after the start date'
-            : flex.start || flex.end
-              ? `${nights} nights, or ${Math.max(1, nights - flex.start - flex.end)}–${nights + flex.start + flex.end}: the plan picks dates within these so the trip fits its stops`
-              : `${nights + 1} days · ${nights} nights`}
-        </p>
-        {planned && (
-          <p className="mt-0.5 text-[12px]">
-            Planned: <b>{shortDate(input.startDate)} – {shortDate(input.endDate)}</b> · {daysBetween(input.startDate, input.endDate)} nights
-          </p>
-        )}
+        {nights <= 0 && <p className="mt-1 text-[12px] text-danger">End date must be after the start date</p>}
       </Field>
 
       <Field
@@ -100,7 +92,6 @@ export function SetupPanel() {
       >
         <div className="flex flex-col gap-2">
           {input.groups.map((g, i) => {
-            const empty = g.countries.filter((c) => c.mode !== 'excluded' && !hasCities(c.iso2))
             return (
               // Pointing at a region's card (or one of its countries) shows it on the map.
               <div
@@ -139,11 +130,6 @@ export function SetupPanel() {
                     )
                   })}
                 </div>
-                {empty.length > 0 && (
-                  <p className="mt-1.5 text-[11px] text-muted">
-                    No cities yet in {empty.length === g.countries.length && g.countries.length > 1 ? 'any of these' : empty.map((c) => countryName(c.iso2)).join(', ')}: the plan leaves {empty.length > 1 ? 'them' : 'it'} out for now.
-                  </p>
-                )}
               </div>
             )
           })}
@@ -152,38 +138,28 @@ export function SetupPanel() {
           ) : (
             <Button onClick={() => setPicking(input.groups.length ? 'country' : 'region')} className="py-1.5">+ Add regions or countries</Button>
           )}
-          {input.groups.length > 0 && (
-            <p className="text-[11px] text-muted">Click a country to cycle: optional → must visit → excluded. Countries in a region start optional (the planner picks the best ones, at least one per region); a country added on its own starts as you chose when adding it. Countries with a do-not-travel advisory start excluded.</p>
-          )}
         </div>
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Start city (optional)">
-          <select value={input.startCityId ?? ''} onChange={(e) => setInput({ startCityId: e.target.value || null })} className={inputCls}>
-            <option value="">Any</option>
-            {cityOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </Field>
-        <Field label="End city (optional)">
-          <select value={input.endCityId ?? ''} onChange={(e) => setInput({ endCityId: e.target.value || null })} className={inputCls}>
-            <option value="">Any</option>
-            {cityOptions.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        </Field>
-      </div>
-
       <Field label="Number of stops (optional)">
         <div className="flex items-center gap-2">
-          <StopsInput value={input.minStops} placeholder="Any" label="Fewest stops" onChange={(minStops) => setInput({ minStops })} />
-          <span className="text-muted">to</span>
-          <StopsInput value={input.maxStops} placeholder="Any" label="Most stops" onChange={(maxStops) => setInput({ maxStops })} />
-          {stops.length > 0 && <span className="text-[12px] text-muted">now {stops.length}</span>}
+          <input
+            type="number" min={1} max={MAX_STOPS} inputMode="numeric" aria-label="Number of stops" placeholder="Any"
+            value={wanted.count ?? ''}
+            onChange={(e) => {
+              const n = Math.round(Number(e.target.value))
+              setInput(withStops(e.target.value.trim() && n > 0 ? Math.min(MAX_STOPS, n) : null, wanted.flex))
+            }}
+            className={`${inputCls} max-w-20`}
+          />
+          <GiveOrTake unit="stops">
+            <Stepper value={wanted.flex} min={0} max={MAX_STOPS_FLEX} label="Stops more or fewer than that" onChange={(flex) => setInput(withStops(wanted.count, flex))} />
+          </GiveOrTake>
         </div>
       </Field>
 
       <Field label="Schengen days used before">
-        <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-[8rem]`} title="Days spent in the Schengen area in the 180 days before the trip" />
+        <input type="number" min={0} max={90} value={input.schengenDaysBefore} onChange={(e) => setInput({ schengenDaysBefore: Math.max(0, Math.min(90, Number(e.target.value) || 0)) })} className={`${inputCls} max-w-20`} title="Days spent in the Schengen area in the 180 days before the trip" />
       </Field>
 
       <p className="text-[12px] text-muted">
@@ -223,22 +199,12 @@ export function SetupPanel() {
   )
 }
 
-const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
+/** A date as the date inputs show it: 2027/05/08. */
+const slashDate = (iso: string) => iso.replaceAll('-', '/')
 
-/** An optional whole number of stops; empty means no limit. */
-function StopsInput({ value, placeholder, label, onChange }: { value?: number | null; placeholder: string; label: string; onChange: (n: number | null) => void }) {
-  return (
-    <input
-      type="number" min={1} max={200} inputMode="numeric" aria-label={label} placeholder={placeholder}
-      value={value ?? ''}
-      onChange={(e) => {
-        const n = Math.round(Number(e.target.value))
-        onChange(e.target.value.trim() && n > 0 ? Math.min(200, n) : null)
-      }}
-      className={`${inputCls} w-20`}
-    />
-  )
-}
+const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
+/** A date input that shares its line with the days either way, or has it to itself when they don't fit beside it. */
+const dateCls = inputCls.replace('w-full', 'min-w-0 flex-1 basis-36')
 
 function Field({ label, aside, children }: { label: string; aside?: React.ReactNode; children: React.ReactNode }) {
   return (
@@ -252,16 +218,21 @@ function Field({ label, aside, children }: { label: string; aside?: React.ReactN
   )
 }
 
-/** How many days earlier or later a date may be: exact, or ± a few days. */
+/** How many days earlier or later a date may be: 0 (exact) to MAX_FLEX_DAYS. */
 function FlexDays({ value, label, onChange }: { value: number; label: string; onChange: (days: number) => void }) {
   return (
-    <select
-      value={value} onChange={(e) => onChange(Number(e.target.value))} aria-label={`How flexible the ${label} date is`}
-      title={`How many days earlier or later the trip may ${label}`}
-      className="rounded-md border border-line bg-panel px-1.5 py-1.5 text-[13px] outline-none focus:border-accent"
-    >
-      {FLEX_DAYS.map((d) => <option key={d} value={d}>{d ? `± ${d} day${d > 1 ? 's' : ''}` : 'Exact'}</option>)}
-    </select>
+    <GiveOrTake unit="days">
+      <Stepper value={value} min={0} max={MAX_FLEX_DAYS} label={`Days the trip may ${label} earlier or later`} onChange={onChange} />
+    </GiveOrTake>
+  )
+}
+
+/** A number's margin, between "±" and its unit: "± [− 3 +] days". */
+function GiveOrTake({ unit, children }: { unit: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-1.5 text-[13px] text-muted">
+      ±{children}{unit}
+    </div>
   )
 }
 

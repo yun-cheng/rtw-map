@@ -1,4 +1,4 @@
-import { Info } from 'lucide-react'
+import { Info, Minus, Plus } from 'lucide-react'
 import { useId, useLayoutEffect, useRef, useState, type ButtonHTMLAttributes, type FocusEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { levelColor } from './format'
@@ -60,6 +60,27 @@ export function Segmented<T extends string>({ value, options, onChange }: { valu
           {o.label}
         </button>
       ))}
+    </div>
+  )
+}
+
+/** A whole number between `min` and `max`, typed or stepped with − and + either side. */
+export function Stepper({ value, min, max, onChange, label }: { value: number; min: number; max: number; onChange: (n: number) => void; label: string }) {
+  const clamp = (n: number) => Math.max(min, Math.min(max, n))
+  const btn = 'flex w-7 shrink-0 items-center justify-center text-muted hover:bg-canvas hover:text-ink disabled:opacity-40 disabled:hover:bg-transparent'
+  return (
+    <div role="group" aria-label={label} className="flex h-[32px] items-stretch overflow-hidden rounded-md border border-line bg-panel text-[13px] focus-within:border-accent">
+      <button type="button" onClick={() => onChange(clamp(value - 1))} disabled={value <= min} aria-label={`Less: ${label}`} className={`${btn} border-r border-line`}><Minus size={13} /></button>
+      <input
+        type="number" inputMode="numeric" min={min} max={max} aria-label={label}
+        value={value}
+        onChange={(e) => {
+          const n = Math.round(Number(e.target.value))
+          onChange(e.target.value.trim() && Number.isFinite(n) ? clamp(n) : min)
+        }}
+        className="w-9 min-w-0 bg-transparent text-center outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+      />
+      <button type="button" onClick={() => onChange(clamp(value + 1))} disabled={value >= max} aria-label={`More: ${label}`} className={`${btn} border-l border-line`}><Plus size={13} /></button>
     </div>
   )
 }

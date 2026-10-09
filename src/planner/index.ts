@@ -420,6 +420,20 @@ export function withDates(input: TripInput, startDate: string, endDate: string):
   return { startDate, endDate, flex: input.flex && { ...input.flex, start: startDate, end: endDate } }
 }
 
+export const MAX_STOPS = 200
+export const MAX_STOPS_FLEX = 20
+
+/** The number of stops asked for (null: as many as fit) and how many more or fewer are fine. */
+export function stopsAsked(input: TripInput): { count: number | null; flex: number } {
+  const flex = input.stopsFlex ?? 0
+  return { count: input.maxStops ? Math.max(1, input.maxStops - flex) : (input.minStops ?? null), flex }
+}
+
+/** The fewest and most stops for a number asked for, give or take `flex`. */
+export function withStops(count: number | null, flex: number): Pick<TripInput, 'minStops' | 'maxStops' | 'stopsFlex'> {
+  return { minStops: count && Math.max(1, count - flex), maxStops: count && count + flex, stopsFlex: flex }
+}
+
 function planFor(ctx: Ctx): Plan {
   const { input } = ctx
   let months = guessMonths(ctx)

@@ -128,8 +128,8 @@ export const TOOLS: FunctionDeclaration[] = [
       end_city: str('City to end in, or "" for any'),
       schengen_days_before: { type: 'integer', description: 'Days already spent in the Schengen area in the 180 days before the trip' },
       wishes: str('The user\'s free-text wishes for the trip (replaces them)'),
-      min_stops: { type: 'integer', description: 'Fewest stops the plan should have; 0 for no minimum' },
-      max_stops: { type: 'integer', description: 'Most stops the plan should have; 0 for no maximum' },
+      stops: { type: 'integer', description: 'How many stops the plan should have; 0 for as many as fit' },
+      stops_flex: { type: 'integer', description: 'How many more or fewer stops than that are fine (0 = exactly, up to 20)' },
     }),
   },
   {

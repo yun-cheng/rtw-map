@@ -314,9 +314,12 @@ export type TripInput = {
   budget: Budget
   prefs: TravelPrefs
   interests: string[]
-  /** How many stops the plan should have (each optional); the planner keeps within them where the trip allows. */
+  /** How many stops the plan should have (each optional); the planner keeps within them where the trip allows. The
+   *  Trip tab and the assistant set them from a number give or take `stopsFlex` (withStops). */
   minStops?: number | null
   maxStops?: number | null
+  /** How many more or fewer stops than the number asked for are fine: the maximum is the number plus this. */
+  stopsFlex?: number
   /** Free-text wishes for the assistant ("Plan with AI"), e.g. fixed dates or places to avoid. */
   wishes?: string
   passport: string
