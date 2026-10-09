@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { type CostKind, type SchengenSummary } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
+import { useSideScroll } from '../ui/useSideScroll'
 import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
@@ -54,6 +55,18 @@ const COST_LEAD: Record<CostKind, () => { text: string; title: string }> = {
 
 export function MapControls() {
   const { layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected } = useTrip()
+  // The month picker: one row that scrolls sideways when it doesn't fit.
+  const months = useSideScroll<HTMLDivElement>([layer === 'climate' || layer === 'air'])
+  // Keep the picked month in view (e.g. December, opened from a link).
+  useEffect(() => {
+    const bar = months.ref.current
+    const on = bar?.querySelector<HTMLElement>('[aria-pressed="true"]')
+    if (!bar || !on) return
+    const b = bar.getBoundingClientRect()
+    const r = on.getBoundingClientRect()
+    if (r.left < b.left) bar.scrollLeft -= b.left - r.left + 16
+    else if (r.right > b.right) bar.scrollLeft += r.right - b.right + 16
+  }, [layer, layerMonth, months.ref])
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
@@ -122,11 +135,13 @@ export function MapControls() {
         </>
       )}
       {(layer === 'climate' || layer === 'air') && (
-        <div className="pointer-events-auto flex max-w-full flex-wrap rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <div className="pointer-events-auto max-w-full rounded-lg border border-line bg-panel p-0.5 shadow-sm">
+        <div ref={months.ref} style={months.mask} className="no-scrollbar flex overflow-x-auto">
           <button
             onClick={() => setLayerMonth(0)}
+            aria-pressed={layerMonth === 0}
             title="Each stop in the month you're there; other cities in the month you're at the nearest stop"
-            className={`rounded-md px-2 py-1 text-[11px] font-medium ${layerMonth === 0 ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+            className={`shrink-0 rounded-md px-2 py-1 text-[11px] font-medium whitespace-nowrap ${layerMonth === 0 ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
           >
             Trip dates
           </button>
@@ -134,11 +149,13 @@ export function MapControls() {
             <button
               key={m}
               onClick={() => setLayerMonth(i + 1)}
-              className={`rounded-md px-1.5 py-1 text-[11px] font-medium ${layerMonth === i + 1 ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
+              aria-pressed={layerMonth === i + 1}
+              className={`shrink-0 rounded-md px-1.5 py-1 text-[11px] font-medium ${layerMonth === i + 1 ? 'bg-accent text-on-accent' : 'text-muted hover:text-ink'}`}
             >
               {m}
             </button>
           ))}
+        </div>
         </div>
       )}
       {layer === 'none' && plan && <RouteLegend modes={new Set(plan.legs.flatMap((l) => l.hops.map((h) => h.mode)))} />}

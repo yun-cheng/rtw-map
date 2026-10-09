@@ -474,6 +474,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Cost view groups:** the twelve kinds no longer fit in one row, so the Cost view picks a group (**Per day**, **Stay**, **Food & drink**, **Getting around**: `COST_GROUPS` in `map/scales.ts`) and then the kind in it on a second row, styled like the city panel's sub-tabs; each group remembers its last kind.
 - **Trip total in the Itinerary:** the estimated cost moved from the top bar (which keeps dates, nights and stops) to the top of the Itinerary tab, "Estimated cost" with an ⓘ on what it counts (each stop's daily cost for its nights, plus travel between cities and from home) and ~per day.
 - **Map credits folded:** the map's credits (OpenFreeMap, OpenMapTiles, OpenStreetMap) start folded into their ⓘ button, which shows them; they can't be removed (the licences ask for them with the map). MapLibre opens them when its sources first say what to credit, some time after loading, so a MutationObserver folds them the moment it does.
+- **Month picker in one row:** the Weather and Air views' months (Trip dates, Jan–Dec) are one row that scrolls sideways when it doesn't fit (the mouse wheel too, edges fading where more is hidden), instead of wrapping; the picked month scrolls into view.
 - **Next:** verify the seed costs and connections; build the phone/offline view (Phase 3).
 
 ---
