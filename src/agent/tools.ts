@@ -73,7 +73,9 @@ function prefsText(p: TravelPrefs): string {
     `between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
     `planner focus: ${p.focus === 'countries' ? 'as many countries as fit' : p.focus === 'highlights' ? 'the most popular places' : 'balanced'}`,
     ...(p.expensive !== 'ignore' ? [`expensive places: ${p.expensive === 'shorter' ? 'shorter stays' : 'skip where optional'}`] : []),
-    `temperature bands: ${breaksText(p.tempBreaks)} (months with cold or hot highs are avoided)`,
+    `temperature bands: ${breaksText(p.tempBreaks)}`,
+    ...(p.avoidCold ? ['avoid cold months'] : []),
+    ...(p.avoidHot ? ['avoid hot months'] : []),
     ...(p.avoidRain ? ['avoid rainy months'] : []),
     ...(p.dailyBudget ? [`daily budget €${p.dailyBudget} per person`] : []),
   ].join('; ')
@@ -792,6 +794,8 @@ const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknow
   { arg: 'max_travel_hours', key: 'maxTravelHours', values: [3, 5, 8, null] },
   { arg: 'focus', key: 'focus', values: ['balanced', 'countries', 'highlights'] },
   { arg: 'expensive', key: 'expensive', values: ['ignore', 'shorter', 'skip'] },
+  { arg: 'avoid_cold', key: 'avoidCold', flag: true },
+  { arg: 'avoid_hot', key: 'avoidHot', flag: true },
   { arg: 'avoid_rain', key: 'avoidRain', flag: true },
   { arg: 'daily_budget_eur', key: 'dailyBudget', amount: true },
 ]
@@ -810,7 +814,8 @@ const PREF_NAMES: Record<keyof TravelPrefs, string> = {
   homeCityId: 'Home city', returnHome: 'Return home at the end', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
   lunch: 'Lunch', dinner: 'Dinner', coffees: 'Café coffees', beers: 'Beers in a bar', betweenCities: 'Between cities',
   overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', focus: 'Trip goal',
-  expensive: 'Expensive places', tempBreaks: 'Temperature bands', avoidRain: 'Avoid rainy months',
+  expensive: 'Expensive places', tempBreaks: 'Temperature bands', avoidCold: 'Avoid cold months',
+  avoidHot: 'Avoid hot months', avoidRain: 'Avoid rainy months',
   dailyBudget: 'Daily budget (EUR)',
 }
 const prefValue = (v: unknown) => (v === null ? 'no limit' : v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '))
@@ -846,7 +851,7 @@ function updatePreferences(args: Args): string {
   if (args.home_city !== undefined) patch.homeCityId = String(args.home_city).trim() ? cityId(args.home_city) : null
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   useTrip.getState().setPrefs(patch)
-  const shapesPlan = ['focus', 'expensive', 'tempBreaks', 'avoidRain'].some((k) => k in patch)
+  const shapesPlan = ['focus', 'expensive', 'tempBreaks', 'avoidCold', 'avoidHot', 'avoidRain'].some((k) => k in patch)
   return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && useTrip.getState().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
 }
 

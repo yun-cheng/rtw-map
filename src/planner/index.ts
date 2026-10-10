@@ -131,9 +131,9 @@ function baseScore(ctx: Ctx, cityId: string): number {
 function score(ctx: Ctx, cityId: string, month: number): number {
   const m = ctx.ds.climate[cityId]?.[month - 1]
   if (!m) return baseScore(ctx, cityId)
-  const { tempBreaks: [cool, , , hot], avoidRain } = ctx.input.prefs
-  // Months cold or hot by the traveller's temperature bands count more than the general comfort score.
-  const limits = (m.tHigh < cool || m.tHigh >= hot ? 0.35 : 1) * (avoidRain && m.rainDays >= 14 ? 0.6 : 1)
+  const { tempBreaks: [cool, , , hot], avoidCold, avoidHot, avoidRain } = ctx.input.prefs
+  // Months the traveller avoids (cold or hot by their temperature bands, rainy) count more than the general comfort score.
+  const limits = ((avoidCold && m.tHigh < cool) || (avoidHot && m.tHigh >= hot) ? 0.35 : 1) * (avoidRain && m.rainDays >= 14 ? 0.6 : 1)
   return baseScore(ctx, cityId) * (0.5 + 0.5 * m.comfort) * limits
 }
 
@@ -818,12 +818,12 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     const m = ds.climate[s.cityId]?.[stayMonth(s) - 1]
     if (!m) continue
     const name = ds.cities[s.cityId].name
-    // Hot and cold by the traveller's temperature bands.
-    const [cool, , , hot] = input.prefs.tempBreaks
+    // Hot and cold by the traveller's temperature bands; a warning when they avoid it, a note otherwise.
+    const { tempBreaks: [cool, , , hot], avoidCold, avoidHot } = input.prefs
     if (m.tHigh >= hot) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: hot`, tempC: m.tHigh })
+      warnings.push({ kind: 'weather', severity: avoidHot ? 'warn' : 'info', cityId: s.cityId, title: `${name}: hot`, tempC: m.tHigh })
     } else if (m.tHigh < cool) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold`, tempC: m.tHigh })
+      warnings.push({ kind: 'weather', severity: avoidCold ? 'warn' : 'info', cityId: s.cityId, title: `${name}: cold`, tempC: m.tHigh })
     } else if (m.rainDays >= 14) {
       warnings.push({ kind: 'weather', severity: input.prefs.avoidRain ? 'warn' : 'info', cityId: s.cityId, title: `${name}: often wet (~${Math.round(m.rainDays)} days with rain that month)`, detail: 'Counts days with at least 1 mm; in summer these are often short showers.' })
     }

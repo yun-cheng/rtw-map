@@ -351,11 +351,24 @@ describe('trip goals', () => {
     expect(nights(plan({ expensive: 'shorter' }))).toBeLessThan(nights(balanced))
   })
 
-  it("warns about cold and heat by the traveller's temperature bands", () => {
+  it('avoids cold or hot months only when asked', () => {
+    const breaks: TripInput['prefs']['tempBreaks'] = [16, 18, 24, 26]
+    const [cool, , , hot] = breaks
+    const nights = (p: ReturnType<typeof plan>, out: (t: number) => boolean) =>
+      p.stops.reduce((n, s) => n + (out(ds.climate[s.cityId]?.[stayMonth(s) - 1]?.tHigh ?? cool) ? s.nights : 0), 0)
+    const cold = (t: number) => t < cool
+    const heat = (t: number) => t >= hot
+    const banded = plan({ tempBreaks: breaks })
+    expect(nights(plan({ tempBreaks: breaks, avoidCold: true }), cold)).toBeLessThan(nights(banded, cold))
+    expect(nights(plan({ tempBreaks: breaks, avoidHot: true }), heat)).toBeLessThan(nights(banded, heat))
+  })
+
+  it("flags cold and heat by the traveller's temperature bands, warning when they avoid it", () => {
     const at = (cityId: string, startDate: string, endDate: string) => {
       const input = { ...testTrip('US'), startDate, endDate }
-      return (tempBreaks: [number, number, number, number], word: string) =>
-        evaluatePlan(ds, { ...input, prefs: { ...input.prefs, tempBreaks } }, [{ cityId, nights: 4, locked: false, groupId: '' }]).warnings.some((w) => w.title.includes(word))
+      return (tempBreaks: [number, number, number, number], word: string, avoid = true) =>
+        evaluatePlan(ds, { ...input, prefs: { ...input.prefs, tempBreaks, avoidCold: avoid, avoidHot: avoid } }, [{ cityId, nights: 4, locked: false, groupId: '' }])
+          .warnings.some((w) => w.title.includes(word) && w.severity === (avoid ? 'warn' : 'info'))
     }
     const krakowApril = at('krakow', '2027-04-01', '2027-04-05')
     expect(krakowApril([5, 10, 25, 32], 'cold')).toBe(false)
@@ -363,6 +376,7 @@ describe('trip goals', () => {
     const athensJuly = at('athens', '2027-07-10', '2027-07-14')
     expect(athensJuly([12, 18, 36, 40], 'hot')).toBe(false)
     expect(athensJuly([12, 18, 26, 30], 'hot')).toBe(true)
+    expect(athensJuly([12, 18, 26, 30], 'hot', false)).toBe(true)
   })
 
   it('turns comfortable highs saved before the bands into where cold ends and hot starts', () => {
@@ -370,6 +384,7 @@ describe('trip goals', () => {
     const old = { ...input, prefs: { ...input.prefs, tempBreaks: undefined, minHighC: 15, maxHeatC: 30, maxLowC: 20 } as unknown as Partial<typeof input.prefs> }
     const prefs = withPrefs(old).prefs
     expect(prefs.tempBreaks).toEqual([15, 18, 28, 30])
+    expect(prefs).toMatchObject({ avoidCold: true, avoidHot: true })
     expect(prefs).not.toHaveProperty('minHighC')
     expect(prefs).not.toHaveProperty('maxLowC')
     const { tempBreaks: _, ...none } = input.prefs

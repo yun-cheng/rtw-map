@@ -22,6 +22,8 @@ const HOURS: Options<TravelPrefs['maxTravelHours']> = [{ value: 3, label: '3 h' 
 const labelOf = <T,>(options: Options<T>, value: T) => options.find((o) => o.value === value)?.label ?? String(value)
 /** A label in lower case for the middle of a summary, except an abbreviation ("DIY"). */
 const lower = (label: string) => (/^[A-Z]{2,}$/.test(label) ? label : label.toLowerCase())
+/** Words in a list: "cold", "cold or hot", "cold, hot or rainy". */
+const listed = (words: string[]) => (words.length > 1 ? `${words.slice(0, -1).join(', ')} or ${words.at(-1)}` : words[0])
 
 /**
  * How the user likes to travel, in the Trip tab: a folded card per topic, each saying in a line what's set. Saved
@@ -46,6 +48,7 @@ export function PrefsCards() {
     </label>
   )
   const home = p.homeCityId ? ds.cities[p.homeCityId]?.name : null
+  const avoided = [p.avoidCold && 'cold', p.avoidHot && 'hot', p.avoidRain && 'rainy'].filter((x): x is string => !!x)
 
   const summary = {
     who: [`${ds.visa.passports.find((x) => x.code === input.passport)?.name ?? input.passport} passport`, home && `from ${home}`],
@@ -62,7 +65,7 @@ export function PrefsCards() {
     ],
     around: [`${labelOf(PACES, input.pace).split(' ')[1]} pace`, `${lower(labelOf(BETWEEN, p.betweenCities))} between cities`, p.maxTravelHours ? `up to ${p.maxTravelHours} h a day` : 'no limit a day', p.overnight && 'overnight OK'],
     interests: [input.interests.join(', ') || 'None yet'],
-    comfort: [`pleasant ${tempBand('pleasant', tempUnit, p.tempBreaks)}`, p.avoidRain && 'no rainy months'],
+    comfort: [`pleasant ${tempBand('pleasant', tempUnit, p.tempBreaks)}`, avoided.length > 0 && `no ${listed(avoided)} months`],
   }
   // One card open at a time: opening one folds the one that was open.
   const [open, setOpen] = useState<string | null>(null)
@@ -150,8 +153,13 @@ export function PrefsCards() {
       <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
         <Label>What feels cold, cool, pleasant, warm or hot to you</Label>
         <TempBands breaks={p.tempBreaks} unit={tempUnit} onChange={(tempBreaks) => setPrefs({ tempBreaks })} />
-        <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours. The planner avoids places whose days are cold or hot in the months you'd be there, and Checks flags the rest.</p>
-        <div className="mt-2">{toggle('avoidRain', 'Avoid rainy months')}</div>
+        <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours, and Checks notes cold and hot stays.</p>
+        <Label>The planner avoids places in months that are</Label>
+        <div className="space-y-1">
+          {toggle('avoidCold', 'Cold (highs in your cold band)')}
+          {toggle('avoidHot', 'Hot (highs in your hot band)')}
+          {toggle('avoidRain', 'Rainy (14 or more days with rain)')}
+        </div>
       </Fold>
     </>
   )

@@ -255,8 +255,11 @@ export type TravelPrefs = {
   /** Expensive places (well above the trip's typical daily cost): no change, shorter stays, or skipped where optional. */
   expensive: 'ignore' | 'shorter' | 'skip'
   /** The traveller's temperature bands: where cool, pleasant, warm and hot start, in °C (below the first is cold). The
-   *  map and each city's weather colour by them; the planner avoids cold and hot months, and Checks flags them. */
+   *  map and each city's weather colour by them, and Checks flags cold and hot stays by them. */
   tempBreaks: TempBreaks
+  /** The planner avoids months whose highs are cold, or hot, by the bands (Checks then warns about the rest). */
+  avoidCold: boolean
+  avoidHot: boolean
   avoidRain: boolean
   dailyBudget: number | null
 }

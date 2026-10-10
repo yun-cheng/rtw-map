@@ -50,14 +50,15 @@ export function tidyBreaks(b: number[]): TempBreaks {
 
 export const DEFAULT_PREFS: TravelPrefs = {
   homeCityId: null, returnHome: true, ...STYLES[1].prefs, maxPerNight: null, maxTravelHours: null,
-  focus: 'balanced', expensive: 'ignore', tempBreaks: DEFAULT_TEMP_BREAKS, avoidRain: false, dailyBudget: null,
+  focus: 'balanced', expensive: 'ignore', tempBreaks: DEFAULT_TEMP_BREAKS,
+  avoidCold: false, avoidHot: false, avoidRain: false, dailyBudget: null,
 }
 
 /** Trips saved before preferences existed get those of their travel style; newer fields get their defaults. */
 export function withPrefs<T extends { budget: Budget; prefs?: Partial<TravelPrefs> }>(input: T): T & { prefs: TravelPrefs } {
   // Preferences saved before they were removed are left out: the number of travellers (costs are one traveller's),
   // paid sights, needing fast internet, and comfortable ranges of highs and lows. A range of highs becomes where cold
-  // ends and hot starts.
+  // ends and hot starts, and avoiding what's outside it.
   type Old = {
     travellers?: unknown; sights?: unknown; needInternet?: unknown
     minHighC?: number | null; maxHeatC?: number | null; minLowC?: unknown; maxLowC?: unknown
@@ -67,6 +68,8 @@ export function withPrefs<T extends { budget: Budget; prefs?: Partial<TravelPref
   const prefs = { ...stylePrefs(input.budget), ...saved }
   if (!saved.tempBreaks && (minHighC != null || maxHeatC != null)) {
     const [cool, pleasant, warm, hot] = DEFAULT_TEMP_BREAKS
+    prefs.avoidCold = minHighC != null
+    prefs.avoidHot = maxHeatC != null
     prefs.tempBreaks = tidyBreaks([minHighC ?? cool, Math.max(pleasant, (minHighC ?? cool) + 1), Math.min(warm, (maxHeatC ?? hot) - 1), maxHeatC ?? hot])
   }
   // Older saved values: rooms other than a dorm (private rooms, hotels, apartments) are a private room; breakfast
