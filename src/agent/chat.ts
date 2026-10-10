@@ -38,9 +38,10 @@ type ChatState = {
   /** What the reply under way has used so far. */
   spent: Spent
   /** Sends a message, with the parts of the current view the user chose to share. `think` overrides the "Think
-   *  harder" switch. `plan: 'new'` (Plan with AI) makes a clean plan: the planner's draft first (Undo goes back to
-   *  the trip from before it), and the model starts afresh, without the conversation so far. */
-  send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' }) => Promise<void>
+   *  harder" switch. `plan` starts the model afresh, without the conversation so far: 'new' (Plan with AI) makes a
+   *  clean plan from the planner's draft (Undo goes back to the trip from before it); 'update' (Update plan) changes
+   *  the plan for what changed in the setup. Either, when finished, notes that the plan fits the setup as it is. */
+  send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' | 'update' }) => Promise<void>
   /** Stops the reply under way after the model call or wait in progress; what it changed so far stays (and can be undone). */
   stop: () => void
   undo: (index: number) => void
@@ -217,6 +218,7 @@ export const useChat = create<ChatState>()(
             contents = get().contents
           }
         }
+        if (options.plan && !reply.error && !stopped) useTrip.getState().markPlanned()
         if (!reply.error) {
           const changed = reply.steps.some((s) => s.ok && WRITE_TOOLS.has(s.name))
           if (stopped) reply.text = [reply.text, changed ? 'Stopped. The changes so far are kept.' : 'Stopped.'].filter(Boolean).join('\n\n')

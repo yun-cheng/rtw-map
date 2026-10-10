@@ -5,6 +5,7 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
+import { setupChanges } from '../agent/tools'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
 import { flag } from '../ui/format'
@@ -38,6 +39,13 @@ export function SetupPanel() {
     const wishes = input.wishes?.trim()
     void useChat.getState().send(`Plan my trip from scratch, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
     // The draft opened the itinerary; the assistant's work shows in its tab.
+    setPanel('assistant')
+  }
+  // What changed in the setup since the plan was made or updated (not edits to its stops): the assistant can update the
+  // plan for just that, keeping the rest and the user's own edits.
+  const changes = stops.length && input.planned ? setupChanges(input.planned, input) : []
+  const updatePlan = () => {
+    void useChat.getState().send(`Update my plan for what changed in the trip since it was made: ${changes.join('; ')}. Keep the rest of the plan and my own edits.`, [], { think: true, plan: 'update' })
     setPanel('assistant')
   }
   // The dates asked for (with flexible dates, the plan's own may differ within them).
@@ -204,16 +212,30 @@ export function SetupPanel() {
       <div className="sticky bottom-0 border-t border-line bg-panel p-3">
         {user || !loaded ? (
           <>
-            <Button
-              variant="primary" className="w-full py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={planWithAi}
-              title="The assistant plans the trip from scratch, to your wishes, preferences and interests"
-            >
-              {busy ? 'Planning…' : stops.length ? '✨ Replan from scratch' : '✨ Plan with AI'}
-            </Button>
+            {changes.length > 0 && !busy && (
+              <div className="mb-2 text-[12px]" title={changes.join('\n')}>
+                <span className="font-medium">Changed since this plan:</span>{' '}
+                <span className="text-muted">{changes.slice(0, 4).join(' · ')}{changes.length > 4 && ` · +${changes.length - 4} more`}</span>
+              </div>
+            )}
+            <div className="flex gap-2">
+              {changes.length > 0 && !busy && (
+                <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan} onClick={updatePlan}
+                  title="The assistant changes the plan for just these changes, keeping the rest and your own edits">
+                  ✨ Update plan
+                </Button>
+              )}
+              <Button
+                variant={changes.length && !busy ? undefined : 'primary'} className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={planWithAi}
+                title="The assistant plans the trip from scratch, to your wishes, preferences and interests"
+              >
+                {busy ? 'Planning…' : stops.length ? `${changes.length ? '' : '✨ '}Replan from scratch` : '✨ Plan with AI'}
+              </Button>
+            </div>
             {/* What a new plan replaces, and how to keep it. */}
             {stops.length > 0 && !busy && (
               <p className="mt-1.5 text-center text-[12px] text-muted">
-                Replaces {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.{' '}
+                {changes.length ? 'Either changes' : 'Replaces'} {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.{' '}
                 {plans.length < MAX_PLANS && (
                   <>
                     <button onClick={() => addPlan()} className="font-medium text-accent hover:underline">Copy it first</button> to keep it.

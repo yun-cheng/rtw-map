@@ -864,6 +864,10 @@ export const snapshot = (): TripSnapshot => {
   return structuredClone({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
 }
 
+/** What changed in the trip's setup (regions, dates, preferences…) from `planned` to `now`, in plain language. */
+export const setupChanges = (planned: TripInput, now: TripInput): string[] =>
+  describeChanges({ input: planned, stops: [] }, { input: now, stops: [] })
+
 /** Plain-language list of differences between two versions of the trip. */
 export function describeChanges(before: TripSnapshot, after: TripSnapshot): string[] {
   const out: string[] = []
@@ -887,7 +891,12 @@ export function describeChanges(before: TripSnapshot, after: TripSnapshot): stri
   if (a.budget !== b.budget) out.push(`Travel style: ${a.budget} → ${b.budget}`)
   if (a.passport !== b.passport) out.push(`Passport: ${a.passport} → ${b.passport}`)
   if (a.interests.join() !== b.interests.join()) out.push(`Interests: ${b.interests.join(', ') || 'none'}`)
+  if (JSON.stringify(a.flex ?? null) !== JSON.stringify(b.flex ?? null)) {
+    out.push(b.flex ? `Flexible dates: ${b.flex.start} – ${b.flex.end}, ± ${b.flex.startDays} / ${b.flex.endDays} days` : 'Exact dates')
+  }
   if ((a.wishes ?? '') !== (b.wishes ?? '')) out.push('Wishes updated')
+  if (a.schengenDaysBefore !== b.schengenDaysBefore) out.push(`Schengen days used before: ${b.schengenDaysBefore}`)
+  if (JSON.stringify(a.cityCosts ?? {}) !== JSON.stringify(b.cityCosts ?? {})) out.push('Daily costs of single cities')
   if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null)) out.push(`Number of stops: ${stopsText(b)}`)
   // A new travel style resets its own preferences; those aren't listed one by one.
   const styleKeys = a.budget !== b.budget ? Object.keys(STYLES[0].prefs) : []

@@ -91,6 +91,8 @@ type State = {
   setStyle: (style: Budget) => void
   setPrefs: (patch: Partial<TravelPrefs>) => void
   generate: () => void
+  /** Notes that the plan now fits the setup as it is (after Plan with AI or Update plan). */
+  markPlanned: () => void
   setNights: (index: number, nights: number) => void
   toggleLock: (index: number) => void
   removeStop: (index: number) => void
@@ -161,6 +163,9 @@ const emptyInput: TripInput = {
   passport: 'EU',
   schengenDaysBefore: 0,
 }
+
+/** A setup without the one it was planned from. */
+const setupOf = ({ planned: _, ...input }: TripInput): Omit<TripInput, 'planned'> => structuredClone(input)
 
 const toStops = (p: Plan): Stop[] => p.stops.map(({ cityId, nights, locked, groupId }) => ({ cityId, nights, locked, groupId }))
 
@@ -233,11 +238,13 @@ export const useTrip = create<State>()(
           if (!input.groups.length) return
           const plan = generatePlan(ds, input)
           // With flexible dates, the plan's dates are the trip's from now on (the dates asked for stay in `flex`).
+          const made = { ...input, startDate: plan.dates.start, endDate: plan.dates.end }
           apply(plan, {
-            input: { ...input, startDate: plan.dates.start, endDate: plan.dates.end },
+            input: { ...made, planned: setupOf(made) },
             panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0,
           })
         },
+        markPlanned: () => set({ input: { ...get().input, planned: setupOf(get().input) } }),
         setNights: (index, nights) => edit((stops) => {
           stops[index] = { ...stops[index], nights: Math.max(1, nights), locked: true }
           return stops

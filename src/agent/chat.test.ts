@@ -3,6 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { splitChoices, useChat } from './chat'
+import { setupChanges } from './tools'
 
 const reply = (text: string) => ({ status: 200, body: { content: { role: 'model', parts: [{ text }] } } })
 const toolCall = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'get_options', args: {} } }] } } }
@@ -124,6 +125,33 @@ describe('assistant chat', () => {
     // Undo takes the trip back to before the plan, not to the planner's draft.
     useChat.getState().undo(useChat.getState().messages.length - 1)
     expect(useTrip.getState().stops).toEqual([])
+  })
+
+  it('updates the plan for what changed in the setup, keeping its stops, and notes the plan fits the setup again', async () => {
+    useTrip.getState().generate()
+    const stops = useTrip.getState().stops
+    const setup = () => useTrip.getState().input
+    expect(setupChanges(setup().planned!, setup())).toEqual([])
+    useTrip.getState().setInput({ pace: 'fast' })
+    expect(setupChanges(setup().planned!, setup())).toEqual(['Pace: balanced → fast'])
+    useChat.setState({ contents: [{ role: 'user', parts: [{ text: 'earlier' }] }, { role: 'model', parts: [{ text: 'reply' }] }] as never })
+    const fetch = serve(reply('Updated'))
+    await useChat.getState().send('Update my plan: Pace: balanced → fast', [], { think: true, plan: 'update' })
+    // No new draft, and the model starts afresh.
+    expect(useTrip.getState().stops).toEqual(stops)
+    expect(JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body)).contents).toHaveLength(1)
+    expect(setupChanges(setup().planned!, setup())).toEqual([])
+  })
+
+  it('keeps showing what changed when an update is stopped', async () => {
+    useTrip.getState().generate()
+    useTrip.getState().setInput({ pace: 'fast' })
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      useChat.getState().stop()
+      return new Response(JSON.stringify(toolCall.body), { status: 200 })
+    }))
+    await useChat.getState().send('Update my plan', [], { plan: 'update' })
+    expect(setupChanges(useTrip.getState().input.planned!, useTrip.getState().input)).toEqual(['Pace: balanced → fast'])
   })
 
   it('turns a last "Choices:" line into buttons', () => {
