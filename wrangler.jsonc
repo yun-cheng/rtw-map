@@ -16,6 +16,8 @@
   },
   "vars": {
     "GEMINI_MODEL": "gemini-3.8-flash",
+    // The trip assistant's runner on Google Cloud Run (runner/), which answers messages on the server.
+    "RUNNER_URL": "https://rtw-runner-74681591008.asia-east1.run.app",
     // OAuth client ID for "Sign in with Google" (public, not a secret).
     "GOOGLE_CLIENT_ID": "1006259365129-beetumg7v2gv10r49f218m2hqlcg6n7m.apps.googleusercontent.com"
   },

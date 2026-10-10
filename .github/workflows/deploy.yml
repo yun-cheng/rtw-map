@@ -1,6 +1,9 @@
-# Builds the site with data from R2 and publishes it to the Cloudflare Worker "rtw-map" (static files only).
-# Runs on every push to main, by hand, and after the weekly data refresh (called from refresh-data.yml).
-# Needs repository secrets: the four R2_* settings, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+# Builds the site with data from R2 and publishes it to the Cloudflare Worker "rtw-map", and the trip assistant's
+# runner (runner/) to Google Cloud Run. Runs on every push to main, by hand, and after the weekly data refresh
+# (called from refresh-data.yml).
+# Needs repository secrets: the four R2_* settings, CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; for the runner,
+# RUNNER_SECRET and the variables GCP_PROJECT, GCP_REGION and GCP_WIF_PROVIDER (printed by scripts/gcp-setup.sh;
+# the runner isn't deployed without them).
 name: Deploy
 
 on:
@@ -18,6 +21,9 @@ concurrency:
 
 jobs:
   deploy:
+    # After the runner (the site may start runs on it), or without it when it isn't set up.
+    needs: runner
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     env:
       R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -37,3 +43,39 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npx wrangler deploy
+
+  runner:
+    if: vars.GCP_PROJECT != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT }}/rtw/runner:${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run data:pull
+      - run: npm run build:runner
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: rtw-deployer@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com
+      - uses: google-github-actions/setup-gcloud@v2
+      - run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+      - run: docker build -t "$IMAGE" build/runner && docker push "$IMAGE"
+      # A run holds its request open until it ends (Cloud Tasks waits up to 30 minutes); at most 2 instances, each
+      # running many at once (they mostly wait on the model).
+      - run: >-
+          gcloud run deploy rtw-runner --image "$IMAGE" --region ${{ vars.GCP_REGION }}
+          --service-account rtw-runner@${{ vars.GCP_PROJECT }}.iam.gserviceaccount.com
+          --allow-unauthenticated --timeout 1800 --concurrency 80 --max-instances 2 --cpu 1 --memory 512Mi
+          --set-env-vars "TASKS_QUEUE=projects/${{ vars.GCP_PROJECT }}/locations/${{ vars.GCP_REGION }}/queues/rtw-runs,RUNNER_SECRET=${{ secrets.RUNNER_SECRET }}"
