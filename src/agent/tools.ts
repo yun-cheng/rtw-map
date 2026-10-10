@@ -159,12 +159,15 @@ export function tripContext(): string {
     plan.stops.forEach((s, i) => {
       const leg = i > 0 ? plan.legs[i - 1] : null
       const travel = leg ? ` (from previous: ${leg.reachable ? `${(leg.durationMin / 60).toFixed(1)} h ${leg.hops.map((h) => h.mode).join('+')}` : 'no route'})` : ''
-      lines.push(`${i + 1}. ${cityName(s.cityId)}, ${countryName(ds.cities[s.cityId].iso2)}: ${shortDate(s.arrive)}–${shortDate(s.depart)}, ${s.nights} nights${s.locked ? ', locked' : ''}${travel}`)
+      // What doesn't fit there (the preferences: budget, weather, travel days…), so it's plain where to adjust.
+      const checks = plan.warnings.filter((w) => w.cityId === s.cityId && w.severity !== 'info').map((w) => warningTitle(w, 'C'))
+        .map((t) => (t.startsWith(`${cityName(s.cityId)}: `) ? t.slice(cityName(s.cityId).length + 2) : t))
+      lines.push(`${i + 1}. ${cityName(s.cityId)}, ${countryName(ds.cities[s.cityId].iso2)}: ${shortDate(s.arrive)}–${shortDate(s.depart)}, ${s.nights} nights${s.locked ? ', locked' : ''}${travel}${checks.length ? `. Checks: ${checks.join('; ')}` : ''}`)
     })
     lines.push(`Cost estimate: €${Math.round(plan.cost.min)}–€${Math.round(plan.cost.max)} (≈€${Math.round(plan.cost.perDay)}/day).`)
     if (plan.schengen.applies) lines.push(`Schengen: ${plan.schengen.maxInWindow} of ${plan.schengen.limit} days used in the worst 180-day window.`)
-    const warnings = plan.warnings.filter((w) => w.severity !== 'info')
-    if (warnings.length) lines.push(`Problems:\n${warnings.slice(0, 15).map((w) => `- ${warningTitle(w, 'C')}`).join('\n')}`)
+    const warnings = plan.warnings.filter((w) => w.severity !== 'info' && !w.cityId)
+    if (warnings.length) lines.push(`Other problems:\n${warnings.slice(0, 15).map((w) => `- ${warningTitle(w, 'C')}`).join('\n')}`)
   }
   return lines.join('\n')
 }
