@@ -262,6 +262,7 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
     expect(reply.changes.join()).not.toMatch(/Removed region/)
   })
 
+  // Two drafts by the planner: about 10 s on CI.
   it('reverses only the stops while planning, and not when the regions are to be visited in order', async () => {
     const plan = async (keepGroupOrder: boolean) => {
       const trip = createTripStore({ input: { ...testCaseInput(ds, 'US'), keepGroupOrder }, stops: [] })
@@ -284,5 +285,5 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
     const ordered = await plan(true)
     expect(ordered.result.error).toMatch(/In this order/)
     expect(ordered.after.stops).toEqual(ordered.before.stops)
-  })
+  }, 30_000)
 })
