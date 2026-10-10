@@ -21,8 +21,9 @@ export type ChatMessage =
   /** `view`: the labels of what the user shared from the screen with this message. */
   | { role: 'user'; text: string; view?: string[] }
   /** `choices`: short replies shown as buttons (the model's, or Continue when the user stopped it); `think`: whether
-   *  this reply thought harder, so a clicked choice or a retry continues the same way; `spent`: what it used. */
-  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent }
+   *  this reply thought harder, so a clicked choice or a retry continues the same way; `spent`: what it used; `ms`:
+   *  how long it took, from when the user asked. */
+  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent; ms?: number }
 export type AssistantMessage = Extract<ChatMessage, { role: 'assistant' }>
 
 /** The part of the chat saved with each trip. */
@@ -113,6 +114,8 @@ export type Run = {
   callModel: ModelCall
   /** Stops the run after the model call or wait in progress; what it changed so far stays (and can be undone). */
   signal: AbortSignal
+  /** When the user asked (ms since 1970; on the server, when the run was started), for the reply's time. */
+  startedAt?: number
   /** What the reply has used so far, after each model call. */
   onSpent?: (spent: Spent) => void
   /** After each step (a model call and the tools it asked for): the reply so far. The run waits for it (the runner
@@ -123,6 +126,7 @@ export type Run = {
 /** Answers one message: the reply, and the conversation to keep for the next one. */
 export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage; contents: Content[] }> {
   const { trip, view, think, plan, signal, callModel } = run
+  const startedAt = run.startedAt ?? Date.now()
   const tools = <T>(fn: () => T) => withTrip(trip, view, fn)
   const before = tools(snapshot)
   if (plan === 'new') trip.getState().generate()
@@ -185,5 +189,6 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
   const samePlans = before.activePlanId === after.activePlanId &&
     (before.plans ?? []).map((p) => p.id + p.name).join() === (after.plans ?? []).map((p) => p.id + p.name).join()
   if (reply.changes.length) reply.before = samePlans ? { input: before.input, stops: before.stops } : before
+  reply.ms = Math.max(0, Date.now() - startedAt)
   return { reply, contents: reply.error ? contents : trim(compact(contents)) }
 }

@@ -139,7 +139,7 @@ export class Account extends DurableObject {
   }
 
   private record(r: RunRow): RunRecord {
-    return { id: r.id, tripId: r.trip_id, text: (JSON.parse(r.request) as RunRequest).text, status: r.status, reply: r.reply, version: r.version, error: r.error, updated: r.updated }
+    return { id: r.id, tripId: r.trip_id, text: (JSON.parse(r.request) as RunRequest).text, status: r.status, reply: r.reply, version: r.version, error: r.error, created: r.created, updated: r.updated }
   }
 
   /** Starts a run on a trip: saves the trip and chat as on screen, then adds the run (one at a time per trip). */
@@ -172,9 +172,11 @@ export class Account extends DurableObject {
     return this.getRun(id)
   }
 
-  /** Whose allowance a run uses (its account's limit may depend on the email). */
-  async runEmail(id: string): Promise<string | null | undefined> {
-    return this.run(id)?.email
+  /** For a model call of a run: whose allowance it uses (the account's limit may depend on the email), and whether
+   *  the run was asked to stop or has ended (then it gets no more calls). */
+  async runCaller(id: string): Promise<{ email: string | null; stop: boolean } | null> {
+    const r = this.run(id)
+    return r && { email: r.email, stop: r.stop === 1 || r.status !== 'running' }
   }
 
   /** For the runner: the run's message and the trip and chat it starts from, as JSON text. */
@@ -182,15 +184,17 @@ export class Account extends DurableObject {
     const r = this.run(id)
     const trip = r && this.row(r.trip_id)
     if (!r || !trip) return null
-    return `{"status":${JSON.stringify(r.status)},"request":${r.request},"data":${trip.data ?? 'null'},"chat":${trip.chat ?? 'null'}}`
+    return `{"status":${JSON.stringify(r.status)},"created":${r.created},"request":${r.request},"data":${trip.data ?? 'null'},"chat":${trip.chat ?? 'null'}}`
   }
 
-  /** From the runner, after each step: the reply so far, and the trip when it changed. Answers whether to stop. */
-  async runProgress(id: string, reply: string, data: string | undefined): Promise<{ stop: boolean }> {
+  /** From the runner, after each step and every few seconds while it waits: the reply so far and the trip when they
+   *  changed (and that it's still going). Answers whether to stop. */
+  async runProgress(id: string, reply: string | undefined, data: string | undefined): Promise<{ stop: boolean }> {
     const r = this.run(id)
     if (!r || r.status !== 'running') return { stop: true }
     if (data !== undefined) this.write(r.trip_id, { data })
-    this.ctx.storage.sql.exec('UPDATE runs SET reply = ?, version = version + ?, updated = ? WHERE id = ?', reply, data === undefined ? 0 : 1, Date.now(), id)
+    this.ctx.storage.sql.exec('UPDATE runs SET reply = ?, version = version + ?, updated = ? WHERE id = ?',
+      reply ?? r.reply, data === undefined ? 0 : 1, Date.now(), id)
     return { stop: r.stop === 1 }
   }
 

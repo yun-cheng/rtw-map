@@ -8,6 +8,7 @@ import { createTripStore, tripData, type Display, type TripData } from '../src/s
 
 type RunInput = {
   status: string
+  created: number
   request: { text: string; view: ViewItem[]; think: boolean; plan?: 'new' | 'update'; display: Display }
   data: TripData | null
   chat: SavedChat | null
@@ -16,6 +17,8 @@ type RunInput = {
 /** Waits before retrying when the per-minute limit is hit, and when the Worker can't be reached. */
 const BUSY_WAITS = [15_000, 30_000, 45_000]
 const LOST_WAITS = [2_000, 5_000, 10_000]
+/** While waiting, how often the runner checks in (whether to stop, and that it's still going). */
+const HEARTBEAT_MS = 5_000
 
 const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, reject) => {
   const t = setTimeout(resolve, ms)
@@ -70,15 +73,37 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   const controller = new AbortController()
   const question: ChatMessage = { role: 'user', text: request.text, ...(request.view.length && { view: request.view.map((v) => v.label) }) }
 
+  /** Tells the Worker the run is still going (with the reply so far, and the trip when it changed); stops the run
+   *  when the user asked to. */
+  const report = async (body: { reply?: ChatMessage; data?: unknown }) => {
+    const res = await api.send('/progress', body)
+    const { stop } = (await res.json().catch(() => ({}))) as { stop?: boolean }
+    if (stop) controller.abort(new Error('Stopped'))
+    return res.ok
+  }
+  /** Waits, checking every few seconds whether the user stopped the run. */
+  const wait = async (ms: number, signal: AbortSignal) => {
+    for (let left = ms; left > 0; left -= HEARTBEAT_MS) {
+      await sleep(Math.min(left, HEARTBEAT_MS), signal)
+      await report({})
+      if (signal.aborted) throw signal.reason
+    }
+  }
+
   const callModel: ModelCall = async (contents, context, think, signal, onSpent) => {
     for (let attempt = 0; ; attempt++) {
       const res = await api.send('/chat', { contents, context, think }, signal)
-      const data = (await res.json().catch(() => null)) as { error?: string; content?: Content; spent?: Partial<Spent> } | null
+      const data = (await res.json().catch(() => null)) as { error?: string; stopped?: boolean; content?: Content; spent?: Partial<Spent> } | null
       if (data?.spent) onSpent(data.spent)
+      // The user stopped the run (heard here when it's between steps).
+      if (data?.stopped) {
+        controller.abort(new Error('Stopped'))
+        throw controller.signal.reason
+      }
       // Too many calls this minute (or Gemini busy): wait and try again. Out of today's allowance: stop.
       const outForToday = /today|turned off/.test(data?.error ?? '')
       if (res.status === 429 && !outForToday && attempt < BUSY_WAITS.length) {
-        await sleep(BUSY_WAITS[attempt], signal)
+        await wait(BUSY_WAITS[attempt], signal)
         continue
       }
       if (!res.ok || !data?.content) throw new Error(data?.error ?? `The assistant isn't reachable (${res.status}).`)
@@ -90,15 +115,12 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   let saved = JSON.stringify(input.data)
   const onStep = async (reply: ChatMessage) => {
     const now = JSON.stringify(tripData(trip.getState()))
-    const res = await api.send('/progress', { reply, ...(now !== saved && { data: JSON.parse(now) }) })
-    if (now !== saved && res.ok) saved = now
-    const { stop } = (await res.json().catch(() => ({}))) as { stop?: boolean }
-    if (stop) controller.abort(new Error('Stopped'))
+    if ((await report({ reply, ...(now !== saved && { data: JSON.parse(now) }) })) && now !== saved) saved = now
   }
 
   const { reply, contents } = await runAssistant({
     trip, view: request.view, history: chat.contents, note: chat.note, text: request.text, think: request.think, plan: request.plan,
-    callModel, signal: controller.signal, onStep,
+    callModel, signal: controller.signal, onStep, startedAt: input.created,
   })
   const status = reply.error ? 'failed' : controller.signal.aborted ? 'stopped' : 'done'
   const finished = await api.send('/finish', {

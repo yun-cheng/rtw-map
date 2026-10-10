@@ -24,8 +24,8 @@ export type RunRequest = {
 }
 
 /** A run as the Account keeps it: the message it answers (`text`), the reply so far as JSON text (text, steps, what
- *  it used), and `version`, counted up each time the run saves the trip. */
-export type RunRecord = { id: string; tripId: string; text: string; status: RunStatus; reply: string | null; version: number; error: string | null; updated: number }
+ *  it used), `version`, counted up each time the run saves the trip, and when it was started (`created`). */
+export type RunRecord = { id: string; tripId: string; text: string; status: RunStatus; reply: string | null; version: number; error: string | null; created: number; updated: number }
 /** A run as the browser sees it. */
 export type RunView = Omit<RunRecord, 'reply'> & { reply: unknown }
 export const runView = ({ reply, ...r }: RunRecord): RunView => ({ ...r, reply: reply ? JSON.parse(reply) : null })

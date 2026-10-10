@@ -22,6 +22,8 @@ type ChatState = {
   runId: string | null
   /** What the reply under way has used so far. */
   spent: Spent
+  /** When the reply under way started (ms since 1970), for its running time. */
+  startedAt: number | null
   /** Sends a message, with the parts of the current view the user chose to share. `think` overrides the "Think
    *  harder" switch. `plan` starts the model afresh, without the conversation so far: 'new' (Plan with AI) makes a
    *  clean plan from the planner's draft (Undo goes back to the trip from before it); 'update' (Update plan) changes
@@ -92,6 +94,7 @@ export const useChat = create<ChatState>()(
       think: false,
       busy: false,
       spent: NO_SPENT,
+      startedAt: null,
       runId: null,
 
       send: async (text, view = [], options = {}) => {
@@ -100,9 +103,10 @@ export const useChat = create<ChatState>()(
         if (server && (await server.send(text, view, { think, plan: options.plan }))) return
         controller = new AbortController()
         const { contents: history, note } = get()
-        set({ busy: true, note: null, spent: NO_SPENT, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
+        const startedAt = Date.now()
+        set({ busy: true, note: null, spent: NO_SPENT, startedAt, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
         const { reply, contents } = await runAssistant({
-          trip: useTrip, view, history, note, text, think, plan: options.plan, callModel, signal: controller.signal,
+          trip: useTrip, view, history, note, text, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
           onSpent: (spent) => set({ spent }),
         })
         controller = null

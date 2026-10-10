@@ -197,7 +197,7 @@ if (typeof window !== 'undefined') {
 
 // ---------------------------------------------------------------- the assistant's runs on the server (worker/runs.ts)
 
-type Run = { id: string; text: string; status: 'running' | 'done' | 'stopped' | 'failed'; version: number; error: string | null; reply: { spent?: Spent } | null }
+type Run = { id: string; text: string; created: number; status: 'running' | 'done' | 'stopped' | 'failed'; version: number; error: string | null; reply: { spent?: Spent } | null }
 /** How often the page asks how a run is going. */
 const POLL_MS = 1500
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -209,7 +209,7 @@ async function follow(tripId: string, run: Run) {
   // (Already following it: the trip was opened again meanwhile.)
   if (following === run.id) return
   following = run.id
-  useChat.setState({ busy: true, runId: run.id, spent: run.reply?.spent ?? NO_SPENT })
+  useChat.setState({ busy: true, runId: run.id, spent: run.reply?.spent ?? NO_SPENT, startedAt: run.created })
   let version = run.version
   let misses = 0
   while (useSaved.getState().activeId === tripId) {
@@ -263,7 +263,7 @@ setServerRuns({
     dirty = false
     const chat = chatData()
     const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }
-    useChat.setState({ busy: true, note: null, spent: NO_SPENT, messages: [...chat.messages, asked] })
+    useChat.setState({ busy: true, note: null, spent: NO_SPENT, startedAt: Date.now(), messages: [...chat.messages, asked] })
     const { currency, tempUnit, tempFeels } = useTrip.getState()
     const res = await fetch('/api/runs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },

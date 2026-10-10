@@ -46,16 +46,39 @@ const tokens = (n: number) => (n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).to
 /** US dollars, to a tenth of a cent below a dime. */
 const usd = (n: number) => `$${n.toFixed(n < 0.1 ? 3 : 2)}`
 
-/** What model calls used: calls, tokens read and written, and their cost. */
-function SpentLine({ spent, label }: { spent: Spent; label?: string }) {
+/** A length of time, short: 8s, 2m 05s, 1h 02m. */
+function duration(ms: number) {
+  const s = Math.round(ms / 1000)
+  const m = Math.floor(s / 60)
+  return s < 60 ? `${s}s` : m < 60 ? `${m}m ${String(s % 60).padStart(2, '0')}s` : `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, '0')}m`
+}
+
+/** What a reply (or the chat) took: how long, the model calls, tokens read and written, and their cost. */
+function SpentLine({ spent, ms, label }: { spent: Spent; ms?: number; label?: string }) {
+  const parts = [
+    ms !== undefined && duration(ms),
+    spent.calls > 0 && `${spent.calls} call${spent.calls === 1 ? '' : 's'}`,
+    spent.calls > 0 && `${tokens(spent.input)} tokens in, ${tokens(spent.output)} out`,
+    spent.calls > 0 && usd(spent.usd),
+  ].filter(Boolean)
   return (
     <p
       className="text-[11px] text-muted tabular-nums"
-      title={`${spent.input.toLocaleString()} tokens read (${spent.cached.toLocaleString()} of them cached, cheaper), ${spent.output.toLocaleString()} written, thinking included; ${usd(spent.usd)} at Gemini's prices`}
+      title={`${ms !== undefined ? `Took ${duration(ms)}; ` : ''}${spent.input.toLocaleString()} tokens read (${spent.cached.toLocaleString()} of them cached, cheaper), ${spent.output.toLocaleString()} written, thinking included; ${usd(spent.usd)} at Gemini's prices`}
     >
-      {label}{spent.calls} call{spent.calls === 1 ? '' : 's'} · {tokens(spent.input)} tokens in, {tokens(spent.output)} out · {usd(spent.usd)}
+      {label}{parts.join(' · ')}
     </p>
   )
+}
+
+/** The reply under way: its time so far, counting up, and what it has used. */
+function RunningLine({ spent, startedAt }: { spent: Spent; startedAt: number | null }) {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return <SpentLine spent={spent} ms={startedAt === null ? undefined : Math.max(0, now - startedAt)} label="So far: " />
 }
 
 /** A reply, with its changes (and Undo) and, on the latest reply, buttons to answer it with a click. */
@@ -87,7 +110,7 @@ function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
           </ul>
         </div>
       )}
-      {msg.spent && msg.spent.calls > 0 && <div className="mt-1"><SpentLine spent={msg.spent} /></div>}
+      {((msg.spent && msg.spent.calls > 0) || msg.ms !== undefined) && <div className="mt-1"><SpentLine spent={msg.spent ?? NO_SPENT} ms={msg.ms} /></div>}
       {(onChoose && msg.choices?.length) || (onRetry && msg.error) ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {msg.error && onRetry && <ChoiceButton onClick={onRetry}>↻ Try again</ChoiceButton>}
@@ -168,7 +191,7 @@ function Chat() {
     }
   }, [sub, multiple, seen])
   const raised = !!sub && multiple > 1 && multiple > seen
-  const { messages, busy, think, spent, send, stop, retry, setThink, clear } = useChat()
+  const { messages, busy, think, spent, startedAt, send, stop, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const list = useRef<HTMLDivElement>(null)
   const view = useViewItems()
@@ -177,9 +200,12 @@ function Chat() {
   const shared = view.filter((v) => !hidden.has(v.key))
   // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after).
   const lastChange = messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
-  // What this chat has used, the reply under way included.
+  // What this chat has used, the reply under way included, and how long its replies took.
   const total = [...messages.map((m) => (m.role === 'assistant' && m.spent) || NO_SPENT), busy ? spent : NO_SPENT]
     .reduce((a, b) => ({ calls: a.calls + b.calls, input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd }), NO_SPENT)
+  // (The time only when every reply has one: replies from before times were kept have none.)
+  const replies = messages.flatMap((m) => (m.role === 'assistant' ? [m] : []))
+  const totalMs = replies.length && replies.every((m) => m.ms !== undefined) ? replies.reduce((sum, m) => sum + m.ms!, 0) : undefined
 
   // To the latest message, scrolling only the list (scrollIntoView would also scroll the phone's sheet around it).
   useEffect(() => {
@@ -196,7 +222,7 @@ function Chat() {
     <div className="flex h-full flex-col">
       {(usage || total.calls > 0) && (
         <div className="flex items-center gap-3 border-b border-line px-4 py-1.5 text-[12px]">
-          {total.calls > 0 && <SpentLine spent={total} label="This chat: " />}
+          {total.calls > 0 && <SpentLine spent={total} ms={totalMs} label="This chat: " />}
           {usage && <span className="ml-auto"><UsageLine usage={usage} /></span>}
         </div>
       )}
@@ -247,7 +273,7 @@ function Chat() {
               <div className="flex items-center gap-2">
                 <div className="flex-1">
                   <p className="text-[13px] text-muted">{think ? 'Thinking it through…' : 'Working on it…'}</p>
-                  {spent.calls > 0 && <SpentLine spent={spent} label="So far: " />}
+                  <RunningLine spent={spent} startedAt={startedAt} />
                 </div>
                 <Button variant="ghost" className="!py-0.5 text-[12px]" onClick={stop}>■ Stop</Button>
               </div>

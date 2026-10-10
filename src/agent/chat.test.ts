@@ -202,7 +202,7 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
       () => ({ role: 'model', parts: [{ text: 'Planned, with 9 nights at the start.' }] }),
     ]
     const { reply, contents } = await runAssistant({
-      trip, view: [], history: [], note: null, text: 'Plan my trip from scratch.', think: false, plan: 'new',
+      trip, view: [], history: [], note: null, text: 'Plan my trip from scratch.', think: false, plan: 'new', startedAt: Date.now() - 5000,
       callModel: async (_c, _x, _t, _s, onSpent) => {
         onSpent({ input: 1000, output: 100, usd: 0.001 })
         return answers.shift()!()
@@ -211,6 +211,8 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
     })
     expect(reply).toMatchObject({ text: 'Planned, with 9 nights at the start.', plan: 'new', spent: { calls: 2, input: 2000, output: 200 } })
     expect(reply.changes).toContain(`New itinerary: ${trip.getState().stops.length} stops`)
+    // Its time counts from when the run was started (on the server, before the runner picked it up).
+    expect(reply.ms).toBeGreaterThanOrEqual(5000)
     expect(trip.getState().stops[0].nights).toBe(9)
     expect(trip.getState().input.planned).toBeTruthy()
     expect(contents).toHaveLength(4)

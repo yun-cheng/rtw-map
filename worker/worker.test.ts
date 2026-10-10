@@ -197,6 +197,6 @@ describe('assistant runs', () => {
     expect(isStale('running', now - RUN_STALE_MS - 1, now)).toBe(true)
     expect(isStale('running', now - 60_000, now)).toBe(false)
     expect(isStale('done', 0, now)).toBe(false)
-    expect(runView({ id: 'r', tripId: 't', text: 'Hi?', status: 'running', reply: '{"text":"Hi"}', version: 2, error: null, updated: now }).reply).toEqual({ text: 'Hi' })
+    expect(runView({ id: 'r', tripId: 't', text: 'Hi?', status: 'running', reply: '{"text":"Hi"}', version: 2, error: null, created: now, updated: now }).reply).toEqual({ text: 'Hi' })
   })
 })
