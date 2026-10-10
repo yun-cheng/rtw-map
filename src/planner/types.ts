@@ -298,6 +298,9 @@ export type TripGroup = {
   id: string
   name: string
   countries: TripCountry[]
+  /** The days to spend in the region, all its countries told (the nights at their stops; either end may be left open). */
+  minDays?: number | null
+  maxDays?: number | null
 }
 
 export type TripInput = {

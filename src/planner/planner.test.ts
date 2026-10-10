@@ -560,6 +560,23 @@ describe('days in a country', () => {
     expect(plan.warnings.some((w) => w.kind === 'time' && w.iso2 === 'RO')).toBe(true)
   })
 
+  it('keeps a region to its range, all its countries told', () => {
+    const input = testTrip('US')
+    const regions = (balkans: object, baltics: object) => ({ ...input, groups: input.groups.map((g) => (g.name === 'Balkans' ? { ...g, ...balkans } : g.name === 'Baltic States' ? { ...g, ...baltics } : g)) })
+    const inRegion = (plan: ReturnType<typeof generatePlan>, name: string) =>
+      plan.stops.filter((s) => input.groups.find((g) => g.name === name)!.countries.some((c) => c.iso2 === iso(s.cityId))).reduce((t, s) => t + s.nights, 0)
+    const plan = generatePlan(ds, regions({ maxDays: 20 }, { minDays: 25 }))
+    expect(inRegion(plan, 'Balkans')).toBeGreaterThan(0)
+    expect(inRegion(plan, 'Balkans')).toBeLessThanOrEqual(20)
+    expect(inRegion(plan, 'Baltic States')).toBeGreaterThanOrEqual(25)
+    expect(plan.warnings.filter((w) => w.kind === 'time')).toEqual([])
+    // With a country's own range inside it.
+    const both = generatePlan(ds, { ...regions({ minDays: 30 }, {}), groups: regions({ minDays: 30 }, {}).groups.map((g) =>
+      g.name === 'Balkans' ? { ...g, countries: g.countries.map((c) => (c.iso2 === 'HR' ? { ...c, mode: 'must' as const, maxDays: 3 } : c)) } : g) })
+    expect(inRegion(both, 'Balkans')).toBeGreaterThanOrEqual(30)
+    expect(nightsIn(both, 'HR')).toBeLessThanOrEqual(3)
+  })
+
   it('says the range in words', () => {
     expect(dayRangeText({ min: 5, max: 7 })).toBe('5–7 days')
     expect(dayRangeText({ min: 5, max: 5 })).toBe('5 days')

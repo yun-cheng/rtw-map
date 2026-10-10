@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
+import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
@@ -123,7 +123,17 @@ export function SetupPanel() {
                       )}
                       <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
                     </div>
-                    {/* Each country: click it to change whether it's a must visit, and the days to spend there. */}
+                    {/* The days in the whole region (a country added on its own has just its own), then each country: click
+                        it to change whether it's a must visit, and the days to spend there. */}
+                    {open && g.countries.length > 1 && (
+                      <div className="mb-1.5 flex items-center gap-2 border-b border-line pb-1.5 text-[12px] text-muted">
+                        All of {g.name}
+                        <Range unit="days" className="ml-auto shrink-0">
+                          <AnyNumber value={g.minDays} max={MAX_COUNTRY_DAYS} small label={`Fewest days in ${g.name}`} onChange={(minDays) => updateGroup(g.id, (x) => ({ ...x, minDays }))} />
+                          <AnyNumber value={g.maxDays} min={g.minDays} max={MAX_COUNTRY_DAYS} small label={`Most days in ${g.name}`} onChange={(maxDays) => updateGroup(g.id, (x) => ({ ...x, maxDays }))} />
+                        </Range>
+                      </div>
+                    )}
                     {open && <div className="flex flex-col gap-1">
                       {g.countries.map((c) => {
                         const adv = ds.advisories[c.iso2]
@@ -213,11 +223,14 @@ const Card = ({ className = '', children }: { className?: string; children: Reac
   <section className={`rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)] ${className}`}>{children}</section>
 )
 
-/** A folded region's line: how many of its countries are must visits, optional or left out. */
+/** A folded region's line: the days asked for there, and how many of its countries are must visits, optional or left
+ *  out. */
 function groupSummary(g: TripGroup) {
   const count = (mode: CountryMode) => g.countries.filter((c) => c.mode === mode).length
   const parts = [[count('must'), 'must visit'], [count('optional'), 'optional'], [count('excluded'), 'left out']] as const
-  return parts.filter(([n]) => n).map(([n, label]) => `${n} ${label}`).join(' · ') || 'No countries'
+  const days = (g.minDays || g.maxDays) && g.countries.length > 1 && dayRangeText({ min: g.minDays, max: g.maxDays })
+  const line = [days, ...parts.filter(([n]) => n).map(([n, label]) => `${n} ${label}`)].filter(Boolean).join(' · ') || 'No countries'
+  return line.charAt(0).toUpperCase() + line.slice(1)
 }
 
 /** A date as the date inputs show it: 2027/05/08. */

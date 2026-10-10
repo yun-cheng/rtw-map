@@ -52,7 +52,7 @@ const shortDate = (iso: string) => `${Number(iso.slice(8))} ${monthName(Number(i
 function regionsText(input: TripInput): string {
   if (!input.groups.length) return 'none yet'
   return input.groups.map((g, i) =>
-    `${i + 1}. ${g.name}: ${g.countries.map((c) => `${countryName(c.iso2)} ${c.mode}${hasDays(c) ? ` (${dayRangeText({ min: c.minDays, max: c.maxDays })})` : ''}`).join(', ')}`).join('\n')
+    `${i + 1}. ${g.name}${hasDays(g) ? ` (${daysText(g)})` : ''}: ${g.countries.map((c) => `${countryName(c.iso2)} ${c.mode}${hasDays(c) ? ` (${daysText(c)})` : ''}`).join(', ')}`).join('\n')
 }
 
 /** A compact description of the trip, sent with every message so the assistant knows the current state. */
@@ -134,7 +134,7 @@ function tripDetails(): ToolResult {
       passport: input.passport, keep_region_order: input.keepGroupOrder, start_city: input.startCityId && cityName(input.startCityId),
       end_city: input.endCityId && cityName(input.endCityId), schengen_days_before: input.schengenDaysBefore,
     },
-    regions: input.groups.map((g) => ({ name: g.name, countries: g.countries.map((c) => ({ country: countryName(c.iso2), mode: c.mode, min_days: c.minDays ?? null, max_days: c.maxDays ?? null })) })),
+    regions: input.groups.map((g) => ({ name: g.name, min_days: g.minDays ?? null, max_days: g.maxDays ?? null, countries: g.countries.map((c) => ({ country: countryName(c.iso2), mode: c.mode, min_days: c.minDays ?? null, max_days: c.maxDays ?? null })) })),
     itinerary: plan && {
       stops: plan.stops.map((s) => ({ city: cityName(s.cityId), id: s.cityId, country: countryName(ds.cities[s.cityId].iso2), arrive: s.arrive, depart: s.depart, nights: s.nights, locked: s.locked })),
       legs: plan.legs.map((l) => ({
@@ -614,7 +614,12 @@ function updateRegion(args: Args): string {
     setInput({ groups: input.groups.filter((x) => x.id !== g.id) })
     return `Removed region ${g.name}`
   }
-  throw new ToolError('Nothing to change: give remove')
+  if (args.min_days === undefined && args.max_days === undefined) throw new ToolError('Nothing to change: give min_days, max_days or remove')
+  const next = { ...g }
+  if (args.min_days !== undefined) next.minDays = dayCount(args.min_days)
+  if (args.max_days !== undefined) next.maxDays = dayCount(args.max_days)
+  setInput({ groups: input.groups.map((x) => (x.id === g.id ? next : x)) })
+  return `${g.name}: ${daysText(next)}`
 }
 
 function setCountryMode(args: Args): string {
@@ -627,16 +632,20 @@ function setCountryMode(args: Args): string {
     if (!['must', 'optional', 'excluded'].includes(String(args.mode))) throw new ToolError('mode must be must, optional or excluded')
     next.mode = args.mode as CountryMode
   }
-  // 0 (or none) for no limit.
-  const days = (v: unknown) => (Number(v) > 0 ? Math.min(MAX_COUNTRY_DAYS, Math.round(Number(v))) : null)
-  if (args.min_days !== undefined) next.minDays = days(args.min_days)
-  if (args.max_days !== undefined) next.maxDays = days(args.max_days)
+  if (args.min_days !== undefined) next.minDays = dayCount(args.min_days)
+  if (args.max_days !== undefined) next.maxDays = dayCount(args.max_days)
   if (args.mode === undefined && args.min_days === undefined && args.max_days === undefined) throw new ToolError('Nothing to change')
   setInput({ groups: input.groups.map((g) => ({ ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? next : c)) })) })
-  return `${countryName(iso2)}: ${next.mode}${hasDays(next) ? `, ${dayRangeText({ min: next.minDays, max: next.maxDays })}` : ''}`
+  return `${countryName(iso2)}: ${next.mode}${hasDays(next) ? `, ${daysText(next)}` : ''}`
 }
 
-const hasDays = (c: TripCountry) => !!(c.minDays || c.maxDays)
+/** The days asked for in a country or region. */
+type Days = { minDays?: number | null; maxDays?: number | null }
+const hasDays = (x: Days) => !!(x.minDays || x.maxDays)
+const daysText = (x: Days) => dayRangeText({ min: x.minDays, max: x.maxDays })
+const sameDays = (a: Days, b: Days) => (a.minDays ?? null) === (b.minDays ?? null) && (a.maxDays ?? null) === (b.maxDays ?? null)
+/** A number of days from the assistant: 0 (or none) for no limit. */
+const dayCount = (v: unknown) => (Number(v) > 0 ? Math.min(MAX_COUNTRY_DAYS, Math.round(Number(v))) : null)
 
 /** Index to pass to moveStop so that the stop ends up right after `after` ("start" = first). */
 function targetIndex(from: number, after: unknown): number {
@@ -886,10 +895,11 @@ export function describeChanges(before: TripSnapshot, after: TripSnapshot): stri
   for (const g of b.groups) {
     const old = a.groups.find((x) => x.id === g.id)
     if (!old) { out.push(`Added region ${g.name}`); continue }
+    if (!sameDays(old, g)) out.push(`${g.name}: ${daysText(g)}`)
     for (const c of g.countries) {
       const was = old.countries.find((x) => x.iso2 === c.iso2)
       if (was && was.mode !== c.mode) out.push(`${countryName(c.iso2)}: ${was.mode} → ${c.mode}`)
-      if (was && ((was.minDays ?? null) !== (c.minDays ?? null) || (was.maxDays ?? null) !== (c.maxDays ?? null))) out.push(`${countryName(c.iso2)}: ${dayRangeText({ min: c.minDays, max: c.maxDays })}`)
+      if (was && !sameDays(was, c)) out.push(`${countryName(c.iso2)}: ${daysText(c)}`)
     }
   }
   for (const g of a.groups) if (!b.groups.some((x) => x.id === g.id)) out.push(`Removed region ${g.name}`)

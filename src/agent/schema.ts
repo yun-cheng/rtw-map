@@ -171,8 +171,13 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'update_region',
-    description: 'Remove a region from the trip setup.',
-    parametersJsonSchema: obj({ region: str('Region name'), remove: { type: 'boolean' } }, ['region', 'remove']),
+    description: 'Set the days to spend in a region, all its countries told (the nights at their stops), or remove it from the trip setup. Applies when the plan is generated.',
+    parametersJsonSchema: obj({
+      region: str('Region name'),
+      min_days: { type: 'integer', description: 'Fewest days in the region; 0 for no limit' },
+      max_days: { type: 'integer', description: 'Most days in the region; 0 for no limit' },
+      remove: { type: 'boolean' },
+    }, ['region']),
   },
   {
     name: 'set_country_mode',
