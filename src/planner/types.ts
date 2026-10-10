@@ -226,6 +226,9 @@ export type Pace = 'chill' | 'balanced' | 'fast'
 /** Travel style: a preset of the day's choices and travel preferences (the assistant can apply one). */
 export type Budget = 'shoestring' | 'backpacker' | 'private' | 'midrange' | 'comfort'
 
+/** Where cool, pleasant, warm and hot start, in °C, in rising order. */
+export type TempBreaks = [number, number, number, number]
+
 /**
  * How someone likes to travel (the preferences in the Trip tab). A travel style preset (input.budget) can fill in the style
  * fields; all are the traveller's to change. Amounts are in EUR, like all prices.
@@ -251,11 +254,9 @@ export type TravelPrefs = {
   focus: 'balanced' | 'countries' | 'highlights'
   /** Expensive places (well above the trip's typical daily cost): no change, shorter stays, or skipped where optional. */
   expensive: 'ignore' | 'shorter' | 'skip'
-  /** The comfortable range of daily highs and of nightly lows, in °C (null: no limit on that side). */
-  maxHeatC: number | null
-  minHighC: number | null
-  maxLowC: number | null
-  minLowC: number | null
+  /** The traveller's temperature bands: where cool, pleasant, warm and hot start, in °C (below the first is cold). The
+   *  map and each city's weather colour by them; the planner avoids cold and hot months, and Checks flags them. */
+  tempBreaks: TempBreaks
   avoidRain: boolean
   dailyBudget: number | null
 }

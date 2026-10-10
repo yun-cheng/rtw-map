@@ -1,4 +1,4 @@
-import type { Budget, TravelPrefs } from './types'
+import type { Budget, TempBreaks, TravelPrefs } from './types'
 
 /** The preferences each travel style sets; the others (who, limits, comfort) are left as they are. */
 type StyleFields = Pick<TravelPrefs, 'room' | 'breakfast' | 'lunch' | 'dinner' | 'coffees' | 'beers' | 'betweenCities' | 'overnight'>
@@ -38,18 +38,37 @@ export function matchesStyle(prefs: TravelPrefs, style: Budget): boolean {
   return Object.entries(styleOf(style).prefs).every(([k, v]) => prefs[k as keyof TravelPrefs] === v)
 }
 
+/** The usual temperature bands: cold below 12°C, cool to 18, pleasant to 28, warm to 32, hot from 32. */
+export const DEFAULT_TEMP_BREAKS: TempBreaks = [12, 18, 28, 32]
+
+/** Breakpoints in rising order, a degree apart at least: each moved up past the one before if it has to be. */
+export function tidyBreaks(b: number[]): TempBreaks {
+  const out = [...b] as TempBreaks
+  for (let i = 1; i < 4; i++) out[i] = Math.max(out[i], out[i - 1] + 1)
+  return out
+}
+
 export const DEFAULT_PREFS: TravelPrefs = {
   homeCityId: null, returnHome: true, ...STYLES[1].prefs, maxPerNight: null, maxTravelHours: null,
-  focus: 'balanced', expensive: 'ignore', maxHeatC: null, minHighC: null, maxLowC: null, minLowC: null, avoidRain: false, dailyBudget: null,
+  focus: 'balanced', expensive: 'ignore', tempBreaks: DEFAULT_TEMP_BREAKS, avoidRain: false, dailyBudget: null,
 }
 
 /** Trips saved before preferences existed get those of their travel style; newer fields get their defaults. */
 export function withPrefs<T extends { budget: Budget; prefs?: Partial<TravelPrefs> }>(input: T): T & { prefs: TravelPrefs } {
   // Preferences saved before they were removed are left out: the number of travellers (costs are one traveller's),
-  // paid sights and needing fast internet.
-  type Saved = Partial<TravelPrefs> & { travellers?: unknown; sights?: unknown; needInternet?: unknown }
-  const { travellers: _t, sights: _s, needInternet: _i, ...saved } = (input.prefs ?? {}) as Saved
+  // paid sights, needing fast internet, and comfortable ranges of highs and lows. A range of highs becomes where cold
+  // ends and hot starts.
+  type Old = {
+    travellers?: unknown; sights?: unknown; needInternet?: unknown
+    minHighC?: number | null; maxHeatC?: number | null; minLowC?: unknown; maxLowC?: unknown
+  }
+  const { travellers: _t, sights: _s, needInternet: _i, minHighC, maxHeatC, minLowC: _l, maxLowC: _h, ...saved } =
+    (input.prefs ?? {}) as Partial<TravelPrefs> & Old
   const prefs = { ...stylePrefs(input.budget), ...saved }
+  if (!saved.tempBreaks && (minHighC != null || maxHeatC != null)) {
+    const [cool, pleasant, warm, hot] = DEFAULT_TEMP_BREAKS
+    prefs.tempBreaks = tidyBreaks([minHighC ?? cool, Math.max(pleasant, (minHighC ?? cool) + 1), Math.min(warm, (maxHeatC ?? hot) - 1), maxHeatC ?? hot])
+  }
   // Older saved values: rooms other than a dorm (private rooms, hotels, apartments) are a private room; breakfast
   // "with the room" (no hotel prices include it yet) is local; "cook" and "shop" are "diy".
   if (prefs.room !== 'dorm') prefs.room = 'private'

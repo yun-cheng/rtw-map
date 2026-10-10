@@ -1,4 +1,6 @@
 import { dataset as ds } from '../data/dataset'
+import { DEFAULT_TEMP_BREAKS } from '../planner/prefs'
+import type { TempBreaks } from '../planner/types'
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -103,11 +105,14 @@ export function tempRange(lo: number, hi: number, unit: TempUnit): string {
   return `${a}${a < 0 || b < 0 ? ' to ' : '–'}${b}°${unit}`
 }
 
-/** Each temperature class as its range, e.g. "18–28°C" (thresholds as in tempKind; the same for highs and lows). */
-export function tempBand(kind: Exclude<WeatherKind, 'wet'>, unit: TempUnit): string {
-  const t = (c: number) => tempValue(c, unit)
+export type TempKind = Exclude<WeatherKind, 'wet'>
+export const TEMP_KINDS: TempKind[] = ['cold', 'cool', 'pleasant', 'warm', 'hot']
+
+/** Each temperature class as its range, e.g. "18–28°C" (breakpoints as in tempKind; the same for highs and lows). */
+export function tempBand(kind: TempKind, unit: TempUnit, breaks: TempBreaks = DEFAULT_TEMP_BREAKS): string {
+  const [cool, pleasant, warm, hot] = breaks.map((c) => tempValue(c, unit))
   const u = `°${unit}`
-  return { cold: `<${t(12)}${u}`, cool: `${t(12)}–${t(18)}${u}`, pleasant: `${t(18)}–${t(28)}${u}`, warm: `${t(28)}–${t(32)}${u}`, hot: `${t(32)}${u}+` }[kind]
+  return { cold: `<${cool}${u}`, cool: `${cool}–${pleasant}${u}`, pleasant: `${pleasant}–${warm}${u}`, warm: `${warm}–${hot}${u}`, hot: `${hot}${u}+` }[kind]
 }
 
 /** A warning's text, with the temperature (hot/cold warnings) in the given unit. */
@@ -120,24 +125,22 @@ export function shownTemps(m: { tHigh: number; tLow: number; feelsHigh?: number;
   return { high: f ? m.feelsHigh! : m.tHigh, low: f ? m.feelsLow! : m.tLow, feels: f }
 }
 
-/** Classifies a month by its average high, using the same thresholds as the weather warnings. */
-export function weatherKind(m: { tHigh: number; rainDays: number }): WeatherKind {
-  const t = temperatureKind(m)
+/** Classifies a month by its average high, using the same breakpoints as the weather warnings. */
+export function weatherKind(m: { tHigh: number; rainDays: number }, breaks: TempBreaks = DEFAULT_TEMP_BREAKS): WeatherKind {
+  const t = tempKind(m.tHigh, breaks)
   return t === 'pleasant' && m.rainDays >= 14 ? 'wet' : t
 }
 
-/** How a temperature (°C) feels, on one scale for any temperature (a day's high, a night's low, "feels like"):
- *  cold < 12, cool 12–18, pleasant 18–28, warm 28–32, hot 32+. */
-export function tempKind(c: number): Exclude<WeatherKind, 'wet'> {
-  if (c < 12) return 'cold'
-  if (c < 18) return 'cool'
-  if (c >= 32) return 'hot'
-  if (c >= 28) return 'warm'
+/** How a temperature (°C) feels, on one scale for any temperature (a day's high, a night's low, "feels like"), by the
+ *  traveller's breakpoints: by default cold < 12, cool 12–18, pleasant 18–28, warm 28–32, hot 32+. */
+export function tempKind(c: number, breaks: TempBreaks = DEFAULT_TEMP_BREAKS): TempKind {
+  const [cool, pleasant, warm, hot] = breaks
+  if (c < cool) return 'cold'
+  if (c < pleasant) return 'cool'
+  if (c >= hot) return 'hot'
+  if (c >= warm) return 'warm'
   return 'pleasant'
 }
-
-/** A month by its average high, for the map, where rain is shown separately (a ring around each stop). */
-export const temperatureKind = (m: { tHigh: number }) => tempKind(m.tHigh)
 
 /** Share of the days in a month (1–12) with rain, 0–1. */
 export const rainShare = (rainDays: number, month: number) => Math.min(1, Math.max(0, rainDays / new Date(Date.UTC(2027, month, 0)).getUTCDate()))

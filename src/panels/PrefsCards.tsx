@@ -3,9 +3,10 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS } from '../data/presets'
 import { prefsDay, type DayChoices, type Pace, type TravelPrefs } from '../planner'
 import { useTrip } from '../store/trip'
-import { money, tempValue, type TempUnit } from '../ui/format'
+import { money, tempBand } from '../ui/format'
 import { Fold, Named, Segmented } from '../ui/kit'
 import { Counter, DAY_FIELDS, DaySwitch } from './CostDay'
+import { TempBands } from './TempBands'
 
 /** The preference behind each of the day's choices (taxi rides are chosen per city, not here). */
 const PREF_OF: Partial<Record<keyof DayChoices, keyof TravelPrefs>> = {
@@ -44,8 +45,6 @@ export function PrefsCards() {
       {label}
     </label>
   )
-  const temps = (min: number | null, max: number | null) =>
-    min == null && max == null ? 'any' : `${min == null ? 'any' : `${tempValue(min, tempUnit)}°`}–${max == null ? 'any' : `${tempValue(max, tempUnit)}°${tempUnit}`}`
   const home = p.homeCityId ? ds.cities[p.homeCityId]?.name : null
 
   const summary = {
@@ -63,12 +62,7 @@ export function PrefsCards() {
     ],
     around: [`${labelOf(PACES, input.pace).split(' ')[1]} pace`, `${lower(labelOf(BETWEEN, p.betweenCities))} between cities`, p.maxTravelHours ? `up to ${p.maxTravelHours} h a day` : 'no limit a day', p.overnight && 'overnight OK'],
     interests: [input.interests.join(', ') || 'None yet'],
-    comfort: [
-      p.minHighC == null && p.maxHeatC == null && p.minLowC == null && p.maxLowC == null && 'any temperature',
-      (p.minHighC != null || p.maxHeatC != null) && `highs ${temps(p.minHighC, p.maxHeatC)}`,
-      (p.minLowC != null || p.maxLowC != null) && `lows ${temps(p.minLowC, p.maxLowC)}`,
-      p.avoidRain && 'no rainy months',
-    ],
+    comfort: [`pleasant ${tempBand('pleasant', tempUnit, p.tempBreaks)}`, p.avoidRain && 'no rainy months'],
   }
   // One card open at a time: opening one folds the one that was open.
   const [open, setOpen] = useState<string | null>(null)
@@ -154,45 +148,12 @@ export function PrefsCards() {
       </Fold>
 
       <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
-        <Label>Comfortable daily highs</Label>
-        <TempRange
-          unit={tempUnit} min={p.minHighC} max={p.maxHeatC} lows={range(0, 26)} highs={range(20, 40)}
-          onChange={(minHighC, maxHeatC) => setPrefs({ minHighC, maxHeatC })}
-        />
-        <Label>Comfortable nights (daily lows)</Label>
-        <TempRange
-          unit={tempUnit} min={p.minLowC} max={p.maxLowC} lows={range(-10, 16)} highs={range(14, 28)}
-          onChange={(minLowC, maxLowC) => setPrefs({ minLowC, maxLowC })}
-        />
-        <p className="mt-1 text-[11px] text-muted">The planner favours places within these in the months you'd be there, and Checks flags the rest. Warm nights matter without air conditioning; cold ones when camping.</p>
+        <Label>What feels cold, cool, pleasant, warm or hot to you</Label>
+        <TempBands breaks={p.tempBreaks} unit={tempUnit} onChange={(tempBreaks) => setPrefs({ tempBreaks })} />
+        <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours. The planner avoids places whose days are cold or hot in the months you'd be there, and Checks flags the rest.</p>
         <div className="mt-2">{toggle('avoidRain', 'Avoid rainy months')}</div>
       </Fold>
     </>
-  )
-}
-
-/** Temperatures in °C from `a` to `b` in steps of 2. */
-const range = (a: number, b: number) => Array.from({ length: (b - a) / 2 + 1 }, (_, i) => a + i * 2)
-
-/** A comfortable range of temperatures (stored in °C, shown in the user's unit); either end can be left open. */
-function TempRange({ unit, min, max, lows, highs, onChange }: {
-  unit: TempUnit; min: number | null; max: number | null; lows: number[]; highs: number[]
-  onChange: (min: number | null, max: number | null) => void
-}) {
-  const label = (c: number) => `${tempValue(c, unit)}°${unit}`
-  const pick = (value: number | null, options: number[], open: string, set: (v: number | null) => void) => (
-    <select value={value ?? ''} onChange={(e) => set(e.target.value === '' ? null : Number(e.target.value))} className={`${inputCls} w-auto`}>
-      <option value="">{open}</option>
-      {/* Keep a value set elsewhere (e.g. by the assistant) even if it isn't one of the steps. */}
-      {[...new Set([...options, ...(value != null ? [value] : [])])].sort((a, b) => a - b).map((c) => <option key={c} value={c}>{label(c)}</option>)}
-    </select>
-  )
-  return (
-    <div className="flex items-center gap-2 text-[13px]">
-      {pick(min, lows, 'Any', (v) => onChange(v, max != null && v != null && v > max ? v : max))}
-      <span className="text-muted">to</span>
-      {pick(max, highs, 'Any', (v) => onChange(min != null && v != null && v < min ? v : min, v))}
-    </div>
   )
 }
 

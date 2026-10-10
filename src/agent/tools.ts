@@ -5,7 +5,7 @@ import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
 import { rainShare, warningTitle } from '../ui/format'
@@ -73,8 +73,7 @@ function prefsText(p: TravelPrefs): string {
     `between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
     `planner focus: ${p.focus === 'countries' ? 'as many countries as fit' : p.focus === 'highlights' ? 'the most popular places' : 'balanced'}`,
     ...(p.expensive !== 'ignore' ? [`expensive places: ${p.expensive === 'shorter' ? 'shorter stays' : 'skip where optional'}`] : []),
-    ...(p.minHighC != null || p.maxHeatC != null ? [`comfortable daily highs: ${p.minHighC ?? 'any'} to ${p.maxHeatC ?? 'any'}°C`] : []),
-    ...(p.minLowC != null || p.maxLowC != null ? [`comfortable nightly lows: ${p.minLowC ?? 'any'} to ${p.maxLowC ?? 'any'}°C`] : []),
+    `temperature bands: ${breaksText(p.tempBreaks)} (months with cold or hot highs are avoided)`,
     ...(p.avoidRain ? ['avoid rainy months'] : []),
     ...(p.dailyBudget ? [`daily budget €${p.dailyBudget} per person`] : []),
   ].join('; ')
@@ -637,6 +636,10 @@ function setCountryMode(args: Args): string {
   return `${countryName(iso2)}: ${next.mode}${hasDays(next) ? `, ${daysText(next)}` : ''}`
 }
 
+/** The temperature bands in a line: "cold <12, cool 12–18, pleasant 18–28, warm 28–32, hot 32+ °C". */
+const breaksText = ([cool, pleasant, warm, hot]: TempBreaks) =>
+  `cold <${cool}, cool ${cool}–${pleasant}, pleasant ${pleasant}–${warm}, warm ${warm}–${hot}, hot ${hot}+ °C`
+
 /** The days asked for in a country or region. */
 type Days = { minDays?: number | null; maxDays?: number | null }
 const hasDays = (x: Days) => !!(x.minDays || x.maxDays)
@@ -775,7 +778,7 @@ export function runTool(name: string, args: Args = {}): { result: ToolResult; ok
 const LUNCH_DINNER = ['skip', 'diy', 'local', 'restaurant'] as const
 
 /** The preferences the assistant can change: argument name, preference, and the values allowed (null = no limit). */
-const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknown[]; amount?: true; flag?: true; temp?: true }[] = [
+const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknown[]; amount?: true; flag?: true }[] = [
   { arg: 'return_home', key: 'returnHome', flag: true },
   { arg: 'room', key: 'room', values: ['dorm', 'private'] },
   { arg: 'max_per_night_eur', key: 'maxPerNight', amount: true },
@@ -789,10 +792,6 @@ const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknow
   { arg: 'max_travel_hours', key: 'maxTravelHours', values: [3, 5, 8, null] },
   { arg: 'focus', key: 'focus', values: ['balanced', 'countries', 'highlights'] },
   { arg: 'expensive', key: 'expensive', values: ['ignore', 'shorter', 'skip'] },
-  { arg: 'max_high_c', key: 'maxHeatC', temp: true },
-  { arg: 'min_high_c', key: 'minHighC', temp: true },
-  { arg: 'max_low_c', key: 'maxLowC', temp: true },
-  { arg: 'min_low_c', key: 'minLowC', temp: true },
   { arg: 'avoid_rain', key: 'avoidRain', flag: true },
   { arg: 'daily_budget_eur', key: 'dailyBudget', amount: true },
 ]
@@ -811,7 +810,7 @@ const PREF_NAMES: Record<keyof TravelPrefs, string> = {
   homeCityId: 'Home city', returnHome: 'Return home at the end', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
   lunch: 'Lunch', dinner: 'Dinner', coffees: 'Café coffees', beers: 'Beers in a bar', betweenCities: 'Between cities',
   overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', focus: 'Trip goal',
-  expensive: 'Expensive places', maxHeatC: 'Highest comfortable high (°C)', minHighC: 'Lowest comfortable high (°C)', maxLowC: 'Warmest comfortable night (°C)', minLowC: 'Coldest comfortable night (°C)', avoidRain: 'Avoid rainy months',
+  expensive: 'Expensive places', tempBreaks: 'Temperature bands', avoidRain: 'Avoid rainy months',
   dailyBudget: 'Daily budget (EUR)',
 }
 const prefValue = (v: unknown) => (v === null ? 'no limit' : v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '))
@@ -822,11 +821,7 @@ function updatePreferences(args: Args): string {
     const raw = args[p.arg]
     if (raw === undefined) continue
     let value: unknown
-    if (p.temp) {
-      // A temperature in °C, or "none" (or null) for no limit; 0 is a real temperature here.
-      value = raw === null || /^(none|any|no limit)?$/i.test(String(raw).trim()) ? null : Math.round(Number(raw))
-      if (value !== null && (!Number.isFinite(value) || (value as number) < -30 || (value as number) > 50)) throw new ToolError(`${p.arg} must be a temperature in °C, or "none"`)
-    } else if (p.flag) value = Boolean(raw)
+    if (p.flag) value = Boolean(raw)
     else if (p.amount) value = Number(raw) > 0 ? Math.round(Number(raw)) : null
     else {
       // Numbers may come as strings; 0 means "no limit" where there's one.
@@ -835,11 +830,23 @@ function updatePreferences(args: Args): string {
     }
     Object.assign(patch, { [p.key]: value })
   }
+  // Temperature bands: any of the four breakpoints, in °C, kept in rising order.
+  const BREAK_ARGS = ['cool_from_c', 'pleasant_from_c', 'warm_from_c', 'hot_from_c']
+  if (BREAK_ARGS.some((a) => args[a] !== undefined)) {
+    const breaks = BREAK_ARGS.map((a, i) => {
+      if (args[a] === undefined) return useTrip.getState().input.prefs.tempBreaks[i]
+      const c = Number(args[a])
+      if (!Number.isFinite(c) || c < -30 || c > 50) throw new ToolError(`${a} must be a temperature in °C`)
+      return Math.round(c * 10) / 10
+    })
+    if (breaks.some((c, i) => i && c <= breaks[i - 1])) throw new ToolError(`The bands must rise: cool, pleasant, warm, hot (now ${breaks.join(', ')}°C)`)
+    patch.tempBreaks = breaks as TempBreaks
+  }
   // Home: any city the app knows, or "" for none; it is where the trip starts from, not a stop.
   if (args.home_city !== undefined) patch.homeCityId = String(args.home_city).trim() ? cityId(args.home_city) : null
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   useTrip.getState().setPrefs(patch)
-  const shapesPlan = ['focus', 'expensive', 'maxHeatC', 'minHighC', 'maxLowC', 'minLowC', 'avoidRain'].some((k) => k in patch)
+  const shapesPlan = ['focus', 'expensive', 'tempBreaks', 'avoidRain'].some((k) => k in patch)
   return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && useTrip.getState().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
 }
 
@@ -884,6 +891,7 @@ export function describeChanges(before: TripSnapshot, after: TripSnapshot): stri
     const [was, now] = [a.prefs[key], b.prefs[key]]
     if (was !== now) out.push(`${PREF_NAMES[key]}: ${prefValue(was)} → ${prefValue(now)}`)
   }
+  if (a.prefs.tempBreaks.join() !== b.prefs.tempBreaks.join()) out.push(`${PREF_NAMES.tempBreaks}: ${breaksText(b.prefs.tempBreaks)}`)
   if (a.prefs.homeCityId !== b.prefs.homeCityId) out.push(`Home city: ${b.prefs.homeCityId ? cityName(b.prefs.homeCityId) : 'none'}`)
   if (a.startCityId !== b.startCityId) out.push(`Start city: ${b.startCityId ? cityName(b.startCityId) : 'any'}`)
   if (a.endCityId !== b.endCityId) out.push(`End city: ${b.endCityId ? cityName(b.endCityId) : 'any'}`)

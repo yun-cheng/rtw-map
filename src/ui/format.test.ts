@@ -73,8 +73,16 @@ describe('night temperatures', () => {
   })
 
   it('classes any temperature, day or night, on one scale', () => {
-    expect([0, 14, 20, 30, 33].map(tempKind)).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
+    expect([0, 14, 20, 30, 33].map((c) => tempKind(c))).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
     expect(tempBand('pleasant', 'C')).toBe('18–28°C')
+  })
+
+  it("uses the traveller's own breakpoints", () => {
+    const breaks: [number, number, number, number] = [5, 15, 25, 30]
+    expect([4, 5, 24, 25, 30].map((c) => tempKind(c, breaks))).toEqual(['cold', 'cool', 'pleasant', 'warm', 'hot'])
+    expect(tempBand('cold', 'C', breaks)).toBe('<5°C')
+    expect(tempBand('warm', 'F', breaks)).toBe('77–86°F')
+    expect(weatherKind({ tHigh: 26, rainDays: 2 }, breaks)).toBe('warm')
   })
 })
 

@@ -44,7 +44,7 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       const shown = shownTemps(m, tempFeels)
       const t = weatherBy === 'low' ? shown.low : shown.high
       return {
-        color: WEATHER_STYLE[tempKind(t)].color, rain: rainShare(m.rainDays, month), value: String(tempValue(t, tempUnit)),
+        color: WEATHER_STYLE[tempKind(t, input.prefs.tempBreaks)].color, rain: rainShare(m.rainDays, month), value: String(tempValue(t, tempUnit)),
         lines: [tempRange(shown.low, shown.high, tempUnit), `${Math.round(m.rainDays)} rain days`],
       }
     }

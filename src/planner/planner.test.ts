@@ -351,20 +351,29 @@ describe('trip goals', () => {
     expect(nights(plan({ expensive: 'shorter' }))).toBeLessThan(nights(balanced))
   })
 
-  it("warns about cold below the traveller's own limit", () => {
-    const input = { ...testTrip('US'), startDate: '2027-04-01', endDate: '2027-04-05' }
-    const stay = [{ cityId: 'krakow', nights: 4, locked: false, groupId: '' }]
-    const cold = (minHighC: 10 | 15 | null) => evaluatePlan(ds, { ...input, prefs: { ...input.prefs, minHighC } }, stay).warnings.some((w) => w.title.includes('cold'))
-    expect(cold(null)).toBe(false)
-    expect(cold(15)).toBe(true)
+  it("warns about cold and heat by the traveller's temperature bands", () => {
+    const at = (cityId: string, startDate: string, endDate: string) => {
+      const input = { ...testTrip('US'), startDate, endDate }
+      return (tempBreaks: [number, number, number, number], word: string) =>
+        evaluatePlan(ds, { ...input, prefs: { ...input.prefs, tempBreaks } }, [{ cityId, nights: 4, locked: false, groupId: '' }]).warnings.some((w) => w.title.includes(word))
+    }
+    const krakowApril = at('krakow', '2027-04-01', '2027-04-05')
+    expect(krakowApril([5, 10, 25, 32], 'cold')).toBe(false)
+    expect(krakowApril([15, 18, 25, 32], 'cold')).toBe(true)
+    const athensJuly = at('athens', '2027-07-10', '2027-07-14')
+    expect(athensJuly([12, 18, 36, 40], 'hot')).toBe(false)
+    expect(athensJuly([12, 18, 26, 30], 'hot')).toBe(true)
   })
 
-  it('warns about nights outside the comfortable range', () => {
-    const input = { ...testTrip('US'), startDate: '2027-07-10', endDate: '2027-07-14' }
-    const stay = [{ cityId: 'athens', nights: 4, locked: false, groupId: '' }]
-    const nights = (maxLowC: number | null) => evaluatePlan(ds, { ...input, prefs: { ...input.prefs, maxHeatC: 40, maxLowC } }, stay).warnings.some((w) => w.title.includes('warm nights'))
-    expect(nights(null)).toBe(false)
-    expect(nights(18)).toBe(true)
+  it('turns comfortable highs saved before the bands into where cold ends and hot starts', () => {
+    const input = testTrip('US')
+    const old = { ...input, prefs: { ...input.prefs, tempBreaks: undefined, minHighC: 15, maxHeatC: 30, maxLowC: 20 } as unknown as Partial<typeof input.prefs> }
+    const prefs = withPrefs(old).prefs
+    expect(prefs.tempBreaks).toEqual([15, 18, 28, 30])
+    expect(prefs).not.toHaveProperty('minHighC')
+    expect(prefs).not.toHaveProperty('maxLowC')
+    const { tempBreaks: _, ...none } = input.prefs
+    expect(withPrefs({ ...input, prefs: none }).prefs.tempBreaks).toEqual([12, 18, 28, 32])
   })
 })
 

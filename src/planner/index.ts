@@ -18,7 +18,7 @@ export { AIR_BANDS, TAP_WATER_LABELS, airBand, tapWater, vaccinesFor } from './h
 export { CARD_LABELS, cardLevel } from './payments'
 export { PHRASES, phrasesFor } from './phrases'
 export { MOBILE_BANDS, mobileInternet } from './mobile'
-export { DEFAULT_PREFS, STYLES, matchesStyle, stylePrefs, withPrefs } from './prefs'
+export { DEFAULT_PREFS, DEFAULT_TEMP_BREAKS, STYLES, matchesStyle, stylePrefs, tidyBreaks, withPrefs } from './prefs'
 export { NEARBY_BANDS, nearby, nearbyLevel, roughCount, roughKm } from './nearby'
 export { addDays, daysBetween, monthOf, tripDay } from './dates'
 export { AIRPORT_MIN } from './graph'
@@ -131,10 +131,9 @@ function baseScore(ctx: Ctx, cityId: string): number {
 function score(ctx: Ctx, cityId: string, month: number): number {
   const m = ctx.ds.climate[cityId]?.[month - 1]
   if (!m) return baseScore(ctx, cityId)
-  const { maxHeatC, minHighC, maxLowC, minLowC, avoidRain } = ctx.input.prefs
-  // The traveller's own limits count more than the general comfort score; days more than nights.
-  const outside = (v: number, lo: number | null, hi: number | null) => (lo != null && v < lo) || (hi != null && v > hi)
-  const limits = (outside(m.tHigh, minHighC, maxHeatC) ? 0.35 : 1) * (outside(m.tLow, minLowC, maxLowC) ? 0.6 : 1) * (avoidRain && m.rainDays >= 14 ? 0.6 : 1)
+  const { tempBreaks: [cool, , , hot], avoidRain } = ctx.input.prefs
+  // Months cold or hot by the traveller's temperature bands count more than the general comfort score.
+  const limits = (m.tHigh < cool || m.tHigh >= hot ? 0.35 : 1) * (avoidRain && m.rainDays >= 14 ? 0.6 : 1)
   return baseScore(ctx, cityId) * (0.5 + 0.5 * m.comfort) * limits
 }
 
@@ -819,15 +818,12 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     const m = ds.climate[s.cityId]?.[stayMonth(s) - 1]
     if (!m) continue
     const name = ds.cities[s.cityId].name
-    // The traveller's own limits when set, otherwise 32°C and 12°C.
-    if (m.tHigh >= (input.prefs.maxHeatC ?? 32)) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: ${m.tHigh >= 32 ? 'very hot' : 'hot'}`, tempC: m.tHigh })
-    } else if (m.tHigh < (input.prefs.minHighC ?? 12)) {
+    // Hot and cold by the traveller's temperature bands.
+    const [cool, , , hot] = input.prefs.tempBreaks
+    if (m.tHigh >= hot) {
+      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: hot`, tempC: m.tHigh })
+    } else if (m.tHigh < cool) {
       warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold`, tempC: m.tHigh })
-    } else if (input.prefs.maxLowC != null && m.tLow > input.prefs.maxLowC) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: warm nights`, tempC: m.tLow, tempIsLow: true, detail: 'Average low above your limit: look for rooms with air conditioning.' })
-    } else if (input.prefs.minLowC != null && m.tLow < input.prefs.minLowC) {
-      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold nights`, tempC: m.tLow, tempIsLow: true, detail: 'Average low below your limit.' })
     } else if (m.rainDays >= 14) {
       warnings.push({ kind: 'weather', severity: input.prefs.avoidRain ? 'warn' : 'info', cityId: s.cityId, title: `${name}: often wet (~${Math.round(m.rainDays)} days with rain that month)`, detail: 'Counts days with at least 1 mm; in summer these are often short showers.' })
     }

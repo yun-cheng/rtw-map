@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { type CostKind, type SchengenSummary } from '../planner'
+import { type CostKind, type SchengenSummary, type TempBreaks } from '../planner'
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
-import { MODE_COLOR, MONTHS, STOP_COLOR, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
+import { MODE_COLOR, MONTHS, STOP_COLOR, TEMP_KINDS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
 import { usePhone } from '../ui/usePhone'
@@ -25,9 +25,10 @@ const LEGENDS: Partial<Record<MapLayer, LegendItem[]>> = {
   schengen: [{ color: '#2563eb', label: 'Schengen area' }, { color: '#d97706', label: 'Outside Schengen' }],
 }
 
-/** Weather legend: the temperature classes as ranges, the same for highs and lows (rain is the ring, see RainRing). */
-const temperatureLegend = (unit: TempUnit): LegendItem[] =>
-  (['cold', 'cool', 'pleasant', 'warm', 'hot'] as const).map((k) => ({ color: WEATHER_STYLE[k].color, label: tempBand(k, unit) }))
+/** Weather legend: the temperature classes as ranges, by the traveller's breakpoints, the same for highs and lows (rain
+ *  is the ring, see RainRing). */
+const temperatureLegend = (unit: TempUnit, breaks: TempBreaks): LegendItem[] =>
+  TEMP_KINDS.map((k) => ({ color: WEATHER_STYLE[k].color, label: tempBand(k, unit, breaks) }))
 
 /** Travel modes in the Route view's legend; minibuses share the bus colour. */
 const MODES = [
@@ -61,7 +62,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
-  const legend = layer === 'climate' ? temperatureLegend(tempUnit) : layer === 'cost' ? costScale(costKind, input, currency).legend : LEGENDS[layer]
+  const legend = layer === 'climate' ? temperatureLegend(tempUnit, input.prefs.tempBreaks) : layer === 'cost' ? costScale(costKind, input, currency).legend : LEGENDS[layer]
   // What the numbers in the legend measure, shown on hover: the view's name is already on its button or dropdown.
   const about = {
     air: "Monthly average of fine particles (PM2.5) in µg/m³, the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day.",
