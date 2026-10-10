@@ -1,9 +1,8 @@
-import { CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, WEATHER_STYLE, compact, duration, flag, local, rateText, shortDate, shownTemps, weatherKind } from '../ui/format'
+import { MODE_ICON, compact, duration, flag, local, rateText, shortDate, shownTemps } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
@@ -11,9 +10,11 @@ import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } fro
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { AskButton } from './AskButton'
+import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
 import { confirmRemove } from './Itinerary'
 import { PriceLevel } from './PriceLevel'
+import { TABS, type SectionKey } from './cityTabs'
 
 /** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
 const ClimateChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.ClimateChart })))
@@ -36,32 +37,6 @@ const PACES: { value: Pace; icon: string; label: string }[] = [
   { value: 'chill', icon: '🐢', label: 'Chill' }, { value: 'balanced', icon: '⚖️', label: 'Balanced' }, { value: 'fast', icon: '🐇', label: 'Fast' },
 ]
 
-type SectionKey =
-  | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people' | 'phrases'
-  | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
-
-/** A sub-tab of a city panel tab, and the sections it shows. */
-type Part = { key: string; label: string; sections: SectionKey[] }
-
-/** Tabs of the city panel, their icons and the sections each one shows (or its sub-tabs), most useful first. */
-const TABS: { key: CityTab; label: string; icon: LucideIcon; sections: SectionKey[]; parts?: Part[] }[] = [
-  { key: 'overview', label: 'Overview', icon: LayoutGrid, sections: [] },
-  { key: 'transport', label: 'Transport', icon: TramFront, sections: ['around', 'gettingThere'] },
-  { key: 'weather', label: 'Weather', icon: CloudSun, sections: ['weather', 'air'] },
-  {
-    key: 'costs', label: 'Costs', icon: CircleDollarSign, sections: [],
-    parts: [
-      { key: 'daily', label: 'Daily cost', sections: ['day'] },
-      { key: 'prices', label: 'Prices', sections: ['stay', 'food'] },
-      { key: 'paying', label: 'Paying & cash', sections: ['money'] },
-    ],
-  },
-  { key: 'daily', label: 'Daily life', icon: Coffee, sections: ['language', 'phone', 'services', 'people'] },
-  { key: 'phrases', label: 'Phrases', icon: Languages, sections: ['phrases'] },
-  { key: 'health', label: 'Health', icon: HeartPulse, sections: ['vaccines', 'health', 'medical'] },
-  { key: 'safety', label: 'Safety', icon: ShieldCheck, sections: ['safety'] },
-  { key: 'entry', label: 'Entry', icon: Stamp, sections: ['visa'] },
-]
 
 /** A number with a label underneath, in the grids of shops and medical help. */
 const Tile = ({ value, label }: { value: string; label: string }) => (
@@ -71,11 +46,11 @@ const Tile = ({ value, label }: { value: string; label: string }) => (
   </div>
 )
 
-type Tone = 'ok' | 'info' | 'warn' | 'error'
-const TONE_DOT: Record<Tone, string> = { ok: 'bg-green-600', info: 'bg-slate-400', warn: 'bg-amber-500', error: 'bg-red-600' }
-const toneOf = (level: number): Tone => (level >= 4 ? 'ok' : level === 3 ? 'info' : 'warn')
 const tabRank = (tab: CityTab) => TABS.findIndex((t) => t.key === tab)
 const PROBLEM_ORDER: CityTab[] = ['entry', 'safety', 'costs']
+/** A tab's or sub-tab's dot: red when it needs attention, orange for a warning. */
+const Dot = ({ severity, className }: { severity?: 'warn' | 'error'; className: string }) =>
+  severity ? <span className={`absolute h-1.5 w-1.5 rounded-full ${severity === 'error' ? 'bg-red-600' : 'bg-amber-500'} ${className}`} aria-label={severity === 'error' ? 'needs attention' : 'has a warning'} /> : null
 
 const GROCERIES: [GroceryKey, string][] = [
   ['water15', 'Water (1.5 L)'], ['coke05', 'Coca-Cola (0.5 L)'], ['beer05', 'Beer (0.5 L, shop)'], ['bread', 'Bread (loaf)'],
@@ -143,6 +118,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     .filter((c) => c.from === cityId || c.to === cityId)
     .map((c) => ({ ...c, other: c.from === cityId ? c.to : c.from }))
     .sort((a, b) => a.durationMin - b.durationMin)
+
+  // The stop's checks (problems and warnings), each inside the card it's about and on the Overview's line for it.
+  const stopChecks = stop ? plan!.warnings.filter((w) => w.cityId === cityId && w.severity !== 'info') : []
+  const checksIn = (...keys: SectionKey[]) => stopChecks.filter((w) => keys.includes(checkSection(w)!))
+  const notes = (key: SectionKey) => <CheckNotes warnings={checksIn(key)} cityId={cityId} />
 
   // Sections, built once and rendered in order of importance (see `order` below).
   const sections: Record<SectionKey, ReactNode> = {
@@ -221,6 +201,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </span>
         }
       >
+        {notes('weather')}
         {climate ? (
           <>
             <Suspense fallback={<div className="h-[180px]" />}>
@@ -280,6 +261,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     money: pay && (
       <Section title="Paying & cash" aside={<Badge tone="warn">estimate</Badge>}>
+        {notes('money')}
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-muted">Paying by card</span>
           <LevelBar level={card.level} label="Card acceptance" />
@@ -345,6 +327,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     air: (
       <Section title="Air quality" aside={<span className="text-[11px] text-muted">PM2.5, µg/m³</span>}>
+        {notes('air')}
         {air ? (
           <>
             <Suspense fallback={<div className="h-[140px]" />}>
@@ -426,6 +409,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     gettingThere: (
       <Section title="To other cities">
+        {notes('gettingThere')}
         {connections.length ? (
           <ul className="flex flex-col">
             {connections.map((c) => (
@@ -473,6 +457,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     language: (
       <Section title="Language" aside={<Badge tone="warn">estimate</Badge>}>
+        {notes('language')}
         <div className="flex items-center gap-2">
           <span className="text-[13px] text-muted">English</span>
           <LevelBar level={english.level} label="English" />
@@ -557,6 +542,19 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const safetyProblem = !!adv && (adv.excludedByDefault || adv.level >= 3)
   const moneyProblem = !!pay && !pay.foreignCardsWork
   const problemTabs = new Set<CityTab>([...(visaProblem ? ['entry' as const] : []), ...(safetyProblem ? ['safety' as const] : []), ...(moneyProblem ? ['costs' as const] : [])])
+  // The stop's checks (the plan against the preferences: budget, weather, travel days; air): a dot on their tab and
+  // sub-tab too, orange for a warning (red for a problem). Sub-tabs are keyed "tab:sub".
+  const dots = new Map<string, 'warn' | 'error'>()
+  const mark = (key: string, severity: 'warn' | 'error') => dots.get(key) !== 'error' && dots.set(key, severity)
+  for (const w of stop ? plan!.warnings : []) {
+    const at = w.cityId === cityId && w.severity !== 'info' && checkTab(w)
+    if (!at) continue
+    const [tab, sub] = at
+    mark(tab, w.severity as 'warn' | 'error')
+    if (sub) mark(`${tab}:${sub}`, w.severity as 'warn' | 'error')
+  }
+  for (const tab of problemTabs) mark(tab, 'error')
+  if (moneyProblem) mark('costs:paying', 'error')
 
   // One line per topic for the Overview tab; each opens the tab with the details.
   const month = [...stayMonths][0]
@@ -568,31 +566,48 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const vaccineSummary = vaccines.source === 'cdc'
     ? recommended.length ? `Routine + ${recommended.join(', ')}` : 'Routine vaccines only'
     : `Routine + ${vaccines.items.length} to discuss`
-  const glance: { icon: string; label: string; value: string; tone: Tone; tab: CityTab; part?: string; problem?: boolean; color?: string }[] = [
-    ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tone: VISA_TEXT[visa.req].tone, tab: 'entry' as const, problem: visaProblem }] : []),
+  // The stop's warnings, each said in a few words on its line, which is tinted for it.
+  // The way here, when the journey has a check: longer than the longest travel day, overnight, a border crossing, no
+  // known route (a problem).
+  const legIn = stopIndex > 0 ? plan!.legs[stopIndex - 1] : null
+  const legChecks = checksIn('gettingThere')
+  const legNote = legChecks.some((w) => w.kind === 'border') ? 'crossing may be refused'
+    : legIn?.overnight ? 'overnight' : `over your ${input.prefs.maxTravelHours} h a day`
+  // The weather by the traveller's limits: colder, hotter or wetter than they like (cold and hot ones carry the high).
+  const weatherNote = checksIn('weather').map((w) => `${w.tempC === undefined ? 'wetter' : w.tempC >= input.prefs.tempBreaks[3] ? 'hotter' : 'colder'} than you like`)[0]
+  // The daily cost: over the daily or the bed budget, or an expensive place for the trip.
+  const dayChecks = checksIn('day')
+  const overWhat = [dayChecks.some((w) => w.amount?.per === 'day') && 'daily', dayChecks.some((w) => w.amount?.per === 'night') && 'bed'].filter(Boolean)
+  const dayNote = overWhat.length ? `over ${overWhat.join(' and ')} budget` : dayChecks.length ? 'expensive for this trip' : input.cityCosts?.[cityId] ? 'changed here' : 'your preferences'
+  // `warn`: one of the stop's warnings, said in the value; the line is tinted for it.
+  const glance: { icon: string; label: string; value: string; tab: CityTab; part?: string; problem?: boolean; warn?: boolean }[] = [
+    ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tab: 'entry' as const, problem: visaProblem }] : []),
     ...(adv ? [{
       icon: '🛡', label: 'Safety', tab: 'safety' as const, problem: safetyProblem,
       value: adv.excludedByDefault ? 'Do-not-travel advice' : adv.level >= 3 ? 'Avoid parts of the country' : adv.us && adv.us.level >= 2 ? adv.us.title.split(': ')[1] ?? 'Increased caution' : 'No travel restrictions',
-      tone: (adv.excludedByDefault ? 'error' : adv.level >= 3 ? 'warn' : adv.us && adv.us.level >= 2 ? 'info' : 'ok') as Tone,
     }] : []),
-    ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tone: toneOf(transit.ease), tab: 'transport' as const }] : []),
-    ...(climShown ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${climShown.feels ? 'feels like ' : ''}${range(climShown.low, climShown.high)}, ~${Math.round(clim!.rainDays)} rain days`, tone: 'info' as const, color: WEATHER_STYLE[weatherKind({ tHigh: climShown.high, rainDays: clim!.rainDays }, input.prefs.tempBreaks)].color, tab: 'weather' as const }] : []),
-    ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tone: toneOf(airBand(airM.pm25).level), tab: 'weather' as const }] : []),
-    ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tone: TAP_WATER_LABELS[water.level].tone === 'ok' ? ('ok' as const) : TAP_WATER_LABELS[water.level].tone === 'info' ? ('info' as const) : ('warn' as const), tab: 'health' as const }] : []),
-    ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tone: 'info' as const, tab: 'health' as const }] : []),
-    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))}${input.cityCosts?.[cityId] ? ' (changed here)' : ' (your preferences)'}`, tone: 'info' as const, tab: 'costs' as const, part: 'daily' }] : []),
-    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tone: moneyProblem ? ('error' as const) : toneOf(card.level), tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
-    ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tone: toneOf(mobile.level), tab: 'daily' as const }] : []),
-    { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tone: toneOf(english.level), tab: 'daily' as const },
+    ...(legIn && legChecks.length ? [{
+      icon: '🧭', label: 'Getting here', tab: 'transport' as const, warn: true,
+      problem: legChecks.some((w) => w.severity === 'error'),
+      value: legIn.reachable ? `${duration(legIn.durationMin)} from ${ds.cities[legIn.from].name} (${legNote})` : `No known route from ${ds.cities[legIn.from].name}`,
+    }] : []),
+    ...(transit ? [{ icon: '🚆', label: 'Public transport', value: `${TRANSIT_LABELS[transit.ease].short}${transit.walkable ? '; walkable centre' : ''}`, tab: 'transport' as const }] : []),
+    ...(climShown ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${climShown.feels ? 'feels like ' : ''}${range(climShown.low, climShown.high)}, ~${Math.round(clim!.rainDays)} rain days${weatherNote ? ` (${weatherNote})` : ''}`, tab: 'weather' as const, warn: !!weatherNote }] : []),
+    ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tab: 'weather' as const, warn: checksIn('air').length > 0 }] : []),
+    ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tab: 'health' as const }] : []),
+    ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tab: 'health' as const }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))} (${dayNote})`, tab: 'costs' as const, part: 'daily', warn: dayChecks.length > 0 }] : []),
+    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
+    ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tab: 'daily' as const }] : []),
+    { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tab: 'daily' as const },
   ].sort((a, b) =>
-    // Problems first, most serious first (can't get in, then don't go, then cash only); then in tab order.
-    Number(!!b.problem) - Number(!!a.problem) ||
+    // Problems first, most serious first (can't get in, then don't go, then cash only); then the stop's warnings; then
+    // in tab order.
+    Number(!!b.problem) - Number(!!a.problem) || Number(!!b.warn) - Number(!!a.warn) ||
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
   const tabInfo = TABS.find((t) => t.key === cityTab) ?? TABS[0]
   const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
-  // Sub-tabs that need attention, like their tab: paying when foreign cards don't work.
-  const problemParts = new Set(moneyProblem ? ['paying'] : [])
   // Keep the open tab in view when the tab bar scrolls sideways (only the bar: scrollIntoView would also scroll the
   // panel, e.g. while a phone's sheet is still opening).
   const activeTab = useRef<HTMLButtonElement>(null)
@@ -647,7 +662,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               >
                 <t.icon size={16} />
                 {active && t.label}
-                {problemTabs.has(t.key) && <span className="absolute top-1 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
+                <Dot severity={dots.get(t.key)} className="top-1 right-0.5" />
               </button>
             )
           })}
@@ -664,7 +679,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
                 className={`relative rounded-full px-2.5 py-1 text-[12px] font-medium whitespace-nowrap ${p.key === part!.key ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-canvas hover:text-ink'}`}
               >
                 {p.label}
-                {problemParts.has(p.key) && <span className="absolute top-0.5 right-0.5 h-1.5 w-1.5 rounded-full bg-red-600" aria-label="needs attention" />}
+                <Dot severity={dots.get(`${tabInfo.key}:${p.key}`)} className="top-0.5 right-0.5" />
               </button>
             ))}
           </div>
@@ -699,12 +714,13 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               <li key={g.label}>
                 <button
                   onClick={() => setCityTab(g.tab, g.part)}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : ''}`}
+                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : g.warn ? 'bg-warn-soft' : ''}`}
                 >
-                  <span className={`h-2 w-2 shrink-0 rounded-full ${g.color ? '' : TONE_DOT[g.tone]}`} style={g.color ? { background: g.color } : undefined} />
                   <span className="w-5 shrink-0 text-center">{g.icon}</span>
                   <span className="w-32 shrink-0 text-muted">{g.label}</span>
-                  <span className={`flex-1 font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>
+                  <span className="flex-1">
+                    <span className={`font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>
+                  </span>
                   <span className="text-muted">›</span>
                 </button>
               </li>

@@ -63,6 +63,17 @@ const ITEM: Record<keyof DayChoices, string> = { bed: 'bed', breakfast: 'breakfa
  * "Daily cost": one traveller's day in a city, item by item, from the preferences. Any item can be changed for this
  * city; the change is saved with the trip and counted in its total.
  */
+/** A preference's limit beside the label of what it limits ("Per day (budget $28)"), whether or not it's over. */
+function Budget({ eur, over }: { eur: number | null; over: boolean }) {
+  const { fmt } = useMoney()
+  if (eur == null) return null
+  // Over it, the limit itself stands out (red and bold); the brackets stay quiet.
+  return <span className="font-normal text-muted">(<span className={over ? 'font-semibold text-danger' : ''}>budget {fmt(eur)}</span>)</span>
+}
+
+/** Over a limit: the amount and the limit in red, as budgeting apps show overspending. */
+const OVER = 'text-danger'
+
 export function CostDay({ cityId }: { cityId: string }) {
   const { input, setInput, plan } = useTrip()
   const { fmt } = useMoney()
@@ -73,6 +84,12 @@ export function CostDay({ cityId }: { cityId: string }) {
   const changed = !!input.cityCosts?.[cityId]
   const stop = plan?.stops.find((s) => s.cityId === cityId)
   const taxi = !!taxiEstimate(ds, cityId)
+  // Against the preferences: the bed (most per night) and the day (daily budget); over it, the amount and the limit are
+  // marked red.
+  const { dailyBudget, maxPerNight } = input.prefs
+  const over = (eur: number, limit: number | null) => limit != null && eur > limit
+  const overBy = (eur: number, limit: number | null) => (over(eur, limit) ? `${fmt(eur - limit!, true)} over your budget` : undefined)
+  const dayOver = over(day.total, dailyBudget)
 
   // A day of public transport is always counted, so it has no choice.
   const transitEur = day.items.find((i) => i.key === 'transport')!.eur
@@ -103,13 +120,14 @@ export function CostDay({ cityId }: { cityId: string }) {
         const value = choices[f.key]
         const set = (v: Value) => save({ ...choices, [f.key]: v })
         const eur = day.items.find((i) => i.key === ITEM[f.key])!.eur
+        const invalid = f.key === 'bed' && over(eur, maxPerNight)
         return (
           <Fragment key={f.key}>
             {f.key === 'taxis' && transit}
-            <div className="py-1.5">
+            <div className="py-1.5" title={f.key === 'bed' ? overBy(eur, maxPerNight) : undefined}>
               {/* An item changed for this city has a reset back to the preference. */}
               <Named
-                label={f.label}
+                label={f.key === 'bed' ? <>{f.label} <Budget eur={maxPerNight} over={invalid} /></> : f.label}
                 hint={f.hint?.(value)}
                 after={value !== base[f.key] && (
                   <button onClick={() => set(base[f.key])} title="Reset to your preference" aria-label={`Reset ${f.label.toLowerCase()} to your preference`} className="ml-1 text-accent hover:opacity-70">
@@ -119,7 +137,11 @@ export function CostDay({ cityId }: { cityId: string }) {
                 aside={
                   <span className="flex items-center gap-3">
                     {/* No price for none of a counted item (0 coffees); "–" for a skipped meal. */}
-                    {(eur || f.max === undefined) && <span className="font-medium tabular-nums">{eur ? fmt(eur, true) : '–'}</span>}
+                    {(eur || f.max === undefined) && (
+                      <span className="font-medium tabular-nums">
+                        <span className={invalid ? OVER : undefined}>{eur ? fmt(eur, true) : '–'}</span>
+                      </span>
+                    )}
                     {f.max !== undefined && <Counter value={Number(value)} max={f.max} label={f.label} onChange={(n) => set(n as Value)} />}
                   </span>
                 }
@@ -130,9 +152,11 @@ export function CostDay({ cityId }: { cityId: string }) {
           </Fragment>
         )
       })}
-      <div className="mt-1.5 flex items-baseline justify-between border-t border-line pt-1.5 text-[13px]">
-        <span className="font-semibold">Per day</span>
-        <span className="font-semibold tabular-nums">{fmt(day.total)}</span>
+      <div className="mt-1.5 border-t border-line pt-1.5">
+        <div className="flex items-baseline justify-between py-0.5 text-[13px]" title={overBy(day.total, dailyBudget)}>
+          <span className="font-semibold">Per day <Budget eur={dailyBudget} over={dayOver} /></span>
+          <span className={`font-semibold tabular-nums ${dayOver ? OVER : ''}`}>{fmt(day.total)}</span>
+        </div>
       </div>
       {stop && (
         <div className="flex items-baseline justify-between text-[13px]">

@@ -2,12 +2,13 @@ import { Redo2, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { useChat } from '../agent/chat'
 import { dataset as ds } from '../data/dataset'
-import { tripDay, type Leg, type PlanWarning } from '../planner'
+import { tripDay, type Leg } from '../planner'
 import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
 import { useTrip } from '../store/trip'
-import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
+import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
@@ -32,7 +33,7 @@ export function Itinerary() {
         />
       </div>
 
-      <Warnings warnings={plan.warnings} />
+      <Checks warnings={plan.warnings} />
 
       <ol className="px-2 pb-6">
         {plan.home.out && <HomeRow leg={plan.home.out} label={`From ${cityName(plan.home.out.from)}`} when={`to arrive ${shortDate(input.startDate)}`} />}
@@ -61,7 +62,7 @@ export function Itinerary() {
                   {day}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <div className="truncate font-medium">{flag(city.iso2)} {city.name}</div>
+                  <div className="flex items-center gap-1.5 font-medium"><span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /></div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
                 <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
@@ -81,6 +82,7 @@ export function Itinerary() {
                 >
                   {leg.reachable ? (
                     <>
+                      <CheckMark warnings={legWarnings(plan.warnings, i)} />
                       <span>{leg.hops.map((h) => MODE_ICON[h.mode] ?? '•').join(' ')}</span>
                       <span>{duration(leg.durationMin)}</span>
                       <span>· {fmt(leg.priceMin)}–{fmt(leg.priceMax)}</span>
@@ -139,44 +141,4 @@ function HomeRow({ leg, label, when }: { leg: Leg; label: string; when: string }
 
 function StepBtn({ label, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { label: string }) {
   return <button aria-label={label} title={label} className="h-6 w-6 rounded border border-line bg-panel text-[13px] leading-none hover:bg-canvas disabled:opacity-30" {...props} />
-}
-
-const ORDER = { error: 0, warn: 1, info: 2 }
-function Warnings({ warnings }: { warnings: PlanWarning[] }) {
-  const [open, setOpen] = useState(true)
-  const select = useTrip((s) => s.select)
-  const unit = useTrip((s) => s.tempUnit)
-  if (!warnings.length) return null
-  const sorted = [...warnings].sort((a, b) => ORDER[a.severity] - ORDER[b.severity])
-  const counts = { error: 0, warn: 0, info: 0 }
-  warnings.forEach((w) => counts[w.severity]++)
-  return (
-    <div className="mx-4 mb-2 rounded-lg border border-line">
-      <button onClick={() => setOpen(!open)} className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] font-semibold">
-        <span className="flex-1">Checks</span>
-        {counts.error > 0 && <Badge tone="error">{counts.error} problem{counts.error > 1 ? 's' : ''}</Badge>}
-        {counts.warn > 0 && <Badge tone="warn">{counts.warn} warning{counts.warn > 1 ? 's' : ''}</Badge>}
-        {counts.info > 0 && <Badge>{counts.info} note{counts.info > 1 ? 's' : ''}</Badge>}
-        <span className="text-muted">{open ? '▴' : '▾'}</span>
-      </button>
-      {open && (
-        <ul className="max-h-64 overflow-y-auto border-t border-line">
-          {sorted.map((w, i) => (
-            <li key={i} className="flex gap-2 border-b border-line px-3 py-1.5 text-[12px] last:border-0">
-              <span className={w.severity === 'error' ? 'text-danger' : w.severity === 'warn' ? 'text-warn' : 'text-info'}>
-                {w.severity === 'error' ? '●' : w.severity === 'warn' ? '▲' : 'ℹ'}
-              </span>
-              <div className="min-w-0 flex-1">
-                <button className="text-left font-medium hover:underline disabled:no-underline" disabled={!w.cityId} onClick={() => w.cityId && select({ type: 'city', id: w.cityId })}>
-                  {warningTitle(w, unit)}
-                </button>
-                {w.detail && <div className="text-muted">{w.detail}</div>}
-                {w.url && <a href={w.url} target="_blank" rel="noreferrer" className="text-accent hover:underline">Official source ↗</a>}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  )
 }
