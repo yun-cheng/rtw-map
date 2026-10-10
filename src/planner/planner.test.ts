@@ -391,12 +391,12 @@ describe('trip goals', () => {
     expect(nights(plan({ tempBreaks: breaks, avoidHot: true }), heat)).toBeLessThan(nights(banded, heat))
   })
 
-  it("flags cold and heat by the traveller's temperature bands, warning when they avoid it", () => {
+  it("warns about cold and heat by the traveller's temperature bands, avoided or not", () => {
     const at = (cityId: string, startDate: string, endDate: string) => {
       const input = { ...testTrip('US'), startDate, endDate }
       return (tempBreaks: [number, number, number, number], word: string, avoid = true) =>
         evaluatePlan(ds, { ...input, prefs: { ...input.prefs, tempBreaks, avoidCold: avoid, avoidHot: avoid } }, [{ cityId, nights: 4, locked: false, groupId: '' }])
-          .warnings.some((w) => w.title.includes(word) && w.severity === (avoid ? 'warn' : 'info'))
+          .warnings.some((w) => w.title.includes(word) && w.severity === 'warn')
     }
     const krakowApril = at('krakow', '2027-04-01', '2027-04-05')
     expect(krakowApril([5, 10, 25, 32], 'cold')).toBe(false)
@@ -405,6 +405,19 @@ describe('trip goals', () => {
     expect(athensJuly([12, 18, 36, 40], 'hot')).toBe(false)
     expect(athensJuly([12, 18, 26, 30], 'hot')).toBe(true)
     expect(athensJuly([12, 18, 26, 30], 'hot', false)).toBe(true)
+  })
+
+  it('reads the highs as they feel when the user sees them so', () => {
+    const input = { ...testTrip('US'), startDate: '2026-12-09', endDate: '2026-12-12' }
+    const m = ds.climate.tirana[11]
+    // A cold band between the feels-like and the measured high: cold only as it feels.
+    const prefs = { ...input.prefs, tempBreaks: [Math.ceil(m.feelsHigh!) + 0.5, 18, 28, 32] as typeof input.prefs.tempBreaks }
+    expect(m.feelsHigh!).toBeLessThan(prefs.tempBreaks[0])
+    expect(m.tHigh).toBeGreaterThanOrEqual(prefs.tempBreaks[0])
+    const cold = (feels: boolean) => evaluatePlan(ds, { ...input, prefs }, [{ cityId: 'tirana', nights: 3, locked: false, groupId: '' }], { feels })
+      .warnings.find((w) => w.kind === 'weather' && w.title.includes('cold'))
+    expect(cold(false)).toBeUndefined()
+    expect(cold(true)).toMatchObject({ tempC: m.feelsHigh, tempFeels: true })
   })
 
   it('turns comfortable highs saved before the bands into where cold ends and hot starts', () => {

@@ -153,7 +153,7 @@ export function PrefsCards() {
       <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
         <Label>What feels cold, cool, pleasant, warm or hot to you</Label>
         <TempBands breaks={p.tempBreaks} unit={tempUnit} onChange={(tempBreaks) => setPrefs({ tempBreaks })} />
-        <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours, and Checks notes cold and hot stays.</p>
+        <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours, and Checks warns about cold and hot stays.</p>
         <Label>The planner avoids places in months that are</Label>
         <div className="space-y-1">
           {toggle('avoidCold', 'Cold (highs in your cold band)')}

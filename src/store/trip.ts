@@ -5,7 +5,7 @@ import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
 import { evaluatePlan, withPrefs, type CostKind } from '../planner'
-import { loadTrip, newTripInput, planId, tripActions, tripPlans, type TripCore, type TripData } from './tripCore'
+import { loadTrip, newTripInput, planFor, planId, tripActions, tripPlans, type TripCore, type TripData } from './tripCore'
 
 export { MAX_PLANS, newTripInput, nextPlanName, tripPlans, type TripData, type TripPlan } from './tripCore'
 
@@ -179,12 +179,13 @@ export const useTrip = create<State>()(
         askAssistant: () => set({ panel: 'assistant', askRequest: get().askRequest + 1 }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
-        setTempFeels: (tempFeels) => set({ tempFeels }),
+        // The checks read temperatures as shown, so they follow the setting.
+        setTempFeels: (tempFeels) => set({ tempFeels, plan: planFor(get().input, get().stops, tempFeels) }),
         setLocalNames: (localNames) => set({ localNames }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCityTab: (cityTab, part) => set((s) => ({ cityTab, ...(part && { cityPart: { ...s.cityPart, [cityTab]: part } }) })),
         openTrip: (data, keepView = false) => {
-          const { broken, ...trip } = loadTrip(data)
+          const { broken, ...trip } = loadTrip(data, get().tempFeels)
           if (broken) {
             // The trip refers to data that no longer exists: keep its setup, drop the itinerary.
             set({ ...trip, selected: null, panel: 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
@@ -216,7 +217,7 @@ export const useTrip = create<State>()(
           if (!merged.plans?.length) merged.plans = [{ id: merged.activePlanId, name: 'Plan A', input: merged.input, stops: merged.stops }]
           else if (!merged.plans.some((p) => p.id === merged.activePlanId)) merged.activePlanId = merged.plans[0].id
           merged.plans = merged.plans.map((p) => ({ ...p, input: withPrefs(p.input) }))
-          merged.plan = merged.stops.length ? evaluatePlan(ds, merged.input, merged.stops) : null
+          merged.plan = merged.stops.length ? evaluatePlan(ds, merged.input, merged.stops, { feels: merged.tempFeels }) : null
         } catch {
           // Saved trip refers to data that no longer exists; start fresh.
           return current

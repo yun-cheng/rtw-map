@@ -64,6 +64,7 @@ describe('temperatures', () => {
   it('adds the temperature to hot and cold warnings in the chosen unit', () => {
     expect(warningTitle({ title: 'Athens: very hot', tempC: 33.4 }, 'F')).toBe('Athens: very hot (avg high 92°F)')
     expect(warningTitle({ title: 'Visa needed' }, 'F')).toBe('Visa needed')
+    expect(warningTitle({ title: 'Tirana: cold', tempC: 11, tempFeels: true }, 'C')).toBe('Tirana: cold (avg high feels like 11°C)')
   })
 
   it('adds the amount and the limit to budget warnings in the chosen currency', () => {

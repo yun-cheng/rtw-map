@@ -257,7 +257,7 @@ export type TravelPrefs = {
   /** The traveller's temperature bands: where cool, pleasant, warm and hot start, in °C (below the first is cold). The
    *  map and each city's weather colour by them, and Checks flags cold and hot stays by them. */
   tempBreaks: TempBreaks
-  /** The planner avoids months whose highs are cold, or hot, by the bands (Checks then warns about the rest). */
+  /** The planner avoids months whose highs are cold, or hot, by the bands (Checks warns about cold and hot stays either way). */
   avoidCold: boolean
   avoidHot: boolean
   avoidRain: boolean
@@ -385,6 +385,8 @@ export type PlanWarning = {
   /** Average high (or, with tempIsLow, the low) in °C for weather warnings, shown in the user's unit after the title (see warningTitle). */
   tempC?: number
   tempIsLow?: boolean
+  /** The temperature is how it feels (the user's display setting), not measured. */
+  tempFeels?: boolean
   /** For budget warnings: the amount and the preference's limit in EUR, a day or a night, shown in the user's
    *  currency after the title (see warningTitle). */
   amount?: { eur: number; limitEur: number; per: 'day' | 'night' }

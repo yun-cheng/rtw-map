@@ -117,9 +117,9 @@ export function tempBand(kind: TempKind, unit: TempUnit, breaks: TempBreaks = DE
 
 /** A warning's text, with the temperature (hot/cold warnings) in the given unit and the amount (budget warnings) in
  *  the given currency. */
-export function warningTitle(w: Pick<PlanWarning, 'title' | 'tempC' | 'tempIsLow' | 'amount'>, unit: TempUnit, currency = 'EUR'): string {
+export function warningTitle(w: Pick<PlanWarning, 'title' | 'tempC' | 'tempIsLow' | 'tempFeels' | 'amount'>, unit: TempUnit, currency = 'EUR'): string {
   if (w.amount) return `${w.title} (~${money(w.amount.eur, currency)} a ${w.amount.per}, ${w.amount.per === 'day' ? 'budget' : 'most'} ${money(w.amount.limitEur, currency)})`
-  return w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
+  return w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${w.tempFeels ? 'feels like ' : ''}${temp(w.tempC, unit)})`
 }
 
 /** A month's high and low as shown: how they feel when `feels` is on and the data has it, else measured. */

@@ -95,19 +95,19 @@ function PlanMenu({ plan, canDelete, onClose }: { plan: TripPlan; canDelete: boo
 
 /** The plans side by side: size, cost, travel and problems, and which cities each has that the active one doesn't. */
 function Compare({ plans, onClose }: { plans: TripPlan[]; onClose: () => void }) {
-  const { activePlanId, switchPlan } = useTrip()
+  const { activePlanId, switchPlan, tempFeels } = useTrip()
   const { fmt } = useMoney()
   const evaluated = useMemo(
     () => plans.map((p) => {
       let plan: Plan | null = null
       try {
-        plan = p.stops.length ? evaluatePlan(ds, p.input, p.stops) : null
+        plan = p.stops.length ? evaluatePlan(ds, p.input, p.stops, { feels: tempFeels }) : null
       } catch {
         // Refers to data that no longer exists.
       }
       return { ...p, plan }
     }),
-    [plans],
+    [plans, tempFeels],
   )
   const active = evaluated.find((p) => p.id === activePlanId)!
   const activeCities = new Set(active.stops.map((s) => s.cityId))

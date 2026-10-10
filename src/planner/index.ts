@@ -547,15 +547,19 @@ export function reoptimize(ds: Dataset, input: TripInput, stops: Stop[]): Plan {
 
 /** Adds a city where it fits best in the route, with its usual stay at the trip's pace; the other stops stay as they
  *  are (the trip may then have more nights than its dates, until the plan is updated). */
-export function addStop(ds: Dataset, input: TripInput, stops: Stop[], cityId: string): Plan {
+export function addStop(ds: Dataset, input: TripInput, stops: Stop[], cityId: string, options: EvalOptions = {}): Plan {
   const ctx = makeContext(ds, input, [...stops.map((s) => s.cityId), cityId])
   const nights = suggestedDays(ds, cityId)[input.pace]
-  return evaluate(ctx, insertCheapest(ctx, stops, cityId, groupIdFor(ctx, cityId)).map((s) => (s.cityId === cityId ? { ...s, nights } : s)), [])
+  return evaluate(ctx, insertCheapest(ctx, stops, cityId, groupIdFor(ctx, cityId)).map((s) => (s.cityId === cityId ? { ...s, nights } : s)), [], options)
 }
 
+/** How the checks read the data: `feels`, temperatures as they feel (where known) for cold and hot, as the user sees
+ *  them (the display setting); measured otherwise. */
+export type EvalOptions = { feels?: boolean }
+
 /** Dates, legs, warnings and costs for stops exactly as given (no changes). */
-export function evaluatePlan(ds: Dataset, input: TripInput, stops: Stop[]): Plan {
-  return evaluate(makeContext(ds, input, stops.map((s) => s.cityId)), stops, [])
+export function evaluatePlan(ds: Dataset, input: TripInput, stops: Stop[], options: EvalOptions = {}): Plan {
+  return evaluate(makeContext(ds, input, stops.map((s) => s.cityId)), stops, [], options)
 }
 
 /** A country's days asked for, as words: "5–7 days", "at least 5 days", "at most 7 days". */
@@ -632,7 +636,7 @@ function select(ctx: Ctx, scores: Map<string, number>): string[] {
 
 // ---------------------------------------------------------------- evaluation
 
-function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
+function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptions = {}): Plan {
   const { ds, input } = ctx
   const legs = legsFor(ctx, stops)
   const sched = schedule(ctx, stops, legs)
@@ -820,12 +824,15 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     const m = ds.climate[s.cityId]?.[stayMonth(s) - 1]
     if (!m) continue
     const name = ds.cities[s.cityId].name
-    // Hot and cold by the traveller's temperature bands; a warning when they avoid it, a note otherwise.
-    const { tempBreaks: [cool, , , hot], avoidCold, avoidHot } = input.prefs
-    if (m.tHigh >= hot) {
-      warnings.push({ kind: 'weather', severity: avoidHot ? 'warn' : 'info', cityId: s.cityId, title: `${name}: hot`, tempC: m.tHigh })
-    } else if (m.tHigh < cool) {
-      warnings.push({ kind: 'weather', severity: avoidCold ? 'warn' : 'info', cityId: s.cityId, title: `${name}: cold`, tempC: m.tHigh })
+    // Hot and cold by the traveller's temperature bands, the highs as they feel when the user sees them so: always a
+    // warning (avoiding them steers the planner); rain is a warning when they avoid it, a note otherwise.
+    const { tempBreaks: [cool, , , hot] } = input.prefs
+    const feels = !!options.feels && m.feelsHigh !== undefined
+    const high = feels ? m.feelsHigh! : m.tHigh
+    if (high >= hot) {
+      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: hot`, tempC: high, ...(feels && { tempFeels: true }) })
+    } else if (high < cool) {
+      warnings.push({ kind: 'weather', severity: 'warn', cityId: s.cityId, title: `${name}: cold`, tempC: high, ...(feels && { tempFeels: true }) })
     } else if (m.rainDays >= 14) {
       warnings.push({ kind: 'weather', severity: input.prefs.avoidRain ? 'warn' : 'info', cityId: s.cityId, title: `${name}: often wet (~${Math.round(m.rainDays)} days with rain that month)`, detail: 'Counts days with at least 1 mm; in summer these are often short showers.' })
     }
