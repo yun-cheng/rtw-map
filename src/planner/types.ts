@@ -375,6 +375,8 @@ export type ScheduledStop = Stop & { arrive: string; depart: string }
 
 export type WarningKind =
   | 'schengen' | 'visa' | 'advisory' | 'weather' | 'pace' | 'dropped' | 'border' | 'unreachable' | 'time' | 'notice' | 'language' | 'health' | 'money' | 'coverage'
+  /** Against the preferences: the daily budget, the most per night, expensive places; travel days too long or overnight. */
+  | 'budget' | 'travel'
 
 export type PlanWarning = {
   kind: WarningKind
@@ -383,8 +385,14 @@ export type PlanWarning = {
   /** Average high (or, with tempIsLow, the low) in °C for weather warnings, shown in the user's unit after the title (see warningTitle). */
   tempC?: number
   tempIsLow?: boolean
+  /** For budget warnings: the amount and the preference's limit in EUR, a day or a night, shown in the user's
+   *  currency after the title (see warningTitle). */
+  amount?: { eur: number; limitEur: number; per: 'day' | 'night' }
   detail?: string
+  /** The stop it's about (shown on the stop in the itinerary and in its city panel). */
   cityId?: string
+  /** The leg it's about (index into the plan's legs), for travel warnings. */
+  leg?: number
   iso2?: string
   url?: string
 }

@@ -1,5 +1,5 @@
 import { allocate, type AllocItem } from './allocate'
-import { dailyCost } from './cost'
+import { dailyCost, dayChoices, dayCost } from './cost'
 import { addDays, daysBetween, monthOf } from './dates'
 import { AIRPORT_MIN, buildGraph, legBetween, travelWeight, type Graph } from './graph'
 import { TAP_WATER_LABELS, airBand, tapWater } from './health'
@@ -831,6 +831,52 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     }
   }
 
+  // The preferences: the daily budget, the most per night and expensive places, at each stop
+  const { dailyBudget, maxPerNight, expensive, maxTravelHours, overnight } = input.prefs
+  for (const s of sched) {
+    const name = ds.cities[s.cityId].name
+    const day = dayCost(ds, s.cityId, dayChoices(input, s.cityId))
+    if (!day) continue
+    const overBudget = !!dailyBudget && day.total > dailyBudget
+    if (overBudget) {
+      warnings.push({
+        kind: 'budget', severity: 'warn', cityId: s.cityId, title: `${name}: over your daily budget`,
+        amount: { eur: day.total, limitEur: dailyBudget, per: 'day' },
+        detail: 'Cheaper day choices for this city, fewer nights here, or a cheaper place instead.',
+      })
+    }
+    const bed = day.items.find((i) => i.key === 'bed')!.eur
+    if (maxPerNight && bed > maxPerNight) {
+      warnings.push({
+        kind: 'budget', severity: 'warn', cityId: s.cityId, title: `${name}: ${dayChoices(input, s.cityId).bed === 'dorm' ? 'a dorm bed' : 'a private room'} is over your most per night`,
+        amount: { eur: bed, limitEur: maxPerNight, per: 'night' },
+      })
+    }
+    // Expensive places (well above the trip's typical day): skipped where optional, or shorter stays than usual.
+    const ratio = ctx.costRatio.get(s.cityId) ?? 1
+    if (!overBudget && ratio > EXPENSIVE && (expensive === 'skip' || (expensive === 'shorter' && s.nights > suggestedDays(ds, s.cityId)[input.pace]))) {
+      warnings.push({
+        kind: 'budget', severity: 'warn', cityId: s.cityId,
+        title: `${name}: expensive, about ${Math.round((ratio - 1) * 100)}% above the trip's typical day`,
+        detail: expensive === 'skip' ? 'You prefer to skip expensive places where they are optional.' : 'You prefer shorter stays in expensive places; this one is longer than its usual stay.',
+      })
+    }
+  }
+  // Travel days: longer than the longest you'd like, or overnight when you'd rather not
+  legs.forEach((l, i) => {
+    if (!l.reachable) return
+    const route = `${ds.cities[l.from].name} → ${ds.cities[l.to].name}`
+    if (l.overnight && !overnight) {
+      warnings.push({ kind: 'travel', severity: 'warn', cityId: l.to, leg: i, title: `${route}: overnight, which you'd rather avoid`, detail: 'Another route or a stop in between.' })
+    } else if (!l.overnight && maxTravelHours && l.durationMin > maxTravelHours * 60) {
+      warnings.push({
+        kind: 'travel', severity: 'warn', cityId: l.to, leg: i,
+        title: `${route}: ${Math.round(l.durationMin / 6) / 10} h, over your ${maxTravelHours} h a travel day`,
+        detail: 'A stop in between, another order, or a faster way (flights when travelling "fastest").',
+      })
+    }
+  })
+
   // The number of stops the user asked for
   const { minStops, maxStops } = input
   if ((minStops && stops.length < minStops) || (maxStops && stops.length > maxStops)) {
@@ -892,6 +938,13 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     min: Math.round(stay * 0.85 + legMin),
     max: Math.round(stay * 1.2 + legMax),
     perDay: Math.round((stay + (legMin + legMax) / 2) / Math.max(1, ctx.totalNights)),
+  }
+  if (dailyBudget && cost.perDay > dailyBudget) {
+    warnings.push({
+      kind: 'budget', severity: 'warn', title: 'The trip is over your daily budget on average',
+      amount: { eur: cost.perDay, limitEur: dailyBudget, per: 'day' },
+      detail: 'Counting travel between cities and from home.',
+    })
   }
 
   return { stops: sched, legs, warnings, schengen, cost, home, dates: { start: input.startDate, end: input.endDate }, totalNights: ctx.totalNights, assignedNights, dropped }

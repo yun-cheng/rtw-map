@@ -192,6 +192,34 @@ describe('weather checks', () => {
   })
 })
 
+describe('preference checks', () => {
+  const stop = (cityId: string, nights: number) => ({ cityId, nights, locked: false, groupId: '' })
+  const trip = (prefs: Partial<TripInput['prefs']>) => {
+    const input = { ...testTrip('US'), startDate: '2027-05-01', endDate: '2027-05-11' }
+    return { ...input, prefs: { ...input.prefs, ...prefs } }
+  }
+
+  it('flags a stop over the daily budget or the most per night, in EUR, at that stop', () => {
+    const input = trip({ dailyBudget: 10, maxPerNight: 5 })
+    const plan = evaluatePlan(ds, input, [stop('vienna', 5), stop('bratislava', 5)])
+    const vienna = plan.warnings.filter((w) => w.cityId === 'vienna' && w.kind === 'budget')
+    expect(vienna.map((w) => w.amount?.per).sort()).toEqual(['day', 'night'])
+    expect(vienna.find((w) => w.amount?.per === 'day')!.amount!.eur).toBeCloseTo(dailyCost(ds, 'vienna', input))
+    // And the trip on average.
+    expect(plan.warnings.some((w) => w.kind === 'budget' && !w.cityId)).toBe(true)
+    // Nothing without the limits.
+    expect(evaluatePlan(ds, trip({}), [stop('vienna', 5), stop('bratislava', 5)]).warnings.some((w) => w.kind === 'budget')).toBe(false)
+  })
+
+  it('flags travel days over the longest wanted, and overnight journeys when not wanted, on the leg', () => {
+    const stops = [stop('tallinn', 5), stop('athens', 5)]
+    // Tallinn → Athens is long (or overnight): one or the other, on the journey to Athens.
+    const travel = evaluatePlan(ds, trip({ maxTravelHours: 3, overnight: false }), stops).warnings.filter((w) => w.kind === 'travel')
+    expect(travel).toMatchObject([{ leg: 0, cityId: 'athens', severity: 'warn' }])
+    expect(evaluatePlan(ds, trip({ maxTravelHours: null, overnight: true }), stops).warnings.some((w) => w.kind === 'travel')).toBe(false)
+  })
+})
+
 describe('vaccines and medicines', () => {
   it("uses CDC's advice, recommended first, and leaves out what CDC doesn't recommend", () => {
     const th = vaccinesFor(ds, 'TH')

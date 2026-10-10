@@ -65,6 +65,11 @@ describe('temperatures', () => {
     expect(warningTitle({ title: 'Athens: very hot', tempC: 33.4 }, 'F')).toBe('Athens: very hot (avg high 92°F)')
     expect(warningTitle({ title: 'Visa needed' }, 'F')).toBe('Visa needed')
   })
+
+  it('adds the amount and the limit to budget warnings in the chosen currency', () => {
+    expect(warningTitle({ title: 'Tirana: over your daily budget', amount: { eur: 34.2, limitEur: 25, per: 'day' } }, 'C')).toBe('Tirana: over your daily budget (~€34 a day, budget €25)')
+    expect(warningTitle({ title: 'Tirana: a dorm bed is over your most per night', amount: { eur: 13, limitEur: 12, per: 'night' } }, 'C')).toBe('Tirana: a dorm bed is over your most per night (~€13 a night, most €12)')
+  })
 })
 
 describe('night temperatures', () => {

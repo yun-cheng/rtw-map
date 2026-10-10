@@ -1,6 +1,6 @@
 import { dataset as ds } from '../data/dataset'
 import { DEFAULT_TEMP_BREAKS } from '../planner/prefs'
-import type { TempBreaks } from '../planner/types'
+import type { PlanWarning, TempBreaks } from '../planner/types'
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -115,9 +115,12 @@ export function tempBand(kind: TempKind, unit: TempUnit, breaks: TempBreaks = DE
   return { cold: `<${cool}${u}`, cool: `${cool}–${pleasant}${u}`, pleasant: `${pleasant}–${warm}${u}`, warm: `${warm}–${hot}${u}`, hot: `${hot}${u}+` }[kind]
 }
 
-/** A warning's text, with the temperature (hot/cold warnings) in the given unit. */
-export const warningTitle = (w: { title: string; tempC?: number; tempIsLow?: boolean }, unit: TempUnit) =>
-  w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
+/** A warning's text, with the temperature (hot/cold warnings) in the given unit and the amount (budget warnings) in
+ *  the given currency. */
+export function warningTitle(w: Pick<PlanWarning, 'title' | 'tempC' | 'tempIsLow' | 'amount'>, unit: TempUnit, currency = 'EUR'): string {
+  if (w.amount) return `${w.title} (~${money(w.amount.eur, currency)} a ${w.amount.per}, ${w.amount.per === 'day' ? 'budget' : 'most'} ${money(w.amount.limitEur, currency)})`
+  return w.tempC === undefined ? w.title : `${w.title} (avg ${w.tempIsLow ? 'low' : 'high'} ${temp(w.tempC, unit)})`
+}
 
 /** A month's high and low as shown: how they feel when `feels` is on and the data has it, else measured. */
 export function shownTemps(m: { tHigh: number; tLow: number; feelsHigh?: number; feelsLow?: number }, feels: boolean) {
