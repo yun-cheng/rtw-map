@@ -13,7 +13,7 @@ const EXAMPLES = [
   'Is Taiwan visa-free for my passport?',
 ]
 
-/** Basic Markdown, line by line: # headings, --- rules, "- " / "1. " lists, **bold** and *italic*. */
+/** Basic Markdown, line by line: # headings, --- rules, "- " / "1. " lists, | tables |, **bold** and *italic*. */
 function RichText({ text }: { text: string }) {
   const inline = (s: string): ReactNode[] => s.split(/(\*\*[^*]+\*\*|\*[^*\s][^*]*\*)/g).map((part, i) =>
     part.startsWith('**') && part.endsWith('**') ? <b key={i}>{part.slice(2, -2)}</b>
@@ -22,16 +22,22 @@ function RichText({ text }: { text: string }) {
   const out: ReactNode[] = []
   let list: string[] = []
   let para: string[] = []
+  let table: string[] = []
   const flush = () => {
     if (list.length) out.push(<ul key={out.length} className="my-1 list-disc pl-4">{list.map((l, j) => <li key={j}>{inline(l)}</li>)}</ul>)
     if (para.length) out.push(<p key={out.length} className="my-1">{para.map((l, j) => <Fragment key={j}>{j > 0 && <br />}{inline(l)}</Fragment>)}</p>)
+    if (table.length) out.push(<Table key={out.length} rows={table} inline={inline} />)
     list = []
     para = []
+    table = []
   }
   for (const line of text.split('\n')) {
     const bullet = line.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/)
     const heading = line.match(/^#{1,6}\s+(.*)$/)
+    const row = /^\s*\|.*\|\s*$/.test(line)
+    if (table.length && !row) flush()
     if (!line.trim()) flush()
+    else if (row) { if (list.length || para.length) flush(); table.push(line) }
     else if (/^\s*(-{3,}|\*{3,})\s*$/.test(line)) { flush(); out.push(<hr key={out.length} className="my-2 border-line" />) }
     else if (heading) { flush(); out.push(<p key={out.length} className="mt-2 mb-1 font-semibold">{inline(heading[1].replace(/\*\*/g, ''))}</p>) }
     else if (bullet) { if (para.length) flush(); list.push(bullet[1]) }
@@ -39,6 +45,33 @@ function RichText({ text }: { text: string }) {
   }
   flush()
   return <>{out}</>
+}
+
+/** A Markdown table: its rows ("| a | b |"), the first one a header when a "|---|---:|" line follows it (which also
+ *  aligns columns: ":" on the right for right, on both sides for centred). Scrolls sideways when it's wider than the
+ *  chat. */
+function Table({ rows, inline }: { rows: string[]; inline: (s: string) => ReactNode[] }) {
+  const cells = (row: string) => row.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim())
+  const divider = (row: string) => cells(row).every((c) => /^:?-{2,}:?$/.test(c))
+  const head = rows.length > 1 && divider(rows[1]) ? cells(rows[0]) : null
+  const body = rows.slice(head ? 2 : 0).filter((r) => !divider(r)).map(cells)
+  const align = (head ? cells(rows[1]) : []).map((c) => (c.endsWith(':') ? (c.startsWith(':') ? 'text-center' : 'text-right') : 'text-left'))
+  return (
+    <div className="my-1.5 overflow-x-auto">
+      <table className="border-collapse text-[12px]">
+        {head && (
+          <thead>
+            <tr>{head.map((c, i) => <th key={i} className={`border-b border-line px-2 py-1 font-semibold whitespace-nowrap first:pl-0 ${align[i] ?? 'text-left'}`}>{inline(c)}</th>)}</tr>
+          </thead>
+        )}
+        <tbody>
+          {body.map((r, i) => (
+            <tr key={i}>{r.map((c, j) => <td key={j} className={`border-b border-line/60 px-2 py-1 align-top first:pl-0 ${align[j] ?? 'text-left'}`}>{inline(c)}</td>)}</tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
 }
 
 /** A number of tokens, short: 850, 12.3k, 1.2M. */
