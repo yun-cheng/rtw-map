@@ -1,5 +1,6 @@
-// Runs the trip assistant's tools on the trip in the browser, using the same store actions as the app's own buttons,
-// and describes the trip for the assistant.
+// Runs the trip assistant's tools on a trip, using the same actions as the app's own buttons (tripCore.ts), and
+// describes the trip for the assistant. The trip is the app's own in the browser (bindTrip), or a run's on the server
+// (withTrip).
 import { dataset as ds } from '../data/dataset'
 import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
@@ -7,12 +8,35 @@ import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
   groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
-import { MAX_PLANS, tripPlans, useTrip, type CityTab, type TripData, type TripPlan } from '../store/trip'
+import type { CityTab } from '../store/trip'
+import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
-import { sharedView, type ViewRef } from './view'
+import type { ViewItem, ViewRef } from './shared'
 
 type Args = Record<string, unknown>
 export type ToolResult = Record<string, unknown>
+
+/** A trip the tools read and change: a store's handle. */
+export type TripHandle = { getState: () => TripCore }
+/** The trip the tools work on, and what the user shared from the screen with the message being answered. */
+let bound: { trip: TripHandle; view: ViewItem[] } | null = null
+const trip = () => {
+  if (!bound) throw new Error('No trip for the assistant\'s tools')
+  return bound.trip.getState()
+}
+/** Sets the trip the tools work on from now on (the app's own, in the browser). */
+export const bindTrip = (trip: TripHandle, view: ViewItem[] = []) => void (bound = { trip, view })
+/** Runs `fn` with the tools on another trip (one run's, on the server); the tools are synchronous, so runs at the
+ *  same time can't mix up their trips. */
+export function withTrip<T>(trip: TripHandle, view: ViewItem[], fn: () => T): T {
+  const was = bound
+  bound = { trip, view }
+  try {
+    return fn()
+  } finally {
+    bound = was
+  }
+}
 
 const key = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().replace(/[^a-z0-9]/g, '')
 const cityName = (id: string) => ds.cities[id]?.name ?? id
@@ -39,7 +63,7 @@ function countryCode(ref: unknown): string {
 
 function stopIndex(ref: unknown): number {
   const id = cityId(ref)
-  const i = useTrip.getState().stops.findIndex((s) => s.cityId === id)
+  const i = trip().stops.findIndex((s) => s.cityId === id)
   if (i < 0) throw new ToolError(`${cityName(id)} is not in the itinerary.`)
   return i
 }
@@ -95,17 +119,17 @@ function flexText(input: TripInput): string {
 }
 
 export function tripContext(): string {
-  const { input, plan } = useTrip.getState()
+  const { input, plan } = trip()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
     `Dates: ${input.startDate} to ${input.endDate}${flexText(input)}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
-    ...(useTrip.getState().plans.length > 1 ? [`Plans in this trip: ${useTrip.getState().plans.map((p) => `${p.name}${p.id === useTrip.getState().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
+    ...(trip().plans.length > 1 ? [`Plans in this trip: ${trip().plans.map((p) => `${p.name}${p.id === trip().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
     ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${stopsText(input)} (the planner keeps to this when it makes a plan).`] : []),
     ...(input.wishes?.trim() ? [`The user's wishes for this trip, in their words: "${input.wishes.trim()}"`] : []),
     `Visit regions in order: ${input.keepGroupOrder ? 'yes' : 'no'}.${input.startCityId ? ` Start: ${cityName(input.startCityId)}.` : ''}${input.endCityId ? ` End: ${cityName(input.endCityId)}.` : ''}`,
     `Regions:\n${regionsText(input)}`,
   ]
-  const { currency, tempUnit, tempFeels } = useTrip.getState()
+  const { currency, tempUnit, tempFeels } = trip()
   const rate = currency === 'EUR' ? null : ds.fx.rates[currency]
   lines.push(`The user's units: prices in ${currency}${rate ? ` (1 EUR ≈ ${rate.toFixed(rate < 10 ? 3 : 1)} ${currency})` : ''}, temperatures in °${tempUnit}, shown in the app as ${tempFeels ? '"feels like" (heat with humidity, cold with wind; quote those, saying so)' : 'measured'}.`)
   if (!plan) {
@@ -126,7 +150,7 @@ export function tripContext(): string {
 }
 
 function tripDetails(): ToolResult {
-  const { input, plan } = useTrip.getState()
+  const { input, plan } = trip()
   return {
     settings: {
       start_date: input.startDate, end_date: input.endDate, pace: input.pace, interests: input.interests,
@@ -155,7 +179,7 @@ function tripDetails(): ToolResult {
 // ---------------------------------------------------------------- reading
 
 function findCities(args: Args): ToolResult {
-  const { stops } = useTrip.getState()
+  const { stops } = trip()
   const iso2 = args.country ? countryCode(args.country) : null
   const tag = args.tag ? String(args.tag).toLowerCase() : null
   const q = args.query ? key(String(args.query)) : null
@@ -193,7 +217,7 @@ function cityInfo(args: Args): ToolResult {
   }
   if (Array.isArray(args.sections) && args.sections.length) return citySections(cityId(args.city), args.sections.map(String))
   const id = cityId(args.city)
-  const { input, plan } = useTrip.getState()
+  const { input, plan } = trip()
   const city = ds.cities[id]
   const country = ds.countries[city.iso2]
   const stop = plan?.stops.find((s) => s.cityId === id)
@@ -247,7 +271,7 @@ const feelsOf = (m: { feelsHigh?: number; feelsLow?: number }) =>
 function citySections(id: string, sections: string[]): ToolResult {
   const unknown = sections.filter((s) => !(CITY_SECTIONS as readonly string[]).includes(s))
   if (unknown.length) throw new ToolError(`Unknown section ${unknown.join(', ')}; use ${CITY_SECTIONS.join(', ')}`)
-  const { input, plan } = useTrip.getState()
+  const { input, plan } = trip()
   const city = ds.cities[id]
   const country = ds.countries[city.iso2]
   const stop = plan?.stops.find((s) => s.cityId === id)
@@ -354,7 +378,7 @@ const MAX_ROWS = 80
 
 /** One row per city with the chosen fields, for questions across many cities. */
 function compareCities(args: Args): ToolResult {
-  const { input, plan } = useTrip.getState()
+  const { input, plan } = trip()
   const fields = (Array.isArray(args.fields) ? args.fields.map(String) : []).filter((f) => (COMPARE_FIELDS as readonly string[]).includes(f))
   if (!fields.length) throw new ToolError(`Give fields: ${COMPARE_FIELDS.join(', ')}`)
   const ids = new Set<string>()
@@ -437,7 +461,7 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
 
 /** The values on screen for one shared item. */
 function viewDetails(ref: ViewRef): ToolResult {
-  const { plan, input } = useTrip.getState()
+  const { plan, input } = trip()
   if (ref.kind === 'city') {
     const info = cityInfo({ city: ref.id })
     const fields = TAB_FIELDS[ref.tab]
@@ -460,7 +484,7 @@ function viewDetails(ref: ViewRef): ToolResult {
       case 'none': return {}
       case 'climate': {
         const m = ds.climate[cityId]?.[month - 1]
-        return m ? { month: monthName(month), high_c: m.tHigh, low_c: m.tLow, ...feelsOf(m), coloured_by: `${ref.weatherBy ?? 'high'}${useTrip.getState().tempFeels ? ', as it feels' : ''}`, rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
+        return m ? { month: monthName(month), high_c: m.tHigh, low_c: m.tLow, ...feelsOf(m), coloured_by: `${ref.weatherBy ?? 'high'}${trip().tempFeels ? ', as it feels' : ''}`, rain_days: m.rainDays, rainy_share_pct: Math.round(rainShare(m.rainDays, month) * 100) } : {}
       }
       case 'air': {
         const a = ds.air.byCity[cityId]?.[month - 1]
@@ -495,7 +519,7 @@ function viewDetails(ref: ViewRef): ToolResult {
 }
 
 function sharedViewTool(args: Args): ToolResult {
-  const items = sharedView().filter((v) => !args.item || v.ref.kind === args.item)
+  const items = bound!.view.filter((v) => !args.item || v.ref.kind === args.item)
   if (!items.length) {
     return { error: args.item ? `The user didn't share a ${args.item} view with this message.` : 'The user didn\'t share anything they are looking at with this message.' }
   }
@@ -520,7 +544,7 @@ function options(): ToolResult {
 const isDate = (v: unknown) => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(Date.parse(v))
 
 function updateSettings(args: Args): string {
-  const t = useTrip.getState()
+  const t = trip()
   const patch: Partial<TripInput> = {}
   if (args.start_date !== undefined) {
     if (!isDate(args.start_date)) throw new ToolError('start_date must be YYYY-MM-DD')
@@ -574,19 +598,19 @@ function updateSettings(args: Args): string {
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   t.setInput(patch)
   // New dates change the number of nights: re-fit an existing itinerary so it still fills the trip.
-  if ((patch.startDate || patch.endDate) && useTrip.getState().stops.length) useTrip.getState().rebalance()
+  if ((patch.startDate || patch.endDate) && trip().stops.length) trip().rebalance()
   return `Updated ${Object.keys(patch).join(', ')}`
 }
 
 function findRegion(name: unknown) {
-  const { input } = useTrip.getState()
+  const { input } = trip()
   const g = input.groups.find((x) => key(x.name) === key(String(name ?? '')))
   if (!g) throw new ToolError(`No region "${name}". Regions: ${input.groups.map((x) => x.name).join(', ') || 'none'}`)
   return g
 }
 
 function addRegion(args: Args): string {
-  const { input, setInput } = useTrip.getState()
+  const { input, setInput } = trip()
   let name: string
   let countries: string[]
   if (args.preset) {
@@ -608,7 +632,7 @@ function addRegion(args: Args): string {
 
 function updateRegion(args: Args): string {
   const g = findRegion(args.region)
-  const { input, setInput } = useTrip.getState()
+  const { input, setInput } = trip()
   if (args.remove) {
     setInput({ groups: input.groups.filter((x) => x.id !== g.id) })
     return `Removed region ${g.name}`
@@ -623,7 +647,7 @@ function updateRegion(args: Args): string {
 
 function setCountryMode(args: Args): string {
   const iso2 = countryCode(args.country)
-  const { input, setInput } = useTrip.getState()
+  const { input, setInput } = trip()
   const country = input.groups.flatMap((g) => g.countries).find((c) => c.iso2 === iso2)
   if (!country) throw new ToolError(`${countryName(iso2)} is in no region; add it with add_region first`)
   const next: TripCountry = { ...country }
@@ -660,20 +684,20 @@ function targetIndex(from: number, after: unknown): number {
 
 function addStopTool(args: Args): string {
   const id = cityId(args.city)
-  const t = useTrip.getState()
+  const t = trip()
   if (!t.plan) throw new ToolError('There is no itinerary yet: set up regions and use generate_plan first')
   if (t.stops.some((s) => s.cityId === id)) throw new ToolError(`${cityName(id)} is already in the itinerary`)
   t.addCity(id)
   if (args.after !== undefined && args.after !== '') {
     const from = stopIndex(id)
-    useTrip.getState().moveStop(from, targetIndex(from, args.after))
+    trip().moveStop(from, targetIndex(from, args.after))
   }
-  if (args.nights !== undefined) useTrip.getState().setNights(stopIndex(id), Math.max(1, Math.round(Number(args.nights))))
+  if (args.nights !== undefined) trip().setNights(stopIndex(id), Math.max(1, Math.round(Number(args.nights))))
   return `Added ${cityName(id)}`
 }
 
 function run(name: string, args: Args): string | ToolResult {
-  const t = useTrip.getState()
+  const t = trip()
   switch (name) {
     case 'get_trip': return tripDetails()
     case 'find_cities': return findCities(args)
@@ -687,7 +711,7 @@ function run(name: string, args: Args): string | ToolResult {
     case 'new_plan': {
       const id = t.addPlan({ name: args.name ? String(args.name) : undefined, activate: args.switch_to !== false })
       if (!id) throw new ToolError(`A trip can have up to ${MAX_PLANS} plans: delete one first`)
-      const added = useTrip.getState().plans.find((p) => p.id === id)!
+      const added = trip().plans.find((p) => p.id === id)!
       return `Added ${added.name}, a copy of ${planName(t.activePlanId)}${args.switch_to !== false ? `; now on ${added.name}` : ''}`
     }
     case 'switch_plan': {
@@ -705,7 +729,7 @@ function run(name: string, args: Args): string | ToolResult {
       const p = findPlan(args.plan)
       if (t.plans.length <= 1) throw new ToolError('A trip needs at least one plan')
       t.deletePlan(p.id)
-      return `Deleted ${p.name}; now on ${planName(useTrip.getState().activePlanId)}`
+      return `Deleted ${p.name}; now on ${planName(trip().activePlanId)}`
     }
     case 'add_region': return addRegion(args)
     case 'update_region': return updateRegion(args)
@@ -743,7 +767,7 @@ function run(name: string, args: Args): string | ToolResult {
         // Backwards: the regions in reverse order too, and the start and end city swapped, so a new plan agrees.
         t.setInput({ groups: [...t.input.groups].reverse(), startCityId: t.input.endCityId, endCityId: t.input.startCityId })
         t.reorderStops(t.stops.map((_, i) => t.stops.length - 1 - i))
-        return `Reversed the trip: it now starts in ${cityName(useTrip.getState().stops[0].cityId)}`
+        return `Reversed the trip: it now starts in ${cityName(trip().stops[0].cityId)}`
       }
       const order = (Array.isArray(args.order) ? args.order : []).map((c) => stopIndex(c))
       if (order.length !== t.stops.length || new Set(order).size !== order.length) {
@@ -800,10 +824,10 @@ const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknow
   { arg: 'daily_budget_eur', key: 'dailyBudget', amount: true },
 ]
 
-const planName = (id: string) => useTrip.getState().plans.find((p) => p.id === id)?.name ?? 'the plan'
+const planName = (id: string) => trip().plans.find((p) => p.id === id)?.name ?? 'the plan'
 /** A plan of the trip by name (or id). */
 function findPlan(ref: unknown): TripPlan {
-  const plans = useTrip.getState().plans
+  const plans = trip().plans
   const p = plans.find((x) => key(x.name) === key(String(ref ?? '')) || x.id === ref)
   if (!p) throw new ToolError(`No plan called "${ref}". Plans: ${plans.map((x) => x.name).join(', ')}`)
   return p
@@ -839,7 +863,7 @@ function updatePreferences(args: Args): string {
   const BREAK_ARGS = ['cool_from_c', 'pleasant_from_c', 'warm_from_c', 'hot_from_c']
   if (BREAK_ARGS.some((a) => args[a] !== undefined)) {
     const breaks = BREAK_ARGS.map((a, i) => {
-      if (args[a] === undefined) return useTrip.getState().input.prefs.tempBreaks[i]
+      if (args[a] === undefined) return trip().input.prefs.tempBreaks[i]
       const c = Number(args[a])
       if (!Number.isFinite(c) || c < -30 || c > 50) throw new ToolError(`${a} must be a temperature in °C`)
       return Math.round(c * 10) / 10
@@ -850,9 +874,9 @@ function updatePreferences(args: Args): string {
   // Home: any city the app knows, or "" for none; it is where the trip starts from, not a stop.
   if (args.home_city !== undefined) patch.homeCityId = String(args.home_city).trim() ? cityId(args.home_city) : null
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
-  useTrip.getState().setPrefs(patch)
+  trip().setPrefs(patch)
   const shapesPlan = ['focus', 'expensive', 'tempBreaks', 'avoidCold', 'avoidHot', 'avoidRain'].some((k) => k in patch)
-  return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && useTrip.getState().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
+  return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && trip().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
 }
 
 // ---------------------------------------------------------------- what changed (shown under the reply, with Undo)
@@ -860,7 +884,7 @@ function updatePreferences(args: Args): string {
 export type TripSnapshot = TripData
 
 export const snapshot = (): TripSnapshot => {
-  const s = useTrip.getState()
+  const s = trip()
   return structuredClone({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
 }
 

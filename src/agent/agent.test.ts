@@ -4,12 +4,13 @@ import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
-import { describeChanges, runTool, snapshot, tripContext } from './tools'
-import { setSharedView, viewItems, viewText } from './view'
+import { bindTrip, describeChanges, runTool, snapshot, tripContext } from './tools'
+import { viewItems, viewText } from './view'
 
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
 
 beforeEach(() => {
+  bindTrip(useTrip)
   useTrip.getState().openTrip({ input: testCaseInput(ds, 'US'), stops: [] })
   useTrip.getState().generate()
 })
@@ -235,7 +236,7 @@ describe('get_shared_view', () => {
   it('returns the values on the shared city tab and the map, and only what was shared', () => {
     useTrip.setState({ selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
     const [city, map] = viewItems()
-    setSharedView([city, map])
+    bindTrip(useTrip, [city, map])
     const both = runTool('get_shared_view', {}).result.items as Record<string, unknown>[]
     expect(both[0]).toMatchObject({ name: 'Kraków', weather: expect.any(Object), air_quality: expect.any(Object) })
     expect(both[0]).not.toHaveProperty('daily_cost_eur')
@@ -244,15 +245,15 @@ describe('get_shared_view', () => {
     expect(stops[0]).toMatchObject({ stop: 1, high_c: expect.any(Number), rainy_share_pct: expect.any(Number) })
 
     // The user left the map out: the assistant can't read it.
-    setSharedView([city])
+    bindTrip(useTrip, [city])
     expect(runTool('get_shared_view', { item: 'map' }).result.error).toMatch(/didn't share/)
-    setSharedView([])
+    bindTrip(useTrip, [])
     expect(runTool('get_shared_view', {}).result.error).toMatch(/didn't share/)
   })
 
   it('returns the stops and travel of the Route map', () => {
     useTrip.setState({ selected: null, layer: 'none' })
-    setSharedView(viewItems())
+    bindTrip(useTrip, viewItems())
     const [map] = runTool('get_shared_view', { item: 'map' }).result.items as { stops: Record<string, unknown>[] }[]
     expect(map.stops[0]).toMatchObject({ stop: 1, arrive: expect.any(String), nights: expect.any(Number) })
     expect(map.stops[1]).toHaveProperty('travel_in.modes')
@@ -260,7 +261,7 @@ describe('get_shared_view', () => {
 
   it('returns each part of an open journey', () => {
     useTrip.setState({ selected: { type: 'leg', index: 0 }, layer: 'none' })
-    setSharedView(viewItems())
+    bindTrip(useTrip, viewItems())
     const [journey] = runTool('get_shared_view', { item: 'journey' }).result.items as Record<string, unknown>[]
     expect(journey.open).toMatch(/^Journey /)
     expect((journey.parts as unknown[]).length).toBeGreaterThan(0)

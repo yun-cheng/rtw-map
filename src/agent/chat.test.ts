@@ -2,7 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
+import { createTripStore } from '../store/tripCore'
 import { splitChoices, useChat } from './chat'
+import { runAssistant, type Content } from './engine'
 import { setupChanges } from './tools'
 
 const reply = (text: string) => ({ status: 200, body: { content: { role: 'model', parts: [{ text }] } } })
@@ -127,6 +129,17 @@ describe('assistant chat', () => {
     expect(useTrip.getState().stops).toEqual([])
   })
 
+  it('tries a failed plan again as a plan from scratch', async () => {
+    useChat.setState({ contents: [{ role: 'user', parts: [{ text: 'earlier' }] }, { role: 'model', parts: [{ text: 'reply' }] }] as never })
+    serve({ status: 502, body: { error: 'The assistant failed to answer: try again.' } })
+    await useChat.getState().send('Plan my trip from scratch.', [], { plan: 'new' })
+    const fetch = serve(reply('Planned'))
+    await useChat.getState().retry(useChat.getState().messages.length - 1)
+    const body = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+    expect(body.contents).toHaveLength(1)
+    expect(useTrip.getState().input.planned).toBeTruthy()
+  })
+
   it('updates the plan for what changed in the setup, keeping its stops, and notes the plan fits the setup again', async () => {
     useTrip.getState().generate()
     const stops = useTrip.getState().stops
@@ -176,5 +189,31 @@ describe('assistant chat', () => {
     expect(messages).toHaveLength(before)
     expect(messages.at(-2)).toMatchObject({ role: 'user', text: 'question' })
     expect(lastReply().text).toBe('Here you go')
+  })
+})
+
+describe('the assistant loop on a trip of its own (as on the server)', () => {
+  it('plans and changes that trip, not the one on screen', async () => {
+    const trip = createTripStore({ input: testCaseInput(ds, 'US'), stops: [] })
+    const shown = useTrip.getState().stops
+    // The model gives the first stop of the planner's draft 9 nights, then answers.
+    const answers: (() => Content)[] = [
+      () => ({ role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: trip.getState().stops[0].cityId, nights: 9 } } }] }),
+      () => ({ role: 'model', parts: [{ text: 'Planned, with 9 nights at the start.' }] }),
+    ]
+    const { reply, contents } = await runAssistant({
+      trip, view: [], history: [], note: null, text: 'Plan my trip from scratch.', think: false, plan: 'new',
+      callModel: async (_c, _x, _t, _s, onSpent) => {
+        onSpent({ input: 1000, output: 100, usd: 0.001 })
+        return answers.shift()!()
+      },
+      signal: new AbortController().signal,
+    })
+    expect(reply).toMatchObject({ text: 'Planned, with 9 nights at the start.', plan: 'new', spent: { calls: 2, input: 2000, output: 200 } })
+    expect(reply.changes).toContain(`New itinerary: ${trip.getState().stops.length} stops`)
+    expect(trip.getState().stops[0].nights).toBe(9)
+    expect(trip.getState().input.planned).toBeTruthy()
+    expect(contents).toHaveLength(4)
+    expect(useTrip.getState().stops).toBe(shown)
   })
 })

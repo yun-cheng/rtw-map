@@ -5,24 +5,11 @@
 import { dataset as ds } from '../data/dataset'
 import { likelyMonth, stayMonth, type CostKind } from '../planner'
 import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
+import type { ViewItem } from './shared'
 import { MONTHS, shortDate } from '../ui/format'
 import { COST_LABELS } from '../map/scales'
 
-/** What a view item points at, for get_shared_view. */
-export type ViewRef =
-  | { kind: 'city'; id: string; tab: CityTab }
-  | { kind: 'journey'; from: string; to: string; index: number }
-  | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; costKind?: CostKind; weatherBy?: 'high' | 'low' }
-
-export type ViewItem = {
-  /** Changes when the view changes, so a chip the user removed comes back for something new. */
-  key: string
-  ref: ViewRef
-  /** Short text for the chip. */
-  label: string
-  /** The overview the assistant gets: what is open and what it shows. */
-  text: string
-}
+export { viewText, type ViewItem, type ViewRef } from './shared'
 
 /** What each city tab shows (the values come from get_shared_view). */
 const TAB_SHOWS: Record<CityTab, string> = {
@@ -110,14 +97,3 @@ export function viewItems(): ViewItem[] {
   }
   return items
 }
-
-/** The shared items as one block for the assistant's context. */
-export const viewText = (items: ViewItem[]) =>
-  items.length
-    ? `What the user was looking at in the app when they asked:\n${items.map((v) => `- ${v.text}`).join('\n')}\nCall get_shared_view for the values shown, if you need them.`
-    : ''
-
-/** The items shared with the message being answered; get_shared_view only returns these. */
-let shared: ViewItem[] = []
-export const setSharedView = (items: ViewItem[]) => { shared = items }
-export const sharedView = () => shared
