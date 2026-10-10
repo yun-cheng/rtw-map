@@ -1,6 +1,9 @@
+import { Redo2, Undo2 } from 'lucide-react'
 import { useState } from 'react'
+import { useChat } from '../agent/chat'
 import { dataset as ds } from '../data/dataset'
 import { tripDay, type Leg, type PlanWarning } from '../planner'
+import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
 import { Badge, Named } from '../ui/kit'
@@ -16,8 +19,9 @@ export function Itinerary() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="px-4 pt-3 pb-2">
-        <h2 className="text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
+      <div className="flex items-center gap-1 px-4 pt-3 pb-2">
+        <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
+        <UndoRedo />
       </div>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
@@ -102,6 +106,19 @@ export function Itinerary() {
 /** Asks before a stop is taken out by hand. */
 export const confirmRemove = (name: string, nights: number) =>
   window.confirm(`Remove ${name} (${nights} night${nights > 1 ? 's' : ''}) from the trip?`)
+
+/** Undo and redo of the trip's edits (store/history.ts); not while the assistant is changing it. */
+function UndoRedo() {
+  const { past, future, undo, redo } = useHistory()
+  const busy = useChat((s) => s.busy)
+  const btn = 'flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
+  return (
+    <>
+      <button className={btn} onClick={undo} disabled={busy || !past.length} title={`Undo (${UNDO_KEYS})`} aria-label="Undo"><Undo2 size={16} /></button>
+      <button className={btn} onClick={redo} disabled={busy || !future.length} title={`Redo (${REDO_KEYS})`} aria-label="Redo"><Redo2 size={16} /></button>
+    </>
+  )
+}
 
 /** Getting from home to the first stop, or from the last stop back home (set in the Trip tab's preferences; not a stop). */
 function HomeRow({ leg, label, when }: { leg: Leg; label: string; when: string }) {

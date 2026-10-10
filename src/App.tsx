@@ -12,6 +12,7 @@ import { PlanBar } from './panels/PlanBar'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { SetupPanel } from './panels/SetupPanel'
 import { Timeline } from './panels/Timeline'
+import { useUndoKeys } from './store/history'
 import { planMark, useTrip } from './store/trip'
 import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { HoverTip, type Tip } from './ui/HoverTip'
@@ -158,6 +159,7 @@ export default function App() {
     onMouseLeave: () => setTip(null),
   })
 
+  useUndoKeys()
   // Esc closes the city/leg panel.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && select(null)
