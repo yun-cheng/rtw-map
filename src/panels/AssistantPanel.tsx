@@ -119,8 +119,8 @@ function SignIn() {
   }, [clientId, theme])
   return (
     <div className="px-4 py-4 text-[13px]">
-      <p className="font-medium">Plan and change your trip by chatting with the assistant.</p>
-      <p className="mt-1 text-muted">It can add or remove stops, change nights, dates, pace or budget, and look up weather, costs, visas and transport from the app's data. Everything else in the app works without signing in.</p>
+      <p className="font-medium">Sign in to plan your trip with the assistant.</p>
+      <p className="mt-1 text-muted">It plans the trip to your wishes and preferences, and changes it when you ask: stops, nights, dates, pace or budget, looking up weather, costs, visas and transport from the app's data. Looking around the map and the cities works without signing in.</p>
       <p className="mt-3 text-muted">Sign in with Google to use it: each account gets a free daily allowance. We keep only an anonymous account ID, how much of it you've used today, and the trips you save; your email is only checked against the list of accounts with a different limit, never saved.</p>
       {clientId ? <div ref={button} className="mt-3 min-h-[44px]" /> : <p className="mt-3 rounded-md bg-warn-soft px-2 py-1.5 text-warn">Sign-in isn't set up yet.</p>}
       {failed && <p className="mt-2 text-danger">Couldn't load Google sign-in. Check your connection or ad blocker.</p>}

@@ -38,8 +38,9 @@ type ChatState = {
   /** What the reply under way has used so far. */
   spent: Spent
   /** Sends a message, with the parts of the current view the user chose to share. `think` overrides the "Think
-   *  harder" switch. */
-  send: (text: string, view?: ViewItem[], options?: { think?: boolean }) => Promise<void>
+   *  harder" switch. `plan: 'new'` (Plan with AI) makes a clean plan: the planner's draft first (Undo goes back to
+   *  the trip from before it), and the model starts afresh, without the conversation so far. */
+  send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' }) => Promise<void>
   /** Stops the reply under way after the model call or wait in progress; what it changed so far stays (and can be undone). */
   stop: () => void
   undo: (index: number) => void
@@ -172,11 +173,12 @@ export const useChat = create<ChatState>()(
         controller = new AbortController()
         const { signal } = controller
         const before = snapshot()
+        if (options.plan === 'new') useTrip.getState().generate()
         // The trip (and view) as it was when the user asked, kept the same for every step of this reply.
         const context = [tripContext(), viewText(view)].filter(Boolean).join('\n\n')
         setSharedView(view)
-        const prefix = get().note ? `[${get().note}]\n` : ''
-        let contents = trim([...get().contents, { role: 'user', parts: [{ text: prefix + text.trim() }] }])
+        const prefix = get().note && !options.plan ? `[${get().note}]\n` : ''
+        let contents = trim([...(options.plan ? [] : get().contents), { role: 'user', parts: [{ text: prefix + text.trim() }] }])
         const reply: Extract<ChatMessage, { role: 'assistant' }> = { role: 'assistant', text: '', steps: [], changes: [], think }
         set({ busy: true, note: null, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
 

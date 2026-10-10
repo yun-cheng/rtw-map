@@ -5,7 +5,7 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
-import { useTrip } from '../store/trip'
+import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
@@ -22,21 +22,23 @@ const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2]
 const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
 
 export function SetupPanel() {
-  const { input, setInput, setPanel, generate, stops, plan, picking, setPicking, setHovered } = useTrip()
+  const s = useTrip()
+  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, addPlan } = s
+  const plans = tripPlans(s)
+  const planName = plans.find((p) => p.id === s.activePlanId)?.name ?? 'This plan'
   // Nothing stays highlighted on the map once the tab closes.
   useEffect(() => () => setHovered([]), [setHovered])
-  const user = useAccount((s) => s.user)
+  const { user, loaded } = useAccount()
   const busy = useChat((s) => s.busy)
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
-  // The planner makes the plan; the assistant then adjusts it with its usual tools (so the app's rules still hold),
-  // thinking harder, since fitting several wishes into a trip takes planning.
+  // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`). The planner makes a
+  // first draft and the assistant reworks it with its usual tools (so the app's rules still hold), thinking harder,
+  // since fitting several wishes into a trip takes planning.
   const planWithAi = () => {
-    generate()
-    setPanel('assistant')
     const wishes = input.wishes?.trim()
-    void useChat.getState().send(wishes
-      ? `Adjust the plan I just generated to my wishes: ${wishes}`
-      : 'Check the plan I just generated against my preferences and interests, and improve it where it helps.', [], { think: true })
+    void useChat.getState().send(`Plan my trip from scratch, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
+    // The draft opened the itinerary; the assistant's work shows in its tab.
+    setPanel('assistant')
   }
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
@@ -200,19 +202,32 @@ export function SetupPanel() {
 
       {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled. */}
       <div className="sticky bottom-0 border-t border-line bg-panel p-3">
-        <div className="flex gap-2">
-          <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!canPlan} onClick={generate} title={stops.length ? 'Make a new plan; replaces your current stops and edits' : undefined}>
-            {stops.length ? 'Regenerate plan' : 'Generate plan'}
+        {user || !loaded ? (
+          <>
+            <Button
+              variant="primary" className="w-full py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={planWithAi}
+              title="The assistant plans the trip from scratch, to your wishes, preferences and interests"
+            >
+              {busy ? 'Planning…' : stops.length ? '✨ Replan from scratch' : '✨ Plan with AI'}
+            </Button>
+            {/* What a new plan replaces, and how to keep it. */}
+            {stops.length > 0 && !busy && (
+              <p className="mt-1.5 text-center text-[12px] text-muted">
+                Replaces {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.{' '}
+                {plans.length < MAX_PLANS && (
+                  <>
+                    <button onClick={() => addPlan()} className="font-medium text-accent hover:underline">Copy it first</button> to keep it.
+                  </>
+                )}
+              </p>
+            )}
+          </>
+        ) : (
+          // Signing in is in the Assistant tab (Google draws its own button there).
+          <Button variant="primary" className="w-full py-2 text-[14px]" onClick={() => setPanel('assistant')}>
+            Sign in to plan with AI
           </Button>
-          <Button
-            className="flex-1 py-2 text-[14px]"
-            disabled={!canPlan || !user || busy}
-            title={user ? `Generate the plan, then let the assistant adjust it to your wishes and preferences${stops.length ? '; replaces your current stops and edits' : ''}` : 'Sign in to use the assistant'}
-            onClick={planWithAi}
-          >
-            ✨ Plan with AI
-          </Button>
-        </div>
+        )}
       </div>
     </div>
   )

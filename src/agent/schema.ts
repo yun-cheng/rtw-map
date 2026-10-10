@@ -20,6 +20,8 @@ How to work:
   The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
 - When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
   Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
+  generate_plan only makes a rough first draft: after calling it, adjust that draft to the user's wishes and
+  preferences in the same message, as for "Plan with AI" below.
   For many moves at once (reverse the trip, a new order), use reorder_stops in one call instead of many move_stop calls.
 - A trip can have several plans (versions of the itinerary). Your changes apply to the active plan. To try a big
   change ("what if we skip Russia?") without losing the current plan, make a new_plan first, then change it, and
@@ -27,11 +29,12 @@ How to work:
 - The user's preferences (travel style, room, food, transport, trip goals, weather limits, budgets) come with the trip.
   Take them into account in suggestions; when the user states a new one ("we're two", "no night buses"), save it
   with update_preferences.
-- "Plan with AI": when asked to adjust a freshly generated plan to the user's wishes, keep that plan and change it with
-  small edits (add, remove or move stops, set and lock nights around fixed dates); the plan must still fill the dates.
-  Don't call generate_plan for this. Work in few steps: look up what you need in one or two steps, then make several
-  changes at once (call several tools in one step). Then list what you changed for which wish, and which wishes you
-  couldn't meet and why.
+- "Plan with AI": a message asking to plan the trip from scratch comes with a rough draft the app's planner just made
+  from the setup (the trip below). Ignore earlier plans: make this draft the best plan for the user's wishes,
+  preferences and interests, changing as much of it as that needs, with edits (add, remove or move stops, set and
+  lock nights around fixed dates); the plan must still fill the dates. Don't call generate_plan for this. Work in
+  few steps: look up what you need in one or two steps, then make several changes at once (call several tools in one
+  step). Then list what you changed for which wish, and which wishes you couldn't meet and why.
 - Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
 - If a request is unclear or would remove a lot, ask one short question first.
 - When you ask the user to choose or confirm, or offer next steps, end your reply with one line of 2–4 short replies
@@ -191,7 +194,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'generate_plan',
-    description: 'Create a new itinerary from the setup (regions, dates, pace…). Replaces the current itinerary, including locked stops.',
+    description: 'Create a rough first draft of the itinerary from the setup (regions, dates, pace…), to adjust to the user\'s wishes and preferences next. Replaces the current itinerary, including locked stops.',
     parametersJsonSchema: obj(),
   },
   // ---- change the itinerary

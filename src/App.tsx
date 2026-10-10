@@ -223,7 +223,7 @@ export default function App() {
           {!plan && !phone && !picking && (
             <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
               <div className="rounded-lg border border-line bg-panel/95 px-4 py-2 text-[13px] shadow-sm">
-                Add regions or countries on the left and press <b>Generate plan</b>. Click any city on the map for details.
+                Add regions or countries on the left and press <b>Plan with AI</b>. Click any city on the map for details.
               </div>
             </div>
           )}

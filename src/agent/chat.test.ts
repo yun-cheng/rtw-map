@@ -113,6 +113,19 @@ describe('assistant chat', () => {
     expect((useChat.getState().messages.at(-1) as { spent?: unknown }).spent).toEqual({ calls: 3, input: 3000, cached: 600, output: 150, usd: 0.003 })
   })
 
+  it('plans afresh with Plan with AI: a new draft, none of the conversation so far, and Undo back to the trip before', async () => {
+    useChat.setState({ contents: [{ role: 'user', parts: [{ text: 'earlier' }] }, { role: 'model', parts: [{ text: 'reply' }] }] as never })
+    const fetch = serve(reply('Planned'))
+    await useChat.getState().send('Plan my trip from scratch.', [], { think: true, plan: 'new' })
+    const body = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+    expect(body.contents).toEqual([{ role: 'user', parts: [{ text: 'Plan my trip from scratch.' }] }])
+    expect(body.context).toMatch(/stops/i)
+    expect(useTrip.getState().stops.length).toBeGreaterThan(0)
+    // Undo takes the trip back to before the plan, not to the planner's draft.
+    useChat.getState().undo(useChat.getState().messages.length - 1)
+    expect(useTrip.getState().stops).toEqual([])
+  })
+
   it('turns a last "Choices:" line into buttons', () => {
     expect(splitChoices('Swap Kotor for Budva?\n\nChoices: [Yes, swap them] [Keep Kotor]')).toEqual({ text: 'Swap Kotor for Budva?', choices: ['Yes, swap them', 'Keep Kotor'] })
     expect(splitChoices('Choices: [a] [b]\nmore text')).toEqual({ text: 'Choices: [a] [b]\nmore text', choices: [] })
