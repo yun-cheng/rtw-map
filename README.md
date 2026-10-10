@@ -20,6 +20,8 @@ Open the URL Vite prints (usually http://localhost:5173), pick dates and **+ Add
 |---|---|
 | `npm run dev` | Dev server |
 | `npm run dev:api` | The site's Worker locally (port 8787), for the trip assistant; `npm run dev` forwards `/api` to it. Needs `GEMINI_API_KEY` and `SESSION_SECRET` in `.env.local` (and `ADMIN_EMAILS` to edit assistant limits) |
+| `npm run dev:runner` | The assistant's runner locally (port 8788), which answers messages about saved trips on the server; needs `RUNNER_URL` and `RUNNER_SECRET` in `.env.local` (without them the browser answers instead) |
+| `npm run build:runner` | Bundles the runner, with the app's assistant code and data, for Cloud Run (`build/runner/`) |
 | `npm test` | Planner and formatting tests (Vitest) |
 | `npm run lint` | oxlint |
 | `npm run build` | Type-check + production build into `dist/` (static files) |
@@ -50,8 +52,10 @@ src/
   planner/     planning engine (pure TS, no UI) + tests: graph, route, allocate, schengen, cost, language, health,
                mobile internet, places nearby, preferences and travel styles (prefs.ts)
   data/        dataset loader, the world's regions, the test-case input, CSV parser (shared with scripts/)
-  agent/       trip assistant: instructions + tool list (schema.ts, shared with the Worker), tool runner, chat loop
-  store/       Zustand trip state + localStorage persistence, saved trips, view state in the URL (url.ts)
+  agent/       trip assistant: instructions + tool list (schema.ts, shared with the Worker), tool runner (tools.ts), the
+               assistant's loop (engine.ts, the same in the browser and the runner), the browser's chat (chat.ts)
+  store/       Zustand trip state + localStorage persistence (a trip's data and changes, without the screen, in
+               tripCore.ts), saved trips and following the assistant's runs on them (saved.ts), view state in the URL
   map/         MapLibre map, layer controls, the colour scales shared by the map and its legends (scales.ts), and each
                city's colour and hover box in the current view, shared by the map and the timeline (cityMetric.ts), where
                it centres on a country or region (shapes.ts)
@@ -67,7 +71,10 @@ data/
                (data/ is not in git: it's synced with Cloudflare R2, see "Data storage")
 scripts/       data pipeline (TypeScript, run with tsx)
 worker/        the site's Cloudflare Worker: static files, Google sign-in (auth.ts), per-user data: saved trips and the daily
-               assistant cost cap, with admin-set limits per email (account.ts, trips.ts, limits.ts), /api/chat (Gemini)
+               assistant cost cap, with admin-set limits per email (account.ts, trips.ts, limits.ts), /api/chat (Gemini),
+               the assistant's runs (runs.ts)
+runner/        the assistant's runner on Google Cloud Run: answers a message on the server, so it finishes with the page
+               closed (run.ts), queued on Cloud Tasks (index.ts)
 ```
 
 ## Data
@@ -107,6 +114,8 @@ To review the seed data as tables, run `npm run dev` and open `/data.html` (deve
 The site is published as static files on a Cloudflare Worker (`rtw-map`, configured in `wrangler.jsonc`) by `.github/workflows/deploy.yml`: on every push to `main`, by hand, and after the weekly data refresh. It pulls the data from R2, runs the tests, builds and runs `wrangler deploy`. Repository secrets: the four `R2_*` settings, `CLOUDFLARE_API_TOKEN` (permissions: Workers Scripts Edit, Account Settings Read, User Details Read, Memberships Read) and `CLOUDFLARE_ACCOUNT_ID`.
 
 The Worker also serves the API (`worker/`): `/api/session`, `/api/auth/google`, `/api/auth/logout`, `/api/trips` (list, create, open, save, delete the user's trips), `/api/chat`, which forwards the assistant conversation to Gemini, and `/api/admin/limits` (admins: other daily limits per email). Per-user data (trips and assistant usage) lives in one Durable Object per Google account (`Account`, SQLite); the admin list of limits in a `_settings` instance of it. Secrets, set once with `npx wrangler secret put <name>`: `GEMINI_API_KEY`, `SESSION_SECRET` (random; signs the session cookie) and `ADMIN_EMAILS` (comma-separated; who may edit the limits). In `wrangler.jsonc`: `GEMINI_MODEL`, `GOOGLE_CLIENT_ID` (the OAuth client for Sign in with Google; its authorised JavaScript origins are the site and `http://localhost:5317`), the `Account` Durable Object and the per-minute rate limits (assistant calls, trip saves). For local development, put `GEMINI_API_KEY` and `SESSION_SECRET` in `.env.local`.
+
+A message to the assistant about a trip saved to the account is answered on the server, so it finishes even when the page is closed or the phone loses its connection: `POST /api/runs` saves the trip and chat as on screen and hands the run to the runner (`runner/`, a Node service on Google Cloud Run), which queues it on Cloud Tasks; Cloud Tasks calls the runner back and holds that request open while the run goes (Cloud Run gives a request CPU only while it's open, for up to 30 minutes). The runner runs the same loop and tools as the browser (`src/agent/engine.ts`) on its own copy of the trip, calls the model through the Worker (`/internal/runs/…`, with `RUNNER_SECRET`: same allowance and cost tracking as `/api/chat`), and saves the trip and the reply after each step. The page follows the run (`GET /api/runs/:id`, with the trip when it changed), shows its changes as they land, picks it up again when the trip is opened, and stops it (`POST /api/runs/:id/stop`); the trip can't be saved from the page meanwhile. A run not heard of for 5 minutes is marked failed. Without a runner (`RUNNER_URL` unset) the browser answers itself, as before. Setup, once: `scripts/gcp-setup.sh <project-id>` (APIs, the image repository, the runner's service account and queue, and a deployer that GitHub Actions uses with Workload Identity Federation); then the repository variables it prints and the `RUNNER_SECRET` secret, the same value as the Worker's (`npx wrangler secret put RUNNER_SECRET`), and `RUNNER_URL` (the Cloud Run service's address) in `wrangler.jsonc`. The Deploy workflow builds the runner (`npm run build:runner`), pushes its image and deploys it.
 
 ### Data storage
 

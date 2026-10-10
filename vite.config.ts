@@ -10,6 +10,8 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': { target: 'http://localhost:8787', configure: (proxy) => proxy.on('proxyReq', (req) => req.removeHeader('origin')) },
+      // The runner's side of assistant runs (it calls back the address the run was started on).
+      '/internal': { target: 'http://localhost:8787' },
     },
   },
 })

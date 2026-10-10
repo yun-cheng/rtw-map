@@ -1,5 +1,6 @@
-// The trip assistant's conversation in the browser: runs each message with the assistant's loop (engine.ts), calling
-// the model through /api/chat (the Worker, which calls Gemini), and keeps the chat (saved with each trip).
+// The trip assistant's conversation in the browser, kept with each trip. For a trip saved to the user's account a
+// message is answered on the server (store/saved.ts), so it finishes with the page closed; otherwise here, with the
+// assistant's loop (engine.ts) calling the model through /api/chat (the Worker, which calls Gemini).
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useTrip } from '../store/trip'
@@ -17,6 +18,8 @@ type ChatState = {
   note: string | null
   think: boolean
   busy: boolean
+  /** The run answering on the server, while there is one. */
+  runId: string | null
   /** What the reply under way has used so far. */
   spent: Spent
   /** Sends a message, with the parts of the current view the user chose to share. `think` overrides the "Think
@@ -71,6 +74,15 @@ const callModel: ModelCall = async (contents, context, think, signal, onSpent) =
 /** Stops the reply under way (one at a time). */
 let controller: AbortController | null = null
 
+/** Answers messages on the server (store/saved.ts sets it): `send` resolves when the run ends, or to false at once
+ *  when the server can't answer (the message is then answered here). */
+export type ServerRuns = {
+  send: (text: string, view: ViewItem[], options: { think: boolean; plan?: 'new' | 'update' }) => Promise<boolean>
+  stop: (runId: string) => void
+}
+let server: ServerRuns | null = null
+export const setServerRuns = (runs: ServerRuns) => { server = runs }
+
 export const useChat = create<ChatState>()(
   persist(
     (set, get) => ({
@@ -80,10 +92,12 @@ export const useChat = create<ChatState>()(
       think: false,
       busy: false,
       spent: NO_SPENT,
+      runId: null,
 
       send: async (text, view = [], options = {}) => {
         const think = options.think ?? get().think
         if (get().busy || !text.trim()) return
+        if (server && (await server.send(text, view, { think, plan: options.plan }))) return
         controller = new AbortController()
         const { contents: history, note } = get()
         set({ busy: true, note: null, spent: NO_SPENT, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
@@ -95,7 +109,11 @@ export const useChat = create<ChatState>()(
         set({ busy: false, contents, messages: [...get().messages, reply] })
       },
 
-      stop: () => controller?.abort(new DOMException('Stopped', 'AbortError')),
+      stop: () => {
+        const { runId } = get()
+        if (runId) server?.stop(runId)
+        else controller?.abort(new DOMException('Stopped', 'AbortError'))
+      },
 
       undo: (index) => {
         const msg = get().messages[index]

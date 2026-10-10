@@ -115,6 +115,9 @@ export type Run = {
   signal: AbortSignal
   /** What the reply has used so far, after each model call. */
   onSpent?: (spent: Spent) => void
+  /** After each step (a model call and the tools it asked for): the reply so far. The run waits for it (the runner
+   *  saves the trip and the reply, and hears whether to stop). */
+  onStep?: (reply: AssistantMessage) => Promise<void> | void
 }
 
 /** Answers one message: the reply, and the conversation to keep for the next one. */
@@ -153,6 +156,7 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
         return { functionResponse: { name: call.name, ...(call.id && { id: call.id }), response: result } }
       })
       contents = [...contents, { role: 'user', parts: responses }]
+      await run.onStep?.(reply)
       if (signal.aborted) throw signal.reason
     }
   } catch (e) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { isNewMessage } from './chat'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
+import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
 import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -169,5 +170,33 @@ describe('saved trips', () => {
     expect(summarize('{"input":{"startDate":"2027-05-01","endDate":"2027-09-30"},"stops":[1,2,3]}')).toEqual({ startDate: '2027-05-01', endDate: '2027-09-30', stops: 3 })
     expect(summarize(null)).toEqual({ startDate: null, endDate: null, stops: 0 })
     expect(summarize('not json')).toEqual({ startDate: null, endDate: null, stops: 0 })
+  })
+})
+
+describe('assistant runs', () => {
+  const start = { tripId: 'trip-1', text: ' Plan my trip ', view: [], plan: 'new', data: { input: {}, stops: [] }, chat: { messages: [] } }
+
+  it('checks what the browser sends to start a run', () => {
+    expect(parseRunStart(start)).toMatchObject({
+      tripId: 'trip-1',
+      request: { text: 'Plan my trip', view: [], think: false, plan: 'new', display: { currency: 'USD', tempUnit: 'C', tempFeels: true } },
+    })
+    expect(parseRunStart({ ...start, display: { currency: 'TWD', tempUnit: 'F', tempFeels: false } })).toMatchObject({ request: { display: { currency: 'TWD', tempUnit: 'F', tempFeels: false } } })
+    expect(parseRunStart({ ...start, text: ' ' })).toBe('Invalid message')
+    expect(parseRunStart({ ...start, tripId: '../x' })).toBe('Invalid trip')
+    expect(parseRunStart({ ...start, plan: 'redo' })).toBe('Invalid plan')
+    expect(parseRunStart({ ...start, view: Array(11).fill({}) })).toBe('Invalid view')
+    expect(parseRunStart({ ...start, chat: undefined })).toBe('Invalid trip')
+  })
+
+  it('checks how a run ended, and notices one that went quiet', () => {
+    expect(parseRunEnd({ status: 'done' })).toEqual({ status: 'done', error: null })
+    expect(parseRunEnd({ status: 'failed', error: 'Lost' })).toEqual({ status: 'failed', error: 'Lost' })
+    expect(parseRunEnd({ status: 'running' })).toBe('Invalid status')
+    const now = Date.now()
+    expect(isStale('running', now - RUN_STALE_MS - 1, now)).toBe(true)
+    expect(isStale('running', now - 60_000, now)).toBe(false)
+    expect(isStale('done', 0, now)).toBe(false)
+    expect(runView({ id: 'r', tripId: 't', text: 'Hi?', status: 'running', reply: '{"text":"Hi"}', version: 2, error: null, updated: now }).reply).toEqual({ text: 'Hi' })
   })
 })

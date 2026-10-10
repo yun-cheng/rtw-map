@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:api": "wrangler dev --port 8787 --env-file .env.local",
+    "dev:runner": "tsx watch --env-file=.env.local runner/index.ts",
+    "build:runner": "esbuild runner/index.ts --bundle --platform=node --target=node22 --format=esm --outfile=build/runner/index.mjs --log-level=warning && cp runner/Dockerfile build/runner/",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
@@ -34,6 +36,7 @@
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
     "aws4fetch": "^1.0.20",
+    "esbuild": "^0.28.2",
     "hyparquet": "^1.31.2",
     "hyparquet-compressors": "^1.1.2",
     "oxlint": "^1.81.0",

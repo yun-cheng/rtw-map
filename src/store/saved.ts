@@ -1,9 +1,11 @@
 // Trips saved to the signed-in user's account (the Worker's /api/trips). After sign-in it lists the trips and opens
 // the last one; the open trip and its assistant chat are saved automatically a moment after each change.
+// The assistant answers messages about a saved trip on the server (/api/runs), so they finish with the page closed;
+// the page follows the run, showing the trip as it changes, and picks it up again when the trip is opened.
 // Signed out, the app keeps one trip in this browser only (store/trip.ts persists it locally).
 import { create } from 'zustand'
 import { useAccount } from '../agent/account'
-import { useChat, type SavedChat } from '../agent/chat'
+import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
 import { newTripInput, tripPlans, useTrip, type TripData } from './trip'
 
@@ -67,17 +69,18 @@ const remembered = () => {
 let applying = false
 let timer: ReturnType<typeof setTimeout> | undefined
 
+/** Puts a saved trip and its chat on screen. */
+function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false) {
+  applying = true
+  useTrip.getState().openTrip(data, keepView)
+  useChat.getState().load(chat)
+  applying = false
+  remember(id)
+  useSaved.setState({ activeId: id })
+}
+
 export const useSaved = create<SavedState>()((set, get) => {
   const upsert = (s: TripSummary) => set({ trips: [s, ...get().trips.filter((t) => t.id !== s.id)].sort((a, b) => b.updated - a.updated) })
-
-  const show = (id: string, data: TripData | null, chat: SavedChat | null, keepView = false) => {
-    applying = true
-    useTrip.getState().openTrip(data, keepView)
-    useChat.getState().load(chat)
-    applying = false
-    remember(id)
-    set({ activeId: id })
-  }
 
   return {
     trips: [],
@@ -92,6 +95,11 @@ export const useSaved = create<SavedState>()((set, get) => {
         const trip = await call('GET', `/api/trips/${id}`)
         show(id, trip.data, trip.chat, keepView)
         set({ status: 'idle' })
+        // The assistant is still answering on the server: follow it.
+        if (trip.run) {
+          useChat.setState({ busy: true, runId: trip.run.id, messages: [...useChat.getState().messages, { role: 'user', text: trip.run.text }] })
+          void follow(id, trip.run)
+        }
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
       }
@@ -159,7 +167,8 @@ async function flush() {
 
 let dirty = false
 function changed() {
-  if (applying || !useSaved.getState().activeId) return
+  // (While the assistant answers on the server, the trip is the run's: edits on screen are replaced by its changes.)
+  if (applying || !useSaved.getState().activeId || useChat.getState().runId) return
   dirty = true
   useSaved.setState({ status: 'saving' })
   clearTimeout(timer)
@@ -185,6 +194,99 @@ if (typeof window !== 'undefined') {
     })
   })
 }
+
+// ---------------------------------------------------------------- the assistant's runs on the server (worker/runs.ts)
+
+type Run = { id: string; text: string; status: 'running' | 'done' | 'stopped' | 'failed'; version: number; error: string | null; reply: { spent?: Spent } | null }
+/** How often the page asks how a run is going. */
+const POLL_MS = 1500
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+/** Follows a run on the open trip until it ends: what it has used so far, the trip each time it changes, and at the
+ *  end the trip and chat as saved. Stops following (not the run) when another trip is opened. */
+let following: string | null = null
+async function follow(tripId: string, run: Run) {
+  // (Already following it: the trip was opened again meanwhile.)
+  if (following === run.id) return
+  following = run.id
+  useChat.setState({ busy: true, runId: run.id, spent: run.reply?.spent ?? NO_SPENT })
+  let version = run.version
+  let misses = 0
+  while (useSaved.getState().activeId === tripId) {
+    await sleep(POLL_MS)
+    if (useSaved.getState().activeId !== tripId) break
+    let now: { run: Run; data?: TripData }
+    try {
+      now = await call('GET', `/api/runs/${run.id}?since=${version}`)
+      misses = 0
+    } catch {
+      // Offline for a moment (the run goes on): keep asking, less often.
+      await sleep(Math.min(30_000, 2_000 * ++misses))
+      continue
+    }
+    if (now.run.reply?.spent) useChat.setState({ spent: now.run.reply.spent })
+    if (now.data && now.run.status === 'running') {
+      applying = true
+      useTrip.getState().openTrip(now.data, true)
+      applying = false
+    }
+    version = now.run.version
+    if (now.run.status === 'running') continue
+    // It ended: the trip and the chat with its reply, as saved.
+    try {
+      const trip = await call('GET', `/api/trips/${tripId}`)
+      if (useSaved.getState().activeId !== tripId) break
+      show(tripId, trip.data, trip.chat, true)
+      // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
+      // again, in the chat (saved as usual).
+      const last = useChat.getState().messages.at(-1)
+      if (now.run.status === 'failed' && !(last?.role === 'assistant' && last.error)) {
+        const failed: ChatMessage = { role: 'assistant', text: '', steps: [], changes: [], error: now.run.error ?? 'The assistant failed to answer: try again.' }
+        useChat.setState({ busy: false, runId: null, messages: [...useChat.getState().messages, { role: 'user', text: now.run.text }, failed] })
+      }
+    } catch (e) {
+      useSaved.setState({ status: 'error', error: (e as Error).message })
+    }
+    break
+  }
+  following = null
+  useChat.setState({ busy: false, runId: null })
+}
+
+setServerRuns({
+  send: async (text, view, { think, plan }) => {
+    const tripId = useSaved.getState().activeId
+    if (!tripId) return false
+    // The run starts from the trip and chat as on screen (sent with it, so no save is needed first).
+    clearTimeout(timer)
+    timer = undefined
+    dirty = false
+    const chat = chatData()
+    const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }
+    useChat.setState({ busy: true, note: null, spent: NO_SPENT, messages: [...chat.messages, asked] })
+    const { currency, tempUnit, tempFeels } = useTrip.getState()
+    const res = await fetch('/api/runs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tripId, text, view, think, plan, display: { currency, tempUnit, tempFeels }, data: tripData(), chat }),
+    }).catch(() => null)
+    const body = (await res?.json().catch(() => null)) as { run?: Run; error?: string } | null
+    // No runner on the server (yet): answer here instead.
+    if (res?.status === 503) {
+      useChat.setState({ busy: false, messages: chat.messages, note: chat.note })
+      return false
+    }
+    if (!res?.ok || !body?.run) {
+      if (res?.status === 401) useAccount.getState().signedOut()
+      const error = body?.error ?? (res ? `The assistant couldn't start (${res.status}).` : 'The assistant isn\'t reachable: check your network.')
+      const failed: ChatMessage = { role: 'assistant', text: '', steps: [], changes: [], error, think, ...(plan && { plan }) }
+      useChat.setState({ busy: false, note: chat.note, messages: [...chat.messages, asked, failed] })
+      return true
+    }
+    await follow(tripId, body.run)
+    return true
+  },
+  stop: (runId) => void call('POST', `/api/runs/${runId}/stop`).catch(() => {}),
+})
 
 /** After sign-in: list the trips and open one. The trip planned before signing in is added to the account first. */
 async function signedIn() {
