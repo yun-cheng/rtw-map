@@ -71,13 +71,14 @@ describe('plans in a trip', () => {
 })
 
 describe('flexible dates', () => {
+  // A flexible plan is two plans: about 4 s on CI.
   it('keeps the dates asked for, and uses the dates the plan picked', () => {
     state().openTrip({ input: { ...testCaseInput(ds, 'US'), flex: { start: '2027-05-01', end: '2027-09-30', startDays: 5, endDays: 5 } }, stops: [] })
     state().generate()
     const { input, plan } = state()
     expect(input.flex!.start).toBe('2027-05-01')
     expect({ start: input.startDate, end: input.endDate }).toEqual(plan!.dates)
-  })
+  }, 20_000)
 })
 
 describe('adding places', () => {

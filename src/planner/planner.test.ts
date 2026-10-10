@@ -655,11 +655,12 @@ describe('flexible dates', () => {
     expect(plan.stops[0].arrive).toBe(plan.dates.start)
   })
 
+  // Six plans (a flexible one is two): about 2 s on a laptop, twice that on CI.
   it('fits the stops at least as well as the exact dates', () => {
     for (const passport of ['TW', 'US']) {
       expect(misfit(testTrip(passport, { flex }))).toBeLessThanOrEqual(misfit(testTrip(passport)) + 1e-9)
     }
-  })
+  }, 20_000)
 
   it('plans for the dates asked for when no days are allowed either way', () => {
     const plan = generatePlan(ds, testTrip('TW', { startDate: '2027-05-03', flex: { ...flex, startDays: 0, endDays: 0 } }))
