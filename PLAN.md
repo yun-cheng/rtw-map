@@ -493,6 +493,7 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **No Travellers preference:** the option (solo, two sharing a room, 3–4) is gone, and with it the private room halved for two; daily costs are one traveller's. A number saved with a trip is dropped when it loads (`withPrefs`).
 - **Daily cost card:** Preferences' "A day in a city" and "Money" are one card, **Daily cost**: the daily budget first, then what a day counts in every city.
 - **Days per region:** a region can have a fewest and a most days too, all its countries told ("All of Balkans [Any] – [Any] days" at the top of its open card; not for a country added on its own; shown first in its folded line), or set by the assistant (`update_region` with `min_days` / `max_days`). The planner's country ranges became places with a range (`Area`: a country or a region), so a region's range and its countries' ones hold together: a stop gives or takes a night only within every range it's in.
+- **Fewer questions:** Preferences no longer ask about paid sights and tours or needing fast internet (stored, but nothing used them; values saved with a trip are dropped when it loads, and the travel styles no longer set sights). The Do card, now just interests, is called Interests.
 - **Next:** verify the seed costs and connections; the offline part of Phase 3 (PWA) and a "today" screen.
 
 ---

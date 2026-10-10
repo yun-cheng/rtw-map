@@ -18,7 +18,6 @@ const EXPENSIVE: Options<TravelPrefs['expensive']> = [{ value: 'ignore', label: 
 const PACES: Options<Pace> = [{ value: 'chill', label: '🐢 Chill' }, { value: 'balanced', label: '⚖️ Balanced' }, { value: 'fast', label: '🐇 Fast' }]
 const BETWEEN: Options<TravelPrefs['betweenCities']> = [{ value: 'cheapest', label: 'Cheapest' }, { value: 'balanced', label: 'Balanced' }, { value: 'fastest', label: 'Fastest' }]
 const HOURS: Options<TravelPrefs['maxTravelHours']> = [{ value: 3, label: '3 h' }, { value: 5, label: '5 h' }, { value: 8, label: '8 h' }, { value: null, label: 'No limit' }]
-const SIGHTS: Options<TravelPrefs['sights']> = [{ value: 'few', label: 'A few' }, { value: 'daily', label: 'One a day' }, { value: 'lots', label: 'Lots + tours' }]
 const labelOf = <T,>(options: Options<T>, value: T) => options.find((o) => o.value === value)?.label ?? String(value)
 /** A label in lower case for the middle of a summary, except an abbreviation ("DIY"). */
 const lower = (label: string) => (/^[A-Z]{2,}$/.test(label) ? label : label.toLowerCase())
@@ -63,13 +62,12 @@ export function PrefsCards() {
       p.maxPerNight != null && `up to ${money(p.maxPerNight, currency)} a night`,
     ],
     around: [`${labelOf(PACES, input.pace).split(' ')[1]} pace`, `${lower(labelOf(BETWEEN, p.betweenCities))} between cities`, p.maxTravelHours ? `up to ${p.maxTravelHours} h a day` : 'no limit a day', p.overnight && 'overnight OK'],
-    do: [input.interests.join(', ') || 'No interests', `${labelOf(SIGHTS, p.sights).toLowerCase()} paid sights`],
+    interests: [input.interests.join(', ') || 'None yet'],
     comfort: [
       p.minHighC == null && p.maxHeatC == null && p.minLowC == null && p.maxLowC == null && 'any temperature',
       (p.minHighC != null || p.maxHeatC != null) && `highs ${temps(p.minHighC, p.maxHeatC)}`,
       (p.minLowC != null || p.maxLowC != null) && `lows ${temps(p.minLowC, p.maxLowC)}`,
       p.avoidRain && 'no rainy months',
-      p.needInternet && 'fast internet',
     ],
   }
   // One card open at a time: opening one folds the one that was open.
@@ -141,8 +139,7 @@ export function PrefsCards() {
         <div className="mt-2">{toggle('overnight', 'Overnight buses and trains are OK')}</div>
       </Fold>
 
-      <Fold title="Do" {...fold('Do')} summary={line(summary.do)}>
-        <Label>Interests</Label>
+      <Fold title="Interests" {...fold('Interests')} summary={line(summary.interests)}>
         <div className="flex flex-wrap gap-1">
           {INTERESTS.map((t) => {
             const on = input.interests.includes(t)
@@ -154,8 +151,6 @@ export function PrefsCards() {
             )
           })}
         </div>
-        <Label>Paid sights and tours</Label>
-        {choose('sights', SIGHTS)}
       </Fold>
 
       <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
@@ -170,10 +165,7 @@ export function PrefsCards() {
           onChange={(minLowC, maxLowC) => setPrefs({ minLowC, maxLowC })}
         />
         <p className="mt-1 text-[11px] text-muted">The planner favours places within these in the months you'd be there, and Checks flags the rest. Warm nights matter without air conditioning; cold ones when camping.</p>
-        <div className="mt-2 flex flex-col gap-1.5">
-          {toggle('avoidRain', 'Avoid rainy months')}
-          {toggle('needInternet', 'I need fast internet (working on the road)')}
-        </div>
+        <div className="mt-2">{toggle('avoidRain', 'Avoid rainy months')}</div>
       </Fold>
     </>
   )

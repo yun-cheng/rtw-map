@@ -247,7 +247,6 @@ export type TravelPrefs = {
   betweenCities: 'cheapest' | 'balanced' | 'fastest'
   overnight: boolean
   maxTravelHours: 3 | 5 | 8 | null
-  sights: 'few' | 'daily' | 'lots'
   /** What the planner favours: a balance, as many countries as fit, or the most popular places. */
   focus: 'balanced' | 'countries' | 'highlights'
   /** Expensive places (well above the trip's typical daily cost): no change, shorter stays, or skipped where optional. */
@@ -258,7 +257,6 @@ export type TravelPrefs = {
   maxLowC: number | null
   minLowC: number | null
   avoidRain: boolean
-  needInternet: boolean
   dailyBudget: number | null
 }
 /**

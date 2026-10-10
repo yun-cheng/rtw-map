@@ -71,13 +71,11 @@ function prefsText(p: TravelPrefs): string {
     `bed: ${p.room === 'dorm' ? 'dorm bed' : 'private room'}${p.maxPerNight ? `, up to €${p.maxPerNight}/night` : ''}`,
     `breakfast: ${p.breakfast}, lunch: ${p.lunch}, dinner: ${p.dinner}; café coffees a day: ${p.coffees}, bar beers a day: ${p.beers}`,
     `between cities: ${p.betweenCities}${p.overnight ? ', overnight travel OK' : ', no overnight travel'}${p.maxTravelHours ? `, at most ${p.maxTravelHours} h a travel day` : ''}`,
-    `paid sights: ${p.sights}`,
     `planner focus: ${p.focus === 'countries' ? 'as many countries as fit' : p.focus === 'highlights' ? 'the most popular places' : 'balanced'}`,
     ...(p.expensive !== 'ignore' ? [`expensive places: ${p.expensive === 'shorter' ? 'shorter stays' : 'skip where optional'}`] : []),
     ...(p.minHighC != null || p.maxHeatC != null ? [`comfortable daily highs: ${p.minHighC ?? 'any'} to ${p.maxHeatC ?? 'any'}°C`] : []),
     ...(p.minLowC != null || p.maxLowC != null ? [`comfortable nightly lows: ${p.minLowC ?? 'any'} to ${p.maxLowC ?? 'any'}°C`] : []),
     ...(p.avoidRain ? ['avoid rainy months'] : []),
-    ...(p.needInternet ? ['needs fast internet'] : []),
     ...(p.dailyBudget ? [`daily budget €${p.dailyBudget} per person`] : []),
   ].join('; ')
 }
@@ -789,7 +787,6 @@ const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknow
   { arg: 'between_cities', key: 'betweenCities', values: ['cheapest', 'balanced', 'fastest'] },
   { arg: 'overnight', key: 'overnight', flag: true },
   { arg: 'max_travel_hours', key: 'maxTravelHours', values: [3, 5, 8, null] },
-  { arg: 'sights', key: 'sights', values: ['few', 'daily', 'lots'] },
   { arg: 'focus', key: 'focus', values: ['balanced', 'countries', 'highlights'] },
   { arg: 'expensive', key: 'expensive', values: ['ignore', 'shorter', 'skip'] },
   { arg: 'max_high_c', key: 'maxHeatC', temp: true },
@@ -797,7 +794,6 @@ const PREF_ARGS: { arg: string; key: keyof TravelPrefs; values?: readonly unknow
   { arg: 'max_low_c', key: 'maxLowC', temp: true },
   { arg: 'min_low_c', key: 'minLowC', temp: true },
   { arg: 'avoid_rain', key: 'avoidRain', flag: true },
-  { arg: 'need_internet', key: 'needInternet', flag: true },
   { arg: 'daily_budget_eur', key: 'dailyBudget', amount: true },
 ]
 
@@ -814,9 +810,9 @@ function findPlan(ref: unknown): TripPlan {
 const PREF_NAMES: Record<keyof TravelPrefs, string> = {
   homeCityId: 'Home city', returnHome: 'Return home at the end', room: 'Bed', maxPerNight: 'Most per night (EUR)', breakfast: 'Breakfast',
   lunch: 'Lunch', dinner: 'Dinner', coffees: 'Café coffees', beers: 'Beers in a bar', betweenCities: 'Between cities',
-  overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', sights: 'Paid sights', focus: 'Trip goal',
+  overnight: 'Overnight travel', maxTravelHours: 'Longest travel day (h)', focus: 'Trip goal',
   expensive: 'Expensive places', maxHeatC: 'Highest comfortable high (°C)', minHighC: 'Lowest comfortable high (°C)', maxLowC: 'Warmest comfortable night (°C)', minLowC: 'Coldest comfortable night (°C)', avoidRain: 'Avoid rainy months',
-  needInternet: 'Needs fast internet', dailyBudget: 'Daily budget (EUR)',
+  dailyBudget: 'Daily budget (EUR)',
 }
 const prefValue = (v: unknown) => (v === null ? 'no limit' : v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '))
 

@@ -263,9 +263,10 @@ describe('travel preferences', () => {
     expect(withPrefs(old).prefs).toMatchObject({ room: 'private', dinner: 'restaurant' })
   })
 
-  it('leaves out a number of travellers saved before the option was removed', () => {
+  it('leaves out preferences saved before they were removed', () => {
     const input = testTrip('US')
-    expect(withPrefs({ ...input, prefs: { ...input.prefs, travellers: 2 } as never }).prefs).not.toHaveProperty('travellers')
+    const prefs = withPrefs({ ...input, prefs: { ...input.prefs, travellers: 2, sights: 'lots', needInternet: true } as never }).prefs
+    for (const key of ['travellers', 'sights', 'needInternet']) expect(prefs).not.toHaveProperty(key)
   })
 
   it('costs the budget private style between backpacker and mid-range', () => {
