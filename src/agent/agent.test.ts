@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { geminiRequest, isBrokenReply, parseChatRequest } from '../../worker/chat'
 import { dataset as ds } from '../data/dataset'
-import { testCaseInput } from '../data/testCase'
+import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
 import { bindTrip, describeChanges, runTool, snapshot, tripContext } from './tools'
@@ -12,7 +12,7 @@ const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
 beforeEach(() => {
   bindTrip(useTrip)
   useTrip.getState().openTrip({ input: testCaseInput(ds, 'US'), stops: [] })
-  useTrip.getState().generate()
+  useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
 })
 
 describe('assistant tools', () => {
@@ -31,13 +31,26 @@ describe('assistant tools', () => {
     expect(missing.result.error).toMatch(/find_cities/)
   })
 
-  it('sets nights like the ± buttons: locks the stop and keeps the trip filled', () => {
-    const r = runTool('set_nights', { city: 'Kraków', nights: 12 })
+  it('sets nights and nothing else (the assistant fits the rest), locking only nights the user asked for', () => {
+    const before = useTrip.getState()
+    const krakow = before.stops.find((s) => s.cityId === 'krakow')!
+    const r = runTool('set_nights', { city: 'Kraków', nights: krakow.nights + 3 })
     expect(r.ok).toBe(true)
     const { plan, stops } = useTrip.getState()
-    expect(stops.find((s) => s.cityId === 'krakow')).toMatchObject({ nights: 12, locked: true })
-    expect(plan!.assignedNights).toBe(plan!.totalNights)
-    expect(r.result.trip).toMatch(/Kraków.*12 nights, locked/)
+    expect(stops.find((s) => s.cityId === 'krakow')).toMatchObject({ nights: krakow.nights + 3, locked: false })
+    expect(stops.filter((s) => s.cityId !== 'krakow')).toEqual(before.stops.filter((s) => s.cityId !== 'krakow'))
+    expect(plan!.assignedNights).toBe(before.plan!.assignedNights + 3)
+    expect(r.result.trip).toMatch(/\d+ of \d+ nights/)
+    runTool('set_nights', { city: 'Kraków', nights: 12, lock: true })
+    expect(useTrip.getState().stops.find((s) => s.cityId === 'krakow')).toMatchObject({ nights: 12, locked: true })
+  })
+
+  it('puts in a whole itinerary, keeping the user\'s locks', () => {
+    const r = runTool('set_itinerary', { stops: [{ city: 'Kraków', nights: 40 }, { city: 'Warsaw', nights: 50, lock: true }, { city: 'Gdańsk', nights: 62 }] })
+    expect(r.ok).toBe(true)
+    expect(useTrip.getState().stops.map((s) => [s.cityId, s.nights, s.locked])).toEqual([['krakow', 40, false], ['warsaw', 50, true], ['gdansk', 62, false]])
+    expect(runTool('set_itinerary', { stops: [{ city: 'Kraków', nights: 2 }, { city: 'krakow', nights: 2 }] }).result.error).toMatch(/twice/)
+    expect(runTool('set_itinerary', { stops: [{ city: 'Atlantis', nights: 2 }] }).ok).toBe(false)
   })
 
   it('adds, moves and removes stops', () => {
@@ -50,21 +63,23 @@ describe('assistant tools', () => {
     expect(runTool('remove_stop', { city: 'Eger' }).ok).toBe(false)
   })
 
-  it('changes settings and re-fits the nights when the dates change', () => {
+  it('changes settings; new dates leave the itinerary as it is, for the assistant to fit', () => {
+    const before = useTrip.getState().stops
     expect(runTool('update_settings', { end_date: '2027-08-31', pace: 'fast' }).ok).toBe(true)
-    const { input, plan } = useTrip.getState()
+    const { input, plan, stops } = useTrip.getState()
     expect(input).toMatchObject({ endDate: '2027-08-31', pace: 'fast' })
-    expect(plan!.assignedNights).toBe(plan!.totalNights)
+    expect(stops).toEqual(before)
+    expect(plan!.assignedNights).toBeGreaterThan(plan!.totalNights)
     expect(runTool('update_settings', { end_date: '2027-04-01' }).ok).toBe(false)
     expect(runTool('update_settings', { interests: ['surfing'] }).ok).toBe(false)
   })
 
-  it('changes any preference, lists the changes, and keeps the itinerary until it is regenerated', () => {
+  it('changes any preference, lists the changes, and keeps the itinerary as it is', () => {
     const before = snapshot()
     const stops = stopIds()
     const r = runTool('update_preferences', { room: 'private', dinner: 'restaurant', focus: 'countries', hot_from_c: 30, avoid_hot: true, daily_budget_eur: 70 })
     expect(r.ok).toBe(true)
-    expect(r.summary).toContain('generate_plan')
+    expect(r.summary).toContain('The itinerary is unchanged')
     expect(useTrip.getState().input.prefs).toMatchObject({ room: 'private', dinner: 'restaurant', focus: 'countries', tempBreaks: [12, 18, 28, 30], avoidHot: true, avoidCold: false, dailyBudget: 70 })
     expect(stopIds()).toEqual(stops)
     expect(describeChanges(before, snapshot())).toEqual(expect.arrayContaining(['Trip goal: balanced → countries', 'Daily budget (EUR): no limit → 70', 'Avoid hot months: no → yes', 'Temperature bands: cold <12, cool 12–18, pleasant 18–28, warm 28–30, hot 30+ °C']))

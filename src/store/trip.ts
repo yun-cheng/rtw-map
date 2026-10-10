@@ -131,11 +131,11 @@ export const useTrip = create<State>()(
         cityPart: {},
 
         ...core,
-        // A new itinerary is shown on the map, its stops in the Itinerary tab.
-        generate: () => {
-          if (!core.generate()) return false
-          set({ panel: 'itinerary', selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0 })
-          return true
+        // A whole new itinerary (the assistant's plan) is fitted into the map.
+        setStops: (stops) => {
+          const fresh = !get().stops.length
+          core.setStops(stops)
+          if (fresh) set({ selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0 })
         },
         switchPlan: (id) => {
           const was = get().activePlanId

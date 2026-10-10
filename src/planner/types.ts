@@ -330,8 +330,11 @@ export type TripInput = {
   schengenDaysBefore: number
   /** Changes to the daily cost choices for single cities of this trip (city id → the choices that differ). */
   cityCosts?: Record<string, Partial<DayChoices>>
-  /** The setup the plan was last made or updated from (by the planner or Plan with AI), to tell what changed since. */
-  planned?: Omit<TripInput, 'planned'>
+  /** The setup the plan was last made or updated from (by Plan with AI, Update plan or another change by the
+   *  assistant), to tell what changed since. */
+  planned?: Omit<TripInput, 'planned' | 'plannedStops'>
+  /** The stops as the assistant left them then, to tell the user's own edits since. */
+  plannedStops?: Stop[]
 }
 
 // ---------- Plan output ----------

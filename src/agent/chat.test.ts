@@ -1,11 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { testCaseInput } from '../data/testCase'
+import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { createTripStore } from '../store/tripCore'
 import { splitChoices, useChat } from './chat'
 import { runAssistant, type Content } from './engine'
-import { setupChanges } from './tools'
+import { planChanges } from './tools'
 
 const reply = (text: string) => ({ status: 200, body: { content: { role: 'model', parts: [{ text }] } } })
 const toolCall = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'get_options', args: {} } }] } } }
@@ -58,7 +58,7 @@ describe('assistant chat', () => {
     useChat.setState({
       contents: Array.from({ length: 70 }, (_, i) => ({ role: i % 2 ? 'model' : 'user', parts: [{ text: `${i} ${filler}` }] })) as never,
     })
-    useTrip.getState().generate()
+    useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
     const change = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_locked', args: { city: useTrip.getState().stops[0].cityId, locked: true } } }] } } }
     const fetch = serve(...Array(20).fill(change), reply('Done'))
     await useChat.getState().send('lock it')
@@ -89,7 +89,7 @@ describe('assistant chat', () => {
   })
 
   it('stops when asked, keeping the changes made so far', async () => {
-    useTrip.getState().generate()
+    useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
     const city = useTrip.getState().stops[0].cityId
     const change = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_locked', args: { city, locked: true } } }] } } }
     let calls = 0
@@ -116,15 +116,17 @@ describe('assistant chat', () => {
     expect((useChat.getState().messages.at(-1) as { spent?: unknown }).spent).toEqual({ calls: 3, input: 3000, cached: 600, output: 150, usd: 0.003 })
   })
 
-  it('plans afresh with Plan with AI: a new draft, none of the conversation so far, and Undo back to the trip before', async () => {
+  it('plans afresh with Plan with AI: the assistant\'s own itinerary, none of the conversation so far, and Undo back to the trip before', async () => {
     useChat.setState({ contents: [{ role: 'user', parts: [{ text: 'earlier' }] }, { role: 'model', parts: [{ text: 'reply' }] }] as never })
-    const fetch = serve(reply('Planned'))
+    const itinerary = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_itinerary', args: { stops: [{ city: 'Kraków', nights: 60 }, { city: 'Warsaw', nights: 92 }] } } }] } } }
+    const fetch = serve(itinerary, reply('Planned'))
     await useChat.getState().send('Plan my trip from scratch.', [], { think: true, plan: 'new' })
     const body = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))
     expect(body.contents).toEqual([{ role: 'user', parts: [{ text: 'Plan my trip from scratch.' }] }])
-    expect(body.context).toMatch(/stops/i)
-    expect(useTrip.getState().stops.length).toBeGreaterThan(0)
-    // Undo takes the trip back to before the plan, not to the planner's draft.
+    // No draft from the old planner: the plan is the assistant's.
+    expect(useTrip.getState().stops.map((s) => [s.cityId, s.nights])).toEqual([['krakow', 60], ['warsaw', 92]])
+    expect(planChanges(useTrip.getState())).toEqual([])
+    // Undo takes the trip back to before the plan.
     useChat.getState().undo(useChat.getState().messages.length - 1)
     expect(useTrip.getState().stops).toEqual([])
   })
@@ -140,31 +142,41 @@ describe('assistant chat', () => {
     expect(useTrip.getState().input.planned).toBeTruthy()
   })
 
-  it('updates the plan for what changed in the setup, keeping its stops, and notes the plan fits the setup again', async () => {
-    useTrip.getState().generate()
-    const stops = useTrip.getState().stops
-    const setup = () => useTrip.getState().input
-    expect(setupChanges(setup().planned!, setup())).toEqual([])
+  it('lists what changed since the plan (setup, edits by hand, nights), and updates the plan for it', async () => {
+    useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
+    useTrip.getState().markPlanned()
+    const changes = () => planChanges(useTrip.getState())
+    expect(changes()).toEqual([])
+    const first = useTrip.getState().stops[0]
+    // Edits by hand change only what they touch: the nights no longer add up until the plan is updated.
     useTrip.getState().setInput({ pace: 'fast' })
-    expect(setupChanges(setup().planned!, setup())).toEqual(['Pace: balanced → fast'])
+    useTrip.getState().setNights(0, first.nights + 2)
+    expect(changes()).toEqual(['Pace: balanced → fast', expect.stringMatching(new RegExp(`: ${first.nights} → ${first.nights + 2} nights`)), '2 nights over the dates'])
     useChat.setState({ contents: [{ role: 'user', parts: [{ text: 'earlier' }] }, { role: 'model', parts: [{ text: 'reply' }] }] as never })
-    const fetch = serve(reply('Updated'))
-    await useChat.getState().send('Update my plan: Pace: balanced → fast', [], { think: true, plan: 'update' })
-    // No new draft, and the model starts afresh.
-    expect(useTrip.getState().stops).toEqual(stops)
+    const fitted = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: useTrip.getState().stops[1].cityId, nights: useTrip.getState().stops[1].nights - 2 } } }] } } }
+    const fetch = serve(fitted, reply('Updated'))
+    await useChat.getState().send(`Update my plan: ${changes().join('; ')}`, [], { think: true, plan: 'update' })
+    // The model starts afresh, keeps the user's edit, and the plan is up to date again.
     expect(JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body)).contents).toHaveLength(1)
-    expect(setupChanges(setup().planned!, setup())).toEqual([])
+    expect(useTrip.getState().stops[0]).toMatchObject({ nights: first.nights + 2, locked: true })
+    expect(changes()).toEqual([])
   })
 
-  it('keeps showing what changed when an update is stopped', async () => {
-    useTrip.getState().generate()
-    useTrip.getState().setInput({ pace: 'fast' })
+  it('marks the plan up to date after the assistant changes the trip in the chat, not after a stopped update', async () => {
+    useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
+    useTrip.getState().markPlanned()
+    useTrip.getState().removeStop(0)
+    expect(planChanges(useTrip.getState()).length).toBeGreaterThan(0)
     vi.stubGlobal('fetch', vi.fn(async () => {
       useChat.getState().stop()
       return new Response(JSON.stringify(toolCall.body), { status: 200 })
     }))
     await useChat.getState().send('Update my plan', [], { plan: 'update' })
-    expect(setupChanges(useTrip.getState().input.planned!, useTrip.getState().input)).toEqual(['Pace: balanced → fast'])
+    expect(planChanges(useTrip.getState()).length).toBeGreaterThan(0)
+    const nights = useTrip.getState().plan!.totalNights - useTrip.getState().plan!.assignedNights + useTrip.getState().stops[0].nights
+    serve({ status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: useTrip.getState().stops[0].cityId, nights } } }] } } }, reply('Done'))
+    await useChat.getState().send('Give the freed nights to my first stop')
+    expect(planChanges(useTrip.getState())).toEqual([])
   })
 
   it('turns a last "Choices:" line into buttons', () => {
@@ -196,9 +208,10 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
   it('plans and changes that trip, not the one on screen', async () => {
     const trip = createTripStore({ input: testCaseInput(ds, 'US'), stops: [] })
     const shown = useTrip.getState().stops
-    // The model gives the first stop of the planner's draft 9 nights, then answers.
+    // The model puts in an itinerary, gives its first stop 9 nights, then answers.
     const answers: (() => Content)[] = [
-      () => ({ role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: trip.getState().stops[0].cityId, nights: 9 } } }] }),
+      () => ({ role: 'model', parts: [{ functionCall: { name: 'set_itinerary', args: { stops: [{ city: 'Kraków', nights: 60 }, { city: 'Warsaw', nights: 92 }] } } }] }),
+      () => ({ role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: 'Kraków', nights: 9 } } }] }),
       () => ({ role: 'model', parts: [{ text: 'Planned, with 9 nights at the start.' }] }),
     ]
     const { reply, contents } = await runAssistant({
@@ -209,13 +222,67 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
       },
       signal: new AbortController().signal,
     })
-    expect(reply).toMatchObject({ text: 'Planned, with 9 nights at the start.', plan: 'new', spent: { calls: 2, input: 2000, output: 200 } })
+    expect(reply).toMatchObject({ text: 'Planned, with 9 nights at the start.', plan: 'new', spent: { calls: 3, input: 3000, output: 300 } })
     expect(reply.changes).toContain(`New itinerary: ${trip.getState().stops.length} stops`)
     // Its time counts from when the run was started (on the server, before the runner picked it up).
     expect(reply.ms).toBeGreaterThanOrEqual(5000)
-    expect(trip.getState().stops[0].nights).toBe(9)
+    // Nights it set itself aren't locked.
+    expect(trip.getState().stops[0]).toMatchObject({ cityId: 'krakow', nights: 9, locked: false })
     expect(trip.getState().input.planned).toBeTruthy()
-    expect(contents).toHaveLength(4)
+    expect(contents).toHaveLength(6)
     expect(useTrip.getState().stops).toBe(shown)
+  })
+
+  it('keeps the user\'s setup while planning, and locks only nights the user asked for', async () => {
+    const trip = createTripStore({ input: testCaseInput(ds, 'US'), stops: [] })
+    trip.getState().setStops(draftStops(ds, trip.getState().input))
+    const regions = trip.getState().input.groups.length
+    const [first, second] = trip.getState().stops.map((s) => s.cityId)
+    const calls = [
+      { name: 'update_region', args: { region: trip.getState().input.groups[0].name, remove: true } },
+      { name: 'set_locked', args: { city: second, locked: true } },
+      { name: 'set_nights', args: { city: first, nights: 6, lock: true } },
+      { name: 'set_nights', args: { city: second, nights: 5 } },
+    ]
+    const answers: Content[] = [
+      { role: 'model', parts: calls.map((functionCall) => ({ functionCall })) },
+      { role: 'model', parts: [{ text: 'Updated.' }] },
+    ]
+    const { reply, contents } = await runAssistant({
+      trip, view: [], history: [], note: null, text: 'Update my plan.', think: false, plan: 'update',
+      callModel: async () => answers.shift()!, signal: new AbortController().signal,
+    })
+    const results = contents[2].parts.map((p) => (p.functionResponse as { response: { error?: string } }).response)
+    expect(results[0].error).toMatch(/setup .* stays as the user set it/)
+    expect(results[1].error).toMatch(/setup .* stays as the user set it/)
+    expect(trip.getState().input.groups).toHaveLength(regions)
+    const stops = trip.getState().stops
+    expect(stops.find((s) => s.cityId === first)).toMatchObject({ nights: 6, locked: true })
+    expect(stops.find((s) => s.cityId === second)).toMatchObject({ nights: 5, locked: false })
+    expect(reply.changes.join()).not.toMatch(/Removed region/)
+  })
+
+  it('reverses only the stops while planning, and not when the regions are to be visited in order', async () => {
+    const plan = async (keepGroupOrder: boolean) => {
+      const trip = createTripStore({ input: { ...testCaseInput(ds, 'US'), keepGroupOrder }, stops: [] })
+      trip.getState().setStops(draftStops(ds, trip.getState().input))
+      const before = trip.getState()
+      const answers: Content[] = [
+        { role: 'model', parts: [{ functionCall: { name: 'reorder_stops', args: { reverse: true } } }] },
+        { role: 'model', parts: [{ text: 'Done.' }] },
+      ]
+      const { contents } = await runAssistant({
+        trip, view: [], history: [], note: null, text: 'Update my plan.', think: false, plan: 'update',
+        callModel: async () => answers.shift()!, signal: new AbortController().signal,
+      })
+      return { before, after: trip.getState(), result: (contents[2].parts[0].functionResponse as { response: { error?: string } }).response }
+    }
+    const free = await plan(false)
+    expect(free.result.error).toBeUndefined()
+    expect(free.after.stops.map((s) => s.cityId)).toEqual(free.before.stops.map((s) => s.cityId).reverse())
+    expect(free.after.input.groups).toEqual(free.before.input.groups)
+    const ordered = await plan(true)
+    expect(ordered.result.error).toMatch(/In this order/)
+    expect(ordered.after.stops).toEqual(ordered.before.stops)
   })
 })

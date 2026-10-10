@@ -4,7 +4,7 @@
 // Each reply that changed the trip keeps a copy of the trip from before, for Undo.
 import { WRITE_TOOLS } from './schema'
 import { viewText, type ViewItem } from './shared'
-import { describeChanges, runTool, snapshot, tripContext, withTrip, type TripHandle, type TripSnapshot } from './tools'
+import { describeChanges, runTool, snapshot, toolContext, tripContext, withTrip, type TripHandle, type TripSnapshot } from './tools'
 
 export type Part = { text?: string; thought?: boolean; thoughtSignature?: string; functionCall?: { name: string; args?: Record<string, unknown>; id?: string }; functionResponse?: unknown }
 export type Content = { role: 'user' | 'model'; parts: Part[] }
@@ -106,9 +106,9 @@ export type Run = {
   history: Content[]
   note: string | null
   text: string
-  /** `think`: think harder. `plan` starts the model afresh, without the conversation so far: 'new' (Plan with AI)
-   *  makes a clean plan from the planner's draft (Undo goes back to the trip from before it); 'update' (Update plan)
-   *  changes the plan for what changed in the setup. Either, when finished, notes that the plan fits the setup. */
+  /** `think`: think harder. `plan` starts the model afresh, without the conversation so far, and keeps the user's
+   *  setup: 'new' (Plan with AI) makes a clean plan; 'update' (Update plan) changes the plan for what changed since
+   *  it was made. A finished plan, or any reply that changed the trip, notes that the plan fits the trip as it is. */
   think: boolean
   plan?: 'new' | 'update'
   callModel: ModelCall
@@ -127,9 +127,9 @@ export type Run = {
 export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage; contents: Content[] }> {
   const { trip, view, think, plan, signal, callModel } = run
   const startedAt = run.startedAt ?? Date.now()
-  const tools = <T>(fn: () => T) => withTrip(trip, view, fn)
+  const ctx = toolContext(trip, view, !!plan)
+  const tools = <T>(fn: () => T) => withTrip(ctx, fn)
   const before = tools(snapshot)
-  if (plan === 'new') trip.getState().generate()
   // The trip (and view) as it was when the user asked, kept the same for every step of this reply.
   const context = [tools(tripContext), viewText(view)].filter(Boolean).join('\n\n')
   const prefix = run.note && !plan ? `[${run.note}]\n` : ''
@@ -174,9 +174,11 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
       contents = run.history
     }
   }
-  if (plan && !reply.error && !stopped) trip.getState().markPlanned()
+  const changed = reply.steps.some((s) => s.ok && WRITE_TOOLS.has(s.name))
+  // The assistant leaves the plan in order after its changes: from now on, only what changes since counts for Update
+  // plan (the user's own edits, the setup).
+  if ((plan || changed) && !reply.error && !stopped) trip.getState().markPlanned()
   if (!reply.error) {
-    const changed = reply.steps.some((s) => s.ok && WRITE_TOOLS.has(s.name))
     if (stopped) reply.text = [reply.text, changed ? 'Stopped. The changes so far are kept.' : 'Stopped.'].filter(Boolean).join('\n\n')
     if (!reply.text) reply.text = changed ? 'Done.' : 'Sorry, I have no answer to that.'
     if (stopped) choices = ['Continue', ...choices]

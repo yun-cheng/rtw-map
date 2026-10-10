@@ -3,22 +3,21 @@ import { dataset as ds } from '../data/dataset'
 import { tripDay, type Leg, type PlanWarning } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate, warningTitle } from '../ui/format'
-import { Badge, Button, Named } from '../ui/kit'
+import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
-  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, rebalance, reoptimize } = useTrip()
+  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop } = useTrip()
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
   if (!plan) return null
 
   return (
-    <div className="flex flex-col">
-      <div className="flex items-center gap-1.5 px-4 pt-3 pb-2">
-        <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
-        <Button onClick={rebalance} title="Re-assign nights to unlocked stops so they fill your dates">Rebalance</Button>
-        <Button onClick={reoptimize} title="Re-order stops for the shortest route">Re-order</Button>
+    <div className="flex min-h-full flex-col">
+      <div className="px-4 pt-3 pb-2">
+        <h2 className="text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
       </div>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
@@ -65,7 +64,7 @@ export function Itinerary() {
                   <StepBtn onClick={() => setNights(i, s.nights - 1)} disabled={s.nights <= 1} label="One night less">−</StepBtn>
                   <span className="w-7 text-center text-[13px] font-semibold tabular-nums" title="Nights">{s.nights}</span>
                   <StepBtn onClick={() => setNights(i, s.nights + 1)} label="One night more">+</StepBtn>
-                  <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: Rebalance keeps these nights' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : 'text-muted opacity-0 group-hover:opacity-100'} hover:bg-panel`}>
+                  <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: these nights stay when the plan changes' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : 'text-muted opacity-0 group-hover:opacity-100'} hover:bg-panel`}>
                     {s.locked ? '🔒' : '🔓'}
                   </button>
                   <button onClick={() => removeStop(i)} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
@@ -95,6 +94,7 @@ export function Itinerary() {
         })}
         {plan.home.back && <HomeRow leg={plan.home.back} label={`Back to ${cityName(plan.home.back.to)}`} when={`leaving ${shortDate(input.endDate)}`} />}
       </ol>
+      <UpdatePlanBar />
     </div>
   )
 }

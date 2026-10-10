@@ -4,7 +4,7 @@
 import { createStore, type StoreApi } from 'zustand/vanilla'
 import { dataset as ds } from '../data/dataset'
 import {
-  DEFAULT_PREFS, addDays, addStop, evaluatePlan, generatePlan, rebalance, reoptimize, stylePrefs, withPrefs,
+  DEFAULT_PREFS, addDays, addStop, evaluatePlan, stylePrefs, withPrefs,
   type Budget, type Plan, type Stop, type TravelPrefs, type TripInput,
 } from '../planner'
 import type { TempUnit } from '../ui/format'
@@ -39,19 +39,20 @@ export type TripCore = Display & {
   /** Picks a travel style: its preferences replace the style fields, and daily costs use its price level. */
   setStyle: (style: Budget) => void
   setPrefs: (patch: Partial<TravelPrefs>) => void
-  /** Makes a new itinerary for the setup; false when there are no regions to plan. */
-  generate: () => boolean
-  /** Notes that the plan now fits the setup as it is (after Plan with AI or Update plan). */
+  /** Puts in a whole new itinerary (the assistant's), as given. */
+  setStops: (stops: Stop[]) => void
+  /** Notes that the plan now fits the setup and its stops as they are (after the assistant planned or changed it). */
   markPlanned: () => void
-  setNights: (index: number, nights: number) => void
+  /** Sets a stop's nights, locked unless `lock` is false (the user's own choice). Nothing else changes: the trip
+   *  may then have more or fewer nights than its dates, until the plan is updated. */
+  setNights: (index: number, nights: number, lock?: boolean) => void
   toggleLock: (index: number) => void
   removeStop: (index: number) => void
   moveStop: (from: number, to: number) => void
-  /** Puts the stops in a new order (indexes into the current stops); nights are re-fitted. */
+  /** Puts the stops in a new order (indexes into the current stops). */
   reorderStops: (order: number[]) => void
+  /** Adds a city where it fits the route, with its usual stay. */
   addCity: (cityId: string) => void
-  rebalance: () => void
-  reoptimize: () => void
   /** Puts back an earlier trip (Undo for the assistant's changes). */
   restore: (data: TripData) => void
   /** Adds a plan, by default a copy of the active one, and switches to it unless `activate` is false. Returns its id,
@@ -103,8 +104,8 @@ const emptyInput: TripInput = {
   schengenDaysBefore: 0,
 }
 
-/** A setup without the one it was planned from. */
-const setupOf = ({ planned: _, ...input }: TripInput): Omit<TripInput, 'planned'> => structuredClone(input)
+/** A setup without what it was planned from. */
+const setupOf = ({ planned: _, plannedStops: __, ...input }: TripInput): NonNullable<TripInput['planned']> => structuredClone(input)
 
 const toStops = (p: Plan): Stop[] => p.stops.map(({ cityId, nights, locked, groupId }) => ({ cityId, nights, locked, groupId }))
 
@@ -139,9 +140,10 @@ type Set = (patch: Partial<TripCore>) => void
 /** The changes, for a store holding a `TripCore` (or more: the app's store adds what's on screen). */
 export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan'> {
   const apply = (plan: Plan, extra: Partial<TripCore> = {}) => set({ plan, stops: toStops(plan), ...extra })
+  // Edits change only what they touch: the plan is updated (by the assistant) when the user asks.
   const edit = (fn: (stops: Stop[]) => Stop[]) => {
     const { input, stops } = get()
-    apply(rebalance(ds, input, fn(stops.map((s) => ({ ...s })))))
+    apply(evaluatePlan(ds, input, fn(stops.map((s) => ({ ...s })))))
   }
   return {
     setInput: (patch) => {
@@ -151,18 +153,10 @@ export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 
     },
     setStyle: (budget) => get().setInput({ budget, prefs: stylePrefs(budget, get().input.prefs) }),
     setPrefs: (patch) => get().setInput({ prefs: { ...get().input.prefs, ...patch } }),
-    generate: () => {
-      const { input } = get()
-      if (!input.groups.length) return false
-      const plan = generatePlan(ds, input)
-      // With flexible dates, the plan's dates are the trip's from now on (the dates asked for stay in `flex`).
-      const made = { ...input, startDate: plan.dates.start, endDate: plan.dates.end }
-      apply(plan, { input: { ...made, planned: setupOf(made) } })
-      return true
-    },
-    markPlanned: () => set({ input: { ...get().input, planned: setupOf(get().input) } }),
-    setNights: (index, nights) => edit((stops) => {
-      stops[index] = { ...stops[index], nights: Math.max(1, nights), locked: true }
+    setStops: (stops) => edit(() => stops),
+    markPlanned: () => set({ input: { ...get().input, planned: setupOf(get().input), plannedStops: structuredClone(get().stops) } }),
+    setNights: (index, nights, lock = true) => edit((stops) => {
+      stops[index] = { ...stops[index], nights: Math.max(1, nights), locked: lock || stops[index].locked }
       return stops
     }),
     toggleLock: (index) => {
@@ -180,11 +174,6 @@ export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 
       const { input, stops } = get()
       if (stops.some((s) => s.cityId === cityId)) return
       apply(addStop(ds, input, stops, cityId))
-    },
-    rebalance: () => edit((s) => s),
-    reoptimize: () => {
-      const { input, stops } = get()
-      apply(reoptimize(ds, input, stops))
     },
     restore: ({ input, stops, plans, activePlanId }) =>
       set({ input, stops, plan: planFor(input, stops), ...(plans?.length && activePlanId && { plans, activePlanId }) }),

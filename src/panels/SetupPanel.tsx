@@ -5,9 +5,9 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
-import { setupChanges } from '../agent/tools'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
+import { ChangesLine, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
 
@@ -32,22 +32,16 @@ export function SetupPanel() {
   const { user, loaded } = useAccount()
   const busy = useChat((s) => s.busy)
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
-  // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`). The planner makes a
-  // first draft and the assistant reworks it with its usual tools (so the app's rules still hold), thinking harder,
-  // since fitting several wishes into a trip takes planning.
+  // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`), made with its usual
+  // tools (so the app's rules still hold), thinking harder, since fitting several wishes into a trip takes planning.
   const planWithAi = () => {
     const wishes = input.wishes?.trim()
     void useChat.getState().send(`Plan my trip from scratch, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
-    // The draft opened the itinerary; the assistant's work shows in its tab.
     setPanel('assistant')
   }
-  // What changed in the setup since the plan was made or updated (not edits to its stops): the assistant can update the
-  // plan for just that, keeping the rest and the user's own edits.
-  const changes = stops.length && input.planned ? setupChanges(input.planned, input) : []
-  const updatePlan = () => {
-    void useChat.getState().send(`Update my plan for what changed in the trip since it was made: ${changes.join('; ')}. Keep the rest of the plan and my own edits.`, [], { think: true, plan: 'update' })
-    setPanel('assistant')
-  }
+  // What changed since the plan was made or updated (the setup, edits by hand): the assistant can update the plan for
+  // just that, keeping the rest and the user's own edits.
+  const { changes, update: updatePlan } = usePlanUpdate()
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
   const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
@@ -212,12 +206,7 @@ export function SetupPanel() {
       <div className="sticky bottom-0 border-t border-line bg-panel p-3">
         {user || !loaded ? (
           <>
-            {changes.length > 0 && !busy && (
-              <div className="mb-2 text-[12px]" title={changes.join('\n')}>
-                <span className="font-medium">Changed since this plan:</span>{' '}
-                <span className="text-muted">{changes.slice(0, 4).join(' · ')}{changes.length > 4 && ` · +${changes.length - 4} more`}</span>
-              </div>
-            )}
+            {changes.length > 0 && !busy && <div className="mb-2"><ChangesLine changes={changes} /></div>}
             <div className="flex gap-2">
               {changes.length > 0 && !busy && (
                 <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan} onClick={updatePlan}

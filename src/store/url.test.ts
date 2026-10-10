@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { testCaseInput } from '../data/testCase'
+import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from './trip'
 import { buildSearch, initialMapView, parseMapView, readUrl } from './url'
 
 beforeEach(() => {
   useTrip.setState({ input: testCaseInput(ds, 'US'), stops: [], plan: null, selected: null, layer: 'none', cityTab: 'overview', panel: 'setup' })
-  useTrip.getState().generate()
+  useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
+  useTrip.getState().setPanel('itinerary')
 })
 
 describe('address bar state', () => {

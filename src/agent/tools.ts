@@ -5,7 +5,7 @@ import { dataset as ds } from '../data/dataset'
 import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
-  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
+  CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
   groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
@@ -18,24 +18,44 @@ export type ToolResult = Record<string, unknown>
 
 /** A trip the tools read and change: a store's handle. */
 export type TripHandle = { getState: () => TripCore }
-/** The trip the tools work on, and what the user shared from the screen with the message being answered. */
-let bound: { trip: TripHandle; view: ViewItem[] } | null = null
+/** What the tools work with while answering one message: the trip, what the user shared from the screen with it,
+ *  and whether it's Plan with AI or Update plan (`planning`: the user's setup stays as it is). */
+export type ToolContext = { trip: TripHandle; view: ViewItem[]; planning: boolean }
+export const toolContext = (trip: TripHandle, view: ViewItem[] = [], planning = false): ToolContext => ({ trip, view, planning })
+
+let bound: ToolContext | null = null
 const trip = () => {
   if (!bound) throw new Error('No trip for the assistant\'s tools')
   return bound.trip.getState()
 }
-/** Sets the trip the tools work on from now on (the app's own, in the browser). */
-export const bindTrip = (trip: TripHandle, view: ViewItem[] = []) => void (bound = { trip, view })
-/** Runs `fn` with the tools on another trip (one run's, on the server); the tools are synchronous, so runs at the
- *  same time can't mix up their trips. */
-export function withTrip<T>(trip: TripHandle, view: ViewItem[], fn: () => T): T {
+/** Sets the trip the tools work on from now on (tests). */
+export const bindTrip = (trip: TripHandle, view: ViewItem[] = []) => void (bound = toolContext(trip, view))
+/** Runs `fn` with the tools in a context (one message's, in the browser or on the server); the tools are
+ *  synchronous, so answers at the same time can't mix up their trips. */
+export function withTrip<T>(ctx: ToolContext, fn: () => T): T {
   const was = bound
-  bound = { trip, view }
+  bound = ctx
   try {
     return fn()
   } finally {
     bound = was
   }
+}
+
+/** Tools that change the user's own choices: while planning (Plan with AI, Update plan) the setup stays as the user
+ *  made it, and the assistant suggests such changes instead (except picking the dates within flexible ones). */
+const SETUP_TOOLS = new Set([
+  'update_settings', 'update_preferences', 'add_region', 'update_region', 'set_country_mode', 'set_locked',
+  'new_plan', 'switch_plan', 'rename_plan', 'delete_plan',
+])
+
+/** While planning with flexible dates, the assistant picks the trip's dates: only those, and within the window. */
+function pickingDates(args: Args): boolean {
+  const { flex } = trip().input
+  if (!flex || Object.keys(args).some((k) => k !== 'start_date' && k !== 'end_date')) return false
+  const within = (v: unknown, at: string, days: number) =>
+    v === undefined || (isDate(v) && String(v) >= addDays(at, -days) && String(v) <= addDays(at, days))
+  return within(args.start_date, flex.start, flex.startDays) && within(args.end_date, flex.end, flex.endDays)
 }
 
 const key = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -597,8 +617,6 @@ function updateSettings(args: Args): string {
   if (args.schengen_days_before !== undefined) patch.schengenDaysBefore = Math.max(0, Math.min(90, Math.round(Number(args.schengen_days_before) || 0)))
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   t.setInput(patch)
-  // New dates change the number of nights: re-fit an existing itinerary so it still fills the trip.
-  if ((patch.startDate || patch.endDate) && trip().stops.length) trip().rebalance()
   return `Updated ${Object.keys(patch).join(', ')}`
 }
 
@@ -685,19 +703,47 @@ function targetIndex(from: number, after: unknown): number {
 function addStopTool(args: Args): string {
   const id = cityId(args.city)
   const t = trip()
-  if (!t.plan) throw new ToolError('There is no itinerary yet: set up regions and use generate_plan first')
   if (t.stops.some((s) => s.cityId === id)) throw new ToolError(`${cityName(id)} is already in the itinerary`)
   t.addCity(id)
   if (args.after !== undefined && args.after !== '') {
     const from = stopIndex(id)
     trip().moveStop(from, targetIndex(from, args.after))
   }
-  if (args.nights !== undefined) trip().setNights(stopIndex(id), Math.max(1, Math.round(Number(args.nights))))
-  return `Added ${cityName(id)}`
+  if (args.nights !== undefined) trip().setNights(stopIndex(id), Math.max(1, Math.round(Number(args.nights))), args.lock === true)
+  const s = trip().stops[stopIndex(id)]
+  return `Added ${cityName(id)} (${s.nights} nights${s.locked ? ', locked' : ''})`
+}
+
+/** The whole itinerary at once, in order with each stop's nights (a plan from scratch, or a big rework). While
+ *  planning, the user's locked stops stay, with their nights. */
+function setItinerary(args: Args): string {
+  const list = Array.isArray(args.stops) ? args.stops as { city?: unknown; nights?: unknown; lock?: unknown }[] : []
+  if (!list.length) throw new ToolError('Give the stops: [{ city, nights }] in the order of the trip')
+  if (list.length > MAX_STOPS) throw new ToolError(`At most ${MAX_STOPS} stops`)
+  const { stops: was, input } = trip()
+  const stops: Stop[] = list.map((x) => {
+    const id = cityId(x.city)
+    const nights = Math.round(Number(x.nights))
+    if (!(nights >= 1)) throw new ToolError(`${cityName(id)}: nights must be at least 1`)
+    const old = was.find((s) => s.cityId === id)
+    const groupId = input.groups.find((g) => g.countries.some((c) => c.iso2 === ds.cities[id].iso2))?.id ?? ''
+    return { cityId: id, nights, locked: x.lock === true || (old?.locked ?? false), groupId }
+  })
+  const twice = stops.find((s, i) => stops.findIndex((x) => x.cityId === s.cityId) !== i)
+  if (twice) throw new ToolError(`${cityName(twice.cityId)} is in the list twice`)
+  if (bound!.planning) {
+    const lost = was.filter((s) => s.locked && !stops.some((x) => x.cityId === s.cityId && x.nights === s.nights))
+    if (lost.length) throw new ToolError(`Keep the user's locked stops with their nights: ${lost.map((s) => `${cityName(s.cityId)} (${s.nights})`).join(', ')}`)
+  }
+  trip().setStops(stops)
+  return `Set the itinerary: ${stops.length} stops`
 }
 
 function run(name: string, args: Args): string | ToolResult {
   const t = trip()
+  if (bound!.planning && SETUP_TOOLS.has(name) && !(name === 'update_settings' && pickingDates(args))) {
+    throw new ToolError('While planning, the trip\'s setup (regions, countries, dates, preferences, locks, plans) stays as the user set it: work with the stops, their nights and order, and suggest setup changes in your answer instead.')
+  }
   switch (name) {
     case 'get_trip': return tripDetails()
     case 'find_cities': return findCities(args)
@@ -734,10 +780,7 @@ function run(name: string, args: Args): string | ToolResult {
     case 'add_region': return addRegion(args)
     case 'update_region': return updateRegion(args)
     case 'set_country_mode': return setCountryMode(args)
-    case 'generate_plan':
-      if (!t.input.groups.length) throw new ToolError('Add at least one region first (add_region)')
-      t.generate()
-      return 'Generated a new itinerary'
+    case 'set_itinerary': return setItinerary(args)
     case 'add_stop': return addStopTool(args)
     case 'remove_stop': {
       const i = stopIndex(args.city)
@@ -748,8 +791,8 @@ function run(name: string, args: Args): string | ToolResult {
       const nights = Math.round(Number(args.nights))
       if (!(nights >= 1)) throw new ToolError('nights must be at least 1')
       const i = stopIndex(args.city)
-      t.setNights(i, nights)
-      return `${cityName(t.stops[i].cityId)}: ${nights} nights (locked)`
+      t.setNights(i, nights, args.lock === true)
+      return `${cityName(t.stops[i].cityId)}: ${nights} nights${trip().stops[i].locked ? ' (locked)' : ''}`
     }
     case 'set_locked': {
       const i = stopIndex(args.city)
@@ -764,8 +807,13 @@ function run(name: string, args: Args): string | ToolResult {
     case 'reorder_stops': {
       if (!t.stops.length) throw new ToolError('There is no itinerary yet')
       if (args.reverse) {
+        // While planning, the regions keep their order (the user's setup) and only the stops turn around, unless the
+        // user wants the regions visited in their order.
+        if (bound!.planning && t.input.keepGroupOrder) {
+          throw new ToolError('The user wants the regions visited in their order ("In this order"), so the trip can\'t be reversed while planning: suggest it in your answer instead.')
+        }
         // Backwards: the regions in reverse order too, and the start and end city swapped, so a new plan agrees.
-        t.setInput({ groups: [...t.input.groups].reverse(), startCityId: t.input.endCityId, endCityId: t.input.startCityId })
+        if (!bound!.planning) t.setInput({ groups: [...t.input.groups].reverse(), startCityId: t.input.endCityId, endCityId: t.input.startCityId })
         t.reorderStops(t.stops.map((_, i) => t.stops.length - 1 - i))
         return `Reversed the trip: it now starts in ${cityName(trip().stops[0].cityId)}`
       }
@@ -776,14 +824,6 @@ function run(name: string, args: Args): string | ToolResult {
       t.reorderStops(order)
       return 'Re-ordered the stops'
     }
-    case 'optimize_route':
-      if (!t.plan) throw new ToolError('There is no itinerary yet')
-      t.reoptimize()
-      return 'Re-ordered the route'
-    case 'refit_nights':
-      if (!t.plan) throw new ToolError('There is no itinerary yet')
-      t.rebalance()
-      return 'Re-fitted the nights'
     default:
       throw new ToolError(`Unknown tool ${name}`)
   }
@@ -876,7 +916,7 @@ function updatePreferences(args: Args): string {
   if (!Object.keys(patch).length) throw new ToolError('Nothing to change')
   trip().setPrefs(patch)
   const shapesPlan = ['focus', 'expensive', 'tempBreaks', 'avoidCold', 'avoidHot', 'avoidRain'].some((k) => k in patch)
-  return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && trip().stops.length ? '. The itinerary is unchanged until generate_plan runs.' : ''}`
+  return `Updated preferences: ${Object.keys(patch).join(', ')}${shapesPlan && trip().stops.length ? '. The itinerary is unchanged: change it for these too if the user wants.' : ''}`
 }
 
 // ---------------------------------------------------------------- what changed (shown under the reply, with Undo)
@@ -886,6 +926,18 @@ export type TripSnapshot = TripData
 export const snapshot = (): TripSnapshot => {
   const s = trip()
   return structuredClone({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
+}
+
+/** What changed since the plan was made or the assistant last changed it: the setup, the user's own edits to the
+ *  stops (nights, locks, added, removed, moved), and whether the nights still fill the dates. What Update plan
+ *  sends to the assistant. */
+export function planChanges(s: { input: TripInput; stops: Stop[]; plan: { assignedNights: number; totalNights: number } | null }): string[] {
+  if (!s.stops.length) return []
+  const out = s.input.planned ? setupChanges(s.input.planned, s.input) : []
+  if (s.input.plannedStops) out.push(...describeChanges({ input: s.input, stops: s.input.plannedStops }, { input: s.input, stops: s.stops }))
+  const diff = s.plan ? s.plan.totalNights - s.plan.assignedNights : 0
+  if (diff) out.push(diff > 0 ? `${diff} night${diff > 1 ? 's' : ''} not assigned` : `${-diff} night${diff < -1 ? 's' : ''} over the dates`)
+  return out
 }
 
 /** What changed in the trip's setup (regions, dates, preferences…) from `planned` to `now`, in plain language. */

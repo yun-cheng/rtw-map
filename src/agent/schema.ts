@@ -19,27 +19,38 @@ How to work:
   independent tools can be called together in one step. Don't look up what the trip description already says.
   The app only knows the cities that find_cities returns; don't add others. Say so if a place isn't in the app.
 - When the user asks for a change, make it with the tools right away (they can undo it), then say briefly what changed.
-  Prefer small edits (add, remove, move a stop, set nights) over generate_plan, which replaces the whole itinerary.
-  generate_plan only makes a rough first draft: after calling it, adjust that draft to the user's wishes and
-  preferences in the same message, as for "Plan with AI" below.
-  For many moves at once (reverse the trip, a new order), use reorder_stops in one call instead of many move_stop calls.
+  Nothing in the app re-fits the plan for you: an edit changes only what it touches. So after the changes asked for,
+  leave the plan in order (the plan is updated with them): the stops' nights add up to the trip's nights exactly
+  (the trip shows "N of M nights"), in a sensible order, still fitting the user's wishes and preferences; move
+  nights between unlocked stops as needed. Prefer small edits (add, remove, move a stop, set nights); for a big
+  rework use set_itinerary, the whole itinerary in one call. For many moves at once (reverse the trip, a new order),
+  use reorder_stops in one call instead of many move_stop calls.
 - A trip can have several plans (versions of the itinerary). Your changes apply to the active plan. To try a big
   change ("what if we skip Russia?") without losing the current plan, make a new_plan first, then change it, and
   tell the user they can switch back or compare the plans (Compare, above the itinerary).
 - The user's preferences (travel style, room, food, transport, trip goals, weather limits, budgets) come with the trip.
   Take them into account in suggestions; when the user states a new one ("we're two", "no night buses"), save it
   with update_preferences.
-- "Plan with AI": a message asking to plan the trip from scratch comes with a rough draft the app's planner just made
-  from the setup (the trip below). Ignore earlier plans: make this draft the best plan for the user's wishes,
-  preferences and interests, changing as much of it as that needs, with edits (add, remove or move stops, set and
-  lock nights around fixed dates); the plan must still fill the dates. Don't call generate_plan for this. Work in
-  few steps: look up what you need in one or two steps, then make several changes at once (call several tools in one
-  step). Then list what you changed for which wish, and which wishes you couldn't meet and why.
-- "Update plan": a message listing what changed in the trip's setup since the plan was made. Keep the plan, including
-  the user's own edits (locked nights, stops they added or moved), and change only what those changes call for (e.g.
-  stops in an added region, nights for new dates, places that no longer fit a preference); the plan must still fill
-  the dates. Don't call generate_plan. Then list what you changed for which change, and what you couldn't and why.
-- Setting nights for a stop locks it; unlocked stops share the remaining nights. Keep the user's locked stops unless asked.
+- "Plan with AI": a message asking to plan the trip from scratch. Ignore earlier plans and make the best itinerary
+  for the setup (the regions and countries: every must-visit country, optional ones as they fit, none left out),
+  the dates, the user's wishes, preferences and interests: pick the cities (find_cities, compare_cities), their
+  order (get_route for the journeys) and nights (a city's suggested days, the pace), then put it in with one
+  set_itinerary call (lock: true only for fixed dates the user asked for). The nights must add up to the trip's
+  nights exactly. With flexible dates, pick the dates within them first (update_settings start_date, end_date).
+  Work in few steps: look up what you need in one or two steps (many cities and routes per call). Then list what
+  you planned for which wish, and which wishes you couldn't meet and why.
+- "Update plan": a message listing what changed since the plan was made: the setup, the user's own edits to the
+  itinerary (stops added, removed or moved, nights, locks), and nights that don't add up to the dates. Keep the plan
+  and the user's edits (they are their choices), and change only what those changes call for (e.g. stops in an
+  added region, nights for new dates or for a stop they added, places that no longer fit a preference), so the
+  nights add up to the dates again. Then list what you changed for which change, and what you couldn't and why.
+- While planning (Plan with AI, Update plan) the user's setup stays as it is: regions, countries, dates (except
+  picking them within flexible dates), preferences, locks and plans can't be changed (those tools are refused;
+  reversing the trip turns only the stops around, and not at all when the user wants the regions in their order).
+  Where the setup stands in the way of a wish, say so and suggest the change.
+- The user's own choices are theirs: change the setup (regions, countries, dates, preferences, plans) or lock stops
+  only when they ask for that; otherwise work with stops, nights and order, and suggest setup changes in your answer.
+  Keep the user's locked stops and their nights unless asked.
 - If a request is unclear or would remove a lot, ask one short question first.
 - When you ask the user to choose or confirm, or offer next steps, end your reply with one line of 2–4 short replies
   they can click instead of typing, written as the user would say them, e.g.:
@@ -120,7 +131,7 @@ export const TOOLS: FunctionDeclaration[] = [
   // ---- change the setup
   {
     name: 'update_settings',
-    description: 'Change trip settings. Changing dates re-fits the nights of an existing itinerary.',
+    description: 'Change trip settings. New dates don\'t change the itinerary: fit its nights to them.',
     parametersJsonSchema: obj({
       start_date: str('YYYY-MM-DD'),
       end_date: str('YYYY-MM-DD, the day the trip ends'),
@@ -141,7 +152,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'update_preferences',
-    description: 'Change how the user likes to travel (the preferences in the Trip tab); give only what changes. Trip goals and the heat, cold and rain limits shape the plan the next time it is made: after changing them, offer generate_plan (which replaces the itinerary), or run it if the user asked for the plan to change. To change the travel style itself, use update_settings budget.',
+    description: 'Change how the user likes to travel (the preferences in the Trip tab); give only what changes. Trip goals and the heat, cold and rain limits change what fits the trip: after changing them, change the itinerary for them too if the user asked for the plan to change, or offer to. To change the travel style itself, use update_settings budget.',
     parametersJsonSchema: obj({
       home_city: str('Home city the trip starts from (and returns to): any city find_cities knows, or "" for none; it is not a stop'),
       return_home: { type: 'boolean', description: 'Return home at the end (false: one way)' },
@@ -169,7 +180,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'add_region',
-    description: 'Add a region to the trip setup, one of the world\'s regions by name or a list of countries. Countries in a region start optional; a single country starts as must-visit. Countries without cities in the app yet can be added, but the planner leaves them out.',
+    description: 'Add a region to the trip setup, one of the world\'s regions by name or a list of countries. Countries in a region start optional; a single country starts as must-visit. Countries without cities in the app yet can be added, but have no stops to plan.',
     parametersJsonSchema: obj({
       preset: str('Region name from get_options, e.g. "Balkans"'),
       countries: { type: 'array', items: str('Country name or ISO code'), description: 'Countries, if not adding one of the regions' },
@@ -178,7 +189,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'update_region',
-    description: 'Set the days to spend in a region, all its countries told (the nights at their stops), or remove it from the trip setup. Applies when the plan is generated.',
+    description: 'Set the days to spend in a region, all its countries told (the nights at their stops), or remove it from the trip setup. Applies when the plan is made or updated.',
     parametersJsonSchema: obj({
       region: str('Region name'),
       min_days: { type: 'integer', description: 'Fewest days in the region; 0 for no limit' },
@@ -188,7 +199,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'set_country_mode',
-    description: 'Whether a country must be visited, may be visited, or is left out, and the days to spend there if it is visited (the nights at its stops). Applies when the plan is generated.',
+    description: 'Whether a country must be visited, may be visited, or is left out, and the days to spend there if it is visited (the nights at its stops). Applies when the plan is made or updated.',
     parametersJsonSchema: obj({
       country: str('Country name or ISO code'),
       mode: str('Mode', { enum: ['must', 'optional', 'excluded'] }),
@@ -196,30 +207,32 @@ export const TOOLS: FunctionDeclaration[] = [
       max_days: { type: 'integer', description: 'Most days there; 0 for no limit' },
     }, ['country']),
   },
-  {
-    name: 'generate_plan',
-    description: 'Create a rough first draft of the itinerary from the setup (regions, dates, pace…), to adjust to the user\'s wishes and preferences next. Replaces the current itinerary, including locked stops.',
-    parametersJsonSchema: obj(),
-  },
   // ---- change the itinerary
   {
+    name: 'set_itinerary',
+    description: 'Put in the whole itinerary at once, replacing the current one: every stop in the order of the trip, with its nights (a plan from scratch, or a big rework). The stops\' nights should add up to the trip\'s nights. While planning, the user\'s locked stops must stay, with their nights.',
+    parametersJsonSchema: obj({
+      stops: { type: 'array', description: 'The stops in order', items: obj({ city: CITY, nights: { type: 'integer', description: 'At least 1' }, lock: { type: 'boolean', description: 'true only for nights or fixed dates the user asked for' } }, ['city', 'nights']) },
+    }, ['stops']),
+  },
+  {
     name: 'add_stop',
-    description: 'Add a city to the itinerary. Without "after", it goes where it fits the route best.',
-    parametersJsonSchema: obj({ city: CITY, after: str('City to put it after, or "start" for the beginning'), nights: { type: 'integer', description: 'Nights to stay (locks the stop)' } }, ['city']),
+    description: 'Add a city to the itinerary, with its usual stay unless nights is given; the other stops keep their nights. Without "after", it goes where it fits the route best.',
+    parametersJsonSchema: obj({ city: CITY, after: str('City to put it after, or "start" for the beginning'), nights: { type: 'integer', description: 'Nights to stay' }, lock: { type: 'boolean', description: 'true only when the user asked for this number of nights (or fixed dates there): the stop is locked, so its nights stay when the plan is updated' } }, ['city']),
   },
   {
     name: 'remove_stop',
-    description: 'Remove a city from the itinerary; its nights go to the other unlocked stops.',
+    description: 'Remove a city from the itinerary; its nights are freed (give them to other stops).',
     parametersJsonSchema: obj({ city: CITY }, ['city']),
   },
   {
     name: 'set_nights',
-    description: 'Set the nights at a stop. The stop gets locked; unlocked stops are re-fitted so the trip still fills the dates.',
-    parametersJsonSchema: obj({ city: CITY, nights: { type: 'integer', description: 'At least 1' } }, ['city', 'nights']),
+    description: 'Set the nights at a stop; nothing else changes (keep the stops\' nights adding up to the trip\'s nights).',
+    parametersJsonSchema: obj({ city: CITY, nights: { type: 'integer', description: 'At least 1' }, lock: { type: 'boolean', description: 'true only when the user asked for this number of nights (or fixed dates there): the stop is locked, so its nights stay when the plan is updated' } }, ['city', 'nights']),
   },
   {
     name: 'set_locked',
-    description: 'Lock or unlock a stop. Locked stops keep their nights when the plan is re-fitted.',
+    description: 'Lock or unlock a stop. Locked stops keep their nights when the plan is updated.',
     parametersJsonSchema: obj({ city: CITY, locked: { type: 'boolean' } }, ['city', 'locked']),
   },
   {
@@ -252,26 +265,16 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'reorder_stops',
-    description: 'Put all stops in a new order in one step: reverse: true for the whole trip backwards (also reverses the region order and swaps the start and end city), or order with every stop of the trip, each once. Nights stay; unlocked stops are re-fitted.',
+    description: 'Put all stops in a new order in one step: reverse: true for the whole trip backwards (also reverses the region order, except while planning), or order with every stop of the trip, each once. Nights stay.',
     parametersJsonSchema: obj({
       reverse: { type: 'boolean', description: 'Travel the whole trip in the opposite direction' },
       order: { type: 'array', items: CITY, description: 'Every stop of the trip in the new order' },
     }),
   },
-  {
-    name: 'optimize_route',
-    description: 'Re-order the stops for the shortest travel, keeping the region order if set.',
-    parametersJsonSchema: obj(),
-  },
-  {
-    name: 'refit_nights',
-    description: 'Re-share the nights among unlocked stops so the trip fills the dates exactly.',
-    parametersJsonSchema: obj(),
-  },
 ]
 
 /** Names of tools that change the trip (the rest only read). */
 export const WRITE_TOOLS = new Set([
-  'update_settings', 'update_preferences', 'new_plan', 'switch_plan', 'rename_plan', 'delete_plan', 'add_region', 'update_region', 'set_country_mode', 'generate_plan',
-  'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'reorder_stops', 'optimize_route', 'refit_nights',
+  'update_settings', 'update_preferences', 'new_plan', 'switch_plan', 'rename_plan', 'delete_plan', 'add_region', 'update_region', 'set_country_mode', 'set_itinerary',
+  'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'reorder_stops',
 ])

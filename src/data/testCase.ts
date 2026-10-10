@@ -1,5 +1,6 @@
+import { generatePlan } from '../planner'
 import { DEFAULT_PREFS } from '../planner/prefs'
-import type { Dataset, TripInput } from '../planner/types'
+import type { Dataset, Stop, TripInput } from '../planner/types'
 import { makeGroup } from './presets'
 
 /**
@@ -33,3 +34,7 @@ export function testCaseInput(ds: Dataset, passport = 'TW'): TripInput {
     schengenDaysBefore: 0,
   }
 }
+
+/** Stops for a trip in tests: the planner's draft for its setup (the app's plans are the assistant's). */
+export const draftStops = (ds: Dataset, input: TripInput): Stop[] =>
+  generatePlan(ds, input).stops.map(({ cityId, nights, locked, groupId }) => ({ cityId, nights, locked, groupId }))

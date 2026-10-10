@@ -545,10 +545,12 @@ export function reoptimize(ds: Dataset, input: TripInput, stops: Stop[]): Plan {
   return rebalance(ds, input, ordered.map((x) => byId.get(x.cityId)!))
 }
 
-/** Adds a city where it fits best in the route, then rebalances. */
+/** Adds a city where it fits best in the route, with its usual stay at the trip's pace; the other stops stay as they
+ *  are (the trip may then have more nights than its dates, until the plan is updated). */
 export function addStop(ds: Dataset, input: TripInput, stops: Stop[], cityId: string): Plan {
   const ctx = makeContext(ds, input, [...stops.map((s) => s.cityId), cityId])
-  return rebalance(ds, input, insertCheapest(ctx, stops, cityId, groupIdFor(ctx, cityId)))
+  const nights = suggestedDays(ds, cityId)[input.pace]
+  return evaluate(ctx, insertCheapest(ctx, stops, cityId, groupIdFor(ctx, cityId)).map((s) => (s.cityId === cityId ? { ...s, nights } : s)), [])
 }
 
 /** Dates, legs, warnings and costs for stops exactly as given (no changes). */
@@ -644,7 +646,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[]): Plan {
     warnings.push({
       kind: 'time', severity: 'warn',
       title: diff > 0 ? `${diff} night${diff > 1 ? 's' : ''} not assigned` : `${-diff} night${diff < -1 ? 's' : ''} over the trip length`,
-      detail: 'Use "Rebalance" to fit the stops to your dates.',
+      detail: 'Press Update plan to fit the stops to your dates.',
     })
   }
 
