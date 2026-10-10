@@ -1,7 +1,7 @@
 // Update plan: the assistant updates the plan for what changed since it was made (planChanges: the setup, the user's
 // own edits to the stops, nights that no longer add up to the dates), keeping the rest and the user's edits. Nothing
 // re-fits the plan by itself, so this is how an edit by hand gets the rest of the plan to follow. In the Trip tab's
-// footer and above the itinerary.
+// footer and pinned to the bottom of the Itinerary tab.
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { planChanges } from '../agent/tools'
