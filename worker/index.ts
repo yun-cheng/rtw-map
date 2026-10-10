@@ -10,7 +10,7 @@
 // Everything else goes to the static files.
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession, type User } from './auth'
 import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
-import { costOf, DAILY_USD, dailyUsdFor, parseAccountLimits, today, usageOf } from './limits'
+import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
 import { Account } from './account'
 import { parseTripPatch } from './trips'
 
@@ -103,7 +103,7 @@ async function chat(request: Request, env: Env): Promise<Response> {
   // second try answers fine; retry those here. Every attempt's cost counts.
   let res: Response
   let data: GeminiResponse | null
-  let usd = 0
+  let spent: Spent = { input: 0, cached: 0, output: 0, usd: 0 }
   for (let attempt = 1; ; attempt++) {
     res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${env.GEMINI_MODEL}:generateContent`, {
       method: 'POST',
@@ -111,11 +111,11 @@ async function chat(request: Request, env: Env): Promise<Response> {
       body,
     })
     data = (await res.json().catch(() => null)) as GeminiResponse | null
-    usd += costOf(data?.usageMetadata, day)
+    spent = addSpent(spent, spentOf(data?.usageMetadata, day))
     if (!res.ok || attempt >= GEMINI_TRIES || !isBrokenReply(data)) break
     console.warn('Gemini broken reply, retrying', data?.candidates?.[0]?.finishReason)
   }
-  const count = await account(env, user).spend(day, usd)
+  const count = await account(env, user).spend(day, spent.usd)
   const candidate = data?.candidates?.[0]
   if (!res.ok || !candidate?.content?.parts?.length || candidate.finishReason?.startsWith('MALFORMED')) {
     console.error('Gemini error', res.status, data?.error?.status, data?.error?.message, candidate?.finishReason)
@@ -123,9 +123,9 @@ async function chat(request: Request, env: Env): Promise<Response> {
     const error = busy ? 'The assistant is busy right now: try again in a minute.'
       : candidate?.finishReason === 'SAFETY' ? 'The assistant declined to answer that.'
         : 'The assistant failed to answer: try again.'
-    return json({ error, usage: usageOf(count, daily) }, busy ? 429 : 502)
+    return json({ error, spent, usage: usageOf(count, daily) }, busy ? 429 : 502)
   }
-  return json({ content: { role: 'model', parts: candidate.content.parts }, finishReason: candidate.finishReason, usage: usageOf(count, daily) })
+  return json({ content: { role: 'model', parts: candidate.content.parts }, finishReason: candidate.finishReason, spent, usage: usageOf(count, daily) })
 }
 
 const signInFirst = () => json({ error: 'Please sign in with Google.', signIn: true }, 401)

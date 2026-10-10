@@ -10,13 +10,12 @@ const PART_KEYS = new Set(['text', 'functionCall', 'functionResponse', 'thoughtS
 
 export type Part = Record<string, unknown>
 export type Content = { role: 'user' | 'model'; parts: Part[] }
-/** `final`: the last call of a message, answered without tools (the browser's step limit is reached). */
-export type ChatRequest = { contents: Content[]; context: string; think: boolean; final: boolean }
+export type ChatRequest = { contents: Content[]; context: string; think: boolean }
 
 /** The validated request, or an error message for the browser. */
 export function parseChatRequest(raw: unknown): ChatRequest | string {
   if (!raw || typeof raw !== 'object') return 'Invalid request'
-  const { contents, context, think, final } = raw as Record<string, unknown>
+  const { contents, context, think } = raw as Record<string, unknown>
   if (!Array.isArray(contents) || !contents.length) return 'No messages'
   if (contents.length > LIMITS.messages) return 'This conversation is too long: start a new chat'
   for (const c of contents) {
@@ -30,7 +29,7 @@ export function parseChatRequest(raw: unknown): ChatRequest | string {
   }
   if (contents[contents.length - 1].role !== 'user') return 'The last message must come from the user'
   if (typeof context !== 'string' || context.length > LIMITS.contextChars) return 'Invalid trip context'
-  return { contents: contents as Content[], context, think: think === true, final: final === true }
+  return { contents: contents as Content[], context, think: think === true }
 }
 
 /** Whether the conversation ends with new text from the user (a new message), rather than tool results. */
@@ -44,7 +43,7 @@ export function geminiRequest(req: ChatRequest, today: string) {
     systemInstruction: { parts: [{ text: `${SYSTEM_PROMPT}\n\nToday is ${today}.\n\nThe trip when the user sent their latest message:\n${req.context}` }] },
     contents: req.contents,
     tools: [{ functionDeclarations: TOOLS }],
-    toolConfig: { functionCallingConfig: { mode: req.final ? 'NONE' : 'AUTO' } },
+    toolConfig: { functionCallingConfig: { mode: 'AUTO' } },
     generationConfig: {
       maxOutputTokens: LIMITS.maxOutputTokens,
       thinkingConfig: { thinkingLevel: req.think ? 'high' : 'low' },

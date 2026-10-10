@@ -66,6 +66,23 @@ const priceOn = (day: string) => PRICES.findLast((p) => p.from <= day) ?? PRICES
 export const current = (stored: Partial<Count> | undefined, day: string): Count =>
   ({ day, usd: stored?.day === day && Number.isFinite(stored.usd) ? stored.usd! : 0 })
 
+/** What a model call (or several, added up) used, shown under each reply: tokens read (of which `cached`), written
+ *  (with thinking) and what they cost. */
+export type Spent = { input: number; cached: number; output: number; usd: number }
+
+/** The tokens one call used, and its cost. */
+export function spentOf(u: TokenUsage | undefined, day: string): Spent {
+  const input = (u?.promptTokenCount ?? 0) + (u?.toolUsePromptTokenCount ?? 0)
+  return {
+    input, cached: Math.min(u?.cachedContentTokenCount ?? 0, input),
+    output: (u?.candidatesTokenCount ?? 0) + (u?.thoughtsTokenCount ?? 0), usd: costOf(u, day),
+  }
+}
+
+/** Two amounts used, added up. */
+export const addSpent = (a: Spent, b: Spent): Spent =>
+  ({ input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd })
+
 /** What one call cost, in USD. */
 export function costOf(u: TokenUsage | undefined, day: string): number {
   if (!u) return 0

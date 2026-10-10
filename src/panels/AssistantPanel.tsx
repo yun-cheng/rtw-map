@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
-import { useChat, type ChatMessage } from '../agent/chat'
+import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
 import { viewItems, type ViewItem } from '../agent/view'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
@@ -41,6 +41,23 @@ function RichText({ text }: { text: string }) {
   return <>{out}</>
 }
 
+/** A number of tokens, short: 850, 12.3k, 1.2M. */
+const tokens = (n: number) => (n < 1000 ? String(n) : n < 1e6 ? `${(n / 1000).toFixed(n < 1e4 ? 1 : 0)}k` : `${(n / 1e6).toFixed(1)}M`)
+/** US dollars, to a tenth of a cent below a dime. */
+const usd = (n: number) => `$${n.toFixed(n < 0.1 ? 3 : 2)}`
+
+/** What model calls used: calls, tokens read and written, and their cost. */
+function SpentLine({ spent, label }: { spent: Spent; label?: string }) {
+  return (
+    <p
+      className="text-[11px] text-muted tabular-nums"
+      title={`${spent.input.toLocaleString()} tokens read (${spent.cached.toLocaleString()} of them cached, cheaper), ${spent.output.toLocaleString()} written, thinking included; ${usd(spent.usd)} at Gemini's prices`}
+    >
+      {label}{spent.calls} call{spent.calls === 1 ? '' : 's'} · {tokens(spent.input)} tokens in, {tokens(spent.output)} out · {usd(spent.usd)}
+    </p>
+  )
+}
+
 /** A reply, with its changes (and Undo) and, on the latest reply, buttons to answer it with a click. */
 function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
   msg: Extract<ChatMessage, { role: 'assistant' }>
@@ -70,6 +87,7 @@ function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
           </ul>
         </div>
       )}
+      {msg.spent && msg.spent.calls > 0 && <div className="mt-1"><SpentLine spent={msg.spent} /></div>}
       {(onChoose && msg.choices?.length) || (onRetry && msg.error) ? (
         <div className="mt-2 flex flex-wrap gap-1.5">
           {msg.error && onRetry && <ChoiceButton onClick={onRetry}>↻ Try again</ChoiceButton>}
@@ -150,7 +168,7 @@ function Chat() {
     }
   }, [sub, multiple, seen])
   const raised = !!sub && multiple > 1 && multiple > seen
-  const { messages, busy, think, send, retry, setThink, clear } = useChat()
+  const { messages, busy, think, spent, send, stop, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
   const end = useRef<HTMLDivElement>(null)
   const view = useViewItems()
@@ -159,6 +177,9 @@ function Chat() {
   const shared = view.filter((v) => !hidden.has(v.key))
   // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after).
   const lastChange = messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
+  // What this chat has used, the reply under way included.
+  const total = [...messages.map((m) => (m.role === 'assistant' && m.spent) || NO_SPENT), busy ? spent : NO_SPENT]
+    .reduce((a, b) => ({ calls: a.calls + b.calls, input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd }), NO_SPENT)
 
   useEffect(() => {
     end.current?.scrollIntoView({ block: 'end' })
@@ -172,7 +193,12 @@ function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      {usage && <div className="border-b border-line px-4 py-1.5 text-right text-[12px]"><UsageLine usage={usage} /></div>}
+      {(usage || total.calls > 0) && (
+        <div className="flex items-center gap-3 border-b border-line px-4 py-1.5 text-[12px]">
+          {total.calls > 0 && <SpentLine spent={total} label="This chat: " />}
+          {usage && <span className="ml-auto"><UsageLine usage={usage} /></span>}
+        </div>
+      )}
       {raised && (
         <div className="flex items-start gap-2 border-b border-line bg-accent-soft px-4 py-2 text-[12px]">
           <p className="flex-1">🎉 Your daily assistant allowance was raised to <b>{allowanceNote(usage)}</b>: more room for Plan with AI and long changes.</p>
@@ -216,7 +242,15 @@ function Chat() {
                 />
               ),
             )}
-            {busy && <p className="text-[13px] text-muted">{think ? 'Thinking it through…' : 'Working on it…'}</p>}
+            {busy && (
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <p className="text-[13px] text-muted">{think ? 'Thinking it through…' : 'Working on it…'}</p>
+                  {spent.calls > 0 && <SpentLine spent={spent} label="So far: " />}
+                </div>
+                <Button variant="ghost" className="!py-0.5 text-[12px]" onClick={stop}>■ Stop</Button>
+              </div>
+            )}
           </div>
         )}
         <div ref={end} />
@@ -262,7 +296,9 @@ function Chat() {
             <input type="checkbox" checked={think} onChange={(e) => setThink(e.target.checked)} /> Think harder
           </label>
           {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
-          <Button variant="primary" className="ml-auto" disabled={busy || !draft.trim() || outOfAllowance} onClick={() => submit()}>Send</Button>
+          {busy
+            ? <Button className="ml-auto" onClick={stop}>■ Stop</Button>
+            : <Button variant="primary" className="ml-auto" disabled={!draft.trim() || outOfAllowance} onClick={() => submit()}>Send</Button>}
         </div>
       </div>
     </div>

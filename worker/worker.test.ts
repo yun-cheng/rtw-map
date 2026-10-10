@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { isNewMessage } from './chat'
-import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, today, usageOf } from './limits'
+import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
 import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -83,6 +83,9 @@ describe('daily limits', () => {
     // 2026: input $0.75, cached $0.075, output (incl. thinking) $3.75 per million.
     expect(costOf({ promptTokenCount: 1_000_000, candidatesTokenCount: 100_000, thoughtsTokenCount: 100_000 }, '2026-10-06')).toBeCloseTo(1.5)
     expect(costOf({ promptTokenCount: 1_000_000, cachedContentTokenCount: 800_000 }, '2026-10-06')).toBeCloseTo(0.21)
+    // The tokens shown under each reply: tool-use input is input too, thinking is output.
+    expect(spentOf({ promptTokenCount: 900, toolUsePromptTokenCount: 100, cachedContentTokenCount: 400, candidatesTokenCount: 30, thoughtsTokenCount: 70 }, '2026-10-06'))
+      .toMatchObject({ input: 1000, cached: 400, output: 100 })
     // Prices double from 2027.
     expect(costOf({ promptTokenCount: 1_000_000 }, '2027-01-01')).toBeCloseTo(1.5)
     expect(costOf(undefined, '2026-10-06')).toBe(0)

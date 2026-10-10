@@ -179,9 +179,6 @@ describe('chat endpoint checks', () => {
     expect(body.tools[0].functionDeclarations).toBe(TOOLS)
     expect(body.generationConfig.thinkingConfig.thinkingLevel).toBe('high')
     expect(body.toolConfig.functionCallingConfig.mode).toBe('AUTO')
-    // The last call of a message answers without tools.
-    const final = parseChatRequest({ contents: [user('hi')], context: 'trip', think: true, final: true })
-    expect(geminiRequest(final as Exclude<typeof final, string>, '2026-10-05').toolConfig.functionCallingConfig.mode).toBe('NONE')
   })
 
   it('asks Gemini again for a broken reply, not for a refusal or a normal answer', () => {
