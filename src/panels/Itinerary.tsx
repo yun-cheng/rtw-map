@@ -67,7 +67,7 @@ export function Itinerary() {
                   <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: these nights stay when the plan changes' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : 'text-muted opacity-0 group-hover:opacity-100'} hover:bg-panel`}>
                     {s.locked ? '🔒' : '🔓'}
                   </button>
-                  <button onClick={() => removeStop(i)} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
+                  <button onClick={() => confirmRemove(city.name, s.nights) && removeStop(i)} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
                 </div>
               </div>
               {leg && (
@@ -98,6 +98,10 @@ export function Itinerary() {
     </div>
   )
 }
+
+/** Asks before a stop is taken out by hand. */
+export const confirmRemove = (name: string, nights: number) =>
+  window.confirm(`Remove ${name} (${nights} night${nights > 1 ? 's' : ''}) from the trip?`)
 
 /** Getting from home to the first stop, or from the last stop back home (set in the Trip tab's preferences; not a stop). */
 function HomeRow({ leg, label, when }: { leg: Leg; label: string; when: string }) {

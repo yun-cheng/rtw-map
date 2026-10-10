@@ -12,6 +12,7 @@ import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { AskButton } from './AskButton'
 import { CostDay } from './CostDay'
+import { confirmRemove } from './Itinerary'
 import { PriceLevel } from './PriceLevel'
 
 /** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
@@ -622,7 +623,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
-              <Button className="ml-auto" onClick={() => { removeStop(stopIndex); select(null) }}>Remove</Button>
+              <Button className="ml-auto" onClick={() => { if (!confirmRemove(city.name, stop.nights)) return; removeStop(stopIndex); select(null) }}>Remove</Button>
             </>
           ) : plan ? (
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
