@@ -9,7 +9,9 @@ const UP: Record<Snap, Snap> = { peek: 'half', half: 'full', full: 'half' }
  * A panel over the bottom of the map on a phone, like Google Maps' place card. Drag it by the grip or by the
  * element marked `data-sheet-peek` (its header, which is also what shows when it's pulled down) to one of three
  * heights; tap the grip to step it up. Choosing a tab (`role="tab"`) while only the header shows opens it to half.
- * With `onClose`, pulling it below its header closes it. `hidden`: out of sight but kept (with its state).
+ * With `onClose`, pulling it below its header closes it. `hidden`: out of sight but kept (with its state). What doesn't
+ * fit is clipped, not scrollable, so bringing something inside into view (scrollIntoView, focus) can't push its header
+ * out of sight.
  */
 export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = '', children }: {
   snap: Snap
@@ -123,7 +125,7 @@ export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = 
           e.stopPropagation()
         } else if (snap === 'peek' && (e.target as Element).closest('[role="tab"]')) onSnap('half')
       }}
-      className={`absolute inset-x-0 bottom-0 flex flex-col overflow-hidden rounded-t-2xl border-t border-line shadow-[0_-2px_12px_rgba(0,0,0,0.15)] ${dragHeight !== null ? 'select-none' : 'transition-[height] duration-300 ease-out'} ${className}`}
+      className={`absolute inset-x-0 bottom-0 flex flex-col overflow-clip rounded-t-2xl border-t border-line shadow-[0_-2px_12px_rgba(0,0,0,0.15)] ${dragHeight !== null ? 'select-none' : 'transition-[height] duration-300 ease-out'} ${className}`}
       style={{ height, display: hidden ? 'none' : undefined }}
     >
       <div ref={grip} data-sheet-grip onClick={() => onSnap(UP[snap])} className="flex shrink-0 cursor-grab touch-none justify-center bg-panel pt-1.5 pb-1">

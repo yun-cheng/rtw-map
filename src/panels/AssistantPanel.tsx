@@ -170,7 +170,7 @@ function Chat() {
   const raised = !!sub && multiple > 1 && multiple > seen
   const { messages, busy, think, spent, send, stop, retry, setThink, clear } = useChat()
   const [draft, setDraft] = useState('')
-  const end = useRef<HTMLDivElement>(null)
+  const list = useRef<HTMLDivElement>(null)
   const view = useViewItems()
   // Items the user chose not to share; keyed by item, so something newly opened is shared again.
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
@@ -181,8 +181,9 @@ function Chat() {
   const total = [...messages.map((m) => (m.role === 'assistant' && m.spent) || NO_SPENT), busy ? spent : NO_SPENT]
     .reduce((a, b) => ({ calls: a.calls + b.calls, input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd }), NO_SPENT)
 
+  // To the latest message, scrolling only the list (scrollIntoView would also scroll the phone's sheet around it).
   useEffect(() => {
-    end.current?.scrollIntoView({ block: 'end' })
+    if (list.current) list.current.scrollTop = list.current.scrollHeight
   }, [messages.length, busy])
 
   const submit = (text = draft) => {
@@ -213,7 +214,7 @@ function Chat() {
           </button>
         </div>
       )}
-      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div ref={list} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
         {messages.length === 0 ? (
           <div className="text-[13px]">
             <p className="font-medium">Ask the assistant to plan or change your trip.</p>
@@ -253,7 +254,6 @@ function Chat() {
             )}
           </div>
         )}
-        <div ref={end} />
       </div>
 
       <div className="border-t border-line px-3 py-2">
