@@ -64,10 +64,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const { range } = useTemp()
   // Temperatures as they feel or as measured: one setting for the whole app.
   const feels = useTrip((s) => s.tempFeels)
-  // The month under the pointer in each chart: its details replace the shown months' under that chart.
-  const [hover, setHover] = useState<{ chart: 'weather' | 'sun' | 'air'; month: number } | null>(null)
-  const hoverFor = (chart: 'weather' | 'sun' | 'air') => (month: number | null) => setHover(month ? { chart, month } : null)
-  const monthsFor = (chart: 'weather' | 'sun' | 'air') => (hover?.chart === chart ? [hover.month] : [...stayMonths])
   const city = ds.cities[cityId]
   const country = ds.countries[city.iso2]
   const costInfo = costProfile(ds, city.iso2)
@@ -205,30 +201,15 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {climate ? (
           <>
             <Suspense fallback={<div className="h-[180px]" />}>
-              <ClimateChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} onHover={hoverFor('weather')} />
+              <ClimateChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
             </Suspense>
-            {monthsFor('weather').map((m) => {
-              const c = climate[m - 1]
-              return (
-                <p key={m} className="mt-1.5 text-[13px]">
-                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b>{' '}
-                  {shownTemps(c, feels).feels ? `feels like ${range(c.feelsLow!, c.feelsHigh!)}` : range(c.tLow, c.tHigh)}, {c.rainDays} rain days, {c.humidity}% humidity
-                </p>
-              )
-            })}
             <div className="mt-3 flex items-baseline justify-between text-[11px]">
               <span className="font-semibold tracking-wider text-muted uppercase">Sunshine</span>
               <span className="text-muted">hours a day</span>
             </div>
             <Suspense fallback={<div className="h-[130px]" />}>
-              <SunChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} onHover={hoverFor('sun')} />
+              <SunChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
             </Suspense>
-            {monthsFor('sun').map((m) => (
-              <p key={m} className="mt-1 text-[13px]">
-                <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b>{' '}
-                {climate[m - 1].sunHours < 0.5 ? 'almost no sun (polar night or very cloudy)' : `${climate[m - 1].sunHours} hours of sunshine a day`}
-              </p>
-            ))}
           </>
         ) : (
           <p className="text-[13px] text-muted">Climate data not loaded yet.</p>
@@ -331,16 +312,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {air ? (
           <>
             <Suspense fallback={<div className="h-[140px]" />}>
-              <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} monthsLabel={monthsLabel} onHover={hoverFor('air')} />
+              <AirChart data={air} highlight={stayMonths} who={ds.air.whoDaily} monthsLabel={monthsLabel} />
             </Suspense>
-            {monthsFor('air').map((m) => {
-              const a = air[m - 1]
-              return (
-                <p key={m} className="mt-1 text-[13px]">
-                  <b>{new Date(2000, m - 1).toLocaleString('en', { month: 'long' })}:</b> {airBand(a.pm25).short} (avg {a.pm25} µg/m³, ~{Math.round(a.daysOverWho)} days above the WHO daily guideline)
-                </p>
-              )
-            })}
           </>
         ) : (
           <p className="text-[13px] text-muted">Air quality data not loaded yet.</p>

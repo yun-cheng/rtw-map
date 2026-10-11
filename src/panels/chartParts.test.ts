@@ -1,15 +1,12 @@
-import { describe, expect, it, vi } from 'vitest'
-import { hoverProps } from './chartParts'
+import { describe, expect, it } from 'vitest'
+import { tipAt } from './chartParts'
 
-describe('chart hover', () => {
-  it('reports the month under the pointer (1–12) and null when it leaves', () => {
-    const onHover = vi.fn()
-    const props = hoverProps(onHover)
-    props.onMouseMove!({ isTooltipActive: true, activeTooltipIndex: 6, activeIndex: 6 } as never)
-    props.onMouseMove!({ isTooltipActive: true, activeTooltipIndex: '0', activeIndex: '0' } as never)
-    props.onMouseMove!({ isTooltipActive: false, activeTooltipIndex: undefined, activeIndex: undefined } as never)
-    props.onMouseLeave!()
-    expect(onHover.mock.calls.map((c) => c[0])).toEqual([7, 1, null, null])
-    expect(hoverProps()).toEqual({})
+describe('chart tooltip', () => {
+  it('places the point under the pointer on the page, above the chart, and nothing when there is none', () => {
+    const box = { left: 100, top: 50 }
+    expect(tipAt({ isTooltipActive: true, activeTooltipIndex: 6, activeCoordinate: { x: 40, y: 90 } } as never, box)).toEqual({ index: 6, x: 140, y: 50 })
+    expect(tipAt({ isTooltipActive: true, activeTooltipIndex: '0', activeCoordinate: { x: 5, y: 0 } } as never, box)).toEqual({ index: 0, x: 105, y: 50 })
+    expect(tipAt({ isTooltipActive: false, activeTooltipIndex: undefined, activeCoordinate: undefined } as never, box)).toBeNull()
+    expect(tipAt({ isTooltipActive: true, activeTooltipIndex: 2, activeCoordinate: { x: 5, y: 0 } } as never, undefined)).toBeNull()
   })
 })

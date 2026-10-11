@@ -1,10 +1,10 @@
 import { useState } from 'react'
 import { Bar, CartesianGrid, ComposedChart, Legend, Line, ReferenceArea, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import type { ClimateMonth } from '../planner'
-import { MONTHS, tempScale } from '../ui/format'
+import { MONTHS, tempRange, tempScale } from '../ui/format'
 import { useTrip } from '../store/trip'
 import { useTemp } from '../ui/useTemp'
-import { LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, hoverProps, monthTick } from './chartParts'
+import { ChartTip, LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, monthTick, useChartTip } from './chartParts'
 
 const HIGH = '#ea580c'
 const LOW = '#0284c7'
@@ -20,10 +20,10 @@ const SERIES_ORDER = ['high', 'low', 'rain']
 /**
  * 12-month chart: rain-day bars plus high/low temperature lines, the months shown highlighted (`monthsLabel` names
  * them in the legend); the lines show how hot or cold it feels, or the real temperatures (the shared setting).
- * Hovering (or tapping) a month reports it (`onHover`) for the details under the chart; clicking a series in the
- * legend hides it. The temperature axis fits the city's year.
+ * Hovering (or tapping) a month shows its details in a tooltip above the chart; clicking a series in the legend hides
+ * it. The temperature axis fits the city's year.
  */
-export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: ClimateMonth[]; highlight: Set<number>; monthsLabel: string; onHover?: (month: number | null) => void }) {
+export function ClimateChart({ data, highlight, monthsLabel }: { data: ClimateMonth[]; highlight: Set<number>; monthsLabel: string }) {
   const feels = useTrip((s) => s.tempFeels)
   const { unit } = useTemp()
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
@@ -42,12 +42,14 @@ export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: 
   const { lo, hi, step, labelStep } = tempScale(Math.min(...points.map((p) => p.low)), Math.max(...points.map((p) => p.high)), unit)
   const ticks: number[] = []
   for (let t = lo; t <= hi + 1e-9; t += step) ticks.push(t)
+  const { box, chartProps, tip } = useChartTip()
+  const at = tip && data[tip.index]
 
   return (
     <div>
-      <div className="h-[180px] w-full" role="img" aria-label="Monthly climate">
+      <div ref={box} className="h-[180px] w-full" role="img" aria-label="Monthly climate">
         <ResponsiveContainer width="100%" height="100%">
-          <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...hoverProps(onHover)}>
+          <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...chartProps}>
             {[...highlight].map((m) => (
               <ReferenceArea key={m} yAxisId="t" x1={MONTHS[m - 1]} x2={MONTHS[m - 1]} fill="var(--color-accent-soft)" fillOpacity={1} ifOverflow="extendDomain" />
             ))}
@@ -67,6 +69,14 @@ export function ClimateChart({ data, highlight, monthsLabel, onHover }: { data: 
           </ComposedChart>
         </ResponsiveContainer>
       </div>
+      <ChartTip at={tip}>
+        {at && (
+          <>
+            <div>{showFeels ? 'Feels like ' : ''}{tempRange(showFeels ? at.feelsLow! : at.tLow, showFeels ? at.feelsHigh! : at.tHigh, unit)}</div>
+            <div className="text-muted">{at.rainDays} rain days, {at.humidity}% humidity</div>
+          </>
+        )}
+      </ChartTip>
     </div>
   )
 }

@@ -1,24 +1,26 @@
 import { Bar, CartesianGrid, Cell, ComposedChart, Legend, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
 import { airBand, type AirMonth } from '../planner'
 import { MONTHS, levelColor } from '../ui/format'
-import { dashedLegend, LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, hoverProps, monthTick } from './chartParts'
+import { ChartTip, dashedLegend, LEGEND_STYLE, legendContent, monthsLegend, HOVER_CURSOR, monthTick, useChartTip } from './chartParts'
 
 type Point = { m: string; month: number; pm25: number; a: AirMonth }
 
 /**
  * 12 monthly PM2.5 bars coloured by band, with the WHO 24-hour guideline as a dashed line; the months shown
- * highlighted. Hovering (or tapping) a month reports it (`onHover`) for the details under the chart.
+ * highlighted. Hovering (or tapping) a month shows its details in a tooltip above the chart.
  */
-export function AirChart({ data, highlight, who, monthsLabel, onHover }: { data: AirMonth[]; highlight: Set<number>; who: number; monthsLabel: string; onHover?: (month: number | null) => void }) {
+export function AirChart({ data, highlight, who, monthsLabel }: { data: AirMonth[]; highlight: Set<number>; who: number; monthsLabel: string }) {
   const points: Point[] = data.map((a, i) => ({ m: MONTHS[i], month: i + 1, pm25: a.pm25, a }))
   // Gridlines every 20 µg/m³, up to the worst month (at least 40, so clean places don't look alarming).
   const top = Math.ceil(Math.max(40, ...points.map((p) => p.pm25 * 1.1)) / 20) * 20
   const ticks = Array.from({ length: top / 20 + 1 }, (_, i) => i * 20)
+  const { box, chartProps, tip } = useChartTip()
+  const at = tip && points[tip.index]
 
   return (
-    <div className="h-[140px] w-full" role="img" aria-label="Monthly air pollution (PM2.5)">
+    <div ref={box} className="h-[140px] w-full" role="img" aria-label="Monthly air pollution (PM2.5)">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...hoverProps(onHover)}>
+        <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...chartProps}>
           {[...highlight].map((m) => (
             <ReferenceArea key={m} x1={MONTHS[m - 1]} x2={MONTHS[m - 1]} fill="var(--color-accent-soft)" fillOpacity={1} />
           ))}
@@ -38,6 +40,14 @@ export function AirChart({ data, highlight, who, monthsLabel, onHover }: { data:
           <Tooltip cursor={HOVER_CURSOR} content={() => null} isAnimationActive={false} />
         </ComposedChart>
       </ResponsiveContainer>
+      <ChartTip at={tip}>
+        {at && (
+          <>
+            <div>{airBand(at.pm25).short}, avg {at.pm25} µg/m³</div>
+            <div className="text-muted">~{Math.round(at.a.daysOverWho)} days above the WHO daily guideline</div>
+          </>
+        )}
+      </ChartTip>
     </div>
   )
 }

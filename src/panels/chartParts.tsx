@@ -1,4 +1,6 @@
-// Pieces shared by the city panel's monthly charts (weather, sunshine, air), drawn with Recharts.
+// Pieces shared by the city panel's charts (monthly weather, sunshine and air; the forecast), drawn with Recharts.
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import { DefaultLegendContent, type DefaultLegendContentProps, type LegendPayload, type MouseHandlerDataParam, type XAxisTickContentProps } from 'recharts'
 
 /** An x-axis label ("Jan"), bold and in the accent colour for the months shown. */
@@ -13,12 +15,64 @@ export function monthTick(highlight: Set<number>) {
   }
 }
 
-/** Chart props that report the month under the pointer (1–12; null when it leaves), so its details show under the
- *  chart instead of in a box over it. */
-export const hoverProps = (onHover?: (month: number | null) => void) => (onHover ? {
-  onMouseMove: (s: MouseHandlerDataParam) => onHover(s.isTooltipActive && s.activeTooltipIndex != null ? Number(s.activeTooltipIndex) + 1 : null),
-  onMouseLeave: () => onHover(null),
-} : {})
+/** The point under the pointer: its index, and where it is on the page (its x; the chart's top), given where the
+ *  chart is (`box`); null when there's none. */
+export function tipAt(s: MouseHandlerDataParam, box: { left: number; top: number } | undefined) {
+  const index = s.isTooltipActive && s.activeTooltipIndex != null ? Number(s.activeTooltipIndex) : -1
+  return box && s.activeCoordinate && index >= 0 ? { index, x: box.left + s.activeCoordinate.x, y: box.top } : null
+}
+
+/**
+ * The point under the pointer (hover, or a tap), for its tooltip above the chart (`ChartTip`), so the tooltip doesn't
+ * cover what's drawn. Spread `chartProps` on the chart and put `box` on the element around it.
+ */
+export function useChartTip() {
+  const box = useRef<HTMLDivElement>(null)
+  const [tip, setTip] = useState<{ index: number; x: number; y: number } | null>(null)
+  const chartProps = {
+    onMouseMove: (s: MouseHandlerDataParam) => setTip(tipAt(s, box.current?.getBoundingClientRect())),
+    onMouseLeave: () => setTip(null),
+  }
+  // Scrolling the panel would leave it behind.
+  useEffect(() => {
+    if (!tip) return
+    const hide = () => setTip(null)
+    window.addEventListener('scroll', hide, true)
+    return () => window.removeEventListener('scroll', hide, true)
+  }, [tip])
+  return { box, chartProps, tip }
+}
+
+/**
+ * A chart's tooltip, above the chart at the point under the pointer (`at`, from useChartTip), its arrow pointing down
+ * at it; drawn over the page like InfoTip, so the panel doesn't cut it off, and moved back inside the window when
+ * needed, the arrow still on the point.
+ */
+export function ChartTip({ at, children }: { at: { x: number; y: number } | null; children: ReactNode }) {
+  const box = useRef<HTMLDivElement>(null)
+  const [shift, setShift] = useState(0)
+  useLayoutEffect(() => {
+    if (!at || !box.current) return
+    // Where it would be unshifted, then by how much to move it in.
+    const r = box.current.getBoundingClientRect()
+    const [left, right] = [r.left - shift, r.right - shift]
+    const edge = 8
+    setShift(left < edge ? edge - left : right > window.innerWidth - edge ? window.innerWidth - edge - right : 0)
+  }, [at?.x, at?.y])
+  if (!at) return null
+  return createPortal(
+    <div
+      ref={box}
+      role="tooltip"
+      style={{ left: at.x + shift, top: at.y - 6 }}
+      className="pointer-events-none fixed z-50 w-max max-w-64 -translate-x-1/2 -translate-y-full rounded-lg border border-line bg-panel px-2.5 py-1.5 text-[12px] leading-snug shadow-[0_2px_8px_rgba(0,0,0,0.2)]"
+    >
+      {children}
+      <span style={{ left: `calc(50% - ${shift}px)` }} className="absolute top-full -translate-x-1/2 border-x-[6px] border-t-[6px] border-x-transparent border-t-line" />
+    </div>,
+    document.body,
+  )
+}
 
 /** Shades the column under the pointer (Recharts' tooltip cursor), without a tooltip box. */
 export const HOVER_CURSOR = { fill: 'var(--color-line)', fillOpacity: 0.35 }
