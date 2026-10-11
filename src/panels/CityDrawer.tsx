@@ -12,7 +12,7 @@ import { useTemp } from '../ui/useTemp'
 import { AskButton } from './AskButton'
 import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
-import { Forecast } from './Forecast'
+import { Forecast, SubHead } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { NoteBox } from './Notes'
 import { SHARED_TOKEN } from '../store/shareLink'
@@ -21,6 +21,7 @@ import { TABS, type SectionKey } from './cityTabs'
 
 /** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
 const ClimateChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.ClimateChart })))
+const RainChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.RainChart })))
 const AirChart = lazy(() => import('./AirChart').then((m) => ({ default: m.AirChart })))
 const SunChart = lazy(() => import('./SunChart').then((m) => ({ default: m.SunChart })))
 
@@ -112,8 +113,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   else if (stop) for (let d = 0; d <= stop.nights; d++) stayMonths.add(monthOf(addDays(stop.arrive, d)))
   else stayMonths.add(likelyMonth(ds, plan, input, cityId))
   const monthsLabel = pickedMonth ? 'Map month' : stop ? 'Your stay' : 'Trip month'
-  // The nights of the stay, for the forecast.
-  const stayDates = new Set(stop ? Array.from({ length: stop.nights }, (_, d) => addDays(stop.arrive, d)) : [])
 
   const connections = ds.connections
     .filter((c) => c.from === cityId || c.to === cityId)
@@ -205,14 +204,13 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {notes('weather')}
         {climate ? (
           <>
-            <Suspense fallback={<div className="h-[180px]" />}>
+            <Suspense fallback={<div className="h-[370px]" />}>
               <ClimateChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
+              <SubHead title="Rain" unit="rain days a month" />
+              <RainChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
             </Suspense>
-            <Forecast cityId={cityId} stay={stayDates} />
-            <div className="mt-3 flex items-baseline justify-between text-[11px]">
-              <span className="font-semibold tracking-wider text-muted uppercase">Sunshine</span>
-              <span className="text-muted">hours a day</span>
-            </div>
+            <Forecast cityId={cityId} />
+            <SubHead title="Sunshine" unit="hours a day" />
             <Suspense fallback={<div className="h-[130px]" />}>
               <SunChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
             </Suspense>

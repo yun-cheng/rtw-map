@@ -6,6 +6,7 @@ import { useTrip } from '../store/trip'
 
 /** The chart uses Recharts, like the monthly ones (loaded with them). */
 const ForecastChart = lazy(() => import('./ForecastChart').then((m) => ({ default: m.ForecastChart })))
+const ForecastRain = lazy(() => import('./ForecastChart').then((m) => ({ default: m.ForecastRain })))
 
 const DAYS = 10
 export type ForecastDay = {
@@ -71,8 +72,8 @@ export function fetchForecast(cityId: string): Promise<ForecastDay[]> {
   return req
 }
 
-/** "Next 10 days": the forecast chart, the days of the stay highlighted (`stay`, ISO dates); a day's details on hover. */
-export function Forecast({ cityId, stay }: { cityId: string; stay: Set<string> }) {
+/** "Next 10 days": the forecast charts (temperatures, then rain), today highlighted; a day's details on hover. */
+export function Forecast({ cityId }: { cityId: string }) {
   const [days, setDays] = useState<ForecastDay[] | null | 'failed'>(null)
   const feels = useTrip((s) => s.tempFeels)
 
@@ -89,13 +90,25 @@ export function Forecast({ cityId, stay }: { cityId: string; stay: Set<string> }
   return (
     <div className="mt-3">
       <div className="mb-1 text-[11px] font-semibold tracking-wider text-muted uppercase">Next {DAYS} days</div>
-      {days === null && <div className="h-[210px] animate-pulse rounded-md bg-canvas" aria-label="Loading the forecast" />}
+      {days === null && <div className="h-[222px] animate-pulse rounded-md bg-canvas" aria-label="Loading the forecast" />}
       {(days === 'failed' || (Array.isArray(days) && !days.length)) && <p className="text-[13px] text-muted">Couldn't load the forecast.</p>}
       {Array.isArray(days) && days.length > 0 && (
-        <Suspense fallback={<div className="h-[210px]" />}>
-          <ForecastChart days={days} asFelt={asFelt} highlight={stay} />
+        <Suspense fallback={<div className="h-[367px]" />}>
+          <ForecastChart days={days} asFelt={asFelt} />
+          <SubHead title="Rain" unit="mm a day" />
+          <ForecastRain days={days} />
         </Suspense>
       )}
+    </div>
+  )
+}
+
+/** A small heading over a chart in the Weather card ("Rain", "mm a day"), like its Sunshine one. */
+export function SubHead({ title, unit }: { title: string; unit: string }) {
+  return (
+    <div className="mt-3 flex items-baseline justify-between text-[11px]">
+      <span className="font-semibold tracking-wider text-muted uppercase">{title}</span>
+      <span className="text-muted">{unit}</span>
     </div>
   )
 }

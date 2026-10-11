@@ -166,3 +166,11 @@ export function tempScale(min: number, max: number, unit: 'C' | 'F'): { lo: numb
   const hi = Math.ceil((max + room) / step) * step
   return { lo, hi, step, labelStep: (hi - lo) / step > 8 ? step * 2 : step }
 }
+
+/** The labelled degrees of a temperature axis (tempScale), where its gridlines go: a line without a label would look
+ *  like the one next to it. */
+export function tempTicks({ lo, hi, labelStep }: { lo: number; hi: number; labelStep: number }): number[] {
+  const ticks: number[] = []
+  for (let t = Math.ceil(lo / labelStep) * labelStep || 0; t <= hi + 1e-9; t += labelStep) ticks.push(t)
+  return ticks
+}

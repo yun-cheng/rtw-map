@@ -1,7 +1,7 @@
 // Pieces shared by the city panel's charts (monthly weather, sunshine and air; the forecast), drawn with Recharts.
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { DefaultLegendContent, type DefaultLegendContentProps, type LegendPayload, type MouseHandlerDataParam, type XAxisTickContentProps } from 'recharts'
+import { DefaultLegendContent, LabelList, type DefaultLegendContentProps, type LegendPayload, type MouseHandlerDataParam, type XAxisTickContentProps } from 'recharts'
 
 /** An x-axis label ("Jan"), bold and in the accent colour for the months shown. */
 export function monthTick(highlight: Set<number>) {
@@ -73,6 +73,14 @@ export function ChartTip({ at, children }: { at: { x: number; y: number } | null
     document.body,
   )
 }
+
+/** Room above and below a temperature chart's lines (px) for their labels (tempLabels). */
+export const TEMP_PADDING = { top: 14, bottom: 14 }
+
+/** Each dot's temperature ("24°") on a weather chart's line (as its child): over the highs, under the lows. */
+export const tempLabels = (side: 'top' | 'bottom', color: string) => (
+  <LabelList position={side} offset={4} fontSize={9} fontWeight={600} fill={color} formatter={(v) => (typeof v === 'number' ? `${Math.round(v)}°` : v)} />
+)
 
 /** Shades the column under the pointer (Recharts' tooltip cursor), without a tooltip box. */
 export const HOVER_CURSOR = { fill: 'var(--color-line)', fillOpacity: 0.35 }

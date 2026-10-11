@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, transitUrl, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -100,6 +100,12 @@ describe('climate chart scale', () => {
     expect(tempScale(23, 35, 'C')).toEqual({ lo: 20, hi: 40, step: 5, labelStep: 5 })
     // The cold city in °F (-9° to 77°F): a line every 10°F, labels every 20°F.
     expect(tempScale(-9, 77, 'F')).toEqual({ lo: -20, hi: 80, step: 10, labelStep: 20 })
+  })
+
+  it('puts the gridlines at the labelled degrees only', () => {
+    expect(tempTicks({ lo: -25, hi: 30, labelStep: 10 })).toEqual([-20, -10, 0, 10, 20, 30])
+    expect(tempTicks({ lo: -5, hi: 35, labelStep: 10 })).toEqual([0, 10, 20, 30])
+    expect(tempTicks({ lo: 20, hi: 40, labelStep: 5 })).toEqual([20, 25, 30, 35, 40])
   })
 })
 

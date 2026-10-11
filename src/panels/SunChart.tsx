@@ -20,7 +20,7 @@ export function SunChart({ data, highlight, monthsLabel }: { data: ClimateMonth[
   return (
     <div ref={box} className="h-[130px] w-full" role="img" aria-label="Hours of sunshine a day, by month">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={points} margin={{ top: 8, right: 0, bottom: 0, left: -18 }} {...chartProps}>
+        <ComposedChart data={points} margin={{ top: 8, right: 10, bottom: 0, left: -18 }} {...chartProps}>
           {[...highlight].map((m) => (
             <ReferenceArea key={m} x1={MONTHS[m - 1]} x2={MONTHS[m - 1]} fill="var(--color-accent-soft)" fillOpacity={1} />
           ))}
