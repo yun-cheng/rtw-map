@@ -1,9 +1,10 @@
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
+import { pwa } from './pwa/plugin.ts'
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), pwa()],
   worker: { format: 'es' },
   // The trip assistant's API runs in the Worker (npm run dev:api). Its same-site check compares the Origin header
   // with its own address, which differs behind this proxy, so the header is dropped here (development only).

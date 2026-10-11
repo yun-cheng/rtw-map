@@ -21,8 +21,13 @@ function readChoice(): ThemeChoice {
 
 const resolve = (choice: ThemeChoice): Theme => (choice === 'system' ? (media?.matches ? 'dark' : 'light') : choice)
 
+/** The panel colour (--color-panel), for the phone's status bar in the installed app. */
+const BAR = { light: '#ffffff', dark: '#1c1917' }
+
 function apply(theme: Theme) {
-  if (typeof document !== 'undefined') document.documentElement.dataset.theme = theme
+  if (typeof document === 'undefined') return
+  document.documentElement.dataset.theme = theme
+  document.querySelector<HTMLMetaElement>('meta[name=theme-color]')?.setAttribute('content', BAR[theme])
 }
 
 type ThemeState = {
