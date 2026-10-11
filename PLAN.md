@@ -610,3 +610,163 @@ No single product combines **route + days planning**, **real overland transport 
 
 1. **Which cities get automatic data?** Suggestion: population ≥ 50,000 plus a curated list of smaller tourist places (like Theth or Bled).
 2. **Which region comes after the first one?** To decide after the field test.
+
+---
+
+## 14. On the trip (draft, Oct 2026)
+
+Everything so far is for planning. This is the workflow once the trip starts: what the app does each day on the road, and what's left after it. Not built yet; the decisions at the end come first.
+
+### 14.1 The trip's three phases
+
+```
+Planning  →  Under way (first day … last day)  →  Done
+```
+
+- **Under way** starts by itself on the trip's first day (today within the planned dates). Nothing to switch on.
+- **The plan becomes the record.** Days before today are what happened: their stops are frozen (the assistant never changes them, Plan with AI and Update plan only plan from today on). A past stop can still be corrected by hand ("I stayed 3 nights, not 2"), which moves the following stops' dates.
+- **Done** after the last day: the trip is read-only by default and becomes a recap (§14.5).
+
+### 14.2 A day on the road
+
+| When | What the user does | What the app shows |
+|---|---|---|
+| Morning | Opens the app on the phone | **Today** (§14.3): day 23 of 120, the city, night 2 of 4, today's forecast, today's checks |
+| Travel day | Checks out, travels | Today leads with the journey: where to, how (mode, duration, price, booking tips from the leg), the next city's essentials (getting from the station, paying, SIM) |
+| During the day | Looks things up | The city panel as now (phrases, transport, paying, health, nearest hospital), offline |
+| Plans change | "Staying two more nights", "skipping Ohrid" | The ± nights and remove as now, from today on; **Update plan** fits the rest; the Schengen counter uses the real days |
+| Evening | Writes the day down, adds photos | **The day** (§14.4): a few lines, the day's highlight, its photos |
+
+### 14.3 Today screen (the "today" screen of Phase 3)
+
+The phone's first screen while the trip is under way (the map and panels are still one tap away):
+
+- **Where you are:** the city, day N of the trip, night n of the stay, "Leaving Thursday for Skopje".
+- **Today and tomorrow:** the forecast (`Forecast.tsx`, the first two days), and the stop's checks (rain, heat, budget).
+- **Next journey:** when it is, how long, booking tips, and a reminder the day before ("Tomorrow: bus to Skopje, ~4 h").
+- **Days running out:** Schengen days left, nights left in the trip.
+- **The day's entry:** a button to write today (§14.4), done or not.
+- **Ask:** the assistant with today's context (where you are, today's date), e.g. "rain tomorrow, swap with Bitola?".
+
+### 14.4 The daily journal
+
+One entry per trip day, belonging to the trip (not to a plan: plans are versions of the future, the journal is what happened).
+
+```ts
+type DayEntry = {
+  date: string            // ISO, the trip day
+  cityId: string          // where the night was (from the plan that day; editable)
+  text: string            // a few lines, plain text
+  highlight?: string      // one line, shown on the recap and the itinerary
+  rating?: 1 | 2 | 3 | 4 | 5
+  photos: PhotoRef[]      // §14.5
+  updatedAt: number
+}
+// Trip: { …, days: Record<string, DayEntry> }
+```
+
+- Written from Today, or from any past day in the itinerary (each past stop lists its days, with the day's highlight and a photo).
+- **Works offline:** saved in the browser first, synced to the account when there's a connection (the trip already saves this way; the journal needs the offline part, a PWA, Phase 3). The text is never lost to a bad connection.
+- Not in the undo history of plan edits.
+- Private to the account unless shared (§14.6).
+
+### 14.5 Photos from Google Photos
+
+Google's rules since 31 March 2025 decide the shape of this: an app can no longer read a user's library or shared albums (the Library API sees only what the app itself added). What's left:
+
+1. **An album link (first, no API):** paste a Google Photos album's share link on the trip or a stop; the app shows **Open photos ↗**. No thumbnails, nothing stored. An hour's work.
+2. **Pick photos (the Picker API):** **Add photos** on a day (or a stop, or the whole trip) opens Google Photos' own picker (a new tab; the Photos app on a phone), the user picks, the app gets the items with their time taken.
+   - The time taken sorts each photo into its trip day (in the stop's time zone), so a week's photos can be picked at once.
+   - Needs a separate Google consent for the picker (`photospicker.mediaitems.readonly`), asked for the first time it's used; sign-in stays as it is. Google may require the app to be verified for this scope beyond a few test users: check before building.
+   - The links Google gives expire within about an hour and need the user's token, so the app keeps its own copy: the Worker fetches each photo at ~1600 px (Google resizes it, so no image work on the Worker) and stores it in R2 under the account, served only to that account. ~300 KB a photo: R2's free 10 GB holds ~30,000.
+   - Deleting a photo or a day deletes the copy; deleting the account deletes them all.
+3. **Not possible:** photos appearing by themselves as they're taken (no library access), or live shared albums.
+
+A plain upload from the phone (no Google) would work the same way from step 2's storage on; worth having as well, for users without Google Photos.
+
+### 14.6 After the trip: the recap
+
+- The route actually travelled on the map, each stop with its photo and highlight; the timeline with each day's entry.
+- Numbers: days, countries, cities, km and hours by mode, nights on overnight buses or trains.
+- **Share (later):** a read-only link to the recap (or, during the trip, "where I am now" for family), with what to include chosen by the user.
+
+### 14.7 Build order
+
+| Step | Scope | Depends on |
+|---|---|---|
+| T1 | Under way: today's place in the trip, past stops frozen for the assistant, Today screen on the phone | — |
+| T2 | Offline (PWA): the app, the trip and the city data in the phone's cache | — |
+| T3 | Daily journal, saved offline first | T2 |
+| T4 | Album links | — |
+| T5 | Photos via the Picker API, copies in R2 | T3, Google consent check |
+| T6 | Recap; then sharing | T3, T5 |
+
+### 14.8 Decisions needed
+
+1. **"Phone: read-only" (§0)** no longer holds: the journal and on-the-road edits write from the phone. Change the decision?
+2. **Spend logging is out of scope (§0).** Still so? A day's spend would fit the journal entry and the Checks' budget.
+3. **Photos:** keep copies in R2 (thumbnails that last, but our storage of personal photos), or links only (album links, nothing stored)?
+4. **Bookings** (where you sleep, a ticket's time and reference) on the stop and journey: in scope? Today would use them ("bus at 08:40, seat 23").
+5. **Reminders:** notifications the day before a journey need the PWA and push; worth it, or Today is enough?
+
+---
+
+## 15. Journeys between cities, clearer (draft, Oct 2026)
+
+Today a journey is our own estimate: mode, duration, a price range, "hourly", from `connections.csv` (curated, ~240) or from road distance (estimated). On the road the user needs more: **when** it leaves, **from where**, **who runs it**, and **where to book**. Not built yet.
+
+### 15.1 What the sources can and can't do (tested 11 Oct 2026)
+
+| Source | What it gives | Cost | Coverage |
+|---|---|---|---|
+| **Links** (Google Maps, Rome2Rio, the operator or booking site) | The user checks it there, always current | Free, no key | Everywhere |
+| **Transitous** (`api.transitous.org/api/v5/plan`, open GTFS timetables, MOTIS) | Real departures: times, operator, train or bus number, changes; no fares | Free, no key, CORS open (the browser can call it) | Good where operators publish timetables. Tested: Ljubljana → Zagreb (FlixBus, 2 h 27), Kraków → Warsaw (PKP Intercity EIP, ~3 h), Vilnius → Riga, Budapest → Vienna (ÖBB EC), Tokyo → Kyoto (Nozomi), Taipei → Tainan (HSR). **Useless or empty** in the Balkans and SE Asia: Tirana → Shkodër 40 h via odd changes, Belgrade → Sarajevo 23 h, Skopje → Ohrid, Bangkok → Chiang Mai and Hanoi → Ninh Bình nothing |
+| **Google Routes API** (transit) | Like Transitous, Google's data | Paid after a free monthly cap per SKU (no more $200 credit since Mar 2025), a key on the Worker | Google's transit coverage; intercity buses in the Balkans unknown: test before paying for it |
+| **Flights** | — | Amadeus Self-Service (the free flight search API) shut down in July 2026; Duffel and similar are booking APIs, pay per order | No good free flight API: links only |
+| **db-rest** (Deutsche Bahn) | European trains | Free, low rate limits since the DB HAFAS shutdown | Germany-centred; Transitous covers the same |
+
+So: **links for every journey, live departures where Transitous has them, our curated data where nothing else does** (most of the Balkans and SE Asia, where the curated notes matter most).
+
+### 15.2 The journey panel, rebuilt
+
+Top to bottom, so the answer to "how do I get there" comes first:
+
+1. **Summary:** Shkodër → Tirana · Bus · ~2 h · €3–4 · hourly, from Shkodër's bus stop (the station name, curated) to Tirana North-South terminal. Source and how sure: *timetable* (Transitous), *checked* (curated) or *estimated* (road distance).
+2. **Departures on your day** (where Transitous has the route): the day's departures, station to station (the city transit at either end left out, folded under each), with operator and number: *06:14 → 08:41 FlixBus N952, 2 h 27*. For a date beyond the published timetables (a May 2027 trip, now) it shows the same weekday in the coming weeks, labelled *"Typical Tuesday, timetable of 20 Oct 2026"*.
+3. **Check and book**, as buttons:
+   - **Google Maps** directions by public transport: `google.com/maps/dir/?api=1&origin=<from>&destination=<to>&travelmode=transit` (on a phone it opens the Maps app).
+   - **Rome2Rio** for the city pair.
+   - **Where to book:** per country and mode, curated (a new seed file, e.g. `booking.csv`: country, mode, name, URL, a note: Albania bus "buy on board, cash"; Poland train PKP Intercity; Japan Shinkansen SmartEX; Thailand and Vietnam 12Go; FlixBus where it runs). With a booking link built from the cities and date where the site allows it.
+   - **Flights:** Google Flights for the pair and date (the `?q=Flights from … to … on …` form; check it still works) and Skyscanner.
+4. **Getting to the station:** Google Maps from the stop's centre to the station (and from the arrival station on), with the city's local transport line from the Transport tab.
+5. **Notes:** the curated tips (border crossing, buy the day before, overnight option), then the checks for this journey.
+
+### 15.3 How the live data is fetched
+
+- From the browser, straight to Transitous (CORS is open), only when a journey panel opens; one request per journey a day, cached like the forecast (`Forecast.tsx`). A User-Agent can't be set from the browser; if Transitous asks apps to identify themselves, go through the Worker instead.
+- **A sanity check against our data:** a result much slower than our journey (e.g. more than 1.5 × its time + 2 h, or 3+ changes where we know a direct bus) is dropped, not shown. That filters out the Tirana → Shkodër kind of answer.
+- City centres are the stops' coordinates; the first and last walks or city transit are folded away so the station-to-station part stands out.
+- Offline (§14): the departures last fetched are kept with the trip and shown with their date.
+
+### 15.4 Using it beyond the panel
+
+- **Check our own data:** a script (`scripts/check-connections.ts`) asks Transitous for every curated connection on a typical weekday and lists where it disagrees (duration off by > 25 %, a direct train we don't have, a route that no longer runs), for the data review page. This makes the planner itself more accurate, offline, at no running cost.
+- **The assistant:** `get_route` can add the departures (when available) for a given date, so it can say "the 06:14 FlixBus gets you in by 08:41"; planning keeps using the curated data, which covers every pair.
+- **On the road (§14.3):** Today's next-journey card shows the departures and the buttons; a booking the user saved (§14.8 #4) replaces them with "your bus at 08:40".
+
+### 15.5 Build order
+
+| Step | Scope | Cost |
+|---|---|---|
+| J1 | Links: Google Maps (journey and to the station), Rome2Rio, Google Flights | Free, small |
+| J2 | `booking.csv`: where to book per country and mode, with links | Data work per region |
+| J3 | Live departures from Transitous, with the sanity check and the typical-weekday fallback | Free |
+| J4 | The connections check script, fixes to `connections.csv` | Free |
+| J5 | The assistant's `get_route` with departures | — |
+| Later | Google Routes API only if a test shows it covers the Balkans' or SE Asia's buses where Transitous doesn't | Paid past the free cap |
+
+### 15.6 Decisions needed
+
+1. Depend on Transitous (a free, community-run service, no promise it stays up) for J3, with the curated data always there as a fallback?
+2. Booking links: plain links only, or affiliate links (12Go, Omio, Trip.com pay a share) later?
+3. Spend on Google's Routes API at all, if it covers more?
