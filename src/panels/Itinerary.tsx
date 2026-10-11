@@ -123,7 +123,9 @@ export const confirmRemove = (name: string, nights: number) =>
 function UndoRedo() {
   const { past, future, undo, redo } = useHistory()
   // A read-only trip doesn't change (store/tripCore.ts), not even back.
-  const busy = useChat((s) => s.busy) || useTrip((s) => s.readOnly)
+  const working = useChat((s) => s.busy)
+  const readOnly = useTrip((s) => s.readOnly)
+  const busy = working || readOnly
   const btn = 'flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
   return (
     <>
