@@ -11,7 +11,7 @@ import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { NoteMark } from './Notes'
-import { TravelLine } from './Travel'
+import { TripStatus } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
@@ -31,13 +31,13 @@ export function Itinerary() {
         <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
         <UndoRedo />
       </div>
-      {plan.stops.length > 0 && (
-        // From the first stop to leaving the last (the trip's own dates may run past them, when they don't fill it).
-        <p className="px-4 pb-2 text-[12px] text-muted">
-          {tripDates(plan.stops[0].arrive, plan.stops.at(-1)!.depart)} · {nights(plan.stops.reduce((n, s) => n + s.nights, 0))}
-        </p>
-      )}
-      <TravelLine />
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-2 text-[12px] text-muted empty:hidden">
+        <TripStatus />
+        {plan.stops.length > 0 && (
+          // From the first stop to leaving the last (the trip's own dates may run past them, when they don't fill it).
+          <span>{tripDates(plan.stops[0].arrive, plan.stops.at(-1)!.depart)} · {nights(plan.stops.reduce((n, s) => n + s.nights, 0))}</span>
+        )}
+      </div>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
         <Named

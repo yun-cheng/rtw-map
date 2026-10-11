@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isTravelling, localToday, pastChanges, stopTime, travelDay } from './travel'
+import { isTravelling, localToday, pastChanges, stopTime, travelDay, tripPhase } from './travel'
 import type { ScheduledStop } from './types'
 
 const stop = (cityId: string, arrive: string, depart: string): ScheduledStop => ({ cityId, arrive, depart, nights: 0, locked: false, groupId: '' })
@@ -14,7 +14,11 @@ describe('a trip under way', () => {
     expect(localToday(new Date(2027, 4, 6, 23, 30))).toBe('2027-05-06')
     expect(isTravelling(input, today)).toBe(true)
     expect(isTravelling(input, '2027-04-30')).toBe(false)
-    expect(travelDay(input, before.stops, today)).toEqual({ day: 6, of: 19, at: 1 })
+    // (The end date, the day of leaving, is the trip's last day: day 20 of 20.)
+    expect(travelDay(input, before.stops, today)).toEqual({ day: 6, of: 20, at: 1 })
+    expect(travelDay(input, before.stops, input.endDate).day).toBe(20)
+    expect(['2027-04-30', '2027-05-01', '2027-05-20', '2027-05-21'].map((d) => tripPhase(input, d))).toEqual(['before', 'travelling', 'travelling', 'after'])
+    expect(tripPhase({ startDate: '', endDate: '' }, today)).toBe(null)
     expect(before.stops.map((s) => stopTime(s, today))).toEqual(['done', 'now', 'ahead'])
   })
 

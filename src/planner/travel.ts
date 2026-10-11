@@ -12,10 +12,16 @@ export const localToday = (now = new Date()) => `${now.getFullYear()}-${pad(now.
 export const isTravelling = (input: { startDate: string; endDate: string }, today: string) =>
   !!input.startDate && input.startDate <= today && today <= input.endDate
 
+/** Where today is against the trip's dates: before it, on it or after it (none without dates). */
+export function tripPhase(input: { startDate: string; endDate: string }, today: string): 'before' | 'travelling' | 'after' | null {
+  if (!input.startDate || !input.endDate) return null
+  return today < input.startDate ? 'before' : today > input.endDate ? 'after' : 'travelling'
+}
+
 /** Where the trip is today: its day (1 = the first), and the stop it's at (the last one begun by today), if any. */
 export function travelDay(input: { startDate: string; endDate: string }, stops: ScheduledStop[], today: string) {
   const at = stops.findLastIndex((s) => s.arrive <= today)
-  return { day: daysBetween(input.startDate, today) + 1, of: daysBetween(input.startDate, input.endDate), at: at >= 0 ? at : null }
+  return { day: daysBetween(input.startDate, today) + 1, of: daysBetween(input.startDate, input.endDate) + 1, at: at >= 0 ? at : null }
 }
 
 /** A stop's days so far: `done` (left by today), `now` (there tonight) or `ahead`. */
