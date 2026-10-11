@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from './trip'
@@ -22,6 +22,23 @@ describe('address bar state', () => {
     useTrip.setState({ panel: 'itinerary' })
     readUrl('?panel=prefs')
     expect(useTrip.getState().panel).toBe('setup')
+  })
+
+  it('opens Today on a trip under way, unless the address names a tab', () => {
+    const { startDate } = useTrip.getState().input
+    vi.useFakeTimers({ now: new Date(`${startDate}T12:00:00`) })
+    try {
+      readUrl('')
+      expect(useTrip.getState().panel).toBe('today')
+      readUrl('?panel=itinerary')
+      expect(useTrip.getState().panel).toBe('itinerary')
+      // (Before the trip, the tab it was on.)
+      vi.setSystemTime(new Date(`${startDate}T12:00:00`).getTime() - 86_400_000)
+      readUrl('')
+      expect(useTrip.getState().panel).toBe('itinerary')
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('round-trips the open city, its tab, the left panel and a monthly map layer', () => {

@@ -11,7 +11,7 @@ import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripIn
 
 export * from './types'
 export { COST_HINTS, COST_KINDS, MEAL_HINTS, GROCERY_KEYS, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, estimatedCosts, groceryDay, groceryMeal, prefsDay, type CostInput, type CostItem, type CostKind } from './cost'
-export { schengenApplies } from './schengen'
+export { SCHENGEN_LIMIT, schengenApplies, schengenUsed } from './schengen'
 export { isTravelling, localToday, pastChanges, stopTime, travelDay, tripPhase, type PastChange } from './travel'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'

@@ -15,14 +15,8 @@ export function schengenApplies(ds: Dataset, passport: string): boolean {
  * including the entry and exit days. Days spent in Schengen before the trip are assumed to fall
  * right before the start date (worst case).
  */
-export function schengenSummary(
-  ds: Dataset,
-  stops: ScheduledStop[],
-  passport: string,
-  daysBefore: number,
-): SchengenSummary {
-  const applies = schengenApplies(ds, passport)
-  if (!stops.length) return { applies, maxInWindow: 0, limit: SCHENGEN_LIMIT, firstViolation: null, days: 0 }
+/** The trip's days in the Schengen area (1) or not (0), from the first stop's arrival to the last one's departure. */
+function areaDays(ds: Dataset, stops: ScheduledStop[]): { start: string; inS: Uint8Array } {
   const start = stops[0].arrive
   const end = stops[stops.length - 1].depart
   const len = daysBetween(start, end) + 1
@@ -35,19 +29,49 @@ export function schengenSummary(
     const to = daysBetween(start, nextIn ? stops[i + 1].arrive : s.depart)
     for (let d = from; d <= to && d < len; d++) inS[d] = 1
   })
+  return { start, inS }
+}
+
+/** Schengen days counted on trip day `d` (0 = the first stop's arrival): those in the 180 days up to it. */
+function countOn(inS: Uint8Array, d: number, daysBefore: number) {
+  let count = 0
+  for (let k = Math.max(0, d - WINDOW + 1); k <= Math.min(d, inS.length - 1); k++) count += inS[k]
+  return count + Math.max(0, Math.min(daysBefore, WINDOW - 1 - d))
+}
+
+/**
+ * Counts Schengen days the way the EU does: every calendar day you are in the area counts,
+ * including the entry and exit days. Days spent in Schengen before the trip are assumed to fall
+ * right before the start date (worst case).
+ */
+export function schengenSummary(
+  ds: Dataset,
+  stops: ScheduledStop[],
+  passport: string,
+  daysBefore: number,
+): SchengenSummary {
+  const applies = schengenApplies(ds, passport)
+  if (!stops.length) return { applies, maxInWindow: 0, limit: SCHENGEN_LIMIT, firstViolation: null, days: 0 }
+  const { start, inS } = areaDays(ds, stops)
 
   let maxInWindow = 0
   let firstViolation: string | null = null
   let total = 0
-  for (let d = 0; d < len; d++) {
+  for (let d = 0; d < inS.length; d++) {
     if (!inS[d]) continue
     total++
-    let count = 0
-    for (let k = Math.max(0, d - WINDOW + 1); k <= d; k++) count += inS[k]
-    const before = Math.max(0, Math.min(daysBefore, WINDOW - 1 - d))
-    count += before
+    const count = countOn(inS, d, daysBefore)
     if (count > maxInWindow) maxInWindow = count
     if (applies && count > SCHENGEN_LIMIT && !firstViolation) firstViolation = addDays(start, d)
   }
   return { applies, maxInWindow, limit: SCHENGEN_LIMIT, firstViolation, days: total }
+}
+
+/** Schengen days used by `date` on the trip (the days in the area in the 180 days up to it, as schengenSummary counts
+ *  them), and whether the trip goes there at all. */
+export function schengenUsed(ds: Dataset, stops: ScheduledStop[], daysBefore: number, date: string): { used: number; visits: boolean } {
+  if (!stops.length) return { used: 0, visits: false }
+  const { start, inS } = areaDays(ds, stops)
+  const d = daysBetween(start, date)
+  return { used: d < 0 ? Math.min(daysBefore, SCHENGEN_LIMIT) : countOn(inS, d, daysBefore), visits: inS.includes(1) }
 }

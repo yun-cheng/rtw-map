@@ -14,7 +14,7 @@ const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
  * written in Markdown: shown formatted (tasks can be ticked there), and as text to write while editing (an empty
  * note is always being written).
  */
-export function NoteBox({ kind, id, placeholder, tall }: { kind: 'cities' | 'legs'; id: string; placeholder: string; tall?: boolean }) {
+export function NoteBox({ kind, id, placeholder, tall, title = 'My notes' }: { kind: 'cities' | 'legs'; id: string; placeholder: string; tall?: boolean; title?: string }) {
   const note = useTrip((s) => s.notes[kind]?.[id] ?? '')
   const setNote = useTrip((s) => s.setNote)
   const [editing, setEditing] = useState(false)
@@ -24,7 +24,7 @@ export function NoteBox({ kind, id, placeholder, tall }: { kind: 'cities' | 'leg
   const button = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
   return (
     <Section
-      title="My notes"
+      title={title}
       aside={
         <span className="flex items-center gap-2 text-[11px] text-muted">
           Only you see these

@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, Settings, Sparkles, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, MapPin, Settings, Sparkles, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { MapControls } from './map/MapControls'
 import { BOTH_PANELS_MIN_WIDTH, DRAWER_WIDTH, SIDEBAR_WIDTH } from './ui/layout'
@@ -13,6 +13,8 @@ import { SettingsPanel } from './panels/SettingsPanel'
 import { SetupPanel } from './panels/SetupPanel'
 import { SharedGone } from './panels/SharedTrip'
 import { Timeline } from './panels/Timeline'
+import { Today } from './panels/Today'
+import { isTravelling, localToday } from './planner'
 import { useUndoKeys } from './store/history'
 import { SHARED_TOKEN } from './store/shareLink'
 import { planMark, useTrip } from './store/trip'
@@ -20,11 +22,17 @@ import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { usePhone } from './ui/usePhone'
 
-const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', assistant: 'Assistant' }
+const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', today: 'Today', assistant: 'Assistant' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
-const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, itinerary: ListOrdered, assistant: Sparkles }
-/** The left panel's tabs: a shared trip's page has only its itinerary (the trip's setup and assistant are its owner's). */
-const TABS = SHARED_TOKEN ? (['itinerary'] as const) : (['setup', 'itinerary', 'assistant'] as const)
+const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, itinerary: ListOrdered, today: MapPin, assistant: Sparkles }
+type Tab = keyof typeof TAB_LABELS
+/** The left panel's tabs: a shared trip's page has only its itinerary (the trip's setup and assistant are its owner's);
+ *  Today, after the itinerary, while the trip is under way. */
+function useTabs(): readonly Tab[] {
+  const { plan, input } = useTrip()
+  if (SHARED_TOKEN) return ['itinerary']
+  return plan && isTravelling(input, localToday()) ? ['setup', 'itinerary', 'today', 'assistant'] : ['setup', 'itinerary', 'assistant']
+}
 
 /** Whether the user folded the left panel away, remembered in this browser. */
 const COLLAPSED_KEY = 'rtw-map-sidebar-collapsed'
@@ -79,12 +87,13 @@ function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
 
 /** The left panel's tabs and the open one: beside the map, or in a bottom sheet on a phone (`peek`: its tab bar is
  *  the sheet's header). `onHide` folds it away. */
-function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?: boolean; onHide?: () => void }) {
+function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: () => void }) {
   const { plan, setPanel } = useTrip()
+  const tabs = useTabs()
   return (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
-        {TABS.map((t) => {
+        {tabs.map((t) => {
           // Each with its icon and name.
           const Icon = TAB_ICONS[t]
           return (
@@ -111,7 +120,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
       {tab === 'assistant' ? (
         <div className="min-h-0 flex-1"><AssistantPanel /></div>
       ) : (
-        <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : <Itinerary />}</div>
+        <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : tab === 'today' ? <Today /> : <Itinerary />}</div>
       )}
     </>
   )
@@ -119,14 +128,17 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
 
 export default function App() {
   const { panel, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTrip()
-  const tab = SHARED_TOKEN ? 'itinerary' : plan || panel === 'assistant' ? panel : 'setup'
+  const tabs = useTabs()
+  // (Today only while the trip is under way: the itinerary otherwise.)
+  const tab: Tab = SHARED_TOKEN ? 'itinerary' : !plan && panel !== 'assistant' ? 'setup' : tabs.includes(panel) ? panel : 'itinerary'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
   const picking = useTrip((s) => s.picking)
   // The trip's setup is showing: the map shows its countries instead of its route (MapView).
   const editing = tab === 'setup' && (phone ? !selected : !sidebar.hidden)
   // How far the phone's sheets are pulled up: the left panel's starts open on a new trip; a city's opens to half.
-  const [leftSnap, setLeftSnap] = useState<Snap>(plan ? 'peek' : 'half')
+  // (Half open on Today, the phone's first screen on a trip under way.)
+  const [leftSnap, setLeftSnap] = useState<Snap>(plan && tab !== 'today' ? 'peek' : 'half')
   const [drawerSnap, setDrawerSnap] = useState<Snap>('half')
   // "Ask AI" in a city or journey panel: on a phone the left panel's sheet comes up over it, on the Assistant (it goes
   // back to where it was when closed, or when another city is picked); elsewhere the left panel opens beside it.
@@ -186,7 +198,7 @@ export default function App() {
               <ChevronsRight size={16} />
             </button>
             <div className="my-0.5 h-px w-6 bg-line" />
-            {TABS.map((t) => {
+            {tabs.map((t) => {
               const Icon = TAB_ICONS[t]
               return (
                 <button

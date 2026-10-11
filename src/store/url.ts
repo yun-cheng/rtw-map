@@ -4,12 +4,12 @@
 // weather and air layers show each place at the time of the trip).
 // The address is replaced, not pushed, so moving around doesn't fill the browser's history.
 import { dataset as ds } from '../data/dataset'
-import { COST_KINDS, type CostKind } from '../planner'
+import { COST_KINDS, isTravelling, localToday, type CostKind } from '../planner'
 import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
-const PANELS = ['setup', 'itinerary', 'assistant'] as const
+const PANELS = ['today', 'setup', 'itinerary', 'assistant'] as const
 const TABS: CityTab[] = ['overview', 'notes', 'transport', 'weather', 'costs', 'daily', 'phrases', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
@@ -36,6 +36,8 @@ export function readUrl(search = window.location.search) {
   if (PANELS.includes(panel)) patch.panel = panel
   // Preferences were a tab of their own; now they're in the Trip tab.
   else if ((panel as string) === 'prefs') patch.panel = 'setup'
+  // A trip under way opens on Today, unless the address names a tab (a refresh, or a link).
+  else if (!q.has('panel') && state.plan && isTravelling(state.input, localToday())) patch.panel = 'today'
 
   const city = q.get('city')
   const leg = Number(q.get('leg'))

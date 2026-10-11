@@ -5,7 +5,7 @@ import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
 import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
-import { schengenSummary } from './schengen'
+import { schengenSummary, schengenUsed } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
 const testTrip = (passport: string, overrides: Partial<TripInput> = {}): TripInput => ({ ...testCaseInput(ds, passport), ...overrides })
@@ -37,6 +37,17 @@ describe('schengen counter', () => {
   })
   it('does not apply to EU citizens', () => {
     expect(schengenSummary(ds, [], 'EU', 0).applies).toBe(false)
+  })
+  it('counts the days used by a date on the trip', () => {
+    const stops = [
+      { cityId: 'krakow', nights: 10, locked: false, groupId: '', arrive: '2027-06-01', depart: '2027-06-11' },
+      { cityId: 'stpetersburg', nights: 5, locked: false, groupId: '', arrive: '2027-06-11', depart: '2027-06-16' },
+    ]
+    expect(schengenUsed(ds, stops, 0, '2027-06-05')).toEqual({ used: 5, visits: true })
+    // Out of the area from the day after leaving; days before the trip count too.
+    expect(schengenUsed(ds, stops, 0, '2027-06-14').used).toBe(11)
+    expect(schengenUsed(ds, stops, 20, '2027-06-14').used).toBe(31)
+    expect(schengenUsed(ds, stops.slice(1), 0, '2027-06-14')).toEqual({ used: 0, visits: false })
   })
 })
 

@@ -39,7 +39,7 @@ export function sky(code: number): [string, string] {
 // One request per city a day: kept for the session (a failed one is tried again next time).
 const cache = new Map<string, Promise<ForecastDay[]>>()
 
-function fetchForecast(cityId: string): Promise<ForecastDay[]> {
+export function fetchForecast(cityId: string): Promise<ForecastDay[]> {
   const key = `${cityId}:${new Date().toDateString()}`
   let req = cache.get(key)
   if (!req) {

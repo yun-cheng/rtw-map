@@ -35,7 +35,8 @@ type State = TripCore & {
   weatherBy: 'high' | 'low'
   /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
   routeBy: 'day' | 'nights'
-  panel: 'setup' | 'itinerary' | 'assistant'
+  /** The left panel's tab; Today only while the trip is under way (App). */
+  panel: 'today' | 'setup' | 'itinerary' | 'assistant'
   /** Adding places to the trip (the Trip tab's picker): whole regions or single countries, from its list or the map. */
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
