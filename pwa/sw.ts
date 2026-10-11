@@ -4,7 +4,9 @@
 //
 // - The app's own files: from the cache, each version cached whole when it installs; a new version waits for the page
 //   to say so (the "new version" notice, src/pwa.ts).
-// - The map's tiles: kept as they're fetched (the latest TILE_LIMIT), so places looked at work offline.
+// - The map's tiles: kept as they're fetched (the latest TILE_LIMIT), so places looked at work offline, and the
+//   areas downloaded for the trip's cities (src/offline/download.ts, OFFLINE, written by the page). Kept by place,
+//   not by the map's weekly version: the current version's tile when there's a connection, else any kept one.
 // - The map's style, sprites and labels' fonts, and the app's font: the cached copy at once, refreshed behind it.
 // - /api (the account, trips, assistant) and everything else: the network only.
 
@@ -13,9 +15,12 @@ declare const PRECACHE: string[]
 declare const VERSION: string
 
 const APP = `app-${VERSION}`
-const TILES = 'map-tiles'
+const TILES = 'map-tiles-2'
+const OFFLINE = 'map-offline'
 const STATIC = 'map-style'
 const TILE_LIMIT = 2500
+/** Caches of earlier versions of this worker, no longer used. */
+const OLD = ['map-tiles']
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(APP).then((c) => c.addAll(PRECACHE)))
@@ -27,14 +32,15 @@ self.addEventListener('message', (e) => {
 
 self.addEventListener('activate', (e) => {
   e.waitUntil((async () => {
-    for (const name of await caches.keys()) if (name.startsWith('app-') && name !== APP) await caches.delete(name)
+    for (const name of await caches.keys()) if ((name.startsWith('app-') && name !== APP) || OLD.includes(name)) await caches.delete(name)
     await self.clients.claim()
   })())
 })
 
 self.addEventListener('fetch', (e) => {
   const req = e.request
-  if (req.method !== 'GET') return
+  // (The page's own downloads, for the offline map: straight to the network.)
+  if (req.method !== 'GET' || req.cache === 'no-store') return
   const url = new URL(req.url)
   if (url.origin === self.location.origin) {
     if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/internal/')) return
@@ -43,8 +49,7 @@ self.addEventListener('fetch', (e) => {
     return e.respondWith(fromApp(req, req))
   }
   if (url.hostname === 'tiles.openfreemap.org') {
-    // Tiles are under a dated version of the map, so a tile never changes.
-    return e.respondWith(/\/\d+\/\d+\/\d+\.pbf$/.test(url.pathname) ? tile(req) : refreshed(req, e))
+    return e.respondWith(/\/\d+\/\d+\/\d+\.(pbf|png)$/.test(url.pathname) ? tile(req) : refreshed(req, e))
   }
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') return e.respondWith(refreshed(req, e))
 })
@@ -59,14 +64,35 @@ async function fromApp(key: RequestInfo, req: Request) {
   return cached ?? fetch(req)
 }
 
+/** A tile's place, the same under any version of the map: ".../planet/<version>/z/x/y.pbf" as ".../planet/_/z/x/y.pbf"
+ *  (as src/offline/tiles.ts writes it), and the version. */
+function tilePlace(url: string): { key: string; version: string } {
+  const m = url.match(/^(.*\/planet\/)([^/]+)(\/\d+\/\d+\/\d+\.pbf)$/)
+  return m ? { key: `${m[1]}_${m[3]}`, version: m[2] } : { key: url, version: '' }
+}
+/** The header a kept tile carries its map version in. */
+const VERSION_HEADER = 'x-tile-version'
+
 let puts = 0
 async function tile(req: Request) {
-  const cache = await caches.open(TILES)
-  const cached = await cache.match(req, BY_URL)
-  if (cached) return cached
-  const res = await fetch(req)
+  const { key, version } = tilePlace(req.url)
+  const copies = [await (await caches.open(OFFLINE)).match(key, BY_URL), await (await caches.open(TILES)).match(key, BY_URL)]
+  const current = copies.find((c) => c?.headers.get(VERSION_HEADER) === version)
+  if (current) return current
+  const kept = copies.find(Boolean)
+  let res: Response
+  try {
+    res = await fetch(req)
+  } catch (err) {
+    // Offline: a tile of another version is better than none.
+    if (kept) return kept
+    throw err
+  }
   if (res.ok) {
-    await cache.put(req, res.clone())
+    const cache = await caches.open(TILES)
+    const headers = new Headers(res.headers)
+    headers.set(VERSION_HEADER, version)
+    await cache.put(key, new Response(await res.clone().blob(), { status: res.status, headers }))
     // Now and then, drop the oldest beyond the limit.
     if (++puts % 100 === 0) {
       const keys = await cache.keys()
@@ -79,7 +105,8 @@ async function tile(req: Request) {
 /** The cached copy at once (refreshed behind it), else the network. */
 async function refreshed(req: Request, e: FetchEvent) {
   const cache = await caches.open(STATIC)
-  const cached = await cache.match(req, BY_URL)
+  // (Or the labels' glyphs downloaded for the offline map.)
+  const cached = (await cache.match(req, BY_URL)) ?? (await (await caches.open(OFFLINE)).match(req, BY_URL))
   const fresh = fetch(req).then(async (res) => {
     if (res.ok) await cache.put(req, res.clone())
     return res

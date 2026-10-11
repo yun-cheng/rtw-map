@@ -9,6 +9,7 @@ import { useTheme, type ThemeChoice } from '../ui/theme'
 import { useMoney } from '../ui/useMoney'
 import { AccountLimits } from './AccountLimits'
 import { AccountDetails, AccountMenu } from './AccountMenu'
+import { OfflineMapSettings } from './OfflineMap'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
@@ -16,8 +17,8 @@ import { TripSwitcher } from './TripSwitcher'
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
 
 /**
- * On a phone, the top bar's contents (trips, currency, temperature unit, theme, account) in a panel that slides in
- * from the right, opened from the gear over the map; the map gets the top bar's room.
+ * On a phone, the top bar's contents (trips, currency, temperature unit, theme, account) and the offline map in a
+ * panel that slides in from the right, opened from the gear over the map; the map gets the top bar's room.
  */
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit, localNames, setLocalNames } = useTrip()
@@ -77,6 +78,11 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
               </div>
             </Section>
+            {!SHARED_TOKEN && plan && (
+              <Section title="Offline map">
+                <OfflineMapSettings />
+              </Section>
+            )}
             {SHARED_TOKEN ? null : user ? (
               // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
               <Section title="Account">
