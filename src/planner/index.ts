@@ -714,7 +714,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
       const worst = Math.min(...hard.map((s) => englishLevel(ds, s.cityId).level))
       const also = country.english.otherLanguages.length ? ` ${country.english.otherLanguages[0]} also helps.` : ''
       warnings.push({
-        kind: 'language', severity: 'info', iso2, cityId: hard[0].cityId,
+        kind: 'language', severity: 'info', iso2, cityId: hard[0].cityId, inCity: true,
         title: `English is ${ENGLISH_LABELS[worst].short.toLowerCase()} in ${hard.map((s) => ds.cities[s.cityId].name).join(', ')}`,
         detail: `Get an offline translator app (${country.languages[0]}).${also} Script: ${country.english.script}.`,
       })
@@ -725,7 +725,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
     const water = sched.map((s) => s.cityId).filter((id) => ds.cities[id].iso2 === iso2).map((id) => tapWater(ds, id))
     const worst = water.find((w) => w?.level === 'bottled') ?? water.find((w) => w?.level === 'boil')
     if (worst) {
-      warnings.push({ kind: 'health', severity: 'info', iso2, title: `${ds.countries[iso2].name}: ${TAP_WATER_LABELS[worst.level].short.toLowerCase()}`, detail: worst.note })
+      warnings.push({ kind: 'health', severity: 'info', iso2, inCity: true, title: `${ds.countries[iso2].name}: ${TAP_WATER_LABELS[worst.level].short.toLowerCase()}`, detail: worst.note })
     }
   }
   // Malaria medicine has to be prescribed before the trip, so it's worth a reminder.
@@ -759,7 +759,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
   const cashStops = sched.filter((s) => ds.payments.countries[ds.cities[s.cityId].iso2]?.foreignCardsWork !== false && cardLevel(ds, s.cityId).level <= 2)
   if (cashStops.length) {
     warnings.push({
-      kind: 'money', severity: 'info', cityId: cashStops[0].cityId,
+      kind: 'money', severity: 'info', cityId: cashStops[0].cityId, inCity: true,
       title: `Mostly cash in ${cashStops.map((s) => ds.cities[s.cityId].name).join(', ')}`,
       detail: CARD_LABELS[2].long + '.',
     })

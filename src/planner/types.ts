@@ -397,6 +397,9 @@ export type PlanWarning = {
   leg?: number
   iso2?: string
   url?: string
+  /** A note on what each stop's city panel already says (tap water, paying in cash, English): not in the itinerary's
+   *  list of checks. */
+  inCity?: true
 }
 
 export type SchengenSummary = {

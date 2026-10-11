@@ -1,5 +1,5 @@
-// The plan's checks (planner evaluate: visas, Schengen, weather, the budget and travel-day preferences…): the whole
-// list above the itinerary, a mark on each stop and journey with something to look at, and a stop's own checks in its
+// The plan's checks (planner evaluate: visas, Schengen, weather, the budget and travel-day preferences…): a list above
+// the itinerary (but a stop's own checks, and notes the city panels cover), a mark on each stop and journey with something to look at, and a stop's own checks in its
 // city panel, in the card they're about, so it's plain where the plan doesn't fit the preferences (the assistant gets
 // them with each stop too).
 import { CircleAlert, TriangleAlert } from 'lucide-react'
@@ -40,9 +40,12 @@ function useTitle() {
   return (w: PlanWarning) => warningTitle(w, unit, currency)
 }
 
-/** The checks to look at for a stop: those about it, and about the journey there (problems and warnings, not notes). */
+/** A check marked on its stop in the itinerary (a problem or warning about the stop itself, not a note). */
+const onStop = (w: PlanWarning) => !!w.cityId && w.leg === undefined && w.severity !== 'info'
+
+/** The checks to look at for a stop: those about it (problems and warnings, not notes). */
 export const stopWarnings = (warnings: PlanWarning[], cityId: string) =>
-  bySeverity(warnings.filter((w) => w.cityId === cityId && w.leg === undefined && w.severity !== 'info'))
+  bySeverity(warnings.filter((w) => w.cityId === cityId && onStop(w)))
 export const legWarnings = (warnings: PlanWarning[], leg: number) =>
   bySeverity(warnings.filter((w) => w.leg === leg && w.severity !== 'info'))
 
@@ -84,10 +87,19 @@ function CheckItem({ w }: { w: PlanWarning }) {
   )
 }
 
-/** All the plan's checks, problems first, folding away. */
-export function Checks({ warnings }: { warnings: PlanWarning[] }) {
+/** The plan's checks, problems first, folding away: all but a stop's own, which are marked on it in the itinerary
+ *  below (and listed in its city panel), and notes on what the city panels say anyway (`inCity`). */
+export function Checks({ warnings: all }: { warnings: PlanWarning[] }) {
   const [open, setOpen] = useState(true)
-  if (!warnings.length) return null
+  // (Notes on what the city panels say anyway, tap water, cash or English, aren't counted: they're no check to act on.)
+  const warnings = all.filter((w) => !onStop(w) && !w.inCity)
+  const onStops = all.filter(onStop).length
+  const below = onStops > 0 && (
+    <p className="px-3 py-1.5 text-[11px] text-muted">
+      {onStops} more on the stops below, marked by the city
+    </p>
+  )
+  if (!warnings.length) return below ? <div className="mx-4 mb-2 rounded-lg border border-line">{below}</div> : null
   const counts = { error: 0, warn: 0, info: 0 }
   warnings.forEach((w) => counts[w.severity]++)
   return (
@@ -104,6 +116,7 @@ export function Checks({ warnings }: { warnings: PlanWarning[] }) {
           {bySeverity(warnings).map((w, i) => <CheckItem key={i} w={w} />)}
         </ul>
       )}
+      {below && <div className="border-t border-line">{below}</div>}
     </div>
   )
 }
