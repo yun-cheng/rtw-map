@@ -23,8 +23,8 @@ import { usePhone } from './ui/usePhone'
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', assistant: 'Assistant' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
 const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, itinerary: ListOrdered, assistant: Sparkles }
-/** The left panel's tabs: a shared trip's page has no assistant (it's someone else's trip). */
-const TABS = SHARED_TOKEN ? (['setup', 'itinerary'] as const) : (['setup', 'itinerary', 'assistant'] as const)
+/** The left panel's tabs: a shared trip's page has only its itinerary (the trip's setup and assistant are its owner's). */
+const TABS = SHARED_TOKEN ? (['itinerary'] as const) : (['setup', 'itinerary', 'assistant'] as const)
 
 /** Whether the user folded the left panel away, remembered in this browser. */
 const COLLAPSED_KEY = 'rtw-map-sidebar-collapsed'
@@ -119,8 +119,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
 
 export default function App() {
   const { panel, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTrip()
-  const asked = SHARED_TOKEN && panel === 'assistant' ? 'itinerary' : panel
-  const tab = plan || asked === 'assistant' ? asked : 'setup'
+  const tab = SHARED_TOKEN ? 'itinerary' : plan || panel === 'assistant' ? panel : 'setup'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
   const picking = useTrip((s) => s.picking)

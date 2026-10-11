@@ -7,9 +7,6 @@ type Shared = { name: string | null; status: 'loading' | 'ok' | 'gone' }
 
 export const useShared = create<Shared>(() => ({ name: null, status: 'loading' }))
 
-// As the link came, before the page writes its own view into the address (url.ts).
-const linkNamesTab = typeof location !== 'undefined' && new URLSearchParams(location.search).has('panel')
-
 /** Loads the shared trip and shows it (read-only, whatever it was saved as). */
 export async function openShared() {
   if (!SHARED_TOKEN) return
@@ -18,8 +15,8 @@ export async function openShared() {
     if (!res.ok) throw new Error(String(res.status))
     const { name, data } = (await res.json()) as { name: string; data: TripData | null }
     useTrip.getState().openTrip(data && { ...data, readOnly: true })
-    // The itinerary first (it's what someone sent the link for), unless the link names a tab.
-    if (useTrip.getState().plan && !linkNamesTab) useTrip.getState().setPanel('itinerary')
+    // Its itinerary is all the page shows (App.tsx).
+    useTrip.getState().setPanel('itinerary')
     useShared.setState({ name, status: 'ok' })
     document.title = `${name} · rtw-map`
   } catch {

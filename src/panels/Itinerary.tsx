@@ -4,6 +4,7 @@ import { useChat } from '../agent/chat'
 import { dataset as ds } from '../data/dataset'
 import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planner'
 import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named } from '../ui/kit'
@@ -18,7 +19,8 @@ export function Itinerary() {
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
-  if (!plan) return null
+  // (A shared trip may have no plan yet: its page has only this tab.)
+  if (!plan) return SHARED_TOKEN ? <p className="px-4 py-6 text-[13px] text-muted">This trip has no itinerary yet.</p> : null
   // On a trip under way, the stops already left are faded and today's is marked.
   const today = localToday()
   const travelling = isTravelling(input, today)
@@ -29,12 +31,20 @@ export function Itinerary() {
         <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
         <UndoRedo />
       </div>
+      {plan.stops.length > 0 && (
+        // From the first stop to leaving the last (the trip's own dates may run past them, when they don't fill it).
+        <p className="px-4 pb-2 text-[12px] text-muted">
+          {tripDates(plan.stops[0].arrive, plan.stops.at(-1)!.depart)} · {nights(plan.stops.reduce((n, s) => n + s.nights, 0))}
+        </p>
+      )}
       <TravelLine />
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
         <Named
           label="Estimated cost"
-          hint="Each stop's daily cost (your choices in the Trip tab's preferences, or changed for a city in its Costs tab) for its nights, plus travel between cities and from home. A range, since prices vary."
+          hint={SHARED_TOKEN
+            ? "Each stop's daily cost for its nights, plus travel between cities and from home. A range, since prices vary."
+            : "Each stop's daily cost (your choices in the Trip tab's preferences, or changed for a city in its Costs tab) for its nights, plus travel between cities and from home. A range, since prices vary."}
           aside={<span><b className="tabular-nums">{fmt(plan.cost.min)}–{fmt(plan.cost.max)}</b> <span className="text-muted">· ~{fmt(plan.cost.perDay)}/day</span></span>}
         />
       </div>
@@ -114,6 +124,14 @@ export function Itinerary() {
     </div>
   )
 }
+
+/** The trip's dates: "12 Mar – 10 May 2027" (both years when it crosses one). */
+function tripDates(start: string, end: string) {
+  const [from, to] = [start.slice(0, 4), end.slice(0, 4)]
+  return `${shortDate(start)}${from !== to ? ` ${from}` : ''} – ${shortDate(end)} ${to}`
+}
+
+const nights = (n: number) => `${n} night${n === 1 ? '' : 's'}`
 
 /** Asks before a stop is taken out by hand. */
 export const confirmRemove = (name: string, nights: number) =>
