@@ -12,6 +12,7 @@ import { useTemp } from '../ui/useTemp'
 import { AskButton } from './AskButton'
 import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
+import { Forecast } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
@@ -109,6 +110,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   else if (stop) for (let d = 0; d <= stop.nights; d++) stayMonths.add(monthOf(addDays(stop.arrive, d)))
   else stayMonths.add(likelyMonth(ds, plan, input, cityId))
   const monthsLabel = pickedMonth ? 'Map month' : stop ? 'Your stay' : 'Trip month'
+  // The nights of the stay, for the forecast.
+  const stayDates = new Set(stop ? Array.from({ length: stop.nights }, (_, d) => addDays(stop.arrive, d)) : [])
 
   const connections = ds.connections
     .filter((c) => c.from === cityId || c.to === cityId)
@@ -203,6 +206,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <Suspense fallback={<div className="h-[180px]" />}>
               <ClimateChart data={climate} highlight={stayMonths} monthsLabel={monthsLabel} />
             </Suspense>
+            <Forecast cityId={cityId} stay={stayDates} />
             <div className="mt-3 flex items-baseline justify-between text-[11px]">
               <span className="font-semibold tracking-wider text-muted uppercase">Sunshine</span>
               <span className="text-muted">hours a day</span>
