@@ -5,6 +5,7 @@ import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
 import { evaluatePlan, withPrefs, type CostKind } from '../planner'
+import { SHARED_TOKEN } from './shareLink'
 import { loadTrip, newTripInput, planFor, planId, tripActions, tripPlans, type TripCore, type TripData } from './tripCore'
 
 export { MAX_NOTE_CHARS, MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
@@ -85,15 +86,20 @@ type State = TripCore & {
   openTrip: (data: TripData | null, keepView?: boolean) => void
 }
 
-/** localStorage can be missing or throw (private mode); fall back to memory. */
+const memory = (): Storage => {
+  const mem = new Map<string, string>()
+  return { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) } as Storage
+}
+/** localStorage can be missing or throw (private mode); fall back to memory. A shared trip's page (shareLink.ts) keeps
+ *  everything in memory, so the visitor's own trip in this browser is neither shown nor overwritten. */
 const safeStorage = createJSONStorage(() => {
+  if (SHARED_TOKEN) return memory()
   try {
     localStorage.setItem('__t', '1')
     localStorage.removeItem('__t')
     return localStorage
   } catch {
-    const mem = new Map<string, string>()
-    return { getItem: (k) => mem.get(k) ?? null, setItem: (k, v) => void mem.set(k, v), removeItem: (k) => void mem.delete(k) }
+    return memory()
   }
 })
 

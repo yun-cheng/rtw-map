@@ -4,9 +4,9 @@
 import { DurableObject } from 'cloudflare:workers'
 import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
-import { summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
+import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
-type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number }
+type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null }
 type RunRow = {
   id: string; trip_id: string; status: RunStatus; request: string; email: string | null; reply: string | null
   version: number; stop: number; error: string | null; created: number; updated: number
@@ -22,6 +22,12 @@ export class Account extends DurableObject {
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS runs (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, status TEXT NOT NULL, request TEXT NOT NULL, email TEXT, reply TEXT,
       version INTEGER NOT NULL DEFAULT 0, stop INTEGER NOT NULL DEFAULT 0, error TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL)`)
+    // A trip's public link (its token), added after the table: older accounts get the column now.
+    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'share')) {
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN share TEXT')
+    }
+    // On the settings instance only: which account and trip each public link opens.
+    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
   }
 
   // ---------------------------------------------------------------- assistant usage
@@ -57,19 +63,34 @@ export class Account extends DurableObject {
     await this.ctx.storage.put('limits', limits)
   }
 
+  // ---------------------------------------------------------------- public links (on the "settings" instance only)
+
+  async addShare(token: string, sub: string, tripId: string): Promise<void> {
+    this.ctx.storage.sql.exec('INSERT OR REPLACE INTO shares (token, sub, trip_id) VALUES (?, ?, ?)', token, sub, tripId)
+  }
+
+  async removeShare(token: string): Promise<void> {
+    this.ctx.storage.sql.exec('DELETE FROM shares WHERE token = ?', token)
+  }
+
+  async findShare(token: string): Promise<{ sub: string; tripId: string } | null> {
+    const r = this.ctx.storage.sql.exec<{ sub: string; trip_id: string }>('SELECT sub, trip_id FROM shares WHERE token = ?', token).toArray()[0]
+    return r ? { sub: r.sub, tripId: r.trip_id } : null
+  }
+
   // ---------------------------------------------------------------- trips
 
   private row(id: string): Row | null {
-    return this.ctx.storage.sql.exec<Row>('SELECT id, name, data, chat, updated FROM trips WHERE id = ?', id).toArray()[0] ?? null
+    return this.ctx.storage.sql.exec<Row>('SELECT id, name, data, chat, updated, share FROM trips WHERE id = ?', id).toArray()[0] ?? null
   }
 
   private summary(r: Row): TripSummary {
-    return { id: r.id, name: r.name, updated: r.updated, ...summarize(r.data) }
+    return { id: r.id, name: r.name, updated: r.updated, share: r.share ?? null, ...summarize(r.data) }
   }
 
   /** All trips, most recently changed first, and the one opened last (to open again on any device). */
   async listTrips(): Promise<{ trips: TripSummary[]; lastId: string | null }> {
-    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, data, NULL AS chat, updated FROM trips ORDER BY updated DESC').toArray()
+    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, data, NULL AS chat, updated, share FROM trips ORDER BY updated DESC').toArray()
     return { trips: rows.map((r) => this.summary(r)), lastId: (await this.ctx.storage.get<string>('lastTripId')) ?? null }
   }
 
@@ -118,6 +139,29 @@ export class Account extends DurableObject {
     this.ctx.storage.sql.exec('DELETE FROM runs WHERE trip_id = ?', id)
     if ((await this.ctx.storage.get<string>('lastTripId')) === id) await this.ctx.storage.delete('lastTripId')
     return existed
+  }
+
+  /** Turns on a trip's public link (the same one if it's on already): its token, or null if there's no such trip. */
+  async shareTrip(id: string): Promise<string | null> {
+    const r = this.row(id)
+    if (!r) return null
+    if (r.share) return r.share
+    const token = shareToken()
+    this.ctx.storage.sql.exec('UPDATE trips SET share = ? WHERE id = ?', token, id)
+    return token
+  }
+
+  /** Turns a trip's public link off: the token it had, if any. */
+  async unshareTrip(id: string): Promise<string | null> {
+    const token = this.row(id)?.share ?? null
+    if (token) this.ctx.storage.sql.exec('UPDATE trips SET share = NULL WHERE id = ?', id)
+    return token
+  }
+
+  /** A trip as its public link shows it, if the link is still on (the token is the trip's own). */
+  async sharedTrip(id: string, token: string): Promise<{ name: string; data: unknown } | null> {
+    const r = this.row(id)
+    return r && r.share === token ? { name: r.name, data: publicTripData(r.data) } : null
   }
 
   // ---------------------------------------------------------------- the assistant's runs (runs.ts)

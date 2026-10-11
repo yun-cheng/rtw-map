@@ -7,6 +7,7 @@ import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { Editable } from './ReadOnly'
 import { ChangesLine, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
@@ -207,8 +208,9 @@ export function SetupPanel() {
         <PrefsCards />
       </div>
 
-      {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled. */}
-      <div className="sticky bottom-0 border-t border-line bg-panel p-3">
+      {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled (not on someone else's shared
+          trip, which can't change). */}
+      {!SHARED_TOKEN && <div className="sticky bottom-0 border-t border-line bg-panel p-3">
         {readOnly ? (
           <p className="text-center text-[12px] text-muted">Read-only: make the trip editable (the lock above) to change or replan it.</p>
         ) : user || !loaded ? (
@@ -246,7 +248,7 @@ export function SetupPanel() {
             Sign in to plan with AI
           </Button>
         )}
-      </div>
+      </div>}
     </div>
   )
 }

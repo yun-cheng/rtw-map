@@ -3,8 +3,8 @@
 
 export const TRIP_LIMITS = { trips: 50, plans: 8, nameChars: 80, dataBytes: 400_000, chatBytes: 600_000, noteChars: 2000 }
 
-/** What a trip list shows without loading each trip. */
-export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number }
+/** What a trip list shows without loading each trip; `share`: the token of its public link, if it's shared. */
+export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share: string | null }
 export type TripPatch = { name?: string; data?: string; chat?: string }
 
 /** Validates a create/save request; trip data and chat are kept as JSON text. */
@@ -47,6 +47,27 @@ function notesOf(raw: unknown): { notes?: Record<'cities' | 'legs', Record<strin
   )
   const notes = { cities: texts((raw as { cities?: unknown }).cities), legs: texts((raw as { legs?: unknown }).legs) }
   return Object.keys(notes.cities).length || Object.keys(notes.legs).length ? { notes } : {}
+}
+
+/** A new public link's token: 128 random bits, URL-safe. */
+export function shareToken(): string {
+  const bytes = crypto.getRandomValues(new Uint8Array(16))
+  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+export const isShareToken = (s: string) => /^[\w-]{22}$/.test(s)
+
+/** A shared trip as anyone with its link sees it: read-only, without what's private (the user's notes, their wishes
+ *  for the assistant, the chat, which isn't in `data`). */
+export function publicTripData(data: string | null): unknown {
+  const d = JSON.parse(data ?? 'null') as { input?: Record<string, unknown>; plans?: { input?: Record<string, unknown> }[]; notes?: unknown } | null
+  if (!d) return null
+  const { notes: _, ...rest } = d
+  const open = (input?: Record<string, unknown>) => {
+    if (!input) return input
+    const { wishes: __, ...kept } = input
+    return kept
+  }
+  return { ...rest, input: open(d.input), ...(d.plans && { plans: d.plans.map((p) => ({ ...p, input: open(p.input) })) }), readOnly: true }
 }
 
 /** Dates and number of stops, for the trip list. */

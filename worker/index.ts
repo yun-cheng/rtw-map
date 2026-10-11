@@ -5,6 +5,8 @@
 //   GET  /api/trips                the user's saved trips (summaries) and the one opened last
 //   POST /api/trips                create a trip
 //   GET|PUT|DELETE /api/trips/:id  open, save or delete a trip
+//   POST|DELETE /api/trips/:id/share  turn a trip's public link on (its token) or off
+//   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
@@ -17,7 +19,7 @@ import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parse
 import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
 import { Account, BUSY } from './account'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
-import { parseTripPatch } from './trips'
+import { isShareToken, parseTripPatch } from './trips'
 
 export { Account }
 
@@ -296,7 +298,50 @@ async function adminLimits(request: Request, env: Env): Promise<Response> {
   return json(list(limits))
 }
 
+/** A trip's public link: on (POST, its token) or off (DELETE), by its owner. */
+async function share(request: Request, env: Env, id: string): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  if (request.method === 'POST') {
+    const token = await store.shareTrip(id)
+    if (!token) return json({ error: 'Trip not found' }, 404)
+    await settings(env).addShare(token, user.sub, id)
+    return json({ share: token })
+  }
+  if (request.method === 'DELETE') {
+    const token = await store.unshareTrip(id)
+    if (token) await settings(env).removeShare(token)
+    return json({ share: null })
+  }
+  return json({ error: 'Not found' }, 404)
+}
+
+/** A shared trip, for anyone with its link: read-only, without the owner's notes, wishes and chat. */
+async function shared(request: Request, env: Env, token: string): Promise<Response> {
+  const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
+  if (!(await env.SAVE_LIMIT.limit({ key: `shared:${ip}` })).success) return json({ error: 'Too many requests: wait a moment.' }, 429)
+  const gone = () => json({ error: 'This trip isn\'t shared any more, or the link is wrong.' }, 404)
+  if (!isShareToken(token)) return gone()
+  const owner = await settings(env).findShare(token)
+  if (!owner) return gone()
+  const trip = await account(env, { sub: owner.sub }).sharedTrip(owner.tripId, token)
+  if (!trip) {
+    // The link was turned off or the trip deleted: forget it.
+    await settings(env).removeShare(token)
+    return gone()
+  }
+  return json(trip)
+}
+
 async function api(request: Request, env: Env, pathname: string): Promise<Response> {
+  const sharedPath = pathname.match(/^\/api\/shared\/([\w-]{1,64})$/)
+  if (sharedPath && request.method === 'GET') return shared(request, env, sharedPath[1])
+  const sharePath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/share$/)
+  if (sharePath) {
+    if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return share(request, env, sharePath[1])
+  }
   if (pathname === '/api/admin/limits') {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return adminLimits(request, env)

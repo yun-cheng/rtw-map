@@ -4,6 +4,8 @@ import { shortDate } from '../ui/format'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
 import { ThemeMenu } from './ThemeMenu'
+import { SHARED_TOKEN } from '../store/shareLink'
+import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
 
 export function Header() {
@@ -16,7 +18,7 @@ export function Header() {
         <img src="/favicon.svg" alt="" className="h-5 w-5" />
         rtw-map
       </div>
-      <TripSwitcher />
+      {SHARED_TOKEN ? <SharedTitle /> : <TripSwitcher />}
       {plan && (
         <div className="flex min-w-0 items-center gap-4 overflow-hidden text-[13px] whitespace-nowrap">
           <span>{shortDate(input.startDate)} – {shortDate(input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
@@ -45,7 +47,7 @@ export function Header() {
           ))}
         </div>
         <ThemeMenu />
-        <div className="ml-1.5"><AccountMenu /></div>
+        {!SHARED_TOKEN && <div className="ml-1.5"><AccountMenu /></div>}
       </div>
     </header>
   )

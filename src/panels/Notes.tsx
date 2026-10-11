@@ -1,7 +1,8 @@
 // The user's own notes on a city or a journey (the trip's `notes`, store/tripCore.ts): for the trip, whichever plan is
-// shown, also on a read-only trip, and private.
+// shown, also on a read-only trip, and private (never in a shared trip).
 import { Check, Pencil, StickyNote } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { MAX_NOTE_CHARS, useTrip } from '../store/trip'
 import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
@@ -17,6 +18,8 @@ export function NoteBox({ kind, id, placeholder, tall }: { kind: 'cities' | 'leg
   const note = useTrip((s) => s.notes[kind]?.[id] ?? '')
   const setNote = useTrip((s) => s.setNote)
   const [editing, setEditing] = useState(false)
+  // Someone else's shared trip: its notes are the owner's own, and aren't in it.
+  if (SHARED_TOKEN) return null
   const writing = editing || !note.trim()
   const button = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
   return (

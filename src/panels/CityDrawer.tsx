@@ -15,6 +15,7 @@ import { CostDay } from './CostDay'
 import { Forecast } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { NoteBox } from './Notes'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
 
@@ -584,7 +585,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     Number(!!b.problem) - Number(!!a.problem) || Number(!!b.warn) - Number(!!a.warn) ||
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
-  const tabInfo = TABS.find((t) => t.key === cityTab) ?? TABS[0]
+  // (Someone else's shared trip has no notes.)
+  const tabs = SHARED_TOKEN ? TABS.filter((t) => t.key !== 'notes') : TABS
+  const tabInfo = tabs.find((t) => t.key === cityTab) ?? tabs[0]
   const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
   // Keep the open tab in view when the tab bar scrolls sideways (only the bar: scrollIntoView would also scroll the
   // panel, e.g. while a phone's sheet is still opening).
@@ -624,7 +627,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         </div>
         <nav ref={tabBar.ref} style={tabBar.mask} className="no-scrollbar -mx-4 -mb-px mt-2 flex gap-1 overflow-x-auto overflow-y-hidden scroll-px-4 px-3" role="tablist" aria-label="City information">
           {/* Icons; the open tab also has its name, the others name themselves on hover. */}
-          {TABS.map((t) => {
+          {tabs.map((t) => {
             const active = t.key === tabInfo.key
             return (
               <button

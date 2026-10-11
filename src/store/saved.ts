@@ -8,9 +8,10 @@ import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
 import { newTripInput, useTrip, type TripData } from './trip'
+import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
 
-export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number }
+export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share?: string | null }
 type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
 
 type SavedState = {
@@ -23,6 +24,8 @@ type SavedState = {
   create: (name: string) => Promise<void>
   rename: (id: string, name: string) => Promise<void>
   remove: (id: string) => Promise<void>
+  /** Turns the trip's public link on or off (anyone with it sees the trip read-only, without the notes and chat). */
+  setShared: (id: string, on: boolean) => Promise<void>
 }
 
 const SAVE_DELAY_MS = 1200
@@ -127,6 +130,15 @@ export const useSaved = create<SavedState>()((set, get) => {
     rename: async (id, name) => {
       try {
         upsert(await call('PUT', `/api/trips/${id}`, { name }))
+      } catch (e) {
+        set({ status: 'error', error: (e as Error).message })
+      }
+    },
+
+    setShared: async (id, on) => {
+      try {
+        const { share } = (await call(on ? 'POST' : 'DELETE', `/api/trips/${id}/share`)) as { share: string | null }
+        set({ trips: get().trips.map((t) => (t.id === id ? { ...t, share } : t)) })
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
       }
@@ -330,7 +342,8 @@ function signedOut() {
 }
 
 useAccount.subscribe((s, prev) => {
-  if (s.user?.sub === prev.user?.sub) return
+  // A shared trip's page shows that trip only: the visitor's own trips stay as they are.
+  if (SHARED_TOKEN || s.user?.sub === prev.user?.sub) return
   if (s.user) void signedIn()
   else if (prev.user) signedOut()
 })

@@ -1,9 +1,11 @@
 import { Sparkles } from 'lucide-react'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 
 /** "Ask AI" in a city or journey panel's header: opens the Assistant, which already sees what the panel shows. */
 export function AskButton() {
   const askAssistant = useTrip((s) => s.askAssistant)
+  if (SHARED_TOKEN) return null
   return (
     <button
       onClick={askAssistant}

@@ -3,7 +3,7 @@ import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, ver
 import { isNewMessage } from './chat'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
-import { parseTripPatch, summarize, TRIP_LIMITS } from './trips'
+import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)))
@@ -170,6 +170,25 @@ describe('saved trips', () => {
     expect(data.notes.legs['a>b']).toHaveLength(TRIP_LIMITS.noteChars)
     expect(data.notes).not.toHaveProperty('other')
     expect(JSON.parse((parseTripPatch({ data: { input: {}, stops: [], notes: { cities: { a: 1 } } } }) as { data: string }).data)).not.toHaveProperty('notes')
+  })
+
+  it('shares a trip read-only, without the notes and the wishes for the assistant', () => {
+    const data = JSON.stringify({
+      input: { pace: 'fast', wishes: 'meet Ana in Vienna' }, stops: [{ cityId: 'vienna' }],
+      plans: [{ id: 'a', name: 'Plan A', input: { pace: 'fast', wishes: 'meet Ana in Vienna' }, stops: [] }], activePlanId: 'a',
+      notes: { cities: { vienna: 'Ana: +43 …' } },
+    })
+    const shared = publicTripData(data) as Record<string, unknown>
+    expect(shared).toMatchObject({ input: { pace: 'fast' }, stops: [{ cityId: 'vienna' }], activePlanId: 'a', readOnly: true })
+    expect(JSON.stringify(shared)).not.toMatch(/Ana/)
+    expect(publicTripData(null)).toBeNull()
+  })
+
+  it('makes unguessable link tokens', () => {
+    const a = shareToken()
+    expect(isShareToken(a)).toBe(true)
+    expect(a).not.toBe(shareToken())
+    expect(isShareToken('../trips')).toBe(false)
   })
 
   it('rejects empty names, malformed trips and oversized data', () => {

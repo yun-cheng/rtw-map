@@ -4,6 +4,7 @@ import { evaluatePlan, type Plan } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type TripPlan } from '../store/trip'
 import { cityName, duration } from '../ui/format'
 import { useMoney } from '../ui/useMoney'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { ReadOnlyToggle } from './ReadOnly'
 
 /**
@@ -48,7 +49,7 @@ export function PlanBar() {
               Compare
             </button>
           )}
-          <ReadOnlyToggle />
+          {!SHARED_TOKEN && <ReadOnlyToggle />}
         </div>
       </div>
       {menu && !readOnly && <PlanMenu plan={plans.find((p) => p.id === activePlanId)!} canDelete={plans.length > 1} onClose={() => setMenu(false)} />}

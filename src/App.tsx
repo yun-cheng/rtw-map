@@ -11,8 +11,10 @@ import { LegDrawer } from './panels/LegDrawer'
 import { PlanBar } from './panels/PlanBar'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { SetupPanel } from './panels/SetupPanel'
+import { SharedGone } from './panels/SharedTrip'
 import { Timeline } from './panels/Timeline'
 import { useUndoKeys } from './store/history'
+import { SHARED_TOKEN } from './store/shareLink'
 import { planMark, useTrip } from './store/trip'
 import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { HoverTip, type Tip } from './ui/HoverTip'
@@ -21,6 +23,8 @@ import { usePhone } from './ui/usePhone'
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', assistant: 'Assistant' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
 const TAB_ICONS: Record<keyof typeof TAB_LABELS, LucideIcon> = { setup: MapIcon, itinerary: ListOrdered, assistant: Sparkles }
+/** The left panel's tabs: a shared trip's page has no assistant (it's someone else's trip). */
+const TABS = SHARED_TOKEN ? (['setup', 'itinerary'] as const) : (['setup', 'itinerary', 'assistant'] as const)
 
 /** Whether the user folded the left panel away, remembered in this browser. */
 const COLLAPSED_KEY = 'rtw-map-sidebar-collapsed'
@@ -80,7 +84,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
   return (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
-        {(['setup', 'itinerary', 'assistant'] as const).map((t) => {
+        {TABS.map((t) => {
           // Each with its icon and name.
           const Icon = TAB_ICONS[t]
           return (
@@ -115,7 +119,8 @@ function LeftPanel({ tab, peek, onHide }: { tab: keyof typeof TAB_LABELS; peek?:
 
 export default function App() {
   const { panel, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTrip()
-  const tab = plan || panel === 'assistant' ? panel : 'setup'
+  const asked = SHARED_TOKEN && panel === 'assistant' ? 'itinerary' : panel
+  const tab = plan || asked === 'assistant' ? asked : 'setup'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
   const picking = useTrip((s) => s.picking)
@@ -169,6 +174,7 @@ export default function App() {
 
   return (
     <div className="flex h-full flex-col">
+      <SharedGone />
       {!phone && <Header />}
       <div className="flex min-h-0 flex-1">
         {!phone && sidebar.hidden && (
@@ -181,7 +187,7 @@ export default function App() {
               <ChevronsRight size={16} />
             </button>
             <div className="my-0.5 h-px w-6 bg-line" />
-            {(['setup', 'itinerary', 'assistant'] as const).map((t) => {
+            {TABS.map((t) => {
               const Icon = TAB_ICONS[t]
               return (
                 <button

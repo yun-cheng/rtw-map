@@ -9,6 +9,8 @@ import { useTheme, type ThemeChoice } from '../ui/theme'
 import { useMoney } from '../ui/useMoney'
 import { AccountLimits } from './AccountLimits'
 import { AccountDetails, AccountMenu } from './AccountMenu'
+import { SHARED_TOKEN } from '../store/shareLink'
+import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
 
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
@@ -50,7 +52,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <Sections>
             <Section title="Trip">
-              <div className="flex flex-wrap items-center gap-2"><TripSwitcher /></div>
+              <div className="flex flex-wrap items-center gap-2">{SHARED_TOKEN ? <SharedTitle /> : <TripSwitcher />}</div>
               {plan && <p className="mt-2 text-[13px] text-muted">{shortDate(input.startDate)} – {shortDate(input.endDate)} · {plan.totalNights} nights · {plan.stops.length} stops</p>}
             </Section>
             <Section title="Display">
@@ -75,7 +77,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                 </div>
               </div>
             </Section>
-            {user ? (
+            {SHARED_TOKEN ? null : user ? (
               // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
               <Section title="Account">
                 <div className="-mx-4 -mb-3 overflow-hidden rounded-b-xl">
