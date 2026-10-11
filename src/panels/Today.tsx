@@ -11,7 +11,7 @@ import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CheckNotes, legWarnings, stopWarnings } from './Checks'
 import { tabOf, type SectionKey } from './cityTabs'
-import { fetchForecast, sky, type ForecastDay } from './Forecast'
+import { fetchForecast, savedNote, sky, type CityForecast } from './Forecast'
 import { NoteBox } from './Notes'
 
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -188,24 +188,24 @@ function OpenTab({ cityId, section, label, chip }: { cityId: string; section: Se
 
 /** A day's forecast in a city: the sky, the high and low (as felt, when that's the setting) and the chance of rain. */
 function DayWeather({ cityId, date, label }: { cityId: string; date: string; label: string }) {
-  const [days, setDays] = useState<ForecastDay[] | null | 'failed'>(null)
+  const [forecast, setForecast] = useState<CityForecast | null | 'failed'>(null)
   const feels = useTrip((s) => s.tempFeels)
   const { t } = useTemp()
   useEffect(() => {
     let live = true
-    setDays(null)
-    fetchForecast(cityId).then((d) => live && setDays(d), () => live && setDays('failed'))
+    setForecast(null)
+    fetchForecast(cityId).then((f) => live && setForecast(f), () => live && setForecast('failed'))
     return () => { live = false }
   }, [cityId])
   // (By the city's own dates: Open-Meteo's days are in its time zone.)
-  const d = Array.isArray(days) ? days.find((x) => x.date === date) : null
+  const d = forecast && forecast !== 'failed' ? forecast.days.find((x) => x.date === date) : null
   const [icon, words] = d ? sky(d.code) : ['', '']
   const asFelt = feels && d?.feelsHigh != null && d.feelsLow != null
   return (
     <div className="min-w-0">
       <div className="truncate text-[12px] text-muted">{label}</div>
-      {days === null && <div className="mt-1 h-12 animate-pulse rounded-md bg-canvas" aria-label="Loading the forecast" />}
-      {days !== null && !d && <p className="mt-1 text-[12px] text-muted">{days === 'failed' ? "Couldn't load the forecast." : 'No forecast for this day.'}</p>}
+      {forecast === null && <div className="mt-1 h-12 animate-pulse rounded-md bg-canvas" aria-label="Loading the forecast" />}
+      {forecast !== null && !d && <p className="mt-1 text-[12px] text-muted">{forecast === 'failed' ? "Couldn't load the forecast." : 'No forecast for this day.'}</p>}
       {d && (
         <div className="mt-0.5 flex items-center gap-2" title={words}>
           <span className="text-[26px] leading-none" aria-hidden>{icon}</span>
@@ -217,6 +217,7 @@ function DayWeather({ cityId, date, label }: { cityId: string; date: string; lab
           </div>
         </div>
       )}
+      {d && forecast !== 'failed' && forecast?.savedOn && <p className="mt-0.5 text-[11px] text-muted">{savedNote(forecast.savedOn)}</p>}
     </div>
   )
 }
