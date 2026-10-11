@@ -70,7 +70,8 @@ export function Itinerary() {
               >
                 <span
                   className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full font-semibold text-white tabular-nums ${day >= 100 ? 'text-[9.5px]' : 'text-[11px]'}`}
-                  style={{ background: STOP_COLOR }}
+                  // Grey once left, as on the map.
+                  style={{ background: time === 'done' ? 'var(--color-done)' : STOP_COLOR }}
                   title={`Arrive on day ${day} of the trip`}
                 >
                   {day}

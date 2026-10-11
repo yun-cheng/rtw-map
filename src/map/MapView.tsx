@@ -6,7 +6,7 @@ import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { citiesIn, tripDay, type TripInput } from '../planner'
+import { citiesIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
@@ -75,6 +75,14 @@ function drawRing(id: string, theme: Theme): ImageData | null {
   return ctx.getImageData(0, 0, canvas.width, canvas.height)
 }
 
+// A trip under way (planner/travel.ts): today's stop gets a halo, pulsing out from the circle like the Travelling chip's
+// dot (still when the system asks for less motion). In the Route view the stops already left and the journeys already made are grey, and the next journey
+// is drawn thicker.
+const PULSE_MS = 2000
+const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+/** The halo's size past the circle and its opacity, `t` of the way through a pulse. */
+const pulse = (t: number) => ({ grow: 3 + 11 * t, opacity: 0.45 * (1 - t) })
+
 /** Load the base map for the theme, with its labels as set (baseLabels.ts); the dark one is recoloured as it loads. */
 function showBaseMap(map: MlMap, theme: Theme) {
   map.setStyle(STYLE[theme], {
@@ -89,7 +97,7 @@ const FONT = ['Noto Sans Bold']
 /** Width of the city/leg panel that covers the right of the map (App.tsx). */
 const CITY_LAYERS = ['stop-circles', 'city-dots']
 const ROUTE_LAYERS = ['route-solid', 'route-dashed']
-const STOP_LAYERS = ['stop-rain', 'stop-circles', 'stop-numbers', 'stop-names', 'stop-boxes']
+const STOP_LAYERS = ['stop-halo', 'stop-rain', 'stop-circles', 'stop-numbers', 'stop-names', 'stop-boxes']
 /** The country or region pointed at (on the map while adding places, or in the Trip tab's list): blue, unlike the
  *  trip's own colours. */
 const HOVER_COLOR = 'rgba(59,130,246,0.55)'
@@ -161,12 +169,13 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       map.addLayer({
         id: 'route-solid', type: 'line', source: 'route', filter: ['!', ['get', 'estimated']],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
-        paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'selected'], 6, 3.5] },
+        // Thicker for the next journey on a trip under way, thinner for those already made.
+        paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'selected'], 6, ['get', 'next'], 5.5, ['get', 'done'], 2.5, 3.5] },
       })
       map.addLayer({
         id: 'route-dashed', type: 'line', source: 'route', filter: ['get', 'estimated'],
         layout: { 'line-cap': 'round' },
-        paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'selected'], 6, 3], 'line-dasharray': [1.5, 1.5] },
+        paint: { 'line-color': ['get', 'color'], 'line-width': ['case', ['get', 'selected'], 6, ['get', 'next'], 5, ['get', 'done'], 2.5, 3], 'line-dasharray': [1.5, 1.5] },
       })
       map.addLayer({
         id: 'city-dots', type: 'circle', source: 'cities',
@@ -175,6 +184,14 @@ export function MapView({ editing = false }: { editing?: boolean }) {
           'circle-color': ['case', ['has', 'color'], ['get', 'color'], ink.dot],
           'circle-stroke-color': ink.outline,
           'circle-stroke-width': 1,
+        },
+      })
+      map.addLayer({
+        id: 'stop-halo', type: 'circle', source: 'stops', filter: ['==', ['get', 'time'], 'now'],
+        paint: {
+          'circle-radius': ['+', ['get', 'radius'], pulse(0.5).grow],
+          'circle-color': ['case', ['has', 'color'], ['get', 'color'], STOP_COLOR],
+          'circle-opacity': pulse(0.5).opacity,
         },
       })
       map.addLayer({
@@ -274,6 +291,24 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     return () => map.remove()
   }, [])
 
+  // Today's halo pulses while there's one to show (only on a trip under way, and still for less motion).
+  const hasNow = !!plan && !editing && isTravelling(input, localToday())
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !hasNow || calm()) return
+    let frame = 0
+    const tick = (time: number) => {
+      if (loaded.current && map.getLayer('stop-halo')) {
+        const { grow, opacity } = pulse((time % PULSE_MS) / PULSE_MS)
+        map.setPaintProperty('stop-halo', 'circle-radius', ['+', ['get', 'radius'], grow])
+        map.setPaintProperty('stop-halo', 'circle-opacity', opacity)
+      }
+      frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [hasNow])
+
   // Switch the base map with the light/dark theme.
   useEffect(() => {
     const map = mapRef.current
@@ -310,6 +345,11 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       // legend's switch), and sizes them by the nights; the weather, air and mobile views show their value; the
       // others leave the circle plain. Outside the Route view all stops are one size, big enough for the longest
       // number.
+      // A trip under way: each stop left, today's or ahead (as the itinerary marks them), and the next journey.
+      const today = localToday()
+      const travelling = !!plan && isTravelling(input, today)
+      const times = (plan?.stops ?? []).map((s) => (travelling ? stopTime(s, today) : null))
+      const nowAt = times.indexOf('now')
       const stops = (plan?.stops ?? []).map((s) => {
         const metrics = metric(s.cityId)
         const day = tripDay(input.startDate, s.arrive)
@@ -323,8 +363,11 @@ export function MapView({ editing = false }: { editing?: boolean }) {
           routeEnds.set(a, [...(routeEnds.get(a) ?? []), [ds.cities[b].lon, ds.cities[b].lat]])
         }
       }
-      const stopFeatures = stops.map(({ s, metrics, text }) => {
-        const { color, rain } = metrics
+      const stopFeatures = stops.map(({ s, metrics, text }, i) => {
+        const time = times[i]
+        // (Other views keep their colours: they're what the view shows.)
+        const color = time === 'done' && layer === 'none' ? INK[shownTheme.current].route : metrics.color
+        const { rain } = metrics
         const c = ds.cities[s.cityId]
         const radius = layer === 'none' ? half(Math.max(fitRadius(text), 7 + 1.2 * Math.sqrt(s.nights))) : sameRadius
         const isSelected = selected?.type === 'city' && selected.id === c.id
@@ -334,6 +377,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
           id: c.id, name: c.name, text, textSize: textSize(text), nights: s.nights, radius,
           anchors: labelAnchors(c.id, radius, routeEnds),
           selected: isSelected,
+          ...(time ? { time } : {}),
           tip: JSON.stringify(stopTip(input.startDate, s, metrics)),
         })
       })
@@ -348,21 +392,24 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       // The Route view colours each hop by how you travel and dashes estimated ones (legend in MapControls); the
       // other views draw the route plainly so it doesn't compete with their own colours.
       const byMode = layer === 'none'
-      const routeFeatures = (plan?.legs ?? []).flatMap((leg, li) =>
-        leg.hops.map((h) => ({
+      const routeFeatures = (plan?.legs ?? []).flatMap((leg, li) => {
+        // A journey is made once the stop it leads to has begun; the next one leaves today's stop.
+        const done = byMode && (times[li + 1] === 'now' || times[li + 1] === 'done')
+        const next = byMode && nowAt >= 0 && li === nowAt
+        return leg.hops.map((h) => ({
           type: 'Feature' as const,
           properties: {
-            leg: li, selected: selected?.type === 'leg' && selected.index === li,
-            color: byMode ? MODE_COLOR[h.mode] ?? INK[shownTheme.current].route : INK[shownTheme.current].route,
+            leg: li, selected: selected?.type === 'leg' && selected.index === li, done, next,
+            color: byMode && !done ? MODE_COLOR[h.mode] ?? INK[shownTheme.current].route : INK[shownTheme.current].route,
             estimated: byMode && h.estimated,
           },
           geometry: { type: 'LineString' as const, coordinates: [[ds.cities[h.from].lon, ds.cities[h.from].lat], [ds.cities[h.to].lon, ds.cities[h.to].lat]] },
-        })),
-      )
+        }))
+      })
       // From home and back (set in the Trip tab's preferences): drawn dashed, not clickable (leg -1), and left out when fitting the map.
       const homeFeatures = [plan?.home.out, plan?.home.back].flatMap((leg) => (leg ? leg.hops : [])).map((h) => ({
         type: 'Feature' as const,
-        properties: { leg: -1, selected: false, color: INK[shownTheme.current].route, estimated: true },
+        properties: { leg: -1, selected: false, done: false, next: false, color: INK[shownTheme.current].route, estimated: true },
         geometry: { type: 'LineString' as const, coordinates: [[ds.cities[h.from].lon, ds.cities[h.from].lat], [ds.cities[h.to].lon, ds.cities[h.to].lat]] },
       }))
       ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [...homeFeatures, ...routeFeatures] })

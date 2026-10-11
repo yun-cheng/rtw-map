@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { addDays, daysBetween, monthOf } from '../planner'
+import { addDays, daysBetween, isTravelling, localToday, monthOf, stopTime } from '../planner'
 import { useTrip } from '../store/trip'
 import { cityMetrics, stopTip, tipText, type TipContent } from '../map/cityMetric'
 import { MONTHS, STOP_COLOR } from '../ui/format'
@@ -35,6 +35,9 @@ export function Timeline() {
   const start = input.startDate
   const total = Math.max(1, daysBetween(start, input.endDate))
   const pct = (d: number) => `${(d / total) * 100}%`
+  // A trip under way: the stops already left are grey in the Route view, as on the map (other views keep their colours).
+  const today = localToday()
+  const past = (s: (typeof plan.stops)[number]) => layer === 'none' && isTravelling(input, today) && stopTime(s, today) === 'done'
 
   // Month boundaries inside the trip
   const months: { offset: number; label: string }[] = []
@@ -69,7 +72,7 @@ export function Timeline() {
                     onMouseEnter={showTip(barTip(stopTip(input.startDate, s, m)))}
                     onMouseLeave={hideTip}
                     className={`absolute top-0 h-9 overflow-hidden rounded-sm border-r-2 border-panel px-1 text-left text-[11px] leading-9 font-medium whitespace-nowrap text-white ${isSel ? 'ring-2 ring-ink ring-offset-1' : ''}`}
-                    style={{ left: pct(from), width: pct(s.nights), background: m.color ?? STOP_COLOR, textShadow: '0 0 3px rgb(0 0 0 / 0.45)' }}
+                    style={{ left: pct(from), width: pct(s.nights), background: past(s) ? 'var(--color-done)' : m.color ?? STOP_COLOR, textShadow: '0 0 3px rgb(0 0 0 / 0.45)' }}
                   >
                     {city.name}
                   </button>
