@@ -8,8 +8,11 @@ const STATUS: Record<string, { text: string; className: string }> = {
   saving: { text: 'Saving…', className: 'text-muted' },
   saved: { text: 'Saved', className: 'text-muted' },
   loading: { text: 'Loading…', className: 'text-muted' },
+  offline: { text: 'Offline · saved on this device', className: 'text-muted' },
   error: { text: 'Not saved', className: 'text-danger' },
 }
+const OFFLINE_TIP = "No connection: your changes are kept on this device and saved to your account when you're back online"
+
 
 const tripLine = (t: TripSummary) =>
   [t.startDate && t.endDate ? `${shortDate(t.startDate)} – ${shortDate(t.endDate)} ${t.endDate.slice(0, 4)}` : null, t.stops ? `${t.stops} stops` : 'not planned yet']
@@ -20,6 +23,7 @@ const tripLine = (t: TripSummary) =>
 export function TripSwitcher() {
   const user = useAccount((s) => s.user)
   const loaded = useAccount((s) => s.loaded)
+  const offline = useAccount((s) => s.offline)
   const { trips, activeId, status, error, open: openTrip, create, rename, remove } = useSaved()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<'new' | 'rename' | 'share' | null>(null)
@@ -40,6 +44,8 @@ export function TripSwitcher() {
   }, [open])
 
   if (!loaded) return null
+  // Offline from the start: the account's trip as kept on this device (not knowing yet whether still signed in).
+  if (!user && offline && activeId) return <span className="shrink-0 text-[12px] text-muted" title={OFFLINE_TIP}>{status === 'offline' ? STATUS.offline.text : 'Offline'}</span>
   if (!user) {
     return <span className="shrink-0 text-[12px] text-muted" title="Sign in (top right) to save trips to your account, keep several and use them on any device">Saved in this browser only</span>
   }
@@ -68,7 +74,7 @@ export function TripSwitcher() {
         <span className="truncate">{active?.name ?? 'Trips'}</span>
         <span className="text-muted">▾</span>
       </button>
-      {s && <span className={`text-[12px] ${s.className}`} title={status === 'error' ? `${error ?? ''} — your changes will be saved on the next edit` : undefined}>{s.text}</span>}
+      {s && <span className={`text-[12px] ${s.className}`} title={status === 'error' ? `${error ?? ''} — your changes will be saved on the next edit` : status === 'offline' ? OFFLINE_TIP : undefined}>{s.text}</span>}
 
       {open && (
         <div role="menu" className="absolute top-full left-0 z-30 mt-1 w-72 rounded-lg border border-line bg-panel py-1.5 text-[13px] shadow-lg">

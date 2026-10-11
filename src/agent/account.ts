@@ -37,6 +37,9 @@ export function setSeenMultiple(sub: string, multiple: number) {
 
 type AccountState = {
   loaded: boolean
+  /** The server couldn't be reached (no connection): signed in or not is unknown until it can be (tried again when
+   *  the connection comes back). */
+  offline: boolean
   /** OAuth client ID for "Sign in with Google"; null when sign-in isn't set up on the server. */
   clientId: string | null
   user: User | null
@@ -56,6 +59,7 @@ const post = (url: string, body?: unknown) =>
 
 export const useAccount = create<AccountState>()((set) => ({
   loaded: false,
+  offline: false,
   clientId: null,
   user: null,
   admin: false,
@@ -63,12 +67,17 @@ export const useAccount = create<AccountState>()((set) => ({
   error: null,
 
   load: async () => {
+    let res: Response
     try {
-      const res = await fetch('/api/session')
-      const data = await res.json()
-      set({ loaded: true, clientId: data.clientId || null, user: data.user, admin: data.admin === true, usage: data.usage, error: null })
+      res = await fetch('/api/session')
     } catch {
-      set({ loaded: true, error: 'The assistant is not reachable right now.' })
+      return set({ loaded: true, offline: true, error: null })
+    }
+    try {
+      const data = await res.json()
+      set({ loaded: true, offline: false, clientId: data.clientId || null, user: data.user, admin: data.admin === true, usage: data.usage, error: null })
+    } catch {
+      set({ loaded: true, offline: false, error: 'The assistant is not reachable right now.' })
     }
   },
 
@@ -88,6 +97,16 @@ export const useAccount = create<AccountState>()((set) => ({
   setUsage: (usage) => set({ usage }),
   signedOut: () => set({ user: null, admin: false, usage: null }),
 }))
+
+// Offline at the start: ask again when the connection is back (or the app comes back to the front, as a phone's may
+// have been away meanwhile).
+if (typeof window !== 'undefined') {
+  const retry = () => {
+    if (useAccount.getState().offline && navigator.onLine) void useAccount.getState().load()
+  }
+  window.addEventListener('online', retry)
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && retry())
+}
 
 // ---------------------------------------------------------------- "Sign in with Google" (Google Identity Services)
 

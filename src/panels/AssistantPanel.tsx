@@ -4,6 +4,7 @@ import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
 import { viewItems, type ViewItem } from '../agent/view'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
+import { useOnline } from '../ui/useOnline'
 import { useTheme } from '../ui/theme'
 
 const EXAMPLES = [
@@ -200,8 +201,9 @@ function UsageLine({ usage }: { usage: Usage }) {
 
 /** The assistant tab: sign-in first, then the chat. */
 export function AssistantPanel() {
-  const { loaded, user } = useAccount()
+  const { loaded, user, offline } = useAccount()
   if (!loaded) return <p className="px-4 py-4 text-[13px] text-muted">Loading…</p>
+  if (!user && offline) return <p className="px-4 py-4 text-[13px] text-muted">You're offline. The assistant needs a connection: it's back when you are.</p>
   return user ? <Chat /> : <SignIn />
 }
 
@@ -210,6 +212,7 @@ function Chat() {
   const usage = useAccount((s) => s.usage)
   const sub = useAccount((s) => s.user?.sub)
   const outOfAllowance = usage?.remaining === 0
+  const online = useOnline()
   const turnedOff = usage?.multiple === 0
   // Tell the user once when their account's allowance was raised (lowering it needs no notice).
   const multiple = usage?.multiple ?? 1
@@ -247,7 +250,7 @@ function Chat() {
   }, [messages.length, busy])
 
   const submit = (text = draft) => {
-    if (!text.trim() || busy || outOfAllowance) return
+    if (!text.trim() || busy || outOfAllowance || !online) return
     setDraft('')
     void send(text, shared)
   }
@@ -336,6 +339,7 @@ function Chat() {
             })}
           />
         )}
+        {!online && <p className="mb-1.5 text-[12px] text-muted">You're offline: the assistant needs a connection.</p>}
         <textarea
           data-assistant-input
           value={draft}
@@ -359,7 +363,7 @@ function Chat() {
           {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
           {busy
             ? <Button className="ml-auto" onClick={stop}>■ Stop</Button>
-            : <Button variant="primary" className="ml-auto" disabled={!draft.trim() || outOfAllowance} onClick={() => submit()}>Send</Button>}
+            : <Button variant="primary" className="ml-auto" disabled={!draft.trim() || outOfAllowance || !online} onClick={() => submit()}>Send</Button>}
         </div>
       </div>
     </div>

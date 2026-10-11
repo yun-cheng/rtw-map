@@ -3,6 +3,8 @@
 // The assistant answers messages about a saved trip on the server (/api/runs), so they finish with the page closed;
 // the page follows the run, showing the trip as it changes, and picks it up again when the trip is opened.
 // Signed out, the app keeps one trip in this browser only (store/trip.ts persists it locally).
+// Offline, the trip on screen is the one kept in the browser: edits are marked unsaved (in the browser too, so a
+// reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
 import { create } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
@@ -12,7 +14,7 @@ import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
 
 export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share?: string | null }
-type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
+type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'offline' | 'error'
 
 type SavedState = {
   trips: TripSummary[]
@@ -31,9 +33,15 @@ type SavedState = {
 const SAVE_DELAY_MS = 1200
 /** Remembers which saved trip this browser shows, so a reload doesn't copy the local trip into a new one. */
 const ACTIVE_KEY = 'rtw-map-active-trip'
+/** The saved trip with edits on this device not yet on the server (made offline, or a save that failed). */
+const UNSAVED_KEY = 'rtw-map-unsaved'
+
+/** A request that didn't reach the server (no connection). */
+class Offline extends Error {}
 
 const call = async (method: string, url: string, body?: unknown) => {
   const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
+    .catch(() => { throw new Offline('No connection') })
   const data = await res.json().catch(() => null)
   if (res.status === 401) useAccount.getState().signedOut()
   if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status})`)
@@ -61,6 +69,25 @@ const remember = (id: string | null) => {
 const remembered = () => {
   try {
     return localStorage.getItem(ACTIVE_KEY)
+  } catch {
+    return null
+  }
+}
+/** Edits on screen not yet saved: `dirty`, kept in the browser for the trip they belong to. */
+let dirty = false
+function setDirty(on: boolean) {
+  dirty = on
+  const id = useSaved.getState().activeId
+  try {
+    if (on && id) localStorage.setItem(UNSAVED_KEY, id)
+    else localStorage.removeItem(UNSAVED_KEY)
+  } catch {
+    // Storage unavailable: the edits are still sent while the page stays open.
+  }
+}
+const unsaved = () => {
+  try {
+    return localStorage.getItem(UNSAVED_KEY)
   } catch {
     return null
   }
@@ -172,22 +199,25 @@ async function flush() {
   timer = undefined
   const id = useSaved.getState().activeId
   if (!id || !dirty) return
+  // (Offline from the start: sent once the account is reached again, see signedIn.)
+  if (useAccount.getState().offline) return useSaved.setState({ status: 'offline' })
   dirty = false
   useSaved.setState({ status: 'saving' })
   try {
     const saved: TripSummary = await call('PUT', `/api/trips/${id}`, { data: tripData(), chat: chatData() })
+    if (!dirty) setDirty(false)
     useSaved.setState((s) => ({ status: dirty ? 'saving' : 'saved', error: null, trips: [saved, ...s.trips.filter((t) => t.id !== saved.id)] }))
   } catch (e) {
-    dirty = true
-    useSaved.setState({ status: 'error', error: (e as Error).message })
+    setDirty(true)
+    useSaved.setState(e instanceof Offline ? { status: 'offline', error: null } : { status: 'error', error: (e as Error).message })
   }
 }
 
-let dirty = false
 function changed() {
   // (While the assistant answers on the server, the trip is the run's: edits on screen are replaced by its changes.)
   if (applying || !useSaved.getState().activeId || useChat.getState().runId) return
-  dirty = true
+  setDirty(true)
+  if (useAccount.getState().offline) return useSaved.setState({ status: 'offline' })
   useSaved.setState({ status: 'saving' })
   clearTimeout(timer)
   timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
@@ -203,6 +233,8 @@ useChat.subscribe((s, prev) => {
 
 // Don't lose the last edit when the page closes.
 if (typeof window !== 'undefined') {
+  // A save that failed for want of a connection: send it when the connection is back.
+  window.addEventListener('online', () => void flush())
   window.addEventListener('pagehide', () => {
     const id = useSaved.getState().activeId
     if (!id || !dirty) return
@@ -313,6 +345,11 @@ async function signedIn() {
     const { trips, lastId } = (await call('GET', '/api/trips')) as { trips: TripSummary[]; lastId: string | null }
     useSaved.setState({ trips })
     const local = remembered()
+    // Edits made on this device while offline (or before a reload): sent first, so reloading the trip keeps them.
+    if (local && unsaved() === local && trips.some((t) => t.id === local)) {
+      useSaved.setState({ activeId: local })
+      dirty = true
+    }
     if (local && trips.some((t) => t.id === local)) {
       // This browser already shows a saved trip: keep it on screen (it may have unsaved edits) and refresh from the server.
       await useSaved.getState().open(local, true)
@@ -332,7 +369,7 @@ async function signedIn() {
 /** After sign-out: forget the account's trips and clear this browser (it may be shared). */
 function signedOut() {
   clearTimeout(timer)
-  dirty = false
+  setDirty(false)
   remember(null)
   useSaved.setState({ trips: [], activeId: null, status: 'idle', error: null })
   applying = true
@@ -343,7 +380,15 @@ function signedOut() {
 
 useAccount.subscribe((s, prev) => {
   // A shared trip's page shows that trip only: the visitor's own trips stay as they are.
-  if (SHARED_TOKEN || s.user?.sub === prev.user?.sub) return
+  if (SHARED_TOKEN) return
+  // Offline: the trip on screen is the saved one this browser showed last, so its edits are marked unsaved.
+  if (s.offline && !prev.offline && !s.user && remembered()) {
+    useSaved.setState({ activeId: remembered(), status: unsaved() === remembered() ? 'offline' : 'idle' })
+    dirty = unsaved() === remembered()
+  }
+  // Back online but signed out (the session ended meanwhile): the edits stay marked, sent at the next sign-in.
+  if (prev.offline && !s.offline && !s.user) useSaved.setState({ activeId: null, status: 'idle' })
+  if (s.user?.sub === prev.user?.sub) return
   if (s.user) void signedIn()
   else if (prev.user) signedOut()
 })
