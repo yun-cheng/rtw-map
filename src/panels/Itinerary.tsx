@@ -2,7 +2,7 @@ import { Redo2, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { useChat } from '../agent/chat'
 import { dataset as ds } from '../data/dataset'
-import { tripDay, type Leg } from '../planner'
+import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planner'
 import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
@@ -10,6 +10,7 @@ import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { NoteMark } from './Notes'
+import { TravelLine } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
@@ -18,6 +19,9 @@ export function Itinerary() {
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
   if (!plan) return null
+  // On a trip under way, the stops already left are faded and today's is marked.
+  const today = localToday()
+  const travelling = isTravelling(input, today)
 
   return (
     <div className="flex min-h-full flex-col">
@@ -25,6 +29,7 @@ export function Itinerary() {
         <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
         <UndoRedo />
       </div>
+      <TravelLine />
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
         <Named
@@ -43,6 +48,7 @@ export function Itinerary() {
           const leg = plan.legs[i]
           const isSel = selected?.type === 'city' && selected.id === s.cityId
           const day = tripDay(input.startDate, s.arrive)
+          const time = travelling ? stopTime(s, today) : 'ahead'
           return (
             <li key={s.cityId}>
               <div
@@ -62,8 +68,8 @@ export function Itinerary() {
                 >
                   {day}
                 </span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 font-medium"><span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark note={notes.cities?.[s.cityId]} /></div>
+                <div className={`min-w-0 flex-1 ${time === 'done' ? 'opacity-55' : ''}`} title={time === 'done' ? 'Done: you were here' : undefined}>
+                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark note={notes.cities?.[s.cityId]} /></div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
                 {readOnly ? (

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
+import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, isTravelling, localToday, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
@@ -36,9 +36,12 @@ export function SetupPanel() {
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
   // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`), made with its usual
   // tools (so the app's rules still hold), thinking harder, since fitting several wishes into a trip takes planning.
+  // On a trip under way, only what comes after today is planned again.
+  const travelling = stops.length > 0 && isTravelling(input, localToday())
   const planWithAi = () => {
     const wishes = input.wishes?.trim()
-    void useChat.getState().send(`Plan my trip from scratch, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
+    const what = travelling ? 'Replan my trip from tomorrow on (keep the days so far as they were)' : 'Plan my trip from scratch'
+    void useChat.getState().send(`${what}, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
     setPanel('assistant')
   }
   // What changed since the plan was made or updated (the setup, edits by hand): the assistant can update the plan for
@@ -227,13 +230,13 @@ export function SetupPanel() {
                 variant={changes.length && !busy ? undefined : 'primary'} className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={planWithAi}
                 title="The assistant plans the trip from scratch, to your wishes, preferences and interests"
               >
-                {busy ? 'Planning…' : stops.length ? `${changes.length ? '' : '✨ '}Replan from scratch` : '✨ Plan with AI'}
+                {busy ? 'Planning…' : stops.length ? `${changes.length ? '' : '✨ '}Replan from ${travelling ? 'tomorrow' : 'scratch'}` : '✨ Plan with AI'}
               </Button>
             </div>
             {/* What a new plan replaces, and how to keep it. */}
             {stops.length > 0 && !busy && (
               <p className="mt-1.5 text-center text-[12px] text-muted">
-                {changes.length ? 'Either changes' : 'Replaces'} {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.{' '}
+                {travelling ? <>Keeps the days so far; {changes.length ? 'either changes' : 'replaces'} the rest of {planName}.</> : <>{changes.length ? 'Either changes' : 'Replaces'} {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.</>}{' '}
                 {plans.length < MAX_PLANS && (
                   <>
                     <button onClick={() => addPlan()} className="font-medium text-accent hover:underline">Copy it first</button> to keep it.

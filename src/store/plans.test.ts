@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
 import { createTripStore, loadTrip, tripData } from './tripCore'
-import { MAX_PLANS, planMark, tripPlans, useTrip } from './trip'
+import { MAX_PLANS, onPastEdit, planMark, tripPlans, useTrip } from './trip'
 
 const state = () => useTrip.getState()
 const stopIds = () => state().stops.map((s) => s.cityId)
@@ -165,5 +165,33 @@ describe('notes', () => {
     state().setNote('cities', 'krakow', '  ')
     state().setNote('legs', 'krakow>warsaw', '')
     expect(tripData(state())).not.toHaveProperty('notes')
+  })
+})
+
+describe('editing a trip under way by hand', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    onPastEdit(() => true)
+  })
+
+  it('asks before changing the days so far, and leaves what comes after alone', () => {
+    const [first, second] = state().plan!.stops
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${second.arrive}T12:00`))
+    const asked: string[][] = []
+    let answer = false
+    onPastEdit((changes) => {
+      asked.push(changes.map((c) => (c.kind === 'start' ? 'start' : `${c.cityId} ${c.change}`)))
+      return answer
+    })
+    state().removeStop(0)
+    expect(asked).toEqual([[`${first.cityId} gone`, `${second.cityId} moved`]])
+    expect(stopIds()[0]).toBe(first.cityId)
+    state().setNights(3, 9)
+    expect(asked).toHaveLength(1)
+    expect(state().stops[3].nights).toBe(9)
+    answer = true
+    state().setNights(0, first.nights + 1)
+    expect(state().stops[0].nights).toBe(first.nights + 1)
   })
 })

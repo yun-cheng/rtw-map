@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { geminiRequest, isBrokenReply, parseChatRequest } from '../../worker/chat'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
@@ -63,6 +63,22 @@ describe('assistant tools', () => {
     expect(runTool('update_settings', { pace: 'fast' }).ok).toBe(false)
     expect(stopIds()).toEqual(before)
     expect(tripContext()).toMatch(/read-only/)
+  })
+
+  it('changes a trip under way only after today', () => {
+    const stops = useTrip.getState().plan!.stops
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${stops[1].arrive}T12:00`))
+    try {
+      expect(tripContext()).toMatch(/under way.*day \d+ of \d+/)
+      const r = runTool('remove_stop', { city: ds.cities[stops[0].cityId].name })
+      expect(r.ok).toBe(false)
+      expect(r.result.error).toMatch(/under way/)
+      expect(stopIds()[0]).toBe(stops[0].cityId)
+      expect(runTool('set_nights', { city: ds.cities[stops[3].cityId].name, nights: 7 }).ok).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('adds, moves and removes stops', () => {

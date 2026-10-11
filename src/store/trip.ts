@@ -4,9 +4,9 @@ import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
-import { evaluatePlan, withPrefs, type CostKind } from '../planner'
+import { evaluatePlan, isTravelling, localToday, pastChanges, withPrefs, type CostKind, type PastChange } from '../planner'
 import { SHARED_TOKEN } from './shareLink'
-import { loadTrip, newTripInput, planFor, planId, tripActions, tripPlans, type TripCore, type TripData } from './tripCore'
+import { createTripStore, loadTrip, newTripInput, planFor, planId, tripActions, tripData, tripPlans, type TripCore, type TripData } from './tripCore'
 
 export { MAX_NOTE_CHARS, MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
 
@@ -90,6 +90,13 @@ const memory = (): Storage => {
   const mem = new Map<string, string>()
   return { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) } as Storage
 }
+/** Asks the user before an edit by hand changes days that already happened on a trip under way (pastChanges); set
+ *  by the app (panels/Travel.tsx). */
+let askPast: ((changes: PastChange[]) => boolean) | null = null
+export const onPastEdit = (ask: (changes: PastChange[]) => boolean) => { askPast = ask }
+/** The edits that can reach back into the trip's days so far. */
+const PAST_EDITS = ['setInput', 'setNights', 'removeStop', 'moveStop', 'reorderStops', 'addCity'] as const
+
 /** localStorage can be missing or throw (private mode); fall back to memory. A shared trip's page (shareLink.ts) keeps
  *  everything in memory, so the visitor's own trip in this browser is neither shown nor overwritten. */
 const safeStorage = createJSONStorage(() => {
@@ -109,6 +116,19 @@ export const useTrip = create<State>()(
       const fresh = newTripInput()
       const firstPlan = planId()
       const core = tripActions(set, get)
+      // On a trip under way, an edit is tried on a copy first: if it changes the days so far, the user is asked.
+      const minding = Object.fromEntries(PAST_EDITS.map((name) => [name, (...args: unknown[]) => {
+        const s = get()
+        const today = localToday()
+        if (askPast && s.plan && !s.readOnly && isTravelling(s.input, today)) {
+          const copy = createTripStore(tripData(s), { currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels })
+          ;(copy.getState()[name] as (...a: unknown[]) => void)(...args)
+          const after = copy.getState()
+          const changes = pastChanges({ input: s.input, stops: s.plan.stops }, { input: after.input, stops: after.plan?.stops ?? [] }, today)
+          if (changes.length && !askPast(changes)) return
+        }
+        return (core[name] as (...a: unknown[]) => unknown)(...args)
+      }])) as Pick<TripCore, (typeof PAST_EDITS)[number]>
       return {
         input: fresh,
         stops: [],
@@ -139,6 +159,7 @@ export const useTrip = create<State>()(
         cityPart: {},
 
         ...core,
+        ...minding,
         // A whole new itinerary (the assistant's plan) is fitted into the map.
         setStops: (stops) => {
           const fresh = !get().stops.length

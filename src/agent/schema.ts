@@ -47,6 +47,8 @@ How to work:
   and the user's edits (they are their choices), and change only what those changes call for (e.g. stops in an
   added region, nights for new dates or for a stop they added, places that no longer fit a preference), so the
   nights add up to the dates again. Then list what you changed for which change, and what you couldn't and why.
+- A trip under way (the trip context says so): the days up to today are what happened. Plan with AI and Update
+  plan change only what comes after today; keep the stops begun by today with their nights.
 - A read-only trip (the trip context says so) can't change at all: answer questions and suggest changes, and say
   the user can make it editable (the lock above the trip's plans) if they want you to make them.
 - While planning (Plan with AI, Update plan) the user's setup stays as it is: regions, countries, dates (except

@@ -5,6 +5,7 @@
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { planChanges } from '../agent/tools'
+import { isTravelling, localToday } from '../planner'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
 
@@ -13,7 +14,8 @@ export function usePlanUpdate() {
   const { input, stops, plan, setPanel } = useTrip()
   const changes = planChanges({ input, stops, plan })
   const update = () => {
-    void useChat.getState().send(`Update my plan for what changed since it was made: ${changes.join('; ')}. Keep the rest of the plan and my own edits.`, [], { think: true, plan: 'update' })
+    const later = isTravelling(input, localToday()) ? ' The trip is under way: change only what comes after today.' : ''
+    void useChat.getState().send(`Update my plan for what changed since it was made: ${changes.join('; ')}. Keep the rest of the plan and my own edits.${later}`, [], { think: true, plan: 'update' })
     setPanel('assistant')
   }
   return { changes, update }

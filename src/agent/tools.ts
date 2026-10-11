@@ -6,7 +6,7 @@ import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, likelyMonth, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, isTravelling, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
@@ -139,11 +139,21 @@ function flexText(input: TripInput): string {
   return ` (flexible: asked for ${f.start} ±${f.startDays} days to ${f.end} ±${f.endDays} days; generating a plan picks the dates within that)`
 }
 
+/** On a trip under way: today, where the trip is, and that only what comes after today changes. */
+function travellingText(): string[] {
+  const { input, plan } = trip()
+  const today = localToday()
+  if (!plan || !isTravelling(input, today)) return []
+  const { day, of, at } = travelDay(input, plan.stops, today)
+  return [`The trip is under way: today is ${today}, day ${day} of ${of}${at !== null ? `, at ${cityName(plan.stops[at].cityId)}` : ''}. The days up to today are what happened: keep the stops begun by today where they are, with their nights, and the start date (tonight's stop may get more nights, or fewer if it still ends tomorrow or later). Plan and change only from tomorrow on; tools that touch the past are refused.`]
+}
+
 export function tripContext(): string {
   const { input, plan } = trip()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
     `Dates: ${input.startDate} to ${input.endDate}${flexText(input)}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    ...travellingText(),
     ...(trip().readOnly ? ['The trip is read-only (the user locked it): the tools that change it are refused; suggest changes instead.'] : []),
     ...(trip().plans.length > 1 ? [`Plans in this trip: ${trip().plans.map((p) => `${p.name}${p.id === trip().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
     ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${stopsText(input)} (the planner keeps to this when it makes a plan).`] : []),
@@ -838,10 +848,35 @@ function run(name: string, args: Args): string | ToolResult {
   }
 }
 
+/** Managing the plans (versions of the trip) isn't changing one. */
+const PLAN_TOOLS = new Set(['new_plan', 'switch_plan', 'rename_plan', 'delete_plan'])
+
+/** On a trip under way, a change that touches the days up to today (pastChanges) is undone and refused. */
+function keepingThePast<T>(name: string, fn: () => T): T {
+  const t = trip()
+  const today = localToday()
+  if (!WRITE_TOOLS.has(name) || PLAN_TOOLS.has(name) || !t.plan || !isTravelling(t.input, today)) return fn()
+  const before = { input: t.input, stops: t.plan.stops }
+  const saved = snapshot()
+  const out = fn()
+  const now = trip()
+  const changes = pastChanges(before, { input: now.input, stops: now.plan?.stops ?? [] }, today)
+  if (changes.length) {
+    now.restore(saved)
+    throw new ToolError(`The trip is under way (today is ${today}), and the days up to today are what happened: ${pastText(changes)} can't change. Change only what comes after today (tonight's stop may get more nights, or fewer if it still ends tomorrow or later).`)
+  }
+  return out
+}
+
+/** What a change did to the days so far, in words: "the start date, Tirana (taken out), Berat's nights". */
+export const pastText = (changes: PastChange[]) => changes.map((c) =>
+  c.kind === 'start' ? 'the start date'
+    : c.change === 'nights' || c.change === 'dates' ? `${cityName(c.cityId)}'s ${c.change}` : `${cityName(c.cityId)} (${c.change === 'gone' ? 'taken out' : 'moved'})`).join(', ')
+
 /** Runs one tool call. Changes return what was done plus the updated trip; errors are returned for the assistant to read. */
 export function runTool(name: string, args: Args = {}): { result: ToolResult; ok: boolean; summary: string } {
   try {
-    const out = run(name, args)
+    const out = keepingThePast(name, () => run(name, args))
     if (typeof out === 'string') return { ok: true, summary: out, result: { done: out, trip: tripContext() } }
     return { ok: true, summary: '', result: out }
   } catch (e) {
