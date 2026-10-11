@@ -1,6 +1,6 @@
 import { AIRPORT_MIN } from '../planner'
 import { useTrip } from '../store/trip'
-import { MODE_ICON, cityName, duration, shortDate } from '../ui/format'
+import { MODE_ICON, cityName, duration, shortDate, transitUrl } from '../ui/format'
 import { Badge, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AskButton } from './AskButton'
@@ -38,6 +38,9 @@ export function LegDrawer({ index }: { index: number }) {
         ) : (
           <p className="mt-2 text-[13px] text-danger">No known route between these cities. Add a stop in between or reorder the trip.</p>
         )}
+        <a href={transitUrl(leg.from, leg.to)} target="_blank" rel="noreferrer" className="mt-2 inline-block text-[13px] text-accent hover:underline">
+          Directions on Google Maps ↗
+        </a>
       </div>
 
       {leg.reachable && (
@@ -57,7 +60,7 @@ export function LegDrawer({ index }: { index: number }) {
                   {h.estimated && <Badge tone="warn">estimate</Badge>}
                 </div>
                 {h.note && <p className="mt-1.5 text-[12px]">{h.note}</p>}
-                {h.estimated && <p className="mt-1.5 text-[12px] text-muted">No timetable data yet: time estimated from road distance by bus. Check local bus stations or Rome2Rio.</p>}
+                {h.estimated && <p className="mt-1.5 text-[12px] text-muted">No timetable data yet: time estimated from road distance by bus. Check Google Maps (above) or the local bus station.</p>}
               </li>
             ))}
           </ol>

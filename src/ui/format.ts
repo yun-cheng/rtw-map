@@ -57,6 +57,15 @@ export const MODE_COLOR: Record<string, string> = { train: '#7c3aed', bus: '#d97
 
 export const cityName = (id: string) => ds.cities[id]?.name ?? id
 
+/** Google Maps directions between two cities by public transport (in the Maps app on a phone), e.g. Kraków, Poland → Wrocław, Poland. */
+export function transitUrl(from: string, to: string) {
+  const place = (id: string) => {
+    const c = ds.cities[id]
+    return c ? `${c.name}, ${ds.countries[c.iso2]?.name ?? c.iso2}` : id
+  }
+  return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', origin: place(from), destination: place(to), travelmode: 'transit' })}`
+}
+
 /** ISO country code → flag emoji. */
 export const flag = (iso2: string) =>
   iso2 === 'XK' ? '🇽🇰' : String.fromCodePoint(...[...iso2.toUpperCase()].map((c) => 0x1f1a5 + c.charCodeAt(0)))

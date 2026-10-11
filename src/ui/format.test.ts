@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, transitUrl, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -108,5 +108,15 @@ describe('temperatures as they feel', () => {
     expect(shownTemps({ tHigh: 33, tLow: 26, feelsHigh: 40, feelsLow: 32 }, true)).toEqual({ high: 40, low: 32, feels: true })
     expect(shownTemps({ tHigh: 33, tLow: 26, feelsHigh: 40, feelsLow: 32 }, false)).toEqual({ high: 33, low: 26, feels: false })
     expect(shownTemps({ tHigh: 33, tLow: 26 }, true)).toEqual({ high: 33, low: 26, feels: false })
+  })
+})
+
+describe('transitUrl', () => {
+  it('asks Google Maps for public transport between the cities, by name and country', () => {
+    const url = new URL(transitUrl('tirana', 'shkoder'))
+    expect(url.origin + url.pathname).toBe('https://www.google.com/maps/dir/')
+    expect(Object.fromEntries(url.searchParams)).toEqual({
+      api: '1', origin: 'Tirana, Albania', destination: `${ds.cities.shkoder.name}, Albania`, travelmode: 'transit',
+    })
   })
 })
