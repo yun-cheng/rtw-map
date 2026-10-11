@@ -7,6 +7,7 @@ import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
+import { Editable } from './ReadOnly'
 import { ChangesLine, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
@@ -24,7 +25,7 @@ const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
 
 export function SetupPanel() {
   const s = useTrip()
-  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, addPlan } = s
+  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, addPlan, readOnly } = s
   const plans = tripPlans(s)
   const planName = plans.find((p) => p.id === s.activePlanId)?.name ?? 'This plan'
   // Nothing stays highlighted on the map once the tab closes.
@@ -74,7 +75,7 @@ export function SetupPanel() {
           )}
         </div>
 
-        <Card>
+        <Card><Editable>
           <Field label="Dates">
             {/* On a narrow phone the days either way go under their date. */}
             <div className="flex flex-col gap-1.5">
@@ -89,16 +90,16 @@ export function SetupPanel() {
             </div>
             {nights <= 0 && <p className="mt-1 text-[12px] text-danger">End date must be after the start date</p>}
           </Field>
-        </Card>
+        </Editable></Card>
 
         <Card>
           <Field
             label="Where"
             aside={input.groups.length > 1 && (
-              <label className="flex items-center gap-1.5 text-[12px] text-muted" title="Otherwise the planner picks the order with the shortest travel">
+              <Editable><label className="flex items-center gap-1.5 text-[12px] text-muted" title="Otherwise the planner picks the order with the shortest travel">
                 <input type="checkbox" checked={ordered} onChange={(e) => setInput({ keepGroupOrder: e.target.checked })} />
                 In this order
-              </label>
+              </label></Editable>
             )}
           >
             <div className="flex flex-col gap-2">
@@ -119,6 +120,7 @@ export function SetupPanel() {
                           {!open && <span className="block truncate text-[12px] text-muted">{groupSummary(g)}</span>}
                         </span>
                       </button>
+                      <Editable>
                       {ordered && (
                         <>
                           <IconBtn disabled={i === 0} onClick={() => moveGroup(i, -1)} label="Move up">↑</IconBtn>
@@ -126,7 +128,9 @@ export function SetupPanel() {
                         </>
                       )}
                       <IconBtn onClick={() => setInput({ groups: input.groups.filter((x) => x.id !== g.id) })} label="Remove">✕</IconBtn>
+                      </Editable>
                     </div>
+                    <Editable>
                     {/* The days in the whole region (a country added on its own has just its own), then each country: click
                         it to change whether it's a must visit, and the days to spend there. */}
                     {open && g.countries.length > 1 && (
@@ -163,10 +167,11 @@ export function SetupPanel() {
                         )
                       })}
                     </div>}
+                    </Editable>
                   </div>
                 )
               })}
-              {picking ? (
+              {readOnly ? null : picking ? (
                 <Picker />
               ) : (
                 <Button onClick={() => setPicking(input.groups.length ? 'country' : 'region')} className="py-1.5">+ Add regions or countries</Button>
@@ -175,7 +180,7 @@ export function SetupPanel() {
           </Field>
         </Card>
 
-        <Card className="flex flex-col gap-4">
+        <Card className="flex flex-col gap-4"><Editable>
           <Field label="Number of stops (optional)">
             <Range unit="stops" className="text-[13px]">
               <AnyNumber value={input.minStops} max={MAX_STOPS} label="Fewest stops" onChange={(minStops) => setInput({ minStops })} />
@@ -197,14 +202,16 @@ export function SetupPanel() {
               className={`${inputCls} resize-y`}
             />
           </Field>
-        </Card>
+        </Editable></Card>
 
         <PrefsCards />
       </div>
 
       {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled. */}
       <div className="sticky bottom-0 border-t border-line bg-panel p-3">
-        {user || !loaded ? (
+        {readOnly ? (
+          <p className="text-center text-[12px] text-muted">Read-only: make the trip editable (the lock above) to change or replan it.</p>
+        ) : user || !loaded ? (
           <>
             {changes.length > 0 && !busy && <div className="mb-2"><ChangesLine changes={changes} /></div>}
             <div className="flex gap-2">

@@ -30,7 +30,7 @@ const listed = (words: string[]) => (words.length > 1 ? `${words.slice(0, -1).jo
  * with the trip; a new trip starts from these.
  */
 export function PrefsCards() {
-  const { input, setInput, setPrefs, currency, tempUnit } = useTrip()
+  const { input, setInput, setPrefs, currency, tempUnit, readOnly } = useTrip()
   const p = input.prefs
   const day = prefsDay(p)
   // A segmented control for one preference.
@@ -82,7 +82,7 @@ export function PrefsCards() {
         <p className="mt-0.5 text-[12px] text-muted">How you like to travel. Saved with this trip; a new trip starts from these.</p>
       </div>
 
-      <Fold title="Who" {...fold('Who')} summary={line(summary.who)}>
+      <Fold locked={readOnly} title="Who" {...fold('Who')} summary={line(summary.who)}>
         <Label>Passport</Label>
         <select value={input.passport} onChange={(e) => setInput({ passport: e.target.value })} className={inputCls}>
           {ds.visa.passports.map((x) => <option key={x.code} value={x.code}>{x.name}</option>)}
@@ -95,7 +95,7 @@ export function PrefsCards() {
         {p.homeCityId && <div className="mt-1.5">{toggle('returnHome', 'Return home at the end')}</div>}
       </Fold>
 
-      <Fold title="Trip goals" {...fold('Trip goals')} summary={line(summary.goals)}>
+      <Fold locked={readOnly} title="Trip goals" {...fold('Trip goals')} summary={line(summary.goals)}>
         <p className="mb-1 text-[12px] text-muted">How the planner picks places when it makes the plan.</p>
         <Label>What matters most</Label>
         {choose('focus', FOCUS)}
@@ -103,7 +103,7 @@ export function PrefsCards() {
         {choose('expensive', EXPENSIVE)}
       </Fold>
 
-      <Fold title="Daily cost" {...fold('Daily cost')} summary={line(summary.cost)}>
+      <Fold locked={readOnly} title="Daily cost" {...fold('Daily cost')} summary={line(summary.cost)}>
         <Label>Daily budget per person (optional)</Label>
         <MoneyInput value={p.dailyBudget} currency={currency} onChange={(dailyBudget) => setPrefs({ dailyBudget })} />
         <p className="mt-3 text-[12px] text-muted">What a day costs in every city: what you'd pick for each. Change it for one city in that city's Costs tab.</p>
@@ -126,7 +126,7 @@ export function PrefsCards() {
         <MoneyInput value={p.maxPerNight} currency={currency} onChange={(maxPerNight) => setPrefs({ maxPerNight })} />
       </Fold>
 
-      <Fold title="Get around" {...fold('Get around')} summary={line(summary.around)}>
+      <Fold locked={readOnly} title="Get around" {...fold('Get around')} summary={line(summary.around)}>
         <Label>Pace</Label>
         <Segmented<Pace> value={input.pace} onChange={(pace) => setInput({ pace })} options={PACES} />
         <Label>Between cities (fastest allows flights)</Label>
@@ -136,7 +136,7 @@ export function PrefsCards() {
         <div className="mt-2">{toggle('overnight', 'Overnight buses and trains are OK')}</div>
       </Fold>
 
-      <Fold title="Interests" {...fold('Interests')} summary={line(summary.interests)}>
+      <Fold locked={readOnly} title="Interests" {...fold('Interests')} summary={line(summary.interests)}>
         <div className="flex flex-wrap gap-1">
           {INTERESTS.map((t) => {
             const on = input.interests.includes(t)
@@ -150,7 +150,7 @@ export function PrefsCards() {
         </div>
       </Fold>
 
-      <Fold title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
+      <Fold locked={readOnly} title="Comfort" {...fold('Comfort')} summary={line(summary.comfort)}>
         <Label>What feels cold, cool, pleasant, warm or hot to you</Label>
         <TempBands breaks={p.tempBreaks} unit={tempUnit} onChange={(tempBreaks) => setPrefs({ tempBreaks })} />
         <p className="mt-2 text-[11px] text-muted">The map and each city's weather use these colours, and Checks warns about cold and hot stays.</p>

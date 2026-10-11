@@ -156,6 +156,13 @@ describe('saved trips', () => {
     expect(parseTripPatch({ data: { input: {}, stops: [], plans: Array.from({ length: TRIP_LIMITS.plans + 1 }, (_, i) => plan(String(i))) } })).toBeTypeOf('string')
   })
 
+  it('keeps a read-only trip read-only, and only a real true', () => {
+    const data = (readOnly: unknown) => JSON.parse((parseTripPatch({ data: { input: {}, stops: [], readOnly } }) as { data: string }).data)
+    expect(data(true).readOnly).toBe(true)
+    expect(data('yes')).not.toHaveProperty('readOnly')
+    expect(data(undefined)).not.toHaveProperty('readOnly')
+  })
+
   it('rejects empty names, malformed trips and oversized data', () => {
     expect(parseTripPatch({ name: '   ' })).toBeTypeOf('string')
     expect(parseTripPatch({ data: { input: {}, stops: 'x' } })).toBeTypeOf('string')

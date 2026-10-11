@@ -12,7 +12,11 @@ import type { TempUnit } from '../ui/format'
 /** One version of a trip's itinerary, with the setup and preferences it was made with. */
 export type TripPlan = { id: string; name: string; input: TripInput; stops: Stop[] }
 /** A trip as saved: the active plan's setup and stops (what the trip list reads), and all of its plans. */
-export type TripData = { input: TripInput; stops: Stop[]; plans?: TripPlan[]; activePlanId?: string }
+export type TripData = {
+  input: TripInput; stops: Stop[]; plans?: TripPlan[]; activePlanId?: string
+  /** Read-only: nothing about the trip changes, by hand or by the assistant, until the user makes it editable again. */
+  readOnly?: boolean
+}
 export const MAX_PLANS = 8
 
 /** How the user reads amounts and temperatures (the assistant answers the same way). */
@@ -34,7 +38,11 @@ export type TripCore = Display & {
   plans: TripPlan[]
   activePlanId: string
   plan: Plan | null
+  /** Nothing about the trip changes (every change below is ignored, except switching plans, to look at them) until
+   *  the user turns it off: so neither they nor the assistant change it by accident, e.g. once it's under way. */
+  readOnly: boolean
 
+  setReadOnly: (on: boolean) => void
   setInput: (patch: Partial<TripInput>) => void
   /** Picks a travel style: its preferences replace the style fields, and daily costs use its price level. */
   setStyle: (style: Budget) => void
@@ -79,8 +87,10 @@ export const tripPlans = (s: { plans: TripPlan[]; activePlanId: string; input: T
   s.plans.map((p) => (p.id === s.activePlanId ? { ...p, input: s.input, stops: s.stops } : p))
 
 /** The trip as saved, from its state. */
-export const tripData = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[] }): TripData =>
-  ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
+export const tripData = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[]; readOnly?: boolean }): TripData => ({
+  input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId,
+  ...(s.readOnly && { readOnly: true }),
+})
 
 /** Setup of a new trip: no regions yet, starting in two months. */
 export const newTripInput = (): TripInput => {
@@ -121,7 +131,7 @@ export function planFor(input: TripInput, stops: Stop[], feels = false): Plan | 
 
 /** A saved trip (or a new, empty one) as state; `broken` when its stops refer to data that no longer exists (they
  *  are dropped, the setup kept). */
-export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId'> & { broken: boolean } {
+export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId' | 'readOnly'> & { broken: boolean } {
   const norm = (x: { input: TripInput; stops?: Stop[] }) => ({ input: { ...newTripInput(), ...withPrefs(x.input) }, stops: x.stops ?? [] })
   // Trips saved before plans existed have one plan.
   const plans: TripPlan[] = data?.plans?.length
@@ -132,14 +142,27 @@ export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, '
   const { input, stops } = data && data.plans?.length ? norm(data) : plans.find((p) => p.id === activePlanId)!
   const plan = planFor(input, stops, feels)
   const broken = stops.length > 0 && !plan
-  return { input, stops: broken ? [] : stops, plan, plans, activePlanId, broken }
+  return { input, stops: broken ? [] : stops, plan, plans, activePlanId, readOnly: data?.readOnly === true, broken }
 }
 
 type Get = () => TripCore
 type Set = (patch: Partial<TripCore>) => void
 
 /** The changes, for a store holding a `TripCore` (or more: the app's store adds what's on screen). */
-export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan'> {
+export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly'> {
+  const actions = changes(set, get)
+  // A read-only trip ignores every change (the app's own buttons are disabled too; the assistant's tools are refused).
+  const guarded = Object.fromEntries(Object.entries(actions).map(([name, fn]) => [
+    name,
+    name === 'switchPlan' ? fn : (...args: unknown[]) => (get().readOnly ? null : (fn as (...a: unknown[]) => unknown)(...args)),
+  ])) as typeof actions
+  return {
+    ...guarded,
+    setReadOnly: (readOnly) => set({ readOnly }),
+  }
+}
+
+function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly' | 'setReadOnly'> {
   const apply = (plan: Plan, extra: Partial<TripCore> = {}) => set({ plan, stops: toStops(plan), ...extra })
   // The checks read temperatures as the user sees them.
   const evaluate = (input: TripInput, stops: Stop[]) => evaluatePlan(ds, input, stops, { feels: get().tempFeels })

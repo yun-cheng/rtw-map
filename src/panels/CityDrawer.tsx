@@ -60,7 +60,7 @@ const GROCERIES: [GroceryKey, string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, removeStop, cityTab, cityPart, setCityTab, layer, layerMonth } = useTrip()
+  const { plan, input, select, addCity, removeStop, cityTab, cityPart, setCityTab, layer, layerMonth, readOnly } = useTrip()
   const { currency, fmt } = useMoney()
   const { range } = useTemp()
   // Temperatures as they feel or as measured: one setting for the whole app.
@@ -615,9 +615,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
-              <Button className="ml-auto" onClick={() => { if (!confirmRemove(city.name, stop.nights)) return; removeStop(stopIndex); select(null) }}>Remove</Button>
+              {!readOnly && <Button className="ml-auto" onClick={() => { if (!confirmRemove(city.name, stop.nights)) return; removeStop(stopIndex); select(null) }}>Remove</Button>}
             </>
-          ) : plan ? (
+          ) : plan && !readOnly ? (
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
           ) : null}
         </div>

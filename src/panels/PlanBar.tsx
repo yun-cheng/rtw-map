@@ -4,14 +4,16 @@ import { evaluatePlan, type Plan } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type TripPlan } from '../store/trip'
 import { cityName, duration } from '../ui/format'
 import { useMoney } from '../ui/useMoney'
+import { ReadOnlyToggle } from './ReadOnly'
 
 /**
  * The trip's plans (versions of the itinerary, each with its own setup and preferences): switch between them, add a
- * copy of the current one to try something, rename or delete one, and compare them side by side.
+ * copy of the current one to try something, rename or delete one, and compare them side by side; and the switch that
+ * makes the whole trip read-only (then the plans can still be switched and compared, not added, renamed or deleted).
  */
 export function PlanBar() {
   const s = useTrip()
-  const { activePlanId, switchPlan, addPlan } = s
+  const { activePlanId, switchPlan, addPlan, readOnly } = s
   const plans = tripPlans(s)
   const [comparing, setComparing] = useState(false)
   const [menu, setMenu] = useState(false)
@@ -24,29 +26,32 @@ export function PlanBar() {
           return (
             <button
               key={p.id}
-              onClick={() => (on ? setMenu(!menu) : switchPlan(p.id))}
-              title={on ? 'The plan you are editing: click to rename or delete it' : `Switch to ${p.name}`}
+              onClick={() => (on ? !readOnly && setMenu(!menu) : switchPlan(p.id))}
+              title={on ? (readOnly ? 'The plan shown' : 'The plan you are editing: click to rename or delete it') : `Switch to ${p.name}`}
               className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-medium whitespace-nowrap ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:text-ink'}`}
             >
-              {p.name}{on && <span className="ml-1 text-[10px]">▾</span>}
+              {p.name}{on && !readOnly && <span className="ml-1 text-[10px]">▾</span>}
             </button>
           )
         })}
-        <button
+        {!readOnly && <button
           onClick={() => addPlan()}
           disabled={plans.length >= MAX_PLANS}
           title={plans.length >= MAX_PLANS ? `A trip can have up to ${MAX_PLANS} plans` : 'New plan: a copy of this one, to try something without losing it'}
           className="shrink-0 rounded-full border border-dashed border-line px-2 py-0.5 text-[12px] text-muted hover:text-ink disabled:opacity-40"
         >
           + Plan
-        </button>
-        {plans.length > 1 && (
-          <button onClick={() => setComparing(!comparing)} className={`ml-auto shrink-0 px-1 text-[12px] ${comparing ? 'text-accent' : 'text-muted hover:text-ink'}`}>
-            Compare
-          </button>
-        )}
+        </button>}
+        <div className="ml-auto flex shrink-0 items-center gap-1">
+          {plans.length > 1 && (
+            <button onClick={() => setComparing(!comparing)} className={`shrink-0 px-1 text-[12px] ${comparing ? 'text-accent' : 'text-muted hover:text-ink'}`}>
+              Compare
+            </button>
+          )}
+          <ReadOnlyToggle />
+        </div>
       </div>
-      {menu && <PlanMenu plan={plans.find((p) => p.id === activePlanId)!} canDelete={plans.length > 1} onClose={() => setMenu(false)} />}
+      {menu && !readOnly && <PlanMenu plan={plans.find((p) => p.id === activePlanId)!} canDelete={plans.length > 1} onClose={() => setMenu(false)} />}
       {comparing && plans.length > 1 && <Compare plans={plans} onClose={() => setComparing(false)} />}
     </div>
   )

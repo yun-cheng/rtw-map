@@ -34,7 +34,8 @@ export function Section({ title, children, aside }: { title?: string; children: 
  * A card like `Section` that folds to its title and a line saying what's in it (`summary`); starts folded. With `open`
  * and `onToggle` its parent decides (e.g. one card open at a time).
  */
-export function Fold({ title, summary, open: shown, onToggle, children }: { title: string; summary: ReactNode; open?: boolean; onToggle?: () => void; children: ReactNode }) {
+/** `locked`: its controls are disabled (a read-only trip); it still opens and closes. */
+export function Fold({ title, summary, open: shown, onToggle, locked, children }: { title: string; summary: ReactNode; open?: boolean; onToggle?: () => void; locked?: boolean; children: ReactNode }) {
   const [own, setOwn] = useState(false)
   const open = shown ?? own
   const setOpen = (v: boolean) => (onToggle ? onToggle() : setOwn(v))
@@ -60,7 +61,7 @@ export function Fold({ title, summary, open: shown, onToggle, children }: { titl
           {!open && <span className="mt-0.5 block truncate text-[12px] text-muted">{summary}</span>}
         </span>
       </button>
-      {open && <div className="px-4 pb-3">{children}</div>}
+      {open && <fieldset disabled={locked} className="min-w-0 px-4 pb-3">{children}</fieldset>}
     </section>
   )
 }
@@ -163,18 +164,20 @@ export function InfoTip({ text, label }: { text: string; label: string }) {
   }, [at])
   return (
     <>
-      <button
-        type="button"
+      {/* Not a <button>: one in a disabled fieldset (a read-only trip's controls) couldn't be focused or tapped. */}
+      <span
+        role="button"
+        tabIndex={0}
         aria-label={`What ${label.toLowerCase()} means`}
         aria-describedby={at ? id : undefined}
         onMouseEnter={show}
         onMouseLeave={() => setAt(null)}
         onFocus={show}
         onBlur={() => setAt(null)}
-        className="text-muted hover:text-ink focus:text-ink focus:outline-none"
+        className="inline-block text-muted hover:text-ink focus:text-ink focus:outline-none"
       >
         <Info size={12} />
-      </button>
+      </span>
       {at && createPortal(
         <span
           ref={box}

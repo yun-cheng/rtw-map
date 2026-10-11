@@ -7,7 +7,8 @@ import { create } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
-import { newTripInput, tripPlans, useTrip, type TripData } from './trip'
+import { newTripInput, useTrip, type TripData } from './trip'
+import { tripData as saveable } from './tripCore'
 
 export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number }
 type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'error'
@@ -36,11 +37,8 @@ const call = async (method: string, url: string, body?: unknown) => {
   return data
 }
 
-/** The open trip as saved: the active plan's setup and stops, and all of its plans. */
-const tripData = (): TripData => {
-  const s = useTrip.getState()
-  return { input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId }
-}
+/** The open trip as saved: the active plan's setup and stops, all of its plans, and the trip's own settings. */
+const tripData = (): TripData => saveable(useTrip.getState())
 const chatData = (): SavedChat => {
   const { messages, contents, note } = useChat.getState()
   return { messages, contents, note }
@@ -177,7 +175,7 @@ function changed() {
 
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
-  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId) changed()
+  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly) changed()
 })
 useChat.subscribe((s, prev) => {
   if (!s.busy && (s.messages !== prev.messages || s.contents !== prev.contents)) changed()

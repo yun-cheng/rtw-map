@@ -121,7 +121,7 @@ export const useChat = create<ChatState>()(
 
       undo: (index) => {
         const msg = get().messages[index]
-        if (msg?.role !== 'assistant' || !msg.before || msg.undone) return
+        if (msg?.role !== 'assistant' || !msg.before || msg.undone || useTrip.getState().readOnly) return
         useTrip.getState().restore(msg.before)
         set({
           note: 'The user pressed Undo: the trip is back to how it was before your previous changes.',

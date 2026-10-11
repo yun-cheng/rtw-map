@@ -150,3 +150,9 @@ iframe[src^='https://accounts.google.com/gsi/'] { color-scheme: light; }
 .recharts-wrapper :focus {
   outline: none;
 }
+
+/* A read-only trip's controls (in a disabled fieldset, panels/ReadOnly.tsx): dimmed, so they don't look clickable. */
+fieldset:disabled :is(input, select, textarea, button) {
+  opacity: 0.6;
+  cursor: default;
+}

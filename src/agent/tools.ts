@@ -11,6 +11,7 @@ import {
 import type { CityTab } from '../store/trip'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
+import { WRITE_TOOLS } from './schema'
 import type { ViewItem, ViewRef } from './shared'
 
 type Args = Record<string, unknown>
@@ -143,6 +144,7 @@ export function tripContext(): string {
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
   const lines = [
     `Dates: ${input.startDate} to ${input.endDate}${flexText(input)}. Pace: ${input.pace}. Preferences: ${prefsText(input.prefs)}. Interests: ${input.interests.join(', ') || 'none'}. Passport: ${passport}.`,
+    ...(trip().readOnly ? ['The trip is read-only (the user locked it): the tools that change it are refused; suggest changes instead.'] : []),
     ...(trip().plans.length > 1 ? [`Plans in this trip: ${trip().plans.map((p) => `${p.name}${p.id === trip().activePlanId ? ' (active: the one shown and changed)' : ''}`).join(', ')}.`] : []),
     ...(input.minStops || input.maxStops ? [`Number of stops wanted: ${stopsText(input)} (the planner keeps to this when it makes a plan).`] : []),
     ...(input.wishes?.trim() ? [`The user's wishes for this trip, in their words: "${input.wishes.trim()}"`] : []),
@@ -744,6 +746,9 @@ function setItinerary(args: Args): string {
 
 function run(name: string, args: Args): string | ToolResult {
   const t = trip()
+  if (t.readOnly && WRITE_TOOLS.has(name)) {
+    throw new ToolError('The user made this trip read-only, so nothing in it can change: answer, and suggest changes in your answer instead (they can make it editable with the lock above the trip\'s plans).')
+  }
   if (bound!.planning && SETUP_TOOLS.has(name) && !(name === 'update_settings' && pickingDates(args))) {
     throw new ToolError('While planning, the trip\'s setup (regions, countries, dates, preferences, locks, plans) stays as the user set it: work with the stops, their nights and order, and suggest setup changes in your answer instead.')
   }

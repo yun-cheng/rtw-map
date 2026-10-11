@@ -32,7 +32,7 @@ let last = 0
 const go = (from: 'past' | 'future') => {
   const h = useHistory.getState()
   const step = h[from].at(-1)
-  if (!step || useChat.getState().busy) return
+  if (!step || useChat.getState().busy || useTrip.getState().readOnly) return
   const to = from === 'past' ? 'future' : 'past'
   useHistory.setState({ [from]: h[from].slice(0, -1), [to]: [...h[to], now()] } as Partial<History>)
   moving = true

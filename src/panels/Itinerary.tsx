@@ -12,7 +12,7 @@ import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
-  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop } = useTrip()
+  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, readOnly } = useTrip()
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
@@ -45,7 +45,7 @@ export function Itinerary() {
           return (
             <li key={s.cityId}>
               <div
-                draggable
+                draggable={!readOnly}
                 onDragStart={() => setDrag(i)}
                 onDragOver={(e) => { e.preventDefault(); setOver(i) }}
                 onDragLeave={() => setOver(null)}
@@ -65,7 +65,9 @@ export function Itinerary() {
                   <div className="flex items-center gap-1.5 font-medium"><span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /></div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
-                <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
+                {readOnly ? (
+                  <span className="pr-1 text-[13px] font-semibold tabular-nums" title="Nights">{s.nights}</span>
+                ) : <div className="flex items-center gap-0.5" onClick={(e) => e.stopPropagation()}>
                   <StepBtn onClick={() => setNights(i, s.nights - 1)} disabled={s.nights <= 1} label="One night less">−</StepBtn>
                   <span className="w-7 text-center text-[13px] font-semibold tabular-nums" title="Nights">{s.nights}</span>
                   <StepBtn onClick={() => setNights(i, s.nights + 1)} label="One night more">+</StepBtn>
@@ -73,7 +75,7 @@ export function Itinerary() {
                     {s.locked ? '🔒' : '🔓'}
                   </button>
                   <button onClick={() => confirmRemove(city.name, s.nights) && removeStop(i)} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
-                </div>
+                </div>}
               </div>
               {leg && (
                 <button
@@ -100,7 +102,7 @@ export function Itinerary() {
         })}
         {plan.home.back && <HomeRow leg={plan.home.back} label={`Back to ${cityName(plan.home.back.to)}`} when={`leaving ${shortDate(input.endDate)}`} />}
       </ol>
-      <UpdatePlanBar />
+      {!readOnly && <UpdatePlanBar />}
     </div>
   )
 }
@@ -112,7 +114,8 @@ export const confirmRemove = (name: string, nights: number) =>
 /** Undo and redo of the trip's edits (store/history.ts); not while the assistant is changing it. */
 function UndoRedo() {
   const { past, future, undo, redo } = useHistory()
-  const busy = useChat((s) => s.busy)
+  // A read-only trip doesn't change (store/tripCore.ts), not even back.
+  const busy = useChat((s) => s.busy) || useTrip((s) => s.readOnly)
   const btn = 'flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
   return (
     <>

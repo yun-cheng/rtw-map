@@ -17,14 +17,18 @@ export function parseTripPatch(raw: unknown): TripPatch | string {
     patch.name = name.trim().slice(0, TRIP_LIMITS.nameChars)
   }
   if (data !== undefined) {
-    const d = data as { input?: unknown; stops?: unknown; plans?: unknown; activePlanId?: unknown }
+    const d = data as { input?: unknown; stops?: unknown; plans?: unknown; activePlanId?: unknown; readOnly?: unknown }
     if (!d || typeof d !== 'object' || typeof d.input !== 'object' || !Array.isArray(d.stops)) return 'Invalid trip'
     // Other versions of the itinerary (plans), each with its own setup and stops; the active one is also at the top.
     const plans = d.plans === undefined ? undefined : Array.isArray(d.plans) && d.plans.length <= TRIP_LIMITS.plans ? d.plans : null
     if (plans === null || plans?.some((p) => !p || typeof p.id !== 'string' || typeof p.name !== 'string' || typeof p.input !== 'object' || !Array.isArray(p.stops))) {
       return 'Invalid trip plans'
     }
-    patch.data = JSON.stringify({ input: d.input, stops: d.stops, ...(plans && { plans, activePlanId: typeof d.activePlanId === 'string' ? d.activePlanId : undefined }) })
+    patch.data = JSON.stringify({
+      input: d.input, stops: d.stops,
+      ...(plans && { plans, activePlanId: typeof d.activePlanId === 'string' ? d.activePlanId : undefined }),
+      ...(d.readOnly === true && { readOnly: true }),
+    })
     if (patch.data.length > TRIP_LIMITS.dataBytes) return 'This trip is too large to save'
   }
   if (chat !== undefined) {

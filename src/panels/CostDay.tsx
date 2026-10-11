@@ -5,6 +5,7 @@ import { MEAL_HINTS, costProfile, dayChoices, dayCost, prefsDay, taxiEstimate, t
 import { useTrip } from '../store/trip'
 import { Badge, Named, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { Editable } from './ReadOnly'
 
 type Value = DayChoices[keyof DayChoices]
 type Option<K extends keyof DayChoices> = { value: DayChoices[K]; label: string }
@@ -108,6 +109,7 @@ export function CostDay({ cityId }: { cityId: string }) {
 
   return (
     <Section title="Daily cost" aside={costProfile(ds, ds.cities[cityId].iso2)?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined}>
+      <Editable>
       <div className="mb-1 flex justify-end text-[12px]">
         {changed ? (
           <button onClick={() => save(null)} className="flex items-center gap-1 font-medium text-accent hover:underline">
@@ -164,6 +166,7 @@ export function CostDay({ cityId }: { cityId: string }) {
           <span className="font-medium tabular-nums">{fmt(day.total * stop.nights)}</span>
         </div>
       )}
+      </Editable>
     </Section>
   )
 }

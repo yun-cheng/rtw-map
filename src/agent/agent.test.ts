@@ -53,6 +53,18 @@ describe('assistant tools', () => {
     expect(runTool('set_itinerary', { stops: [{ city: 'Atlantis', nights: 2 }] }).ok).toBe(false)
   })
 
+  it('only reads a read-only trip: changes are refused, and the context says so', () => {
+    useTrip.getState().setReadOnly(true)
+    const before = stopIds()
+    expect(runTool('get_city_info', { city: 'Kraków' }).ok).toBe(true)
+    const r = runTool('remove_stop', { city: before[0] })
+    expect(r.ok).toBe(false)
+    expect(r.result.error).toMatch(/read-only/)
+    expect(runTool('update_settings', { pace: 'fast' }).ok).toBe(false)
+    expect(stopIds()).toEqual(before)
+    expect(tripContext()).toMatch(/read-only/)
+  })
+
   it('adds, moves and removes stops', () => {
     expect(runTool('add_stop', { city: 'Eger', after: 'Budapest' }).ok).toBe(true)
     expect(stopIds()[stopIds().indexOf('budapest') + 1]).toBe('eger')

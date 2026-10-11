@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
+import { createTripStore, loadTrip, tripData } from './tripCore'
 import { MAX_PLANS, planMark, tripPlans, useTrip } from './trip'
 
 const state = () => useTrip.getState()
@@ -110,5 +111,41 @@ describe('adding places', () => {
   it('starts a new trip with the regions in no particular order', () => {
     state().openTrip(null)
     expect(state().input.keepGroupOrder).toBe(false)
+  })
+})
+
+describe('a read-only trip', () => {
+  it('ignores every change, by hand or by the assistant, but switches plans to look at them', () => {
+    const a = state().activePlanId
+    const b = state().addPlan()!
+    state().switchPlan(a)
+    state().setReadOnly(true)
+    const before = { input: state().input, stops: state().stops, plans: state().plans }
+    state().removeStop(0)
+    state().setNights(0, 9)
+    state().setInput({ pace: 'fast' })
+    state().setPrefs({ dailyBudget: 10 })
+    state().toggleRegion('Nordic countries')
+    expect(state().addPlan()).toBeNull()
+    state().renamePlan(a, 'Renamed')
+    state().deletePlan(b)
+    expect({ input: state().input, stops: state().stops, plans: state().plans }).toEqual(before)
+
+    state().switchPlan(b)
+    expect(state().activePlanId).toBe(b)
+    state().setReadOnly(false)
+    state().removeStop(0)
+    expect(state().stops).toHaveLength(before.stops.length - 1)
+  })
+
+  it('is saved with the trip, and a saved read-only trip opens read-only (also on the server)', () => {
+    expect(tripData(state())).not.toHaveProperty('readOnly')
+    state().setReadOnly(true)
+    const saved = tripData(state())
+    expect(saved.readOnly).toBe(true)
+    expect(loadTrip(saved).readOnly).toBe(true)
+    const server = createTripStore(saved)
+    server.getState().removeStop(0)
+    expect(server.getState().stops).toHaveLength(saved.stops.length)
   })
 })
