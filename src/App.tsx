@@ -190,7 +190,9 @@ export default function App() {
     <div className="flex h-full flex-col">
       <SharedGone />
       <UpdateNotice />
-      {!phone && <Header />}
+      {!phone && <Header onSettings={() => setSettings(true)} />}
+      {/* (From the gear over the map on a phone, in the top bar on a computer.) */}
+      <SettingsPanel open={settings} onClose={() => setSettings(false)} />
       <div className="flex min-h-0 flex-1">
         {!phone && sidebar.hidden && (
           // The folded panel: a strip to open it again, on any tab (the panel stays mounted, so nothing is lost).
@@ -265,7 +267,6 @@ export default function App() {
               >
                 <Settings size={18} />
               </button>
-              <SettingsPanel open={settings} onClose={() => setSettings(false)} />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while a city's is open. */}
               <BottomSheet
                 snap={leftSnap} onSnap={setLeftSnap} onClose={asking ? stopAsking : undefined} label={TAB_LABELS[tab]}

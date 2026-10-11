@@ -1,3 +1,4 @@
+import { Settings } from 'lucide-react'
 import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
 import { shortDate } from '../ui/format'
@@ -8,7 +9,9 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
 
-export function Header() {
+/** The top bar on a computer: the trip, its dates, the display settings at hand, the account, and the gear for all
+ *  the settings (`onSettings`: the settings panel, as on a phone, with the offline map). */
+export function Header({ onSettings }: { onSettings: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
   const { currency } = useMoney()
 
@@ -47,6 +50,9 @@ export function Header() {
           ))}
         </div>
         <ThemeMenu />
+        <button onClick={onSettings} aria-label="Settings" title="Settings" className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <Settings size={17} />
+        </button>
         {!SHARED_TOKEN && <div className="ml-1.5"><AccountMenu /></div>}
       </div>
     </header>

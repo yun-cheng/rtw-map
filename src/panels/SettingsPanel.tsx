@@ -17,8 +17,9 @@ import { TripSwitcher } from './TripSwitcher'
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
 
 /**
- * On a phone, the top bar's contents (trips, currency, temperature unit, theme, account) and the offline map in a
- * panel that slides in from the right, opened from the gear over the map; the map gets the top bar's room.
+ * All the settings (trips, currency, temperature unit, theme, offline map, account) in a panel that slides in from the
+ * right: on a phone from the gear over the map (the map gets the top bar's room), on a computer from the gear in the
+ * top bar (which has the display settings at hand too).
  */
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit, localNames, setLocalNames } = useTrip()
