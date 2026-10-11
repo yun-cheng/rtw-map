@@ -11,7 +11,7 @@ import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { NoteMark } from './Notes'
-import { TripStatus } from './Travel'
+import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
@@ -27,16 +27,13 @@ export function Itinerary() {
 
   return (
     <div className="flex min-h-full flex-col">
-      <div className="flex items-center gap-1 px-4 pt-3 pb-2">
-        <h2 className="flex-1 text-[15px] font-semibold">Itinerary <span className="font-normal text-muted">· {plan.stops.length} stops</span></h2>
+      {/* (No title: the tab names it.) */}
+      <div className="flex items-start gap-1 px-4 pt-3 pb-2">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+          <TripStatus />
+          <TripSummary />
+        </div>
         <UndoRedo />
-      </div>
-      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-4 pb-2 text-[12px] text-muted empty:hidden">
-        <TripStatus />
-        {plan.stops.length > 0 && (
-          // From the first stop to leaving the last (the trip's own dates may run past them, when they don't fill it).
-          <span>{tripDates(plan.stops[0].arrive, plan.stops.at(-1)!.depart)} · {nights(plan.stops.reduce((n, s) => n + s.nights, 0))}</span>
-        )}
       </div>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
@@ -124,14 +121,6 @@ export function Itinerary() {
     </div>
   )
 }
-
-/** The trip's dates: "12 Mar – 10 May 2027" (both years when it crosses one). */
-function tripDates(start: string, end: string) {
-  const [from, to] = [start.slice(0, 4), end.slice(0, 4)]
-  return `${shortDate(start)}${from !== to ? ` ${from}` : ''} – ${shortDate(end)} ${to}`
-}
-
-const nights = (n: number) => `${n} night${n === 1 ? '' : 's'}`
 
 /** Asks before a stop is taken out by hand. */
 export const confirmRemove = (name: string, nights: number) =>

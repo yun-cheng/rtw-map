@@ -9,6 +9,7 @@ import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { Editable } from './ReadOnly'
+import { TripSummary } from './Travel'
 import { ChangesLine, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
@@ -70,14 +71,8 @@ export function SetupPanel() {
   return (
     <div className="flex min-h-full flex-col bg-canvas">
       <div className="flex flex-1 flex-col gap-3 p-3">
-        <div className="px-1">
-          <h2 className="text-[15px] font-semibold">Trip</h2>
-          {plan && (
-            <p className="mt-0.5 text-[12px] text-muted">
-              <b className="text-ink">{slashDate(input.startDate)} – {slashDate(input.endDate)}</b> · <b className="text-ink">{plan.totalNights}</b> nights · <b className="text-ink">{plan.stops.length}</b> stops
-            </p>
-          )}
-        </div>
+        {/* (No title: the tab names it.) */}
+        {plan && <p className="px-1"><TripSummary /></p>}
 
         <Card><Editable>
           <Field label="Dates">
@@ -270,9 +265,6 @@ function groupSummary(g: TripGroup) {
   const line = [days, ...parts.filter(([n]) => n).map(([n, label]) => `${n} ${label}`)].filter(Boolean).join(' · ') || 'No countries'
   return line.charAt(0).toUpperCase() + line.slice(1)
 }
-
-/** A date as the date inputs show it: 2027/05/08. */
-const slashDate = (iso: string) => iso.replaceAll('-', '/')
 
 const inputCls = 'w-full rounded-md border border-line bg-panel px-2 py-1.5 text-[13px] outline-none focus:border-accent'
 /** A number field: the stops' range and the Schengen days, the same size. */

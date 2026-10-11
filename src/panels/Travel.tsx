@@ -11,6 +11,18 @@ onPastEdit((changes) =>
   useChat.getState().busy ||
   window.confirm(`Your trip is under way, and this changes days that already happened: ${pastText(changes)}.\n\nChange them anyway?`))
 
+/** The trip's dates, nights and stops: "2026/09/01 – 2027/01/30 · 151 nights · 25 stops" (the Trip and Itinerary tabs). */
+export function TripSummary() {
+  const { input, plan } = useTrip()
+  if (!plan) return null
+  const slash = (iso: string) => iso.replaceAll('-', '/')
+  return (
+    <span className="text-[12px] text-muted">
+      <b className="text-ink">{slash(input.startDate)} – {slash(input.endDate)}</b> · <b className="text-ink">{plan.totalNights}</b> nights · <b className="text-ink">{plan.stops.length}</b> stops
+    </span>
+  )
+}
+
 /**
  * Where today is against the trip, as a chip by the itinerary's dates: "Planning · starts in 59 days", "Travelling ·
  * day 23 of 60 · Tirana" or "Finished"; nothing without dates.
