@@ -1,6 +1,6 @@
 // The city panel's tabs, their icons and the sections each one shows (or its sub-tabs); shared with the plan's checks
 // (Checks.tsx), which open the tab a check is about.
-import { CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
+import { CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, StickyNote, TramFront, type LucideIcon } from 'lucide-react'
 import type { CityTab } from '../store/trip'
 
 export type SectionKey =
@@ -13,6 +13,8 @@ export type Part = { key: string; label: string; sections: SectionKey[] }
 /** Tabs of the city panel, their icons and the sections each one shows (or its sub-tabs), most useful first. */
 export const TABS: { key: CityTab; label: string; icon: LucideIcon; sections: SectionKey[]; parts?: Part[] }[] = [
   { key: 'overview', label: 'Overview', icon: LayoutGrid, sections: [] },
+  // The user's own notes on the city (Notes.tsx), not the app's data.
+  { key: 'notes', label: 'Notes', icon: StickyNote, sections: [] },
   { key: 'transport', label: 'Transport', icon: TramFront, sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', icon: CloudSun, sections: ['weather', 'air'] },
   {

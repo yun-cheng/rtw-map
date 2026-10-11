@@ -14,6 +14,7 @@ import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
 import { Forecast } from './Forecast'
 import { confirmRemove } from './Itinerary'
+import { NoteBox } from './Notes'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
 
@@ -705,6 +706,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           </ul>
         </Section>
         </>
+      ) : tabInfo.key === 'notes' ? (
+        <NoteBox kind="cities" id={cityId} tall placeholder={`Anything to remember about ${city.name}: where you're staying, a friend's number, places to try…`} />
       ) : (
         (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
       )}

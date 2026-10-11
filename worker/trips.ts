@@ -1,7 +1,7 @@
 // Saved trips: checks what the browser sends and builds the short summary shown in the trip list.
 // Plain functions, used by the Account Durable Object (account.ts) and tested in worker.test.ts.
 
-export const TRIP_LIMITS = { trips: 50, plans: 8, nameChars: 80, dataBytes: 400_000, chatBytes: 600_000 }
+export const TRIP_LIMITS = { trips: 50, plans: 8, nameChars: 80, dataBytes: 400_000, chatBytes: 600_000, noteChars: 2000 }
 
 /** What a trip list shows without loading each trip. */
 export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number }
@@ -17,7 +17,7 @@ export function parseTripPatch(raw: unknown): TripPatch | string {
     patch.name = name.trim().slice(0, TRIP_LIMITS.nameChars)
   }
   if (data !== undefined) {
-    const d = data as { input?: unknown; stops?: unknown; plans?: unknown; activePlanId?: unknown; readOnly?: unknown }
+    const d = data as { input?: unknown; stops?: unknown; plans?: unknown; activePlanId?: unknown; readOnly?: unknown; notes?: unknown }
     if (!d || typeof d !== 'object' || typeof d.input !== 'object' || !Array.isArray(d.stops)) return 'Invalid trip'
     // Other versions of the itinerary (plans), each with its own setup and stops; the active one is also at the top.
     const plans = d.plans === undefined ? undefined : Array.isArray(d.plans) && d.plans.length <= TRIP_LIMITS.plans ? d.plans : null
@@ -28,6 +28,7 @@ export function parseTripPatch(raw: unknown): TripPatch | string {
       input: d.input, stops: d.stops,
       ...(plans && { plans, activePlanId: typeof d.activePlanId === 'string' ? d.activePlanId : undefined }),
       ...(d.readOnly === true && { readOnly: true }),
+      ...notesOf(d.notes),
     })
     if (patch.data.length > TRIP_LIMITS.dataBytes) return 'This trip is too large to save'
   }
@@ -36,6 +37,16 @@ export function parseTripPatch(raw: unknown): TripPatch | string {
     if (patch.chat.length > TRIP_LIMITS.chatBytes) return 'This trip\'s chat is too long to save: start a new chat'
   }
   return patch
+}
+
+/** The user's notes on cities and journeys: text only, each cut to the most allowed; anything else is dropped. */
+function notesOf(raw: unknown): { notes?: Record<'cities' | 'legs', Record<string, string>> } {
+  if (!raw || typeof raw !== 'object') return {}
+  const texts = (x: unknown) => Object.fromEntries(
+    Object.entries(x && typeof x === 'object' ? x : {}).filter(([, v]) => typeof v === 'string' && v.trim()).map(([k, v]) => [k, (v as string).slice(0, TRIP_LIMITS.noteChars)]),
+  )
+  const notes = { cities: texts((raw as { cities?: unknown }).cities), legs: texts((raw as { legs?: unknown }).legs) }
+  return Object.keys(notes.cities).length || Object.keys(notes.legs).length ? { notes } : {}
 }
 
 /** Dates and number of stops, for the trip list. */

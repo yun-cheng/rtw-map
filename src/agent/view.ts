@@ -14,6 +14,7 @@ export { viewText, type ViewItem, type ViewRef } from './shared'
 /** What each city tab shows (the values come from get_shared_view). */
 const TAB_SHOWS: Record<CityTab, string> = {
   overview: 'a summary of everything below and any problems',
+  notes: 'the user\'s own notes on the city (private: not shared with you)',
   transport: 'public transport, taxis and rentals in the city, and direct connections to other cities',
   weather: 'monthly highs and lows, rainy days, sunshine and air quality, with the stay months highlighted',
   costs: 'daily costs per budget, sample prices, how widely cards are accepted and when cash is needed',
@@ -25,7 +26,7 @@ const TAB_SHOWS: Record<CityTab, string> = {
 }
 
 const TAB_NAMES: Record<CityTab, string> = {
-  overview: 'Overview', transport: 'Transport', weather: 'Weather', costs: 'Costs', daily: 'Daily life', phrases: 'Phrases', health: 'Health', safety: 'Safety', entry: 'Entry',
+  overview: 'Overview', notes: 'Notes', transport: 'Transport', weather: 'Weather', costs: 'Costs', daily: 'Daily life', phrases: 'Phrases', health: 'Health', safety: 'Safety', entry: 'Entry',
 }
 const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
   none: { name: 'Route', about: 'the trip: its stops in order, numbered by the trip day they arrive, joined by lines coloured by travel mode (dashed where times are estimated)' },

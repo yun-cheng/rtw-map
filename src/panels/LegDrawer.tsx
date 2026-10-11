@@ -1,9 +1,10 @@
 import { AIRPORT_MIN } from '../planner'
-import { useTrip } from '../store/trip'
+import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, cityName, duration, shortDate, transitUrl } from '../ui/format'
 import { Badge, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AskButton } from './AskButton'
+import { NoteBox } from './Notes'
 
 export function LegDrawer({ index }: { index: number }) {
   const { plan, select } = useTrip()
@@ -43,8 +44,9 @@ export function LegDrawer({ index }: { index: number }) {
         </a>
       </div>
 
+      <Sections>
       {leg.reachable && (
-        <Sections><Section title={leg.hops.length > 1 ? `${leg.hops.length} segments` : 'Option'}>
+        <Section title={leg.hops.length > 1 ? `${leg.hops.length} segments` : 'Option'}>
           <ol className="flex flex-col gap-2">
             {leg.hops.map((h, i) => (
               <li key={i} className="rounded-lg border border-line p-2.5">
@@ -64,8 +66,10 @@ export function LegDrawer({ index }: { index: number }) {
               </li>
             ))}
           </ol>
-        </Section></Sections>
+        </Section>
       )}
+      <NoteBox key={legKey(leg.from, leg.to)} kind="legs" id={legKey(leg.from, leg.to)} placeholder="Anything to remember about this journey: your ticket, the bus time, where it leaves from…" />
+      </Sections>
     </div>
   )
 }

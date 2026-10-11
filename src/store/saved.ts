@@ -37,7 +37,7 @@ const call = async (method: string, url: string, body?: unknown) => {
   return data
 }
 
-/** The open trip as saved: the active plan's setup and stops, all of its plans, and the trip's own settings. */
+/** The open trip as saved: the active plan's setup and stops, all of its plans, and the trip's own settings and notes. */
 const tripData = (): TripData => saveable(useTrip.getState())
 const chatData = (): SavedChat => {
   const { messages, contents, note } = useChat.getState()
@@ -66,6 +66,14 @@ const remembered = () => {
 /** True while a trip is being put on screen, so that isn't mistaken for an edit to save. */
 let applying = false
 let timer: ReturnType<typeof setTimeout> | undefined
+
+/** The run's trip is the one sent when it started: notes written on the page since then stay (the run never changes
+ *  notes). */
+function keepNotes(load: () => void) {
+  const { notes } = useTrip.getState()
+  load()
+  useTrip.setState({ notes })
+}
 
 /** Puts a saved trip and its chat on screen. */
 function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false) {
@@ -175,7 +183,7 @@ function changed() {
 
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
-  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly) changed()
+  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly || s.notes !== prev.notes) changed()
 })
 useChat.subscribe((s, prev) => {
   if (!s.busy && (s.messages !== prev.messages || s.contents !== prev.contents)) changed()
@@ -225,7 +233,7 @@ async function follow(tripId: string, run: Run) {
     if (now.run.reply?.spent) useChat.setState({ spent: now.run.reply.spent })
     if (now.data && now.run.status === 'running') {
       applying = true
-      useTrip.getState().openTrip(now.data, true)
+      keepNotes(() => useTrip.getState().openTrip(now.data!, true))
       applying = false
     }
     version = now.run.version
@@ -234,7 +242,7 @@ async function follow(tripId: string, run: Run) {
     try {
       const trip = await call('GET', `/api/trips/${tripId}`)
       if (useSaved.getState().activeId !== tripId) break
-      show(tripId, trip.data, trip.chat, true)
+      keepNotes(() => show(tripId, trip.data, trip.chat, true))
       // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
       // again, in the chat (saved as usual).
       const last = useChat.getState().messages.at(-1)

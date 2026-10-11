@@ -156,3 +156,30 @@ fieldset:disabled :is(input, select, textarea, button) {
   opacity: 0.6;
   cursor: default;
 }
+
+/* A note written in Markdown (panels/NoteMarkdown.tsx), in the panel's own type. */
+.note-md {
+  font-size: 13px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  & > * + * { margin-top: 0.5em; }
+  & h1, & h2, & h3, & h4 { font-weight: 600; line-height: 1.3; }
+  & h1 { font-size: 15px; }
+  & h2 { font-size: 14px; }
+  & h3, & h4 { font-size: 13px; }
+  & ul { list-style: disc; padding-left: 1.25em; }
+  & ol { list-style: decimal; padding-left: 1.25em; }
+  & li + li, & li > ul, & li > ol { margin-top: 0.15em; }
+  & li.task-list-item { list-style: none; margin-left: -1.25em; }
+  & li.task-list-item input { margin-right: 0.4em; vertical-align: -1px; accent-color: var(--color-accent); }
+  & a { color: var(--color-accent); text-decoration: underline; }
+  & code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--color-canvas); padding: 0 0.25em; border-radius: 3px; }
+  & pre { background: var(--color-canvas); padding: 0.5em 0.75em; border-radius: 6px; overflow-x: auto; }
+  & pre code { padding: 0; background: none; }
+  & blockquote { border-left: 2px solid var(--color-line); padding-left: 0.75em; color: var(--color-muted); }
+  & table { display: block; overflow-x: auto; border-collapse: collapse; }
+  & th, & td { border: 1px solid var(--color-line); padding: 0.2em 0.5em; }
+  & th { font-weight: 600; }
+  & hr { border-color: var(--color-line); }
+  & del { color: var(--color-muted); }
+}

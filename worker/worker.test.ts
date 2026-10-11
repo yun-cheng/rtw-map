@@ -163,6 +163,15 @@ describe('saved trips', () => {
     expect(data(undefined)).not.toHaveProperty('readOnly')
   })
 
+  it("keeps the user's notes as text only, each cut to the most allowed", () => {
+    const notes = { cities: { krakow: 'Hostel', bad: 3, empty: ' ' }, legs: { 'a>b': 'x'.repeat(TRIP_LIMITS.noteChars + 5) }, other: 1 }
+    const data = JSON.parse((parseTripPatch({ data: { input: {}, stops: [], notes } }) as { data: string }).data)
+    expect(data.notes.cities).toEqual({ krakow: 'Hostel' })
+    expect(data.notes.legs['a>b']).toHaveLength(TRIP_LIMITS.noteChars)
+    expect(data.notes).not.toHaveProperty('other')
+    expect(JSON.parse((parseTripPatch({ data: { input: {}, stops: [], notes: { cities: { a: 1 } } } }) as { data: string }).data)).not.toHaveProperty('notes')
+  })
+
   it('rejects empty names, malformed trips and oversized data', () => {
     expect(parseTripPatch({ name: '   ' })).toBeTypeOf('string')
     expect(parseTripPatch({ data: { input: {}, stops: 'x' } })).toBeTypeOf('string')

@@ -474,6 +474,7 @@ function routeTool(args: Args): ToolResult {
 /** Which parts of get_city_info each tab of the city panel shows. */
 const TAB_FIELDS: Record<CityTab, string[] | null> = {
   overview: null, // a summary of everything
+  notes: [], // the user's own notes, which the assistant doesn't see
   transport: ['public_transport', 'taxi_apps', 'connections'],
   weather: ['weather', 'air_quality'],
   costs: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],

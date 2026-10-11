@@ -7,10 +7,10 @@ import type { TempUnit } from '../ui/format'
 import { evaluatePlan, withPrefs, type CostKind } from '../planner'
 import { loadTrip, newTripInput, planFor, planId, tripActions, tripPlans, type TripCore, type TripData } from './tripCore'
 
-export { MAX_PLANS, newTripInput, nextPlanName, tripPlans, type TripData, type TripPlan } from './tripCore'
+export { MAX_NOTE_CHARS, MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type CityTab = 'overview' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
+export type CityTab = 'overview' | 'notes' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
 export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen'
 export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen']
 /** The kinds of place the Nearby map view can show. */
@@ -110,6 +110,7 @@ export const useTrip = create<State>()(
         activePlanId: firstPlan,
         plan: null,
         readOnly: false,
+        notes: {},
         selected: null,
         layer: 'none',
         layerMonth: 0,
@@ -205,7 +206,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, notes: s.notes, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
       merge: (persisted, current) => {
         const merged = { ...current, ...(persisted as Partial<State>) }
         // A map view that has since been removed (Cards, English, Safety).
