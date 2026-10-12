@@ -63,6 +63,11 @@ How to work:
   they can click instead of typing, written as the user would say them, e.g.:
   Choices: [Yes, swap them] [Keep Kotor] [Show me other beach towns]
   Only on that last line, nothing after it. Leave it out for open questions (dates, names) and plain answers.
+- My visit, in each city's panel, is the user's own: where they stay (with check-in and check-out days, address,
+  booking reference, price, link and a note such as the door code), photo albums, links (tours, tickets, restaurants)
+  and a note per city or journey. get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the
+  user asks, e.g. "save this booking" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
+  is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
 - Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
 - You can't book anything. Keep answers short and practical.
 - Reply in English, the app's language, unless the user's latest message is written in another language: then
@@ -134,6 +139,36 @@ export const TOOLS: FunctionDeclaration[] = [
     name: 'get_options',
     description: 'The world\'s regions (each with its countries), the countries with cities in the app and those without yet, interests, passports, paces and budgets that the settings accept.',
     parametersJsonSchema: obj(),
+  },
+  // ---- My visit
+  {
+    name: 'get_visit',
+    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), photo albums, links and notes, for each city or journey between two, each with its id.',
+    parametersJsonSchema: obj({ city: str('Only this city and the journeys to and from it (name or id); default: all') }),
+  },
+  {
+    name: 'save_visit_item',
+    description: 'Add a stay, photo album, link or note to a city\'s My visit, or change one (its id from get_visit). Give only the fields to set ("" empties one). A city has one note, and a journey between two cities one note (and nothing else).',
+    parametersJsonSchema: obj({
+      id: str('The item to change, from get_visit; leave out to add one'),
+      kind: str('What to add', { enum: ['stay', 'album', 'link', 'note'] }),
+      city: { ...CITY, description: 'The city it belongs to (to add one): any city in the app, usually a stop of the trip' },
+      journey_to: { ...CITY, description: 'For a note on the journey from city to this city, instead of on the city' },
+      title: str('A stay\'s name (the hotel, hostel or flat); an album\'s or a link\'s title'),
+      url: str('A stay\'s booking link; the album\'s or the link\'s web address'),
+      address: str('A stay\'s address'),
+      check_in: str('A stay\'s check-in day, YYYY-MM-DD'),
+      check_out: str('A stay\'s check-out day, YYYY-MM-DD'),
+      reference: str('A stay\'s booking reference'),
+      price: str('A stay\'s price as the user would write it, e.g. "€84, paid" or "NT$3,200, pay at the hotel"'),
+      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s own note (door code, wifi, how to get in)'),
+      append: { type: 'boolean', description: 'Add text to the end of the note instead of replacing it' },
+    }),
+  },
+  {
+    name: 'remove_visit_item',
+    description: 'Remove a stay, album, link or note from My visit, by its id from get_visit. Only when the user asks.',
+    parametersJsonSchema: obj({ id: str('The item\'s id, from get_visit') }, ['id']),
   },
   // ---- change the setup
   {
@@ -285,3 +320,6 @@ export const WRITE_TOOLS = new Set([
   'update_settings', 'update_preferences', 'new_plan', 'switch_plan', 'rename_plan', 'delete_plan', 'add_region', 'update_region', 'set_country_mode', 'set_itinerary',
   'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'reorder_stops',
 ])
+
+/** Names of tools that change My visit (the user's own stays, albums, links and notes; not the trip's plans). */
+export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item'])

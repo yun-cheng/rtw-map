@@ -313,30 +313,34 @@ export class Account extends DurableObject {
     return r && { email: r.email, stop: r.stop === 1 || r.status !== 'running' }
   }
 
-  /** For the runner: the run's message and the trip and chat it starts from, as JSON text. */
+  /** For the runner: the run's message and the trip, chat and My visit items it starts from, as JSON text. */
   async runInput(id: string): Promise<string | null> {
     const r = this.run(id)
     const trip = r && this.row(r.trip_id)
     if (!r || !trip) return null
-    return `{"status":${JSON.stringify(r.status)},"created":${r.created},"request":${r.request},"data":${trip.data ?? 'null'},"chat":${trip.chat ?? 'null'}}`
+    const items = JSON.stringify(this.kept<Items>(r.trip_id, 'items'))
+    return `{"status":${JSON.stringify(r.status)},"created":${r.created},"request":${r.request},"data":${trip.data ?? 'null'},"chat":${trip.chat ?? 'null'},"items":${items}}`
   }
 
   /** From the runner, after each step and every few seconds while it waits: the reply so far and the trip when they
-   *  changed (and that it's still going). Answers whether to stop. */
-  async runProgress(id: string, reply: string | undefined, data: string | undefined): Promise<{ stop: boolean }> {
+   *  changed (and that it's still going), and the My visit items it changed (merged as a device's). Answers whether
+   *  to stop. */
+  async runProgress(id: string, reply: string | undefined, data: string | undefined, items: TripItem[] = []): Promise<{ stop: boolean }> {
     const r = this.run(id)
     if (!r || r.status !== 'running') return { stop: true }
     if (data !== undefined) this.write(r.trip_id, { data })
+    if (items.length) await this.saveItems(r.trip_id, items)
     this.ctx.storage.sql.exec('UPDATE runs SET reply = ?, version = version + ?, updated = ? WHERE id = ?',
       reply ?? r.reply, data === undefined ? 0 : 1, Date.now(), id)
     return { stop: r.stop === 1 }
   }
 
-  /** From the runner, at the end: the trip and its chat with the reply, and how it ended. */
-  async finishRun(id: string, patch: TripPatch, reply: string, status: Exclude<RunStatus, 'running'>, error: string | null): Promise<boolean> {
+  /** From the runner, at the end: the trip and its chat with the reply, the My visit items changed, and how it ended. */
+  async finishRun(id: string, patch: TripPatch, reply: string, status: Exclude<RunStatus, 'running'>, error: string | null, items: TripItem[] = []): Promise<boolean> {
     const r = this.ctx.storage.sql.exec<RunRow>('SELECT * FROM runs WHERE id = ?', id).toArray()[0]
     if (!r) return false
     this.write(r.trip_id, patch)
+    if (items.length) await this.saveItems(r.trip_id, items)
     this.ctx.storage.sql.exec('UPDATE runs SET status = ?, reply = ?, error = ?, version = version + 1, updated = ? WHERE id = ?', status, reply, error, Date.now(), id)
     return true
   }

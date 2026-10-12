@@ -5,7 +5,7 @@
 import { BedDouble, Camera, Check, ExternalLink, Link2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { localToday, type ScheduledStop } from '../planner'
-import { isEmptyItem, useAllItems, useItems, useItemsAt, webUrl, type ItemKind, type Items, type TripItem } from '../store/items'
+import { isEmptyItem, newItemId, useAllItems, useItems, useItemsAt, webUrl, type Items, type TripItem } from '../store/items'
 import { ITEM_LIMITS } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
@@ -20,7 +20,6 @@ const stayCovers = (stay: TripItem, stop: Pick<ScheduledStop, 'arrive' | 'depart
 const stayOn = (stay: TripItem, date: string) => (!stay.from || stay.from <= date) && (!stay.to || date < stay.to)
 
 const byDate = (a: TripItem, b: TripItem) => (a.from ?? '').localeCompare(b.from ?? '')
-const newId = (kind: ItemKind) => `${kind}:${crypto.getRandomValues(new Uint32Array(2)).join('').slice(0, 12)}`
 const host = (url: string) => {
   try {
     return new URL(url).hostname.replace(/^www\./, '')
@@ -66,7 +65,7 @@ function Stays({ cityId, shown, dates, title = 'Where I stay' }: { cityId: strin
   return (
     <Section
       title={title}
-      aside={editing === null && <button onClick={() => setEditing(newId('stay'))} className={small}><Plus size={12} /> Add a stay</button>}
+      aside={editing === null && <button onClick={() => setEditing(newItemId('stay'))} className={small}><Plus size={12} /> Add a stay</button>}
     >
       {stays.length === 0 && editing === null && (
         <p className="text-[12px] text-muted">The hotel, hostel or flat: its address, booking and dates, kept on this device too, for when there's no connection.</p>
@@ -198,7 +197,7 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
   const [editing, setEditing] = useState<string | null>(null)
   const { title, add, icon: Icon, empty } = LIST[kind]
   return (
-    <Section title={title} aside={editing === null && <button onClick={() => setEditing(newId(kind))} className={small}><Plus size={12} /> {add}</button>}>
+    <Section title={title} aside={editing === null && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}>
       {items.length === 0 && editing === null && <p className="text-[12px] text-muted">{empty}</p>}
       <ul className="flex flex-col gap-1">
         {items.map((i) => (

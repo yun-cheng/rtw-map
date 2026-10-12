@@ -3,9 +3,11 @@
 // assistant's loop (engine.ts) calling the model through /api/chat (the Worker, which calls Gemini).
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { useItems } from '../store/items'
 import { useTrip } from '../store/trip'
 import { useAccount, type Usage } from './account'
 import { NO_SPENT, runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from './engine'
+import type { ItemsHandle } from './tools'
 import type { ViewItem } from './view'
 
 export { NO_SPENT, splitChoices, type ChatMessage, type SavedChat, type Spent, type ToolStep } from './engine'
@@ -73,6 +75,16 @@ const callModel: ModelCall = async (contents, context, think, signal, onSpent) =
   return data.content as Content
 }
 
+/** The open trip's My visit, for the assistant's tools. */
+const items: ItemsHandle = {
+  get: () => {
+    const { books, key } = useItems.getState()
+    return books[key]?.entries ?? {}
+  },
+  put: (patch) => useItems.getState().put(patch),
+  remove: (id) => useItems.getState().remove(id),
+}
+
 /** Stops the reply under way (one at a time). */
 let controller: AbortController | null = null
 
@@ -106,7 +118,7 @@ export const useChat = create<ChatState>()(
         const startedAt = Date.now()
         set({ busy: true, note: null, spent: NO_SPENT, startedAt, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
         const { reply, contents } = await runAssistant({
-          trip: useTrip, view, history, note, text, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
+          trip: useTrip, items, view, history, note, text, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
           onSpent: (spent) => set({ spent }),
         })
         controller = null
@@ -121,10 +133,13 @@ export const useChat = create<ChatState>()(
 
       undo: (index) => {
         const msg = get().messages[index]
-        if (msg?.role !== 'assistant' || !msg.before || msg.undone || useTrip.getState().readOnly) return
-        useTrip.getState().restore(msg.before)
+        if (msg?.role !== 'assistant' || !(msg.before || msg.itemsBefore) || msg.undone) return
+        // (A read-only trip keeps its plans as they are; My visit can still change.)
+        if (msg.before && useTrip.getState().readOnly) return
+        if (msg.before) useTrip.getState().restore(msg.before)
+        if (msg.itemsBefore) useItems.getState().restore(msg.itemsBefore)
         set({
-          note: 'The user pressed Undo: the trip is back to how it was before your previous changes.',
+          note: `The user pressed Undo: ${msg.before && msg.itemsBefore ? 'the trip and My visit are' : msg.before ? 'the trip is' : 'My visit is'} back to how it was before your previous changes.`,
           messages: get().messages.map((m, i) => (i === index ? { ...m, undone: true } : m)),
         })
       },

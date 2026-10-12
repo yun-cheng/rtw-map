@@ -3,16 +3,18 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
-import { mergeItems, noteId, notesAsItems, type Items, type TripItem } from './itemsCore'
+import { changedItem, mergeItems, noteId, notesAsItems, removedItem, type Items, type TripItem } from './itemsCore'
 import type { TripNotes } from './tripCore'
 
-export { isEmptyItem, noteId, webUrl, type ItemKind, type Items, type TripItem } from './itemsCore'
+export { isEmptyItem, newItemId, noteId, webUrl, type ItemKind, type Items, type TripItem } from './itemsCore'
 
 type ItemsState = BookState<TripItem> & {
   /** Adds or changes an item (`kind` and `at` are needed for a new one). */
   put: (item: Partial<TripItem> & { id: string }) => void
   /** Removes an item (kept as removed, so the removal reaches the other devices). */
   remove: (id: string) => void
+  /** Puts items back as they were (null: not there then, so removed), e.g. for the assistant's Undo. */
+  restore: (was: Record<string, TripItem | null>) => void
   /** Notes kept with the trip's data before items, moved into the open trip's items (those not there yet). */
   takeNotes: (notes: TripNotes | undefined) => void
 }
@@ -35,20 +37,20 @@ export const useItems = create<ItemsState>()(
         ...bookActions<TripItem>(set, get, (i) => i.id, mergeItems, () => onChange()),
 
         put: (patch) => {
-          const old = current()[patch.id]
-          const kind = patch.kind ?? old?.kind
-          const at = patch.at ?? old?.at
-          if (!kind || !at) return
-          const { deleted: _, ...rest } = { ...old, ...patch }
-          // (Fields emptied are dropped.)
-          const item = Object.fromEntries(Object.entries({ ...rest, kind, at, updatedAt: Date.now() }).filter(([, v]) => v !== '' && v !== undefined)) as unknown as TripItem
-          changeBook(set, get, { [item.id]: item }, onChange)
+          const item = changedItem(current()[patch.id], patch)
+          if (item) changeBook(set, get, { [item.id]: item }, onChange)
         },
 
         remove: (id) => {
-          const old = current()[id]
-          if (!old || old.deleted) return
-          changeBook(set, get, { [id]: { id, kind: old.kind, at: old.at, updatedAt: Date.now(), deleted: true } }, onChange)
+          const item = removedItem(current()[id])
+          if (item) changeBook(set, get, { [id]: item }, onChange)
+        },
+
+        restore: (was) => {
+          const now = Date.now()
+          const items = Object.entries(was).map(([id, old]) => (old ? { ...old, updatedAt: now } : removedItem(current()[id], now)))
+            .filter((i): i is TripItem => !!i)
+          if (items.length) changeBook(set, get, Object.fromEntries(items.map((i) => [i.id, i])), onChange)
         },
 
         takeNotes: (notes) => {

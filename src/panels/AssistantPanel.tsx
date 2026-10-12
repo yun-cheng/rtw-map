@@ -234,9 +234,12 @@ function Chat() {
   // Items the user chose not to share; keyed by item, so something newly opened is shared again.
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
   const shared = view.filter((v) => !hidden.has(v.key))
-  // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after).
+  // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after);
+  // on a read-only trip, only for one that changed just My visit.
   const readOnly = useTrip((s) => s.readOnly)
-  const lastChange = readOnly ? -1 : messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
+  const lastIndex = messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
+  const last = messages[lastIndex]
+  const lastChange = readOnly && last?.role === 'assistant' && last.before ? -1 : lastIndex
   // What this chat has used, the reply under way included, and how long its replies took.
   const total = [...messages.map((m) => (m.role === 'assistant' && m.spent) || NO_SPENT), busy ? spent : NO_SPENT]
     .reduce((a, b) => ({ calls: a.calls + b.calls, input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd }), NO_SPENT)

@@ -4,10 +4,10 @@
 //
 //   browser ── POST /api/runs ──▶ Worker ── saves the trip, adds the run ──▶ Account
 //                                 Worker ── POST {RUNNER_URL}/start ──▶ runner (queues the run on Cloud Tasks)
-//   runner ── GET  /internal/runs/:account/:id ──────────▶ the run's message and the trip as it was
+//   runner ── GET  /internal/runs/:account/:id ──────────▶ the run's message, the trip as it was, My visit
 //   runner ── POST /internal/runs/:account/:id/chat ─────▶ one model call (allowance and cost as /api/chat)
-//   runner ── POST /internal/runs/:account/:id/progress ─▶ the trip and the reply so far; answers whether to stop
-//   runner ── POST /internal/runs/:account/:id/finish ───▶ the trip, the chat, and how it ended
+//   runner ── POST /internal/runs/:account/:id/progress ─▶ the trip, My visit's changes, the reply so far; stop?
+//   runner ── POST /internal/runs/:account/:id/finish ───▶ the trip, My visit's changes, the chat, how it ended
 //   browser ── GET /api/runs/:id ──▶ how it's going (and the trip when it changed); POST /api/runs/:id/stop
 
 export type RunStatus = 'running' | 'done' | 'stopped' | 'failed'

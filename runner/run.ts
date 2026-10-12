@@ -4,6 +4,8 @@
 // and the reply after each step, so the page can follow along or be closed.
 import { runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from '../src/agent/engine'
 import type { ViewItem } from '../src/agent/shared'
+import { itemsHandle } from '../src/agent/tools'
+import type { Items } from '../src/store/itemsCore'
 import { createTripStore, tripData, type Display, type TripData } from '../src/store/tripCore'
 
 type RunInput = {
@@ -12,6 +14,8 @@ type RunInput = {
   request: { text: string; view: ViewItem[]; think: boolean; plan?: 'new' | 'update'; display: Display }
   data: TripData | null
   chat: SavedChat | null
+  /** The trip's My visit. */
+  items: Items | null
 }
 
 /** Waits before retrying when the per-minute limit is hit, and when the Worker can't be reached. */
@@ -70,12 +74,15 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   const { request } = input
   const chat: SavedChat = { messages: input.chat?.messages ?? [], contents: input.chat?.contents ?? [], note: input.chat?.note ?? null }
   const trip = createTripStore(input.data, request.display)
+  const items = itemsHandle(input.items)
+  /** The My visit items changed and not sent yet (they're merged item by item, as a device's). */
+  const unsent = () => [...items.changed].map((id) => items.get()[id])
   const controller = new AbortController()
   const question: ChatMessage = { role: 'user', text: request.text, ...(request.view.length && { view: request.view.map((v) => v.label) }) }
 
   /** Tells the Worker the run is still going (with the reply so far, and the trip when it changed); stops the run
    *  when the user asked to. */
-  const report = async (body: { reply?: ChatMessage; data?: unknown }) => {
+  const report = async (body: { reply?: ChatMessage; data?: unknown; items?: unknown }) => {
     const res = await api.send('/progress', body)
     const { stop } = (await res.json().catch(() => ({}))) as { stop?: boolean }
     if (stop) controller.abort(new Error('Stopped'))
@@ -115,16 +122,20 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   let saved = JSON.stringify(input.data)
   const onStep = async (reply: ChatMessage) => {
     const now = JSON.stringify(tripData(trip.getState()))
-    if ((await report({ reply, ...(now !== saved && { data: JSON.parse(now) }) })) && now !== saved) saved = now
+    const sent = unsent()
+    if (await report({ reply, ...(now !== saved && { data: JSON.parse(now) }), ...(sent.length && { items: sent }) })) {
+      saved = now
+      for (const i of sent) items.changed.delete(i.id)
+    }
   }
 
   const { reply, contents } = await runAssistant({
-    trip, view: request.view, history: chat.contents, note: chat.note, text: request.text, think: request.think, plan: request.plan,
+    trip, items, view: request.view, history: chat.contents, note: chat.note, text: request.text, think: request.think, plan: request.plan,
     callModel, signal: controller.signal, onStep, startedAt: input.created,
   })
   const status = reply.error ? 'failed' : controller.signal.aborted ? 'stopped' : 'done'
   const finished = await api.send('/finish', {
-    status, error: reply.error ?? null, reply, data: tripData(trip.getState()),
+    status, error: reply.error ?? null, reply, data: tripData(trip.getState()), items: unsent(),
     chat: { messages: [...chat.messages, question, reply], contents, note: null } satisfies SavedChat,
   })
   if (!finished.ok) console.error('Run not saved', runId, finished.status, await finished.text())

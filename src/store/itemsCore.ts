@@ -95,6 +95,24 @@ export function mergeItems(items: Items, list: TripItem[]): Items {
   return merged
 }
 
+/** A new item's id, e.g. `stay:123456789012`. */
+export const newItemId = (kind: ItemKind) => `${kind}:${crypto.getRandomValues(new Uint32Array(2)).join('').slice(0, 12)}`
+
+/** An item added or changed: the fields given replace those kept ('' empties one), the rest stay; `kind` and `at` are
+ *  needed for a new one (null without them). */
+export function changedItem(old: TripItem | undefined, patch: Partial<TripItem> & { id: string }, now = Date.now()): TripItem | null {
+  const kind = patch.kind ?? old?.kind
+  const at = patch.at ?? old?.at
+  if (!kind || !at) return null
+  const { deleted: _, ...rest } = { ...old, ...patch }
+  // (Fields emptied are dropped.)
+  return Object.fromEntries(Object.entries({ ...rest, kind, at, updatedAt: now }).filter(([, v]) => v !== '' && v !== undefined)) as unknown as TripItem
+}
+
+/** An item removed: kept as removed, so the removal reaches the other devices (null if there's none to remove). */
+export const removedItem = (old: TripItem | undefined, now = Date.now()): TripItem | null =>
+  old && !old.deleted ? { id: old.id, kind: old.kind, at: old.at, updatedAt: now, deleted: true } : null
+
 /** Notes kept with the trip's data before items (`TripData.notes`), as items: those not already there, a moved note
  *  never overwriting one written (or removed) since. */
 export function notesAsItems(notes: TripNotes | undefined, items: Items, updatedAt: number): TripItem[] {

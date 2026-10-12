@@ -9,9 +9,10 @@ import {
   groceryDay, isTravelling, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
+import { changedItem, isEmptyItem, newItemId, noteId, parseItems, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
-import { WRITE_TOOLS } from './schema'
+import { ITEM_TOOLS, WRITE_TOOLS } from './schema'
 import type { ViewItem, ViewRef } from './shared'
 
 type Args = Record<string, unknown>
@@ -19,10 +20,30 @@ export type ToolResult = Record<string, unknown>
 
 /** A trip the tools read and change: a store's handle. */
 export type TripHandle = { getState: () => TripCore }
+/** The trip's My visit (store/itemsCore.ts): the items kept, and adding, changing (the fields given; '' empties one)
+ *  or removing one. The app's own store in the browser, a run's copy on the server. */
+export type ItemsHandle = { get: () => Items; put: (patch: Partial<TripItem> & { id: string }) => void; remove: (id: string) => void }
 /** What the tools work with while answering one message: the trip, what the user shared from the screen with it,
- *  and whether it's Plan with AI or Update plan (`planning`: the user's setup stays as it is). */
-export type ToolContext = { trip: TripHandle; view: ViewItem[]; planning: boolean }
-export const toolContext = (trip: TripHandle, view: ViewItem[] = [], planning = false): ToolContext => ({ trip, view, planning })
+ *  whether it's Plan with AI or Update plan (`planning`: the user's setup stays as it is), and My visit (`items`). */
+export type ToolContext = { trip: TripHandle; view: ViewItem[]; planning: boolean; items?: ItemsHandle }
+export const toolContext = (trip: TripHandle, view: ViewItem[] = [], planning = false, items?: ItemsHandle): ToolContext => ({ trip, view, planning, items })
+
+/** My visit kept in memory (a run on the server, the MCP tools, tests): `changed`, the ids changed since it was made. */
+export function itemsHandle(start: Items | null): ItemsHandle & { changed: Set<string> } {
+  let items = start ?? {}
+  const changed = new Set<string>()
+  const set = (item: TripItem | null) => {
+    if (!item) return
+    items = { ...items, [item.id]: item }
+    changed.add(item.id)
+  }
+  return {
+    changed,
+    get: () => items,
+    put: (patch) => set(changedItem(items[patch.id], patch)),
+    remove: (id) => set(removedItem(items[id])),
+  }
+}
 
 let bound: ToolContext | null = null
 const trip = () => {
@@ -218,6 +239,114 @@ function tripDetails(): ToolResult {
       warnings: plan.warnings.map((w) => ({ severity: w.severity, title: warningTitle(w, 'C'), detail: w.detail, city: w.cityId && cityName(w.cityId) })),
     },
   }
+}
+
+// ---------------------------------------------------------------- My visit
+
+const ITEM_KINDS: ItemKind[] = ['stay', 'note', 'album', 'link']
+const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link' }
+/** Where an item belongs, by name: "Kraków", or "Kraków → Vienna" for a journey. */
+const itemPlace = (at: string) => at.split('>').map(cityName).join(' → ')
+/** An item in a few words: "stay Hostel Mleczarnia (Kraków)", "note (Kraków → Vienna)". */
+const itemText = (i: TripItem) => `${ITEM_NAMES[i.kind]}${i.kind !== 'note' && i.title ? ` ${i.title}` : ''} (${itemPlace(i.at)})`
+
+function visitItems(): ItemsHandle {
+  if (!bound?.items) throw new ToolError('My visit isn\'t available here.')
+  return bound.items
+}
+
+/** The items kept for the trip's cities and journeys, in the trip's order (only a city's and its journeys', if asked). */
+function visit(args: Args): ToolResult {
+  const only = typeof args.city === 'string' && args.city.trim() ? cityId(args.city) : null
+  const stops = trip().stops.map((s) => s.cityId)
+  const order = (i: TripItem) => {
+    const n = stops.indexOf(i.at.split('>')[0])
+    return n < 0 ? stops.length : n
+  }
+  const list = Object.values(visitItems().get())
+    .filter((i) => !isEmptyItem(i) && (!only || i.at.split('>').includes(only)))
+    .sort((a, b) => order(a) - order(b) || a.at.localeCompare(b.at) || ITEM_KINDS.indexOf(a.kind) - ITEM_KINDS.indexOf(b.kind) || (a.from ?? '').localeCompare(b.from ?? ''))
+  if (!list.length) return { items: [], note: only ? `Nothing kept for ${cityName(only)} yet.` : 'Nothing kept in My visit yet.' }
+  return {
+    items: list.map((i) => ({
+      id: i.id, where: itemPlace(i.at), kind: i.kind, title: i.title, address: i.address, check_in: i.from, check_out: i.to, url: i.url,
+      reference: i.ref, price: i.price, text: i.text, updated: new Date(i.updatedAt).toISOString().slice(0, 10),
+    })),
+  }
+}
+
+/** The tool's arguments and the item's fields they set. */
+const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'ref' | 'price' | 'text'][] = [
+  ['title', 'title'], ['url', 'url'], ['address', 'address'], ['check_in', 'from'], ['check_out', 'to'], ['reference', 'ref'], ['price', 'price'], ['text', 'text'],
+]
+
+function saveItem(args: Args): string {
+  const items = visitItems()
+  const all = items.get()
+  let old: TripItem | undefined
+  let patch: Partial<TripItem> & { id: string }
+  if (typeof args.id === 'string' && args.id) {
+    old = all[args.id]
+    if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
+    if (args.kind && args.kind !== old.kind) throw new ToolError(`That's a ${ITEM_NAMES[old.kind]}: to make it a ${args.kind}, remove it and add one.`)
+    patch = { id: old.id }
+  } else {
+    const kind = args.kind as ItemKind
+    if (!ITEM_KINDS.includes(kind)) throw new ToolError('Give the kind to add: stay, album, link or note.')
+    const from = cityId(args.city)
+    const at = args.journey_to ? `${from}>${cityId(args.journey_to)}` : from
+    if (at.includes('>') && kind !== 'note') throw new ToolError('A journey keeps only a note: put a stay, album or link on a city.')
+    // (A city or journey has one note: adding one changes it.)
+    const id = kind === 'note' ? noteId(at) : newItemId(kind)
+    old = all[id]?.deleted ? undefined : all[id]
+    patch = { id, kind, at }
+  }
+  for (const [arg, key] of ITEM_FIELDS) {
+    const v = args[arg]
+    if (typeof v !== 'string') continue
+    patch[key] = key === 'text' ? v.trim() : v.trim().replace(/\s+/g, ' ')
+  }
+  if (args.append === true && old?.text && patch.text) patch.text = `${old.text.trimEnd()}\n\n${patch.text}`
+  for (const key of ['from', 'to'] as const) if (patch[key] && !isDate(patch[key])) throw new ToolError(`${key === 'from' ? 'check_in' : 'check_out'} must be a day, YYYY-MM-DD.`)
+  if (patch.from && patch.to && patch.to < patch.from) throw new ToolError('check_out must be after check_in.')
+  if (patch.url) {
+    patch.url = webUrl(patch.url)
+    if (!patch.url) throw new ToolError('url must be a web address (http or https).')
+  }
+  const item = changedItem(old, patch)
+  const checked = item && parseItems({ entries: [item] })
+  if (!item || typeof checked === 'string') throw new ToolError(`Couldn't save it: ${checked ?? 'give the kind and city'}.`)
+  if (isEmptyItem(item)) throw new ToolError('Nothing to keep: give a name, a link or a text.')
+  items.put(patch)
+  return `${old ? 'Changed' : 'Added'} ${itemText(item)}`
+}
+
+function removeItem(args: Args): string {
+  const items = visitItems()
+  const old = items.get()[String(args.id ?? '')]
+  if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
+  items.remove(old.id)
+  return `Removed ${itemText(old)}`
+}
+
+/** What a reply changed in My visit, in words (shown under it, with Undo). */
+export function describeItemChanges(before: Items, after: Items): string[] {
+  const out: string[] = []
+  for (const [id, now] of Object.entries(after)) {
+    const was = before[id]
+    if (now === was) continue
+    const had = !isEmptyItem(was)
+    const has = !isEmptyItem(now)
+    if (has) out.push(`${had ? 'Changed' : 'Added'} ${itemText(now)}`)
+    else if (had) out.push(`Removed ${itemText(was!)}`)
+  }
+  return out
+}
+
+/** The items a reply changed, as they were before it (null: not there), to put back with Undo. */
+export function itemsBefore(before: Items, after: Items): Record<string, TripItem | null> | undefined {
+  const ids = Object.keys(after).filter((id) => after[id] !== before[id])
+  return ids.length ? Object.fromEntries(ids.map((id) => [id, before[id] && !before[id].deleted ? before[id] : null])) : undefined
 }
 
 // ---------------------------------------------------------------- reading
@@ -788,6 +917,9 @@ function run(name: string, args: Args): string | ToolResult {
     case 'get_shared_view': return sharedViewTool(args)
     case 'compare_cities': return compareCities(args)
     case 'get_route': return routeTool(args)
+    case 'get_visit': return visit(args)
+    case 'save_visit_item': return saveItem(args)
+    case 'remove_visit_item': return removeItem(args)
     case 'update_settings': return updateSettings(args)
     case 'update_preferences': return updatePreferences(args)
     case 'new_plan': {
@@ -894,7 +1026,7 @@ export const pastText = (changes: PastChange[]) => changes.map((c) =>
 export function runTool(name: string, args: Args = {}): { result: ToolResult; ok: boolean; summary: string } {
   try {
     const out = keepingThePast(name, () => run(name, args))
-    if (typeof out === 'string') return { ok: true, summary: out, result: { done: out, trip: tripContext() } }
+    if (typeof out === 'string') return { ok: true, summary: out, result: { done: out, ...(!ITEM_TOOLS.has(name) && { trip: tripContext() }) } }
     return { ok: true, summary: '', result: out }
   } catch (e) {
     const message = e instanceof ToolError ? e.message : `Failed: ${(e as Error).message}`

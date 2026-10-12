@@ -63,9 +63,6 @@ export const MCP_TOOLS: McpTool[] = [
   ...TOOLS.filter((t) => RUNNER_TOOLS[t.name]).map((t) => tool(t.name, DESCRIPTIONS[t.name] ?? t.description, {
     ...t.parametersJsonSchema, properties: { ...t.parametersJsonSchema.properties, trip: TRIP },
   })),
-  tool('get_visit', 'What the user keeps for the cities of a trip ("My visit" in the app): where they stay (name, address, check-in and check-out days, booking link, reference and price, notes such as the door code), photo albums, links and notes, for each city or journey between two.', {
-    type: 'object', properties: { trip: TRIP, city: { type: 'string', description: 'Only this city and the journeys to and from it (name or id); default: all' } }, required: [],
-  }),
   tool('get_journal', 'The trip\'s journal: what the user wrote about each day of the trip (the day\'s highlight, a few lines, a rating 1–5) and where they spent the night. Without from and to: the latest 60 days written.', {
     type: 'object', properties: { trip: TRIP, from: DAY('First day'), to: DAY('Last day') }, required: [],
   }),

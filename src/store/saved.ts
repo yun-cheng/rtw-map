@@ -401,6 +401,8 @@ setServerRuns({
   send: async (text, view, { think, plan }) => {
     const tripId = useSaved.getState().activeId
     if (!tripId) return false
+    // The run reads My visit from the account: send what's changed here first.
+    await itemsSync.send()
     // The run starts from the trip and chat as on screen (sent with it, so no save is needed first).
     clearTimeout(timer)
     timer = undefined

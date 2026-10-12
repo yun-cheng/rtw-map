@@ -1,10 +1,12 @@
 // The trip assistant's loop: sends the conversation to the model, runs the tools it asks for on the trip, and goes on
 // until the model answers in text (or the run is stopped). The same in the browser (chat.ts, through the Worker's
 // /api/chat) and on the server (a run that goes on when the page is closed): only how the model is called differs.
-// Each reply that changed the trip keeps a copy of the trip from before, for Undo.
-import { WRITE_TOOLS } from './schema'
+// Each reply that changed the trip keeps a copy of the trip from before, for Undo (and of the My visit items it
+// changed).
+import type { TripItem } from '../store/itemsCore'
+import { ITEM_TOOLS, WRITE_TOOLS } from './schema'
 import { viewText, type ViewItem } from './shared'
-import { describeChanges, runTool, snapshot, toolContext, tripContext, withTrip, type TripHandle, type TripSnapshot } from './tools'
+import { describeChanges, describeItemChanges, itemsBefore, runTool, snapshot, toolContext, tripContext, withTrip, type ItemsHandle, type TripHandle, type TripSnapshot } from './tools'
 
 export type Part = { text?: string; thought?: boolean; thoughtSignature?: string; functionCall?: { name: string; args?: Record<string, unknown>; id?: string }; functionResponse?: unknown }
 export type Content = { role: 'user' | 'model'; parts: Part[] }
@@ -22,8 +24,9 @@ export type ChatMessage =
   | { role: 'user'; text: string; view?: string[] }
   /** `choices`: short replies shown as buttons (the model's, or Continue when the user stopped it); `think`: whether
    *  this reply thought harder, so a clicked choice or a retry continues the same way; `spent`: what it used; `ms`:
-   *  how long it took, from when the user asked. */
-  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent; ms?: number }
+   *  how long it took, from when the user asked; `itemsBefore`: the My visit items it changed, as they were (null:
+   *  not there), for Undo. */
+  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; itemsBefore?: Record<string, TripItem | null>; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent; ms?: number }
 export type AssistantMessage = Extract<ChatMessage, { role: 'assistant' }>
 
 /** The part of the chat saved with each trip. */
@@ -100,6 +103,8 @@ export type ModelCall = (contents: Content[], context: string, think: boolean, s
 
 export type Run = {
   trip: TripHandle
+  /** The trip's My visit, for its tools (none: they say it isn't available). */
+  items?: ItemsHandle
   /** What the user shared from the screen with the message. */
   view: ViewItem[]
   /** The conversation so far, as Gemini sees it, and the note about an Undo to send with the message. */
@@ -127,9 +132,10 @@ export type Run = {
 export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage; contents: Content[] }> {
   const { trip, view, think, plan, signal, callModel } = run
   const startedAt = run.startedAt ?? Date.now()
-  const ctx = toolContext(trip, view, !!plan)
+  const ctx = toolContext(trip, view, !!plan, run.items)
   const tools = <T>(fn: () => T) => withTrip(ctx, fn)
   const before = tools(snapshot)
+  const itemsWere = run.items?.get() ?? {}
   // The trip (and view) as it was when the user asked, kept the same for every step of this reply.
   const context = [tools(tripContext), viewText(view)].filter(Boolean).join('\n\n')
   const prefix = run.note && !plan ? `[${run.note}]\n` : ''
@@ -156,7 +162,7 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
       if (!calls.length) break
       const responses: Part[] = calls.map((call) => {
         const { ok, summary, result } = tools(() => runTool(call.name, call.args ?? {}))
-        if (WRITE_TOOLS.has(call.name) || !ok) reply.steps.push({ name: call.name, ok, summary })
+        if (WRITE_TOOLS.has(call.name) || ITEM_TOOLS.has(call.name) || !ok) reply.steps.push({ name: call.name, ok, summary })
         return { functionResponse: { name: call.name, ...(call.id && { id: call.id }), response: result } }
       })
       contents = [...contents, { role: 'user', parts: responses }]
@@ -175,12 +181,13 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
     }
   }
   const changed = reply.steps.some((s) => s.ok && WRITE_TOOLS.has(s.name))
+  const kept = reply.steps.some((s) => s.ok && ITEM_TOOLS.has(s.name))
   // The assistant leaves the plan in order after its changes: from now on, only what changes since counts for Update
   // plan (the user's own edits, the setup).
   if ((plan || changed) && !reply.error && !stopped) trip.getState().markPlanned()
   if (!reply.error) {
-    if (stopped) reply.text = [reply.text, changed ? 'Stopped. The changes so far are kept.' : 'Stopped.'].filter(Boolean).join('\n\n')
-    if (!reply.text) reply.text = changed ? 'Done.' : 'Sorry, I have no answer to that.'
+    if (stopped) reply.text = [reply.text, changed || kept ? 'Stopped. The changes so far are kept.' : 'Stopped.'].filter(Boolean).join('\n\n')
+    if (!reply.text) reply.text = changed || kept ? 'Done.' : 'Sorry, I have no answer to that.'
     if (stopped) choices = ['Continue', ...choices]
     if (choices.length) reply.choices = [...new Set(choices)].slice(0, MAX_CHOICES)
   }
@@ -191,6 +198,13 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
   const samePlans = before.activePlanId === after.activePlanId &&
     (before.plans ?? []).map((p) => p.id + p.name).join() === (after.plans ?? []).map((p) => p.id + p.name).join()
   if (reply.changes.length) reply.before = samePlans ? { input: before.input, stops: before.stops } : before
+  // My visit, apart from the trip (it isn't the plans'): only the items changed.
+  const itemsNow = run.items?.get() ?? {}
+  const items = itemsBefore(itemsWere, itemsNow)
+  if (items) {
+    reply.itemsBefore = items
+    reply.changes.push(...describeItemChanges(itemsWere, itemsNow))
+  }
   reply.ms = Math.max(0, Date.now() - startedAt)
   return { reply, contents: reply.error ? contents : trim(compact(contents)) }
 }

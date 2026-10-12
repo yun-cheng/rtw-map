@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
+import { useItems } from '../store/items'
 import { useTrip } from '../store/trip'
 import { createTripStore } from '../store/tripCore'
 import { splitChoices, useChat } from './chat'
@@ -177,6 +178,23 @@ describe('assistant chat', () => {
     serve({ status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'set_nights', args: { city: useTrip.getState().stops[0].cityId, nights } } }] } } }, reply('Done'))
     await useChat.getState().send('Give the freed nights to my first stop')
     expect(planChanges(useTrip.getState())).toEqual([])
+  })
+
+  it('saves to My visit, and Undo takes it back, also on a read-only trip', async () => {
+    useItems.setState({ books: {}, key: 'local' })
+    useTrip.getState().setReadOnly(true)
+    const save = { status: 200, body: { content: { role: 'model', parts: [{ functionCall: { name: 'save_visit_item', args: { kind: 'stay', city: 'Kraków', title: 'Hostel Mleczarnia', check_in: '2026-05-04' } } }] } } }
+    serve(save, reply('Saved your stay.'))
+    await useChat.getState().send('Save this booking')
+    const entries = () => Object.values(useItems.getState().books.local?.entries ?? {})
+    expect(entries()).toMatchObject([{ kind: 'stay', at: 'krakow', title: 'Hostel Mleczarnia', from: '2026-05-04' }])
+    const index = useChat.getState().messages.length - 1
+    expect(useChat.getState().messages[index]).toMatchObject({ changes: ['Added stay Hostel Mleczarnia (Kraków)'] })
+    expect(useChat.getState().messages[index]).not.toHaveProperty('before')
+    useChat.getState().undo(index)
+    expect(entries()).toMatchObject([{ kind: 'stay', deleted: true }])
+    expect(useChat.getState().note).toMatch(/My visit is back/)
+    useTrip.getState().setReadOnly(false)
   })
 
   it('turns a last "Choices:" line into buttons', () => {

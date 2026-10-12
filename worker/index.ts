@@ -328,16 +328,19 @@ async function internal(request: Request, env: Env, sub: string, id: string, act
     if (caller.stop) return json({ error: 'Stopped', stopped: true }, 409)
     return answer(request, env, { sub, email: caller.email ?? undefined })
   }
-  const body = (await request.json().catch(() => null)) as { reply?: unknown; data?: unknown; chat?: unknown } | null
+  const body = (await request.json().catch(() => null)) as { reply?: unknown; data?: unknown; chat?: unknown; items?: unknown } | null
   const reply = body?.reply === undefined ? undefined : JSON.stringify(body.reply)
   if (reply && reply.length > RUN_LIMITS.replyBytes) return json({ error: 'Reply too long' }, 413)
   const patch = parseTripPatch({ ...(body?.data !== undefined && { data: body.data }), ...(body?.chat !== undefined && { chat: body.chat }) })
   if (typeof patch === 'string') return json({ error: patch }, 400)
-  if (action === 'progress') return json(await store.runProgress(id, reply, patch.data))
+  // The My visit items the run changed (checked as a device's).
+  const items = body?.items === undefined ? [] : parseItems({ entries: body.items })
+  if (typeof items === 'string') return json({ error: items }, 400)
+  if (action === 'progress') return json(await store.runProgress(id, reply, patch.data, items))
   if (action === 'finish') {
     const end = parseRunEnd(body)
     if (typeof end === 'string') return json({ error: end }, 400)
-    return (await store.finishRun(id, patch, reply ?? 'null', end.status, end.error)) ? json({ ok: true }) : json({ error: 'Run not found' }, 404)
+    return (await store.finishRun(id, patch, reply ?? 'null', end.status, end.error, items)) ? json({ ok: true }) : json({ error: 'Run not found' }, 404)
   }
   return json({ error: 'Not found' }, 404)
 }

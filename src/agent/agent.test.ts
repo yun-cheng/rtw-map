@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
-import { bindTrip, describeChanges, runTool, snapshot, tripContext } from './tools'
+import { bindTrip, describeChanges, describeItemChanges, itemsBefore, itemsHandle, runTool, snapshot, toolContext, tripContext, withTrip } from './tools'
 import { viewItems, viewText } from './view'
 
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
@@ -209,6 +209,76 @@ describe('assistant tools', () => {
     const ctx = tripContext()
     expect(ctx).toMatch(/Itinerary \(\d+ stops/)
     expect(ctx.length).toBeLessThan(30_000)
+  })
+})
+
+describe('My visit tools', () => {
+  /** Runs tools on the trip with a My visit of its own. */
+  const visit = (start = {}) => {
+    const items = itemsHandle(start)
+    return { items, run: (name: string, args: Record<string, unknown> = {}) => withTrip(toolContext(useTrip, [], false, items), () => runTool(name, args)) }
+  }
+
+  it('adds a stay, changes only the fields given, and lists it with its id', () => {
+    const { items, run } = visit()
+    const added = run('save_visit_item', {
+      kind: 'stay', city: 'Kraków', title: 'Hostel Mleczarnia', address: 'Meiselsa 22', check_in: '2026-05-04', check_out: '2026-05-07',
+      reference: 'BK-123', price: '€84, paid', url: 'booking.com/x',
+    })
+    expect(added).toMatchObject({ ok: true, summary: 'Added stay Hostel Mleczarnia (Kraków)' })
+    // (No trip in the result: My visit isn't the plan.)
+    expect(added.result.trip).toBeUndefined()
+    const [stay] = run('get_visit', { city: 'krakow' }).result.items as { id: string }[]
+    expect(stay).toMatchObject({ where: 'Kraków', kind: 'stay', title: 'Hostel Mleczarnia', check_in: '2026-05-04', url: 'https://booking.com/x' })
+    expect(run('save_visit_item', { id: stay.id, price: '€90', reference: '' }).summary).toBe('Changed stay Hostel Mleczarnia (Kraków)')
+    expect(items.get()[stay.id]).toMatchObject({ title: 'Hostel Mleczarnia', price: '€90', from: '2026-05-04' })
+    expect(items.get()[stay.id].ref).toBeUndefined()
+    expect(run('remove_visit_item', { id: stay.id }).summary).toBe('Removed stay Hostel Mleczarnia (Kraków)')
+    expect(run('get_visit').result).toMatchObject({ items: [], note: 'Nothing kept in My visit yet.' })
+  })
+
+  it('keeps one note per city or journey, and adds to it when asked', () => {
+    const { items, run } = visit()
+    run('save_visit_item', { kind: 'note', city: 'Kraków', text: '- [ ] Wawel tickets' })
+    run('save_visit_item', { kind: 'note', city: 'Kraków', text: '- [ ] Salt mine', append: true })
+    expect(items.get()['note:krakow'].text).toBe('- [ ] Wawel tickets\n\n- [ ] Salt mine')
+    expect(run('save_visit_item', { kind: 'note', city: 'Kraków', journey_to: 'Warsaw', text: 'Seat 42' }).summary).toBe('Added note (Kraków → Warsaw)')
+    expect(items.get()['note:krakow>warsaw'].text).toBe('Seat 42')
+  })
+
+  it('refuses what My visit can\'t keep', () => {
+    const { run } = visit()
+    const error = (args: Record<string, unknown>) => run('save_visit_item', args).result.error
+    expect(error({ kind: 'stay', city: 'Kraków', journey_to: 'Warsaw', title: 'Bus' })).toMatch(/journey keeps only a note/)
+    expect(error({ kind: 'stay', city: 'Kraków', title: 'X', check_in: 'May 4' })).toMatch(/check_in must be a day/)
+    expect(error({ kind: 'stay', city: 'Kraków', title: 'X', check_in: '2026-05-07', check_out: '2026-05-04' })).toMatch(/after check_in/)
+    expect(error({ kind: 'link', city: 'Kraków', url: 'javascript:alert(1)' })).toMatch(/web address/)
+    expect(error({ kind: 'album', city: 'Kraków' })).toMatch(/Nothing to keep/)
+    expect(error({ kind: 'stay', city: 'Atlantis', title: 'X' })).toMatch(/not a city/)
+    expect(error({ id: 'stay:nope', price: '€1' })).toMatch(/get_visit/)
+    expect(run('remove_visit_item', { id: 'stay:nope' }).ok).toBe(false)
+    // Without My visit (as in the tests above), the tools say so.
+    expect(runTool('get_visit').result.error).toMatch(/isn't available/)
+  })
+
+  it('changes My visit on a read-only trip, which keeps only its plans as they are', () => {
+    useTrip.getState().setReadOnly(true)
+    const { run } = visit()
+    expect(run('save_visit_item', { kind: 'link', city: 'Kraków', title: 'Wawel', url: 'https://wawel.krakow.pl' }).ok).toBe(true)
+    expect(run('remove_stop', { city: stopIds()[0] }).ok).toBe(false)
+  })
+
+  it('describes a reply\'s changes to My visit, and keeps the items from before for Undo', () => {
+    const { items, run } = visit({ 'note:krakow': { id: 'note:krakow', kind: 'note', at: 'krakow', text: 'Old', updatedAt: 1 } })
+    const before = items.get()
+    run('save_visit_item', { kind: 'album', city: 'Warsaw', title: 'Old town', url: 'https://photos.app.goo.gl/x' })
+    run('remove_visit_item', { id: 'note:krakow' })
+    const after = items.get()
+    expect(describeItemChanges(before, after).sort()).toEqual(['Added photo album Old town (Warsaw)', 'Removed note (Kraków)'])
+    const was = itemsBefore(before, after)!
+    expect(was['note:krakow']).toEqual(before['note:krakow'])
+    expect(Object.values(was).filter((v) => v === null)).toHaveLength(1)
+    expect(itemsBefore(after, after)).toBeUndefined()
   })
 })
 
