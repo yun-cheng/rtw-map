@@ -1,5 +1,6 @@
 // Monthly climate averages per city from Open-Meteo's historical archive (ERA5 reanalysis, CC-BY 4.0).
-// Responses are cached per city in .cache/climate, so the script can be re-run after a rate-limit stop. "Feels like"
+// Responses are cached per city in .cache/climate, so the script can be re-run after a rate-limit stop: past the
+// daily limit it writes the cities it has and leaves the rest for the next run. "Feels like"
 // temperatures (apparent temperature: heat with humidity, cold with wind) are fetched separately (<id>.feels.json),
 // so they could be added without downloading the rest again.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -26,17 +27,27 @@ const { cities } = readJson<{ cities: City[] }>(join(GEN, 'cities.json'))
 const dir = join(CACHE, 'climate')
 mkdirSync(dir, { recursive: true })
 
-async function fetchCity<T>(c: City, vars: string, suffix = ''): Promise<T> {
+/** Set once Open-Meteo still refuses after an hour of waiting (its daily limit): the rest come from the cache only. */
+let limited = false
+
+async function fetchCity<T>(c: City, vars: string, suffix = ''): Promise<T | null> {
   const path = join(dir, `${c.id}${suffix}.json`)
   if (existsSync(path)) return JSON.parse(readFileSync(path, 'utf8'))
+  if (limited) return null
   const url = `https://archive-api.open-meteo.com/v1/archive?latitude=${c.lat}&longitude=${c.lon}&start_date=${START}&end_date=${END}&daily=${vars}&timezone=GMT`
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(url)
-    // The free tier allows ~5,000 weighted calls per hour; one city is ~130. Wait for the window to reset.
-    if (res.status === 429 && attempt < 30) {
+    // The free tier allows ~5,000 weighted calls per hour and ~10,000 a day; one city is ~130. Wait for the hourly
+    // window to reset; past an hour it's the daily limit, so write what's there and leave the rest for the next run.
+    if (res.status === 429 && attempt < 12) {
       console.log(`  rate limited, retrying in 5 min`)
       await sleep(300_000)
       continue
+    }
+    if (res.status === 429) {
+      console.log('  still rate limited (the daily limit): writing the cities fetched so far; run again tomorrow for the rest')
+      limited = true
+      return null
     }
     if (!res.ok) throw new Error(`${res.status} for ${c.id}: ${await res.text()}`)
     const daily = (await res.json()).daily as T
@@ -61,7 +72,8 @@ const out: Record<string, unknown[]> = {}
 for (const [i, c] of cities.entries()) {
   console.log(`[${i + 1}/${cities.length}] ${c.id}`)
   const d = await fetchCity<Daily>(c, VARS)
-  const f = await fetchCity<Feels>(c, FEELS_VARS, '.feels')
+  const f = d && (await fetchCity<Feels>(c, FEELS_VARS, '.feels'))
+  if (!d || !f) continue
   const years = new Set(d.time.map((t) => t.slice(0, 4))).size
   out[c.id] = Array.from({ length: 12 }, (_, m) => {
     const idx = d.time.flatMap((t, j) => (Number(t.slice(5, 7)) === m + 1 ? [j] : []))
@@ -86,6 +98,8 @@ for (const [i, c] of cities.entries()) {
   })
 }
 
+const missing = cities.filter((c) => !out[c.id]).map((c) => c.id)
+if (missing.length) console.log(`No climate yet for ${missing.length} cities: ${missing.join(', ')}`)
 writeJson(join(GEN, 'climate.json'), {
   _meta: { source: `Open-Meteo historical archive (ERA5, CC-BY 4.0), daily ${START}…${END}, monthly averages`, updatedAt: today() },
   climate: out,
