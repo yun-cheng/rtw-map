@@ -7,6 +7,7 @@ import { useItems } from '../store/items'
 import { useTrip } from '../store/trip'
 import { useAccount, type Usage } from './account'
 import { NO_SPENT, runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from './engine'
+import type { Attachment } from './media'
 import type { ItemsHandle } from './tools'
 import type { ViewItem } from './view'
 
@@ -29,8 +30,9 @@ type ChatState = {
   /** Sends a message, with the parts of the current view the user chose to share. `think` overrides the "Think
    *  harder" switch. `plan` starts the model afresh, without the conversation so far: 'new' (Plan with AI) makes a
    *  clean plan from the planner's draft (Undo goes back to the trip from before it); 'update' (Update plan) changes
-   *  the plan for what changed in the setup. Either, when finished, notes that the plan fits the setup as it is. */
-  send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' | 'update' }) => Promise<void>
+   *  the plan for what changed in the setup. Either, when finished, notes that the plan fits the setup as it is.
+   *  `media`: files attached (uploaded already, agent/attach.ts). */
+  send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' | 'update'; media?: Attachment[] }) => Promise<void>
   /** Stops the reply under way after the model call or wait in progress; what it changed so far stays (and can be undone). */
   stop: () => void
   undo: (index: number) => void
@@ -51,14 +53,14 @@ const wait = (ms: number, signal: AbortSignal) => new Promise<void>((resolve, re
 })
 
 /** One model call; `onSpent` gets what each attempt used (a failed one may have used some too). */
-const callModel: ModelCall = async (contents, context, think, signal, onSpent) => {
+const callModel: ModelCall = async (contents, context, think, signal, onSpent, media) => {
   let res: Response
   let data: { usage?: Usage; signIn?: boolean; error?: string; content?: Content; spent?: Partial<Spent> } | null
   for (let attempt = 0; ; attempt++) {
     res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contents, context, think }),
+      body: JSON.stringify({ contents, context, think, media: media.map(({ uri, token }) => ({ uri, token })) }),
       signal,
     })
     data = await res.json().catch(() => null)
@@ -91,7 +93,7 @@ let controller: AbortController | null = null
 /** Answers messages on the server (store/saved.ts sets it): `send` resolves when the run ends, or to false at once
  *  when the server can't answer (the message is then answered here). */
 export type ServerRuns = {
-  send: (text: string, view: ViewItem[], options: { think: boolean; plan?: 'new' | 'update' }) => Promise<boolean>
+  send: (text: string, view: ViewItem[], options: { think: boolean; plan?: 'new' | 'update'; media?: Attachment[] }) => Promise<boolean>
   stop: (runId: string) => void
 }
 let server: ServerRuns | null = null
@@ -111,14 +113,16 @@ export const useChat = create<ChatState>()(
 
       send: async (text, view = [], options = {}) => {
         const think = options.think ?? get().think
+        const media = options.media ?? []
         if (get().busy || !text.trim()) return
-        if (server && (await server.send(text, view, { think, plan: options.plan }))) return
+        if (server && (await server.send(text, view, { think, plan: options.plan, media }))) return
         controller = new AbortController()
         const { contents: history, note } = get()
         const startedAt = Date.now()
-        set({ busy: true, note: null, spent: NO_SPENT, startedAt, messages: [...get().messages, { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }) }] })
+        const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
+        set({ busy: true, note: null, spent: NO_SPENT, startedAt, messages: [...get().messages, asked] })
         const { reply, contents } = await runAssistant({
-          trip: useTrip, items, view, history, note, text, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
+          trip: useTrip, items, view, history, note, text, media, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
           onSpent: (spent) => set({ spent }),
         })
         controller = null
@@ -150,8 +154,8 @@ export const useChat = create<ChatState>()(
         const asked = messages[index - 1]
         if (failed?.role !== 'assistant' || !failed.error || asked?.role !== 'user' || get().busy) return
         set({ messages: messages.filter((_, i) => i !== index && i !== index - 1) })
-        // A failed plan is tried again as a plan (from scratch, or an update).
-        await send(asked.text, view, { think: failed.think, plan: failed.plan })
+        // A failed plan is tried again as a plan (from scratch, or an update); a message with its attachments.
+        await send(asked.text, view, { think: failed.think, plan: failed.plan, media: asked.media })
       },
 
       setThink: (think) => set({ think }),

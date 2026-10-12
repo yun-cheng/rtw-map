@@ -197,6 +197,21 @@ describe('assistant chat', () => {
     useTrip.getState().setReadOnly(false)
   })
 
+  it('sends a message\'s attachments with their tokens, and keeps them with the message to try again', async () => {
+    const file = { name: 'ticket.png', mimeType: 'image/png', uri: 'https://generativelanguage.googleapis.com/v1beta/files/t1', token: 'tok', thumb: 'data:image/jpeg;base64,AA' }
+    const fetch = serve({ status: 502, body: { error: 'The assistant failed to answer: try again.' } }, reply('Your bus leaves at 08:40.'))
+    await useChat.getState().send('When does my bus leave?', [], { media: [file] })
+    const body = JSON.parse(String((fetch.mock.calls[0] as unknown as [string, RequestInit])[1].body))
+    expect(body.media).toEqual([{ uri: file.uri, token: 'tok' }])
+    expect(body.contents.at(-1).parts[0]).toEqual({ fileData: { mimeType: 'image/png', fileUri: file.uri } })
+    const { messages } = useChat.getState()
+    expect(messages.at(-2)).toMatchObject({ role: 'user', media: [file] })
+    await useChat.getState().retry(messages.length - 1)
+    const again = JSON.parse(String((fetch.mock.calls[1] as unknown as [string, RequestInit])[1].body))
+    expect(again.media).toEqual([{ uri: file.uri, token: 'tok' }])
+    expect(lastReply().text).toBe('Your bus leaves at 08:40.')
+  })
+
   it('turns a last "Choices:" line into buttons', () => {
     expect(splitChoices('Swap Kotor for Budva?\n\nChoices: [Yes, swap them] [Keep Kotor]')).toEqual({ text: 'Swap Kotor for Budva?', choices: ['Yes, swap them', 'Keep Kotor'] })
     expect(splitChoices('Choices: [a] [b]\nmore text')).toEqual({ text: 'Choices: [a] [b]\nmore text', choices: [] })
@@ -249,6 +264,32 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
     expect(trip.getState().input.planned).toBeTruthy()
     expect(contents).toHaveLength(6)
     expect(useTrip.getState().stops).toBe(shown)
+  })
+
+  it('sends attached files with every step of their message, and keeps only their names after', async () => {
+    const trip = createTripStore({ input: testCaseInput(ds, 'US'), stops: [] })
+    const file = { name: 'booking.pdf', mimeType: 'application/pdf', uri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123', token: 't' }
+    const answers: Content[] = [
+      { role: 'model', parts: [{ functionCall: { name: 'get_options', args: {} } }] },
+      { role: 'model', parts: [{ text: 'Your stay is from 4 to 7 May.' }] },
+    ]
+    const sent: { contents: Content[]; media: unknown }[] = []
+    const { contents } = await runAssistant({
+      trip, view: [], history: [], note: null, text: 'When is my stay?', media: [file], think: false,
+      callModel: async (c, _x, _t, _s, _o, media) => {
+        sent.push({ contents: structuredClone(c), media })
+        return answers.shift()!
+      },
+      signal: new AbortController().signal,
+    })
+    for (const call of sent) {
+      expect(call.contents[0].parts[0]).toEqual({ fileData: { mimeType: 'application/pdf', fileUri: file.uri } })
+      expect(call.media).toEqual([file])
+    }
+    expect(sent).toHaveLength(2)
+    expect(JSON.stringify(contents)).not.toContain('fileData')
+    expect(contents[0].parts[0].text).toMatch(/attached booking\.pdf/)
+    expect(contents[0].parts[1].text).toBe('When is my stay?')
   })
 
   it('keeps the user\'s setup while planning, and locks only nights the user asked for', async () => {

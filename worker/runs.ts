@@ -10,6 +10,8 @@
 //   runner ── POST /internal/runs/:account/:id/finish ───▶ the trip, My visit's changes, the chat, how it ended
 //   browser ── GET /api/runs/:id ──▶ how it's going (and the trip when it changed); POST /api/runs/:id/stop
 
+import { parseAttachments, type Attachment } from '../src/agent/media'
+
 export type RunStatus = 'running' | 'done' | 'stopped' | 'failed'
 
 /** What the user asked, and how: kept with the run for the runner. */
@@ -19,6 +21,8 @@ export type RunRequest = {
   view: unknown[]
   think: boolean
   plan?: 'new' | 'update'
+  /** Files attached to the message (src/agent/media.ts). */
+  media?: Attachment[]
   /** How the user reads amounts and temperatures. */
   display: { currency: string; tempUnit: 'C' | 'F'; tempFeels: boolean }
 }
@@ -48,6 +52,8 @@ export function parseRunStart(raw: unknown): { tripId: string; data: unknown; ch
   const view = r.view ?? []
   if (!Array.isArray(view) || view.length > RUN_LIMITS.viewItems || JSON.stringify(view).length > RUN_LIMITS.viewBytes) return 'Invalid view'
   if (r.plan !== undefined && r.plan !== 'new' && r.plan !== 'update') return 'Invalid plan'
+  const media = parseAttachments(r.media)
+  if (typeof media === 'string') return media
   const d = (r.display ?? {}) as Record<string, unknown>
   const display = {
     currency: typeof d.currency === 'string' && /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'USD',
@@ -57,7 +63,7 @@ export function parseRunStart(raw: unknown): { tripId: string; data: unknown; ch
   if (r.data === undefined || r.chat === undefined) return 'Invalid trip'
   return {
     tripId: r.tripId, data: r.data, chat: r.chat, ...(Number.isInteger(r.rev) && { rev: r.rev as number }),
-    request: { text: r.text.trim(), view, think: r.think === true, ...(r.plan ? { plan: r.plan as 'new' | 'update' } : {}), display },
+    request: { text: r.text.trim(), view, think: r.think === true, ...(r.plan ? { plan: r.plan as 'new' | 'update' } : {}), ...(media.length && { media }), display },
   }
 }
 

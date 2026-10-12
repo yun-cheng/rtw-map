@@ -1,16 +1,30 @@
 // Checks a chat request from the browser and turns it into a Gemini generateContent request.
 // The instructions and tools are added here, so the endpoint only works as the trip assistant.
+import { GEMINI_FILE, MEDIA_LIMITS, MEDIA_TYPES } from '../src/agent/media'
 import { SYSTEM_PROMPT, TOOLS } from '../src/agent/schema'
 import type { TokenUsage } from './limits'
 
 export const LIMITS = { bodyBytes: 200_000, messages: 80, contextChars: 30_000, maxOutputTokens: 8192 }
 
-/** Fields a message part may have: text, tool calls and results, and Gemini's thinking markers. */
-const PART_KEYS = new Set(['text', 'functionCall', 'functionResponse', 'thoughtSignature', 'thought'])
+/** Fields a message part may have: text, tool calls and results, Gemini's thinking markers, and a file the user
+ *  attached (src/agent/media.ts). */
+const PART_KEYS = new Set(['text', 'functionCall', 'functionResponse', 'thoughtSignature', 'thought', 'fileData'])
 
 export type Part = Record<string, unknown>
 export type Content = { role: 'user' | 'model'; parts: Part[] }
-export type ChatRequest = { contents: Content[]; context: string; think: boolean }
+/** `media`: the token for each file attached (media.ts), checked against the account before the call. */
+export type ChatRequest = { contents: Content[]; context: string; think: boolean; media: { uri: string; token: string }[] }
+
+/** A file the user attached, as a part: one of the types allowed, at Gemini's Files API. */
+function isFilePart(p: Part): boolean {
+  const f = p.fileData as Record<string, unknown> | undefined
+  return !!f && typeof f === 'object' && Object.keys(f).every((k) => k === 'mimeType' || k === 'fileUri') &&
+    typeof f.mimeType === 'string' && MEDIA_TYPES.includes(f.mimeType) && typeof f.fileUri === 'string' && GEMINI_FILE.test(f.fileUri)
+}
+
+/** The files a request sends (their addresses). */
+export const fileUris = (contents: Content[]) =>
+  contents.flatMap((c) => c.parts.flatMap((p) => (p.fileData ? [(p.fileData as { fileUri: string }).fileUri] : [])))
 
 /** The validated request, or an error message for the browser. */
 export function parseChatRequest(raw: unknown): ChatRequest | string {
@@ -25,11 +39,17 @@ export function parseChatRequest(raw: unknown): ChatRequest | string {
     if (!Array.isArray(parts) || !parts.length) return 'Invalid message parts'
     for (const p of parts) {
       if (!p || typeof p !== 'object' || !Object.keys(p).every((k) => PART_KEYS.has(k))) return 'Invalid message part'
+      if ('fileData' in p && (role !== 'user' || !isFilePart(p))) return 'Invalid attachment'
     }
   }
   if (contents[contents.length - 1].role !== 'user') return 'The last message must come from the user'
   if (typeof context !== 'string' || context.length > LIMITS.contextChars) return 'Invalid trip context'
-  return { contents: contents as Content[], context, think: think === true }
+  const files = fileUris(contents as Content[])
+  if (new Set(files).size > MEDIA_LIMITS.files) return `Attach up to ${MEDIA_LIMITS.files} files to a message`
+  const media = (raw as { media?: unknown }).media ?? []
+  if (!Array.isArray(media) || media.length > MEDIA_LIMITS.files ||
+    !media.every((m) => m && typeof m === 'object' && typeof m.uri === 'string' && typeof m.token === 'string')) return 'Invalid attachment'
+  return { contents: contents as Content[], context, think: think === true, media: media.map((m) => ({ uri: m.uri as string, token: m.token as string })) }
 }
 
 /** Whether the conversation ends with new text from the user (a new message), rather than tool results. */

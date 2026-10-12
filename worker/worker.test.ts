@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord } from './changes'
 import { isNewMessage } from './chat'
+import { mediaAllowed, mediaToken, uploadFile } from './media'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
 import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
@@ -223,6 +224,13 @@ describe('assistant runs', () => {
     expect(parseRunStart({ ...start, plan: 'redo' })).toBe('Invalid plan')
     expect(parseRunStart({ ...start, view: Array(11).fill({}) })).toBe('Invalid view')
     expect(parseRunStart({ ...start, chat: undefined })).toBe('Invalid trip')
+    // Attachments, checked (their tokens are checked with each model call).
+    const file = { name: 'booking.pdf', mimeType: 'application/pdf', uri: 'https://generativelanguage.googleapis.com/v1beta/files/abc123', token: 't' }
+    expect(parseRunStart({ ...start, media: [file] })).toMatchObject({ request: { media: [file] } })
+    expect(parseRunStart(start)).not.toHaveProperty('request.media')
+    expect(parseRunStart({ ...start, media: [{ ...file, mimeType: 'text/html' }] })).toBe('Only images and PDFs can be attached')
+    expect(parseRunStart({ ...start, media: [{ ...file, uri: 'https://example.com/x' }] })).toBe('Invalid attachment')
+    expect(parseRunStart({ ...start, media: Array(5).fill(file) })).toMatch(/up to 4/)
   })
 
   it('checks how a run ended, and notices one that went quiet', () => {
@@ -269,5 +277,39 @@ describe('other apps\' changes and undo', () => {
     expect(overwrites(4, null)).toBe(false)
     // (A page from before revs saves as it did.)
     expect(overwrites(undefined, 5)).toBe(false)
+  })
+})
+
+describe('attachments', () => {
+  const uri = 'https://generativelanguage.googleapis.com/v1beta/files/abc123'
+
+  it('lets an account send only the files it uploaded', async () => {
+    const token = await mediaToken('alice', uri, 'secret')
+    expect(await mediaAllowed('alice', [uri], [{ uri, token }], 'secret')).toBe(true)
+    expect(await mediaAllowed('bob', [uri], [{ uri, token }], 'secret')).toBe(false)
+    expect(await mediaAllowed('alice', [uri], [], 'secret')).toBe(false)
+    expect(await mediaAllowed('alice', [uri], [{ uri, token: 'not a token!' }], 'secret')).toBe(false)
+    expect(await mediaAllowed('alice', [`${uri}x`], [{ uri, token }], 'secret')).toBe(false)
+  })
+
+  it('uploads a file to Gemini in one go, waiting while a PDF is read', async () => {
+    const calls: { url: string; init?: RequestInit }[] = []
+    const fetcher = (async (url: string, init?: RequestInit) => {
+      calls.push({ url, init })
+      if (calls.length === 1) return new Response('{}', { headers: { 'x-goog-upload-url': 'https://upload.example/1' } })
+      if (calls.length === 2) return Response.json({ file: { name: 'files/abc123', uri, mimeType: 'application/pdf', state: 'PROCESSING' } })
+      return Response.json({ name: 'files/abc123', uri, mimeType: 'application/pdf', state: 'ACTIVE' })
+    }) as unknown as typeof fetch
+    expect(await uploadFile(new TextEncoder().encode('%PDF').buffer as ArrayBuffer, 'application/pdf', 'booking.pdf', 'key', fetcher)).toEqual({ uri, mimeType: 'application/pdf' })
+    expect(calls[0].init?.headers).toMatchObject({ 'X-Goog-Upload-Command': 'start', 'X-Goog-Upload-Header-Content-Type': 'application/pdf', 'X-Goog-Upload-Header-Content-Length': '4' })
+    expect(calls[1]).toMatchObject({ url: 'https://upload.example/1', init: { headers: { 'X-Goog-Upload-Command': 'upload, finalize' } } })
+    expect(calls[2].url).toMatch(/files\/abc123$/)
+  })
+
+  it('refuses what it can\'t send', async () => {
+    const fetcher = (async () => { throw new Error('not called') }) as unknown as typeof fetch
+    expect(await uploadFile(new ArrayBuffer(10), 'text/html', 'x.html', 'key', fetcher)).toMatch(/images and PDFs/)
+    expect(await uploadFile(new ArrayBuffer(0), 'image/png', 'x.png', 'key', fetcher)).toMatch(/empty/)
+    expect(await uploadFile(new ArrayBuffer(10_000_001), 'image/png', 'x.png', 'key', fetcher)).toMatch(/too large/)
   })
 })

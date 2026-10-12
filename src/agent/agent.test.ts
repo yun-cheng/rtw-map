@@ -314,6 +314,18 @@ describe('chat endpoint checks', () => {
     expect(parseChatRequest({ contents: Array(81).fill(user('a')), context: '' })).toBeTypeOf('string')
     expect(parseChatRequest({ contents: [user('a')], context: 'x'.repeat(30_001) })).toBeTypeOf('string')
   })
+
+  it('accepts files the user attached, at Gemini, with their tokens', () => {
+    const fileUri = 'https://generativelanguage.googleapis.com/v1beta/files/abc123'
+    const withFile = (fileData: unknown, role = 'user') => ({ role, parts: [{ fileData }, { text: 'Save this booking' }] })
+    const ok = parseChatRequest({ contents: [withFile({ mimeType: 'image/jpeg', fileUri })], context: '', media: [{ uri: fileUri, token: 't' }] })
+    expect(ok).toMatchObject({ media: [{ uri: fileUri, token: 't' }] })
+    expect(parseChatRequest({ contents: [withFile({ mimeType: 'image/jpeg', fileUri: 'https://example.com/a.jpg' })], context: '' })).toBe('Invalid attachment')
+    expect(parseChatRequest({ contents: [withFile({ mimeType: 'text/html', fileUri })], context: '' })).toBe('Invalid attachment')
+    expect(parseChatRequest({ contents: [withFile({ mimeType: 'image/jpeg', fileUri, extra: 1 })], context: '' })).toBe('Invalid attachment')
+    expect(parseChatRequest({ contents: [user('a'), withFile({ mimeType: 'image/jpeg', fileUri }, 'model'), user('b')], context: '' })).toBe('Invalid attachment')
+    expect(parseChatRequest({ contents: [user('a')], context: '', media: 'x' })).toBe('Invalid attachment')
+  })
 })
 
 describe('what the user is looking at', () => {

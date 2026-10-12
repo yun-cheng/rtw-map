@@ -1,6 +1,9 @@
+import { FileText, Paperclip, X } from 'lucide-react'
 import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
+import { attach } from '../agent/attach'
 import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
+import { MEDIA_LIMITS, type Attachment } from '../agent/media'
 import { viewItems, type ViewItem } from '../agent/view'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
@@ -252,10 +255,32 @@ function Chat() {
     if (list.current) list.current.scrollTop = list.current.scrollHeight
   }, [messages.length, busy])
 
+  // Files attached to the next message (uploaded as soon as they're added).
+  const [attached, setAttached] = useState<Attachment[]>([])
+  const [uploading, setUploading] = useState(0)
+  const [attachError, setAttachError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const addFiles = async (files: File[]) => {
+    const room = MEDIA_LIMITS.files - attached.length - uploading
+    setAttachError(files.length > room ? `Attach up to ${MEDIA_LIMITS.files} files to a message.` : null)
+    const taken = files.slice(0, Math.max(0, room))
+    if (!taken.length) return
+    setUploading((n) => n + taken.length)
+    await Promise.all(taken.map(async (f) => {
+      const out = await attach(f)
+      setUploading((n) => n - 1)
+      if (typeof out === 'string') setAttachError(out)
+      else setAttached((list) => [...list, out])
+    }))
+  }
+
   const submit = (text = draft) => {
-    if (!text.trim() || busy || outOfAllowance || !online) return
+    const files = attached
+    if ((!text.trim() && !files.length) || busy || uploading || outOfAllowance || !online) return
     setDraft('')
-    void send(text, shared)
+    setAttached([])
+    setAttachError(null)
+    void send(text.trim() || (files.length > 1 ? 'See the attached files.' : 'See the attached file.'), shared, { media: files })
   }
 
   return (
@@ -296,6 +321,7 @@ function Chat() {
             {messages.map((m, i) =>
               m.role === 'user' ? (
                 <div key={i} className="ml-8 flex flex-col items-end gap-0.5 self-end">
+                  {m.media && <div className="flex flex-wrap justify-end gap-1">{m.media.map((a, j) => <AttachmentChip key={j} file={a} />)}</div>}
                   <div className="rounded-lg bg-accent px-3 py-2 text-[13px] whitespace-pre-wrap text-on-accent">{m.text}</div>
                   {m.view && <div className="text-[11px] text-muted" title="What you were looking at, sent with this message">Context: {m.view.join(', ')}</div>}
                 </div>
@@ -343,10 +369,35 @@ function Chat() {
           />
         )}
         {!online && <p className="mb-1.5 text-[12px] text-muted">You're offline: the assistant needs a connection.</p>}
+        {(attached.length > 0 || uploading > 0) && (
+          <div className="mb-1.5">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {attached.map((a, i) => <AttachmentChip key={a.uri} file={a} onRemove={() => setAttached((list) => list.filter((_, j) => j !== i))} />)}
+              {uploading > 0 && <span className="text-[11px] text-muted">Attaching{uploading > 1 ? ` ${uploading} files` : ''}…</span>}
+            </div>
+            <p className="mt-1 text-[11px] text-muted">Sent to Google Gemini with this message only (Google deletes it within 48 hours); the chat keeps the name.</p>
+          </div>
+        )}
+        {attachError && <p className="mb-1.5 text-[12px] text-danger">{attachError}</p>}
         <textarea
           data-assistant-input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
+          onPaste={(e) => {
+            const files = [...e.clipboardData.files]
+            if (!files.length) return
+            // (A screenshot pasted: attached, not pasted as text.)
+            if (!e.clipboardData.getData('text')) e.preventDefault()
+            void addFiles(files)
+          }}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes('Files')) e.preventDefault()
+          }}
+          onDrop={(e) => {
+            if (!e.dataTransfer.files.length) return
+            e.preventDefault()
+            void addFiles([...e.dataTransfer.files])
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
               e.preventDefault()
@@ -356,20 +407,54 @@ function Chat() {
           rows={2}
           maxLength={2000}
           disabled={outOfAllowance}
-          placeholder="Ask or tell the assistant… (Enter to send)"
+          placeholder="Ask or tell the assistant… (Enter to send; paste or drop a booking, ticket or photo to attach it)"
           className="w-full resize-none rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
         />
         <div className="mt-1 flex items-center gap-2 text-[12px]">
+          <button
+            onClick={() => fileInput.current?.click()}
+            disabled={outOfAllowance || !online || attached.length + uploading >= MEDIA_LIMITS.files}
+            className="flex items-center gap-1 text-muted hover:text-ink disabled:opacity-40"
+            title="Attach an image or a PDF: a booking confirmation, a ticket, a screenshot, a photo"
+            aria-label="Attach a file"
+          >
+            <Paperclip size={14} />
+          </button>
+          <input
+            ref={fileInput} type="file" accept="image/*,application/pdf" multiple hidden
+            onChange={(e) => {
+              void addFiles([...(e.target.files ?? [])])
+              e.target.value = ''
+            }}
+          />
           <label className="flex items-center gap-1.5" title="Slower and a little more expensive, better for complex requests">
             <input type="checkbox" checked={think} onChange={(e) => setThink(e.target.checked)} /> Think harder
           </label>
           {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
           {busy
             ? <Button className="ml-auto" onClick={stop}>■ Stop</Button>
-            : <Button variant="primary" className="ml-auto" disabled={!draft.trim() || outOfAllowance || !online} onClick={() => submit()}>Send</Button>}
+            : <Button variant="primary" className="ml-auto" disabled={(!draft.trim() && !attached.length) || uploading > 0 || outOfAllowance || !online} onClick={() => submit()}>Send</Button>}
         </div>
       </div>
     </div>
+  )
+}
+
+/** A file attached to a message: an image's preview, or a document's icon, with its name; `onRemove` to take it off
+ *  the message being written. */
+function AttachmentChip({ file, onRemove }: { file: Attachment; onRemove?: () => void }) {
+  return (
+    <span className="flex max-w-[180px] items-center gap-1.5 rounded-md border border-line bg-panel py-0.5 pr-1 pl-0.5 text-[11px]" title={file.name}>
+      {file.thumb
+        ? <img src={file.thumb} alt="" className="h-7 w-7 shrink-0 rounded object-cover" />
+        : <FileText size={16} className="m-1.5 shrink-0 text-muted" />}
+      <span className="truncate">{file.name}</span>
+      {onRemove && (
+        <button onClick={onRemove} className="shrink-0 text-muted hover:text-ink" aria-label={`Remove ${file.name}`}>
+          <X size={12} />
+        </button>
+      )}
+    </span>
   )
 }
 

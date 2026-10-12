@@ -12,6 +12,7 @@
 //   POST /api/trips/:id/changes/:change/undo  undo one (and the later ones)
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
+//   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
 //   POST /api/runs/:id/stop        stop it
@@ -23,7 +24,9 @@
 //   /oauth/…, /.well-known/oauth-… how those apps are connected (oauth.ts)
 // Everything else goes to the static files.
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession, type User } from './auth'
-import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
+import { fileUris, GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
+import { attachment, mediaAllowed, uploadFile } from './media'
+import { MEDIA_LIMITS } from '../src/agent/media'
 import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
 import { Account, BUSY } from './account'
 import { CHANGED_ELSEWHERE } from './changes'
@@ -117,6 +120,11 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
   }
   const req = parseChatRequest(raw)
   if (typeof req === 'string') return json({ error: req }, 400)
+  // Files attached: only this account's.
+  const files = fileUris(req.contents)
+  if (files.length && (!env.SESSION_SECRET || !(await mediaAllowed(user.sub, files, req.media, env.SESSION_SECRET)))) {
+    return json({ error: 'An attachment couldn\'t be sent: attach it again.' }, 400)
+  }
 
   // Today's allowance (DAILY_USD): a new message needs some of it left; any call must fit in what's left.
   const day = today()
@@ -158,6 +166,28 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
 }
 
 const signInFirst = () => json({ error: 'Please sign in with Google.', signIn: true }, 401)
+
+/** A file attached to a message (the request's body, its type as Content-Type and its name in X-File-Name), uploaded
+ *  to Gemini: the attachment to send with the message, with its token. */
+async function media(request: Request, env: Env): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
+  if (!env.GEMINI_API_KEY || !env.SESSION_SECRET) return json({ error: 'The assistant is not set up yet (no Gemini API key).' }, 503)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Too many files at once: wait a moment.' }, 429)
+  const size = Number(request.headers.get('Content-Length') ?? NaN)
+  if (size > MEDIA_LIMITS.bytes) return json({ error: `The file is too large (at most ${MEDIA_LIMITS.bytes / 1e6} MB)` }, 413)
+  const type = (request.headers.get('Content-Type') ?? '').split(';')[0].trim()
+  let name = 'file'
+  try {
+    name = decodeURIComponent(request.headers.get('X-File-Name') ?? '').trim() || name
+  } catch {
+    // (Not encoded: keep the default.)
+  }
+  const uploaded = await uploadFile(await request.arrayBuffer(), type, name, env.GEMINI_API_KEY)
+  if (typeof uploaded === 'string') return json({ error: uploaded }, 400)
+  return json({ attachment: await attachment(user.sub, name, uploaded, env.SESSION_SECRET) }, 201)
+}
 
 async function trips(request: Request, env: Env, id: string | undefined): Promise<Response> {
   const user = await currentUser(request, env)
@@ -510,6 +540,7 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
     return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(null, new URL(request.url).protocol === 'https:') })
   }
   if (pathname === '/api/chat') return chat(request, env)
+  if (pathname === '/api/media') return media(request, env)
   return json({ error: 'Not found' }, 404)
 }
 

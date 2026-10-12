@@ -3,6 +3,7 @@
 // browser), calls the model through the Worker (which keeps the allowance and counts the cost), and saves the trip
 // and the reply after each step, so the page can follow along or be closed.
 import { runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from '../src/agent/engine'
+import type { Attachment } from '../src/agent/media'
 import type { ViewItem } from '../src/agent/shared'
 import { itemsHandle } from '../src/agent/tools'
 import type { Items } from '../src/store/itemsCore'
@@ -11,7 +12,7 @@ import { createTripStore, tripData, type Display, type TripData } from '../src/s
 type RunInput = {
   status: string
   created: number
-  request: { text: string; view: ViewItem[]; think: boolean; plan?: 'new' | 'update'; display: Display }
+  request: { text: string; view: ViewItem[]; think: boolean; plan?: 'new' | 'update'; media?: Attachment[]; display: Display }
   data: TripData | null
   chat: SavedChat | null
   /** The trip's My visit. */
@@ -78,7 +79,9 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   /** The My visit items changed and not sent yet (they're merged item by item, as a device's). */
   const unsent = () => [...items.changed].map((id) => items.get()[id])
   const controller = new AbortController()
-  const question: ChatMessage = { role: 'user', text: request.text, ...(request.view.length && { view: request.view.map((v) => v.label) }) }
+  const question: ChatMessage = {
+    role: 'user', text: request.text, ...(request.view.length && { view: request.view.map((v) => v.label) }), ...(request.media?.length && { media: request.media }),
+  }
 
   /** Tells the Worker the run is still going (with the reply so far, and the trip when it changed); stops the run
    *  when the user asked to. */
@@ -97,9 +100,9 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
     }
   }
 
-  const callModel: ModelCall = async (contents, context, think, signal, onSpent) => {
+  const callModel: ModelCall = async (contents, context, think, signal, onSpent, media) => {
     for (let attempt = 0; ; attempt++) {
-      const res = await api.send('/chat', { contents, context, think }, signal)
+      const res = await api.send('/chat', { contents, context, think, media: media.map(({ uri, token }) => ({ uri, token })) }, signal)
       const data = (await res.json().catch(() => null)) as { error?: string; stopped?: boolean; content?: Content; spent?: Partial<Spent> } | null
       if (data?.spent) onSpent(data.spent)
       // The user stopped the run (heard here when it's between steps).
@@ -130,7 +133,7 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   }
 
   const { reply, contents } = await runAssistant({
-    trip, items, view: request.view, history: chat.contents, note: chat.note, text: request.text, think: request.think, plan: request.plan,
+    trip, items, view: request.view, history: chat.contents, note: chat.note, text: request.text, media: request.media, think: request.think, plan: request.plan,
     callModel, signal: controller.signal, onStep, startedAt: input.created,
   })
   const status = reply.error ? 'failed' : controller.signal.aborted ? 'stopped' : 'done'

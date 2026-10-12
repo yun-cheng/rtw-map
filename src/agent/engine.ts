@@ -4,11 +4,16 @@
 // Each reply that changed the trip keeps a copy of the trip from before, for Undo (and of the My visit items it
 // changed).
 import type { TripItem } from '../store/itemsCore'
+import { mediaNote, mediaParts, type Attachment } from './media'
 import { ITEM_TOOLS, WRITE_TOOLS } from './schema'
 import { viewText, type ViewItem } from './shared'
 import { describeChanges, describeItemChanges, itemsBefore, runTool, snapshot, toolContext, tripContext, withTrip, type ItemsHandle, type TripHandle, type TripSnapshot } from './tools'
 
-export type Part = { text?: string; thought?: boolean; thoughtSignature?: string; functionCall?: { name: string; args?: Record<string, unknown>; id?: string }; functionResponse?: unknown }
+export type Part = {
+  text?: string; thought?: boolean; thoughtSignature?: string; functionCall?: { name: string; args?: Record<string, unknown>; id?: string }; functionResponse?: unknown
+  /** A file the user attached (media.ts), at Gemini's Files API. */
+  fileData?: { mimeType: string; fileUri: string }
+}
 export type Content = { role: 'user' | 'model'; parts: Part[] }
 
 export type ToolStep = { name: string; ok: boolean; summary: string }
@@ -20,8 +25,8 @@ export const addSpent = (a: Spent, b: Partial<Spent>): Spent => ({
   calls: a.calls + 1, input: a.input + (b.input ?? 0), cached: a.cached + (b.cached ?? 0), output: a.output + (b.output ?? 0), usd: a.usd + (b.usd ?? 0),
 })
 export type ChatMessage =
-  /** `view`: the labels of what the user shared from the screen with this message. */
-  | { role: 'user'; text: string; view?: string[] }
+  /** `view`: the labels of what the user shared from the screen with this message; `media`: the files attached. */
+  | { role: 'user'; text: string; view?: string[]; media?: Attachment[] }
   /** `choices`: short replies shown as buttons (the model's, or Continue when the user stopped it); `think`: whether
    *  this reply thought harder, so a clicked choice or a retry continues the same way; `spent`: what it used; `ms`:
    *  how long it took, from when the user asked; `itemsBefore`: the My visit items it changed, as they were (null:
@@ -98,8 +103,9 @@ function compact(contents: Content[]): Content[] {
   })
 }
 
-/** One model call, with the trip as it was when the user asked (`context`); `onSpent` gets what each attempt used. */
-export type ModelCall = (contents: Content[], context: string, think: boolean, signal: AbortSignal, onSpent: (s: Partial<Spent>) => void) => Promise<Content>
+/** One model call, with the trip as it was when the user asked (`context`); `onSpent` gets what each attempt used;
+ *  `media`, the message's attachments, whose tokens let the Worker send them. */
+export type ModelCall = (contents: Content[], context: string, think: boolean, signal: AbortSignal, onSpent: (s: Partial<Spent>) => void, media: Attachment[]) => Promise<Content>
 
 export type Run = {
   trip: TripHandle
@@ -111,6 +117,8 @@ export type Run = {
   history: Content[]
   note: string | null
   text: string
+  /** Files attached to the message (images, PDFs), seen with it only. */
+  media?: Attachment[]
   /** `think`: think harder. `plan` starts the model afresh, without the conversation so far, and keeps the user's
    *  setup: 'new' (Plan with AI) makes a clean plan; 'update' (Update plan) changes the plan for what changed since
    *  it was made. A finished plan, or any reply that changed the trip, notes that the plan fits the trip as it is. */
@@ -139,7 +147,8 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
   // The trip (and view) as it was when the user asked, kept the same for every step of this reply.
   const context = [tools(tripContext), viewText(view)].filter(Boolean).join('\n\n')
   const prefix = run.note && !plan ? `[${run.note}]\n` : ''
-  let contents = trim([...(plan ? [] : run.history), { role: 'user', parts: [{ text: prefix + run.text.trim() }] }])
+  const media = run.media ?? []
+  let contents = trim([...(plan ? [] : run.history), { role: 'user', parts: [...mediaParts(media), { text: prefix + run.text.trim() }] }])
   const reply: AssistantMessage = { role: 'assistant', text: '', steps: [], changes: [], think, ...(plan && { plan }) }
 
   let stopped = false
@@ -152,7 +161,7 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
     // No limit on the steps: the model works until it answers in text, or the user stops it.
     for (;;) {
       contents = trim(compact(contents))
-      const content = await callModel(contents, context, think, signal, onSpent)
+      const content = await callModel(contents, context, think, signal, onSpent, media)
       const calls = content.parts.filter((p) => p.functionCall).map((p) => p.functionCall!)
       const split = splitChoices(content.parts.filter((p) => p.text && !p.thought).map((p) => p.text).join('').trim())
       const said = split.text
@@ -206,5 +215,14 @@ export async function runAssistant(run: Run): Promise<{ reply: AssistantMessage;
     reply.changes.push(...describeItemChanges(itemsWere, itemsNow))
   }
   reply.ms = Math.max(0, Date.now() - startedAt)
-  return { reply, contents: reply.error ? contents : trim(compact(contents)) }
+  return { reply, contents: reply.error ? contents : trim(compact(withoutMedia(contents, media))) }
+}
+
+/** The conversation once a message is answered: its attachments are gone from Gemini within two days, so they're
+ *  left as a note with their names. */
+function withoutMedia(contents: Content[], media: Attachment[]): Content[] {
+  if (!media.length) return contents
+  return contents.map((c) => (c.parts.some((p) => p.fileData)
+    ? { ...c, parts: [{ text: mediaNote(media.map((m) => m.name)) }, ...c.parts.filter((p) => !p.fileData)] }
+    : c))
 }
