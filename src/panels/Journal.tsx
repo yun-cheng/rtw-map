@@ -10,6 +10,7 @@ import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate, flag, shortDate } from '../ui/format'
 import { Section } from '../ui/kit'
+import { AlbumLinks } from './Visit'
 import { useOnline } from '../ui/useOnline'
 import { dataset as ds } from '../data/dataset'
 
@@ -148,6 +149,7 @@ export function JournalView() {
           <h3 className="px-2 py-1 text-[12px] font-semibold">
             {g.stop ? <>{flag(ds.cities[g.stop.cityId].iso2)} {cityName(g.stop.cityId)}</> : 'On the way'}
             <span className="font-normal text-muted"> · {shortDate(g.days.at(-1)!)}{g.days.length > 1 && ` – ${shortDate(g.days[0])}`}</span>
+            {g.stop && <AlbumLinks cityId={g.stop.cityId} />}
           </h3>
           <ol>
             {g.days.map((d) => (

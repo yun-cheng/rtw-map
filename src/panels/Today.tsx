@@ -1,5 +1,5 @@
 // The Today tab, while the trip is under way (PLAN.md §14.3): where you are, the day's or next journey, the weather
-// today and tomorrow, today's journal entry, this stop's checks, the days left and the assistant. The app opens on it then (store/url.ts).
+// today and tomorrow, tonight's stay, today's journal entry, this stop's checks, the days left and the assistant. The app opens on it then (store/url.ts).
 import { ChevronRight, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
@@ -15,6 +15,7 @@ import { tabOf, type SectionKey } from './cityTabs'
 import { fetchForecast, savedNote, sky, type CityForecast } from './Forecast'
 import { TodayEntry } from './Journal'
 import { NoteBox } from './Notes'
+import { TonightStay } from './Visit'
 
 /** "today", "tomorrow" or "in 3 days". */
 function fromToday(today: string, iso: string) {
@@ -86,6 +87,7 @@ export function Today() {
         {journey && <JourneyCard journey={journey} today={today} />}
         {/* The journey's own note (the ticket, the bus time…), when written: from the journey panel. */}
         {journey && <JourneyNote key={legKey(journey.leg.from, journey.leg.to)} at={legKey(journey.leg.from, journey.leg.to)} />}
+        {stop && <TonightStay stop={stop} today={today} />}
         {stop && (
           <Section title="Weather" aside={<OpenTab cityId={stop.cityId} section="weather" label="Next 10 days" />}>
             <div className="grid grid-cols-2 gap-3">

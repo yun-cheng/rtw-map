@@ -14,7 +14,7 @@ import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
 import { Forecast, SubHead } from './Forecast'
 import { confirmRemove } from './Itinerary'
-import { NoteBox } from './Notes'
+import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
@@ -583,7 +583,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     Number(!!b.problem) - Number(!!a.problem) || Number(!!b.warn) - Number(!!a.warn) ||
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
-  // (Someone else's shared trip has no notes.)
+  // (Someone else's shared trip has none of the owner's own stays, links and notes.)
   const tabs = SHARED_TOKEN ? TABS.filter((t) => t.key !== 'notes') : TABS
   const tabInfo = tabs.find((t) => t.key === cityTab) ?? tabs[0]
   const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
@@ -708,7 +708,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         </Section>
         </>
       ) : tabInfo.key === 'notes' ? (
-        <NoteBox at={cityId} tall placeholder={`Anything to remember about ${city.name}: where you're staying, a friend's number, places to try…`} />
+        <VisitTab cityId={cityId} />
       ) : (
         (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
       )}

@@ -13,6 +13,7 @@ import { useJournal } from '../store/journal'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { JournalMark, JournalView } from './Journal'
 import { NoteMark } from './Notes'
+import { VisitMarks } from './Visit'
 import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
@@ -92,7 +93,7 @@ export function Itinerary() {
                   {day}
                 </span>
                 <div className={`min-w-0 flex-1 ${time === 'done' ? 'opacity-55' : ''}`} title={time === 'done' ? 'Done: you were here' : undefined}>
-                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark at={s.cityId} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
+                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark at={s.cityId} /><VisitMarks stop={s} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
                 {readOnly ? (
