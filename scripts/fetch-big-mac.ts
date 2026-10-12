@@ -2,7 +2,7 @@
 // Latest local price per country, plus the euro-area average for euro countries without their own entry.
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { CACHE, GEN, SEED, readCsv, readJson, today, writeJson } from './lib.ts'
+import { CACHE, GEN, readCsv, readJson, today, writeJson } from './lib.ts'
 
 const URL = 'https://raw.githubusercontent.com/TheEconomist/big-mac-data/master/output-data/big-mac-full-index.csv'
 const res = await fetch(URL)
@@ -26,7 +26,7 @@ for (const r of current) {
   else if (iso2Of[r.iso_a3]) prices[iso2Of[r.iso_a3]] = entry
 }
 
-const { countries } = readJson<{ countries: { iso2: string; name: string }[] }>(join(SEED, 'countries.json'))
+const { countries } = readJson<{ countries: { iso2: string; name: string }[] }>(join(GEN, 'countries.json'))
 console.log(`Big Mac ${latest}: ${Object.keys(prices).length} countries; ours: ${countries.filter((c) => prices[c.iso2]).map((c) => c.iso2).join(', ')}`)
 
 writeJson(join(GEN, 'big-mac.json'), {

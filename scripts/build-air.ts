@@ -1,5 +1,6 @@
 // Monthly air quality (fine particles, PM2.5) per city from the Open-Meteo Air Quality API
-// (Copernicus CAMS European model data, CC-BY 4.0). Cached per city in .cache/air, so it can resume.
+// (Copernicus CAMS data, CC-BY 4.0: the European model in Europe, the global one elsewhere, as the API picks by
+// default). Cached per city in .cache/air, so it can resume.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { CACHE, GEN, readJson, sleep, today, writeJson } from './lib.ts'
@@ -63,7 +64,7 @@ for (const [i, c] of cities.entries()) {
 
 writeJson(join(GEN, 'air.json'), {
   _meta: {
-    source: `Open-Meteo Air Quality API (Copernicus CAMS European model, CC-BY 4.0), hourly PM2.5 ${START}…${END}, monthly averages`,
+    source: `Open-Meteo Air Quality API (Copernicus CAMS European model in Europe, global elsewhere, CC-BY 4.0), hourly PM2.5 ${START}…${END}, monthly averages`,
     updatedAt: today(),
   },
   whoDaily: WHO_DAILY,

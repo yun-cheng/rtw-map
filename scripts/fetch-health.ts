@@ -7,18 +7,43 @@
 // A country whose page can't be read keeps its previous entry.
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { GEN, SEED, readJson, sleep, today, writeJson } from './lib.ts'
+import { GEN, SEED, normalize, readJson, sleep, today, writeJson } from './lib.ts'
 
 type Advice = 'recommended' | 'consider'
 export type CdcItem = { name: string; advice: Advice; note: string }
 type Entry = { url: string; items: CdcItem[]; malaria: boolean }
 
-const health = readJson<{ countries: Record<string, { cdcSlug: string }> }>(join(SEED, 'health.json'))
-const OUT = join(GEN, 'cdc.json')
-const previous: Record<string, Entry> = existsSync(OUT) ? readJson<{ countries: Record<string, Entry> }>(OUT).countries : {}
-
 const text = (html: string) =>
   html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&#39;|&rsquo;/g, "'").replace(/\s+/g, ' ').trim()
+
+// Every country the app has cities in: the curated ones name their CDC page (health.json); the others are found in
+// CDC's list of destinations by name ("Bahamas, The", "Faroe Islands (Denmark)"), CDC_SLUGS where it calls them otherwise.
+const health = readJson<{ countries: Record<string, { cdcSlug: string }> }>(join(SEED, 'health.json'))
+const { countries: all } = readJson<{ countries: { iso2: string; name: string }[] }>(join(GEN, 'countries.json'))
+const CDC_SLUGS: Record<string, string> = {
+  CD: 'democratic-republic-of-congo', CG: 'congo', CI: 'ivory-coast', FM: 'micronesia', MM: 'burma', TL: 'east-timor',
+  HK: 'hong-kong-sar', MO: 'macau-sar', IL: 'israel', PS: 'israel', CV: 'cape-verde', TR: 'turkey', SZ: 'eswatini',
+  ST: 'sao-tome-and-principe', VG: 'british-virgin-islands', VI: 'usvirgin-islands', TC: 'turks-and-caicos', FO: 'faroe-island',
+}
+const key = (s: string) => normalize(s).replace(/[^a-z]/g, '')
+const cdcIndex = new Map<string, string>()
+{
+  const res = await fetch('https://wwwnc.cdc.gov/travel/destinations/list', { headers: { 'User-Agent': 'rtw-map data refresh (https://github.com/)' } })
+  if (!res.ok) throw new Error(`CDC list: ${res.status}`)
+  for (const [, slug, raw] of (await res.text()).matchAll(/href="\/travel\/destinations\/traveler\/none\/([a-z0-9-]+)"[^>]*>([^<]+)/g)) {
+    const name = text(raw).replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    const [main, inverted] = name.replace(/\s*\(.*\)\s*$/, '').split(', ')
+    cdcIndex.set(key(main), slug)
+    if (inverted) cdcIndex.set(key(`${inverted} ${main}`), slug)
+  }
+}
+const slugs: [string, string][] = all.flatMap((c) => {
+  const slug = health.countries[c.iso2]?.cdcSlug ?? CDC_SLUGS[c.iso2] ?? cdcIndex.get(key(c.name))
+  if (!slug) console.error(`No CDC page for ${c.name}`)
+  return slug ? [[c.iso2, slug]] : []
+})
+const OUT = join(GEN, 'cdc.json')
+const previous: Record<string, Entry> = existsSync(OUT) ? readJson<{ countries: Record<string, Entry> }>(OUT).countries : {}
 
 /** Diseases on every page with the same advice; the app shows one "routine vaccines" line instead. */
 const EVERYWHERE = new Set(['Routine vaccines', 'COVID-19', 'Measles', 'Monkeypox', 'Mpox'])
@@ -27,6 +52,8 @@ const unknown: string[] = []
 /** Our reading of one row: advice and note, or null when CDC doesn't recommend anything for travellers. */
 function classify(iso2: string, name: string, cdc: string): CdcItem | null {
   const item = (advice: Advice, note: string): CdcItem => ({ name, advice, note })
+  // A row CDC's page left unfinished ("Trying this here: [[MRelativeRisk]]", Liechtenstein's malaria) says nothing.
+  if (/\[\[\w+\]\]/.test(cdc)) return null
   switch (name) {
     case 'Yellow Fever':
       return /CDC recommendations: Vaccine is not recommended/.test(cdc) ? null : item('recommended', 'Required or recommended for some travellers: check with a travel clinic')
@@ -69,6 +96,9 @@ function classify(iso2: string, name: string, cdc: string): CdcItem | null {
       if (/take prescription medicine to prevent malaria/.test(cdc)) return item('consider', 'Prescription medicine for certain areas: ask a travel clinic which ones')
       if (/not recommended|No malaria/i.test(cdc)) return null
       break
+    case 'Meningococcal disease':
+      if (/meningitis belt/.test(cdc)) return item('recommended', 'For parts of the meningitis belt in the dry season (roughly December to June)')
+      break
     case 'Polio':
       if (/increased risk/.test(cdc)) return item('recommended', 'Poliovirus found recently: adults may need a one-time booster')
       break
@@ -78,7 +108,7 @@ function classify(iso2: string, name: string, cdc: string): CdcItem | null {
 }
 
 const countries: Record<string, Entry> = {}
-for (const [iso2, { cdcSlug }] of Object.entries(health.countries)) {
+for (const [iso2, cdcSlug] of slugs) {
   const url = `https://wwwnc.cdc.gov/travel/destinations/traveler/none/${cdcSlug}`
   const res = await fetch(url, { headers: { 'User-Agent': 'rtw-map data refresh (https://github.com/)' } }).catch(() => null)
   // The first table on the page is "Vaccines and Medicines".

@@ -4,7 +4,7 @@
 // (e.g. Taiwan). Market rates come from our own fx.json, so currencies always match (e.g. Bulgaria now in euros).
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
-import { GEN, SEED, fetchImf, readJson, today, writeJson } from './lib.ts'
+import { GEN, fetchImf, readJson, today, writeJson } from './lib.ts'
 
 /** Countries a user can compare prices with ("about 35% cheaper than …"). */
 const COMPARE: { iso2: string; name: string; currency: string }[] = [
@@ -21,7 +21,7 @@ const COMPARE: { iso2: string; name: string; currency: string }[] = [
   { iso2: 'IN', name: 'India', currency: 'INR' },
 ]
 
-const { countries } = readJson<{ countries: { iso2: string; currency: string }[] }>(join(SEED, 'countries.json'))
+const { countries } = readJson<{ countries: { iso2: string; currency: string }[] }>(join(GEN, 'countries.json'))
 const fx = readJson<{ rates: Record<string, number> }>(join(GEN, 'fx.json'))
 const wanted = [...countries.map((c) => ({ iso2: c.iso2, currency: c.currency })), ...COMPARE]
 

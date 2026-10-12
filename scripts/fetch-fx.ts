@@ -1,8 +1,8 @@
 // Exchange rates (EUR base) from ExchangeRate-API's open endpoint. Attribution required.
 import { join } from 'node:path'
-import { GEN, SEED, readJson, today, writeJson } from './lib.ts'
+import { GEN, readJson, today, writeJson } from './lib.ts'
 
-const { countries } = readJson<{ countries: { currency: string }[] }>(join(SEED, 'countries.json'))
+const { countries } = readJson<{ countries: { currency: string }[] }>(join(GEN, 'countries.json'))
 const res = await fetch('https://open.er-api.com/v6/latest/EUR')
 if (!res.ok) throw new Error(`fx: ${res.status}`)
 const d = await res.json()

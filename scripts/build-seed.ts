@@ -1,5 +1,8 @@
-// Converts the hand-curated seed files (countries, costs, connections, notices) into app-ready JSON.
+// Converts the hand-curated seed files (countries, costs, connections, notices) into app-ready JSON, and adds the
+// basic facts of the countries with only an automatic capital (build-capitals.ts), marked `auto`.
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { EU, SCHENGEN } from '../src/data/areas'
 import { GROCERY_KEYS } from '../src/planner/cost'
 import { PHRASES } from '../src/planner/phrases'
 import type { Phrases } from '../src/planner/types'
@@ -9,8 +12,16 @@ const SEED_DATE = '2026-10-04'
 const COSTS_DATE = '2026-10-08'
 const num = (s: string) => Number(s)
 
-const countries = readJson<{ _meta: unknown; countries: unknown[] }>(join(SEED, 'countries.json'))
-writeJson(join(GEN, 'countries.json'), countries)
+const countries = readJson<{ _meta: { source: string }; countries: { iso2: string }[] }>(join(SEED, 'countries.json'))
+type AutoCountry = { iso2: string; name: string; currency: string | null; languages: string[]; plugs: string[]; voltage: number | null; emergency: string | null }
+const capitalsPath = join(GEN, 'capitals.json')
+const autoCountries = (existsSync(capitalsPath) ? readJson<{ countries: AutoCountry[] }>(capitalsPath).countries : [])
+  .filter((c) => !countries.countries.some((s) => s.iso2 === c.iso2))
+  .map((c) => ({ ...c, schengen: SCHENGEN.has(c.iso2), eu: EU.has(c.iso2), notes: [], auto: true }))
+writeJson(join(GEN, 'countries.json'), {
+  _meta: { ...countries._meta, source: `${countries._meta.source} Countries marked auto: GeoNames (CC-BY 4.0) and Wikidata (CC0) only.` },
+  countries: [...countries.countries, ...autoCountries],
+})
 writeJson(join(GEN, 'notices.json'), readJson(join(SEED, 'notices.json')))
 
 // Prices in the money they're quoted in (the country's currency; US dollars in Cambodia). The app converts them to

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -53,4 +54,20 @@ export const today = () => new Date().toISOString().slice(0, 10)
 
 export function normalize(s: string) {
   return s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().trim()
+}
+
+const GEONAMES_ZIP = 'https://download.geonames.org/export/dump/cities500.zip'
+
+/** GeoNames cities500 (CC-BY 4.0), every place with 500+ people, one row of tab-separated fields each (cached). */
+export async function loadGeonames(): Promise<string[][]> {
+  const txt = join(CACHE, 'cities500.txt')
+  if (!existsSync(txt)) {
+    mkdirSync(CACHE, { recursive: true })
+    const zip = join(CACHE, 'cities500.zip')
+    const res = await fetch(GEONAMES_ZIP)
+    if (!res.ok) throw new Error(`GeoNames download failed: ${res.status}`)
+    writeFileSync(zip, Buffer.from(await res.arrayBuffer()))
+    execFileSync('unzip', ['-o', zip, '-d', CACHE])
+  }
+  return readFileSync(txt, 'utf8').split('\n').filter(Boolean).map((l) => l.split('\t'))
 }

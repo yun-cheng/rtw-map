@@ -3,18 +3,19 @@
 // - Taiwan: Ministry of the Interior household registration open data (Government Open Data License v1), end of year.
 import { join } from 'node:path'
 import { existsSync } from 'node:fs'
-import { GEN, SEED, readJson, today, writeJson } from './lib.ts'
+import { GEN, readJson, today, writeJson } from './lib.ts'
 
 type Population = { value: number; year: number; source?: string }
 
-const { countries } = readJson<{ countries: { iso2: string }[] }>(join(SEED, 'countries.json'))
-const codes = countries.map((c) => c.iso2).join(';')
-const res = await fetch(`https://api.worldbank.org/v2/country/${codes}/indicator/SP.POP.TOTL?format=json&mrv=1&per_page=100`)
+const { countries } = readJson<{ countries: { iso2: string }[] }>(join(GEN, 'countries.json'))
+// Every economy at once (a list of 200+ codes is too long a request), then ours.
+const res = await fetch('https://api.worldbank.org/v2/country/all/indicator/SP.POP.TOTL?format=json&mrv=1&per_page=1000')
 if (!res.ok) throw new Error(`World Bank: ${res.status}`)
 const [, rows] = (await res.json()) as [unknown, { country: { id: string }; date: string; value: number | null }[]]
+const ours = new Set(countries.map((c) => c.iso2))
 
 const population: Record<string, Population> = Object.fromEntries(
-  rows.filter((r) => r.value != null).map((r) => [r.country.id, { value: r.value!, year: Number(r.date) }]),
+  rows.filter((r) => r.value != null && ours.has(r.country.id)).map((r) => [r.country.id, { value: r.value!, year: Number(r.date) }]),
 )
 
 /** Registered population at the end of the latest year published, summed over all villages. */

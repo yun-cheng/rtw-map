@@ -1,23 +1,9 @@
-// Enriches data/seed/cities.csv with coordinates, population and timezone from GeoNames (CC-BY 4.0).
-import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+// Enriches data/seed/cities.csv with coordinates, population and timezone from GeoNames (CC-BY 4.0), and adds the
+// capital of every country with none of those (build-capitals.ts), marked `auto`: open data only, with the same plain
+// defaults for what only a curated profile says (popularity, days, cost factor; no tags).
+import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { CACHE, GEN, SEED, normalize, readCsv, today, writeJson } from './lib.ts'
-
-const ZIP_URL = 'https://download.geonames.org/export/dump/cities500.zip'
-
-async function loadGeonames(): Promise<string[][]> {
-  const txt = join(CACHE, 'cities500.txt')
-  if (!existsSync(txt)) {
-    mkdirSync(CACHE, { recursive: true })
-    const zip = join(CACHE, 'cities500.zip')
-    const res = await fetch(ZIP_URL)
-    if (!res.ok) throw new Error(`GeoNames download failed: ${res.status}`)
-    writeFileSync(zip, Buffer.from(await res.arrayBuffer()))
-    execFileSync('unzip', ['-o', zip, '-d', CACHE])
-  }
-  return readFileSync(txt, 'utf8').split('\n').filter(Boolean).map((l) => l.split('\t'))
-}
+import { GEN, SEED, loadGeonames, normalize, readCsv, readJson, today, writeJson } from './lib.ts'
 
 const seed = readCsv(join(SEED, 'cities.csv'))
 const geo = await loadGeonames()
@@ -57,7 +43,22 @@ if (missing.length) {
   process.exit(1)
 }
 
+type Capital = { id: string; name: string; iso2: string; lat: number; lon: number; population: number | null; timezone: string | null; geonameId: number; blurb: string }
+const capitalsPath = join(GEN, 'capitals.json')
+const capitals = existsSync(capitalsPath) ? readJson<{ cities: Capital[] }>(capitalsPath).cities : []
+const curated = new Set(cities.map((c) => c.iso2))
+const auto = capitals.filter((c) => !curated.has(c.iso2)).map((c) => ({
+  ...c,
+  tags: [],
+  popularity: 3,
+  days: { min: 1, ideal: 2, max: 3 },
+  costFactor: 1,
+  longStay: false,
+  blurb: c.blurb && c.blurb[0].toUpperCase() + c.blurb.slice(1),
+  auto: true,
+}))
+
 writeJson(join(GEN, 'cities.json'), {
-  _meta: { source: 'GeoNames cities500 (CC-BY 4.0) + hand-curated profile', updatedAt: today() },
-  cities,
+  _meta: { source: 'GeoNames cities500 (CC-BY 4.0) + hand-curated profile; capitals elsewhere from GeoNames and Wikidata (CC0)', updatedAt: today() },
+  cities: [...cities, ...auto],
 })

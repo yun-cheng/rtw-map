@@ -5,8 +5,9 @@
 import { join } from 'node:path'
 import { GEN, readJson, sleep, today, writeJson } from './lib.ts'
 
-type City = { id: string; lat: number; lon: number }
-const { cities } = readJson<{ cities: City[] }>(join(GEN, 'cities.json'))
+type City = { id: string; lat: number; lon: number; auto?: true }
+// Curated cities only: plans don't use the capitals from open data, so no times are estimated for them.
+const cities = readJson<{ cities: City[] }>(join(GEN, 'cities.json')).cities.filter((c) => !c.auto)
 const MAX_KM = 800
 const BLOCK = 45 // two blocks per request stay under the server limit
 
