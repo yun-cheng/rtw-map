@@ -417,8 +417,9 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [...homeFeatures, ...routeFeatures] })
 
       map.setPaintProperty('country-fill', 'fill-color', editing ? 'transparent' : countryFill(layer, tripCountries, input.passport))
-      // Country tints need a little more strength to show on the dark map.
-      map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' || layer === 'visa' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
+      // The Schengen and Visa views' bands are told apart by colour alone, so as strong on both maps (fainter, red and
+      // orange both wash out to pink on the light one); the trip's countries need a little more to show on the dark map.
+      map.setPaintProperty('country-fill', 'fill-opacity', layer === 'schengen' || layer === 'visa' ? 0.4 : 0.1 * INK[shownTheme.current].tint)
 
       // Editing the trip: its countries instead of its route and stops; while adding places, every country's outline.
       const show = (ids: string[], on: boolean) => ids.forEach((id) => map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'))
