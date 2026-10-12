@@ -139,7 +139,7 @@ function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
       {msg.changes.length > 0 && (
         <div className={`mt-2 rounded-md border px-2.5 py-2 ${msg.undone ? 'border-line text-muted' : 'border-accent/40 bg-accent-soft'}`}>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider uppercase">{msg.undone ? 'Undone' : 'Changed your trip'}</span>
+            <span className="text-[11px] font-semibold tracking-wider uppercase">{msg.undone ? 'Undone' : msg.before ? 'Changed your trip' : 'Changed My visit'}</span>
             {canUndo && !msg.undone && <Button variant="ghost" className="!px-1.5 !py-0.5 text-[12px]" onClick={() => undo(index)}>↶ Undo</Button>}
           </div>
           <ul className={`list-disc pl-4 text-[12px] ${msg.undone ? 'line-through' : ''}`}>
