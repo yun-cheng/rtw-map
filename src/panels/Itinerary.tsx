@@ -7,9 +7,11 @@ import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
-import { Badge, Named } from '../ui/kit'
+import { Badge, Named, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { useJournal } from '../store/journal'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
+import { JournalMark, JournalView } from './Journal'
 import { NoteMark } from './Notes'
 import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
@@ -19,11 +21,15 @@ export function Itinerary() {
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
+  const { view, setView } = useJournal()
   // (A shared trip may have no plan yet: its page has only this tab.)
   if (!plan) return SHARED_TOKEN ? <p className="px-4 py-6 text-[13px] text-muted">This trip has no itinerary yet.</p> : null
   // On a trip under way, the stops already left are faded and today's is marked.
   const today = localToday()
   const travelling = isTravelling(input, today)
+  // From the trip's first day on, the days written (the journal) beside the stops; never on a shared trip.
+  const started = !SHARED_TOKEN && !!input.startDate && today >= input.startDate
+  const journal = started && view.journal
 
   return (
     <div className="flex min-h-full flex-col">
@@ -35,6 +41,15 @@ export function Itinerary() {
         </div>
         <UndoRedo />
       </div>
+      {started && (
+        <div className="px-4 pb-2">
+          <Segmented
+            value={journal ? 'journal' : 'stops'} onChange={(v) => setView({ journal: v === 'journal' })}
+            options={[{ value: 'stops', label: 'Stops' }, { value: 'journal', label: 'Journal' }]}
+          />
+        </div>
+      )}
+      {journal ? <JournalView /> : <>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
         <Named
@@ -77,7 +92,7 @@ export function Itinerary() {
                   {day}
                 </span>
                 <div className={`min-w-0 flex-1 ${time === 'done' ? 'opacity-55' : ''}`} title={time === 'done' ? 'Done: you were here' : undefined}>
-                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark note={notes.cities?.[s.cityId]} /></div>
+                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark note={notes.cities?.[s.cityId]} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
                 {readOnly ? (
@@ -119,6 +134,7 @@ export function Itinerary() {
         {plan.home.back && <HomeRow leg={plan.home.back} label={`Back to ${cityName(plan.home.back.to)}`} when={`leaving ${shortDate(input.endDate)}`} />}
       </ol>
       {!readOnly && <UpdatePlanBar />}
+      </>}
     </div>
   )
 }

@@ -1,22 +1,20 @@
 // The Today tab, while the trip is under way (PLAN.md §14.3): where you are, the day's or next journey, the weather
-// today and tomorrow, this stop's checks, the days left and the assistant. The app opens on it then (store/url.ts).
+// today and tomorrow, today's journal entry, this stop's checks, the days left and the assistant. The app opens on it then (store/url.ts).
 import { ChevronRight, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, SCHENGEN_LIMIT, schengenApplies, schengenUsed, travelDay, type Leg } from '../planner'
 import { legKey, useTrip } from '../store/trip'
-import { MODE_ICON, cityName, duration, flag, shortDate, transitUrl } from '../ui/format'
+import { MODE_ICON, cityName, dayDate, duration, flag, transitUrl } from '../ui/format'
 import { Button, Named, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CheckNotes, legWarnings, stopWarnings } from './Checks'
 import { tabOf, type SectionKey } from './cityTabs'
 import { fetchForecast, savedNote, sky, type CityForecast } from './Forecast'
+import { TodayEntry } from './Journal'
 import { NoteBox } from './Notes'
 
-const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-/** "Thu 14 Oct". */
-const dayDate = (iso: string) => `${WEEKDAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]} ${shortDate(iso)}`
 /** "today", "tomorrow" or "in 3 days". */
 function fromToday(today: string, iso: string) {
   const n = daysBetween(today, iso)
@@ -102,6 +100,7 @@ export function Today() {
             </div>
           </Section>
         )}
+        <TodayEntry today={today} />
         {stop && stopWarnings(plan.warnings, stop.cityId).length > 0 && (
           <Section title={`Checks for ${cityName(stop.cityId)}`}>
             <CheckNotes warnings={stopWarnings(plan.warnings, stop.cityId)} cityId={stop.cityId} />

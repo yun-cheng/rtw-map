@@ -12,7 +12,7 @@ A map-based trip planner for long, multi-country trips anywhere in the world: ro
 | Coverage | **Global cities.** Basic data comes automatically for any city; detailed hand-checked data is added region by region (§3.0). Region 1: Balkans, Central & Eastern Europe (incl. Austria), Poland, Baltic States, Russia (the test case). Region 2: Taiwan, Japan, Thailand, Vietnam, Malaysia, Singapore, Cambodia (§3.5). Order of later regions: decided after the field test |
 | Language | English only |
 | Passports | A few: EU/EEA/Swiss (one group), UK, US, Canada, Australia, New Zealand, Japan, South Korea, **Taiwan** |
-| Platform | Desktop-first web app; a simple read-only phone view for use on the road |
+| Platform | Desktop-first web app; on a phone for use on the road: Today, the city data, the itinerary's edits and the journal (written on the phone, offline first) |
 | Team & budget | Solo developer, lowest possible budget, ~10 daily users |
 | Type | Side project, no SEO, so **no SSR**: a plain single-page app |
 | Accounts | Optional **Sign in with Google**: saves trips to the account (several trips, any device) and unlocks the trip assistant. Signed out, one trip is kept in the browser. No import/export |
@@ -525,7 +525,8 @@ Leg        { connectionId?, mode: 'public' | 'car', rentalSegmentId?, custom? }
 - **Offline (§14.7, T2):** the app installs (manifest, icons; `index.html`'s theme colour follows the app's theme) and works with no connection. A service worker (`pwa/sw.ts`, built by `pwa/plugin.ts` with the list of the built files and a version from their contents) keeps each version of the app whole: the city data is in the built files, so that covers the city panels; the page as `/` (the Worker sends `/index.html` on to `/`, and a redirected page can't be used). Map tiles are kept as they're fetched (cache first: they're under a dated version of the map; the latest 2,500), the map's style, sprites and glyphs and the app's font refreshed behind the cached copy; `/api` is never cached; copies are matched by address alone (`ignoreVary`: a `Vary: Origin` missed every module script). A new version waits until **Reload** (`UpdateNotice`, `src/pwa.ts`); persistent storage is asked for once installed. The forecast keeps each city's last one in the browser (12 cities), shown offline from today on with its date. Saved trips: `offline` in the account (the session can't be reached: signed in or not unknown) keeps the trip this browser showed as the active one, so edits are marked unsaved (`rtw-map-unsaved`, kept across a reload) and sent at the next sign-in before the trip is reloaded; a save without a connection is *Offline · saved on this device* and is sent on `online`. The assistant says it needs a connection. Tested in Chrome (the app's own browser pane has no service workers) with the server stopped; not yet on a phone. On iOS the home-screen app's storage is apart from Safari's (sign in there); the phone's edits win over the laptop's made meanwhile (§14.8 #1).
 - **Offline map downloads:** Settings → **Offline map** (`OfflineMap.tsx`, `src/offline/`): the cities of the next 1–4 weeks or the whole trip (from its first day before it starts; `citiesToDownload`), and by default the whole trip zoomed out (zooms 0–5 around every stop ahead, `overviewTiles`; ~7 MB for a 15-city world route). A city's tiles (`cityTiles`): zoom 14 within 4 km (7 km over a million people) out to zoom 8 within 80 km, and zooms 0–7 within 150 km, with the relief to zoom 6; measured 9 MB for Tirana's streets and rings, 17 MB for Bangkok's, and the first city in a region ~10 MB more for the zoomed-out tiles its neighbours share. The labels' glyphs by the countries' scripts (`glyphFiles`; CJK is drawn with the device's font). A city's map goes `clearAfter` days after leaving it (7, 0 or never) or once it's out of the trip, but tiles a kept city or the overview still uses. The page downloads (6 at a time, `cache: 'no-store'` so the worker lets it through) into `map-offline`, each tile with its map version and size in headers; the size shown is counted from what's stored. Tiles are kept by place (`.../planet/_/z/x/y.pbf`), not by the map's weekly version: the worker serves the current version's copy, else fetches it, else (offline) any copy. Runs 5 s after opening, after trip or setting changes, on `online` and when the app comes back to the front. Tested in Chrome with the worker itself offline: a downloaded city shows its streets, one not downloaded only the region's coarse map. A route box at zoom 7 (first tried) would be the whole world for a world trip.
 - **Settings on a computer:** the gear in the top bar opens the settings panel the phone has (`SettingsPanel`, now in `App` for both), so the offline map can be set there too; the top bar keeps currency, °C/°F and theme at hand.
-- **Next:** try the installed app on a phone (sign-in in the home-screen app on iOS, a day offline); verify the seed costs and connections; album links (T4) or the journal (T3, after §14.8 #1).
+- **Journal (§14.4, T3):** one entry per trip day (`DayEntry`: highlight, text, rating 1–5, the night's city, `updatedAt`; `src/store/journalCore.ts`, shared with the Worker), the trip's and not a plan's. Written on Today (*Today's entry*, or yesterday's when not written) and in the Itinerary's **Journal** (a Stops | Journal switch from the trip's first day: every day so far, newest first, grouped by the night's stop; a stop's mark counts its days and opens them). Kept in the browser first (`rtw-map-journal`, each trip's under its id, signed out under `local`, with the days not yet sent) and sent a moment after typing, on `online` and on leaving the page; the server keeps it in its own column (`trips.journal`), `PUT /api/trips/:id/journal` merges by day (latest `updatedAt` wins; a cleared day is kept, so the clearing reaches the other devices; a device's clock ahead is capped at the server's), also while a run works on the trip (a run never changes it). Opening a trip merges the server's with the days not sent. Signed out, it goes with the trip into the account at sign-in. Not in Undo, never in a shared trip. Fields are 16px on a phone (iOS zooms smaller ones). Not yet: photos (T5), the day's spend (§14.8 #2), the itinerary's past stops showing their highlight and photo.
+- **Next:** try the installed app on a phone (sign-in in the home-screen app on iOS, a day offline, a journal entry written offline); verify the seed costs and connections; album links (T4).
 
 ---
 
@@ -628,7 +629,7 @@ No single product combines **route + days planning**, **real overland transport 
 
 ## 14. On the trip (draft, Oct 2026)
 
-Everything so far is for planning. This is the workflow once the trip starts: what the app does each day on the road, and what's left after it. Not built yet; the decisions at the end come first.
+Everything so far is for planning. This is the workflow once the trip starts: what the app does each day on the road, and what's left after it. Built so far: T1–T3 (§14.7, the Progress list); the open decisions are at the end.
 
 ### 14.1 The trip's three phases
 
@@ -709,14 +710,14 @@ A plain upload from the phone (no Google) would work the same way from step 2's 
 |---|---|---|
 | T1 | Under way: today's place in the trip, past stops frozen for the assistant, Today screen on the phone (done) | — |
 | T2 | Offline (PWA): the app, the trip and the city data in the phone's cache (done) | — |
-| T3 | Daily journal, saved offline first | T2 |
+| T3 | Daily journal, saved offline first (done) | T2 |
 | T4 | Album links | — |
 | T5 | Photos via the Picker API, copies in R2 | T3, Google consent check |
 | T6 | Recap; then sharing | T3, T5 |
 
 ### 14.8 Decisions needed
 
-1. **"Phone: read-only" (§0)** no longer holds: the journal and on-the-road edits write from the phone. Change the decision?
+1. ~~**"Phone: read-only" (§0)**~~ Decided (12 Oct 2026): the phone writes. The journal is merged day by day (each day's latest edit wins); the trip's data is still the last save's (the phone's edits win over the laptop's made meanwhile).
 2. **Spend logging is out of scope (§0).** Still so? A day's spend would fit the journal entry and the Checks' budget.
 3. **Photos:** keep copies in R2 (thumbnails that last, but our storage of personal photos), or links only (album links, nothing stored)?
 4. **Bookings** (where you sleep, a ticket's time and reference) on the stop and journey: in scope? Today would use them ("bus at 08:40, seat 23").

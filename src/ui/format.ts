@@ -44,6 +44,10 @@ export function shortDate(iso: string): string {
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
 }
 
+const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+/** "Thu 14 Oct". */
+export const dayDate = (iso: string) => `${WEEKDAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]} ${shortDate(iso)}`
+
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n)
 
