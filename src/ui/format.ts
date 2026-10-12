@@ -1,6 +1,6 @@
 import { dataset as ds } from '../data/dataset'
 import { DEFAULT_TEMP_BREAKS } from '../planner/prefs'
-import type { PlanWarning, TempBreaks } from '../planner/types'
+import type { PlanWarning, TempBreaks, VisaReq } from '../planner/types'
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -83,6 +83,19 @@ export const LEVEL_COLORS = ['#dc2626', '#f97316', '#eab308', '#84cc16', '#15803
 
 /** Colour of a level from 1 (worst) to 5 (best). */
 export const levelColor = (level: number) => LEVEL_COLORS[Math.max(1, Math.min(5, Math.round(level))) - 1]
+
+/** How each visa rule is named (the city's Entry tab, the Visa map view) and how it reads: fine, a step to take, or a problem. */
+export const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' | 'info' }> = {
+  free_movement: { label: 'Free movement (EU citizen)', tone: 'ok' },
+  visa_free: { label: 'Visa-free', tone: 'ok' },
+  eta: { label: 'Electronic travel authorisation needed', tone: 'warn' },
+  e_visa: { label: 'E-visa needed', tone: 'warn' },
+  visa_on_arrival: { label: 'Visa on arrival', tone: 'info' },
+  visa_required: { label: 'Visa required in advance', tone: 'error' },
+  no_admission: { label: 'Passport not admitted', tone: 'error' },
+  own_country: { label: 'Your own country', tone: 'ok' },
+  unknown: { label: 'Unknown: check official sources', tone: 'info' },
+}
 
 /** Exchange rate between two currencies, written so the number is ≥ 1, e.g. "1 EUR = 117.48 RSD". */
 export function rateText(from: string, to: string): string | null {

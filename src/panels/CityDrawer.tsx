@@ -1,8 +1,8 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type VisaReq } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, compact, duration, flag, local, rateText, shortDate, shownTemps } from '../ui/format'
+import { MODE_ICON, VISA_TEXT, compact, duration, flag, local, rateText, shortDate, shownTemps } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
@@ -24,18 +24,6 @@ const ClimateChart = lazy(() => import('./ClimateChart').then((m) => ({ default:
 const RainChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.RainChart })))
 const AirChart = lazy(() => import('./AirChart').then((m) => ({ default: m.AirChart })))
 const SunChart = lazy(() => import('./SunChart').then((m) => ({ default: m.SunChart })))
-
-const VISA_TEXT: Record<VisaReq, { label: string; tone: 'ok' | 'warn' | 'error' | 'info' }> = {
-  free_movement: { label: 'Free movement (EU citizen)', tone: 'ok' },
-  visa_free: { label: 'Visa-free', tone: 'ok' },
-  eta: { label: 'Electronic travel authorisation needed', tone: 'warn' },
-  e_visa: { label: 'E-visa needed', tone: 'warn' },
-  visa_on_arrival: { label: 'Visa on arrival', tone: 'info' },
-  visa_required: { label: 'Visa required in advance', tone: 'error' },
-  no_admission: { label: 'Passport not admitted', tone: 'error' },
-  own_country: { label: 'Your own country', tone: 'ok' },
-  unknown: { label: 'Unknown: check official sources', tone: 'info' },
-}
 
 const PACES: { value: Pace; icon: string; label: string }[] = [
   { value: 'chill', icon: '🐢', label: 'Chill' }, { value: 'balanced', icon: '⚖️', label: 'Balanced' }, { value: 'fast', icon: '🐇', label: 'Fast' },
