@@ -8,6 +8,8 @@
 //   POST|DELETE /api/trips/:id/share  turn a trip's public link on (its token) or off
 //   PUT  /api/trips/:id/journal    add days written on a device to the trip's journal (merged day by day)
 //   PUT  /api/trips/:id/items      add the stays, albums, links and notes changed on a device (merged item by item)
+//   GET  /api/trips/:id/changes[?since=REV]  the trip's rev, and other apps' changes to it (changes.ts)
+//   POST /api/trips/:id/changes/:change/undo  undo one (and the later ones)
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
@@ -15,7 +17,7 @@
 //   POST /api/runs/:id/stop        stop it
 //   /internal/runs/…               the runner's side of a run (with the RUNNER_SECRET)
 //   GET|PUT /api/admin/limits      other daily limits for particular accounts, by email (admins only)
-//   GET  /api/connections          the other apps allowed to read the trips (oauth.ts)
+//   GET  /api/connections          the other apps allowed to read (and change) the trips (oauth.ts)
 //   DELETE /api/connections/:id    disconnect one
 //   POST /mcp                      the MCP server for other apps' AI assistants (mcp.ts), with an access token
 //   /oauth/…, /.well-known/oauth-… how those apps are connected (oauth.ts)
@@ -24,6 +26,7 @@ import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, ver
 import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
 import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
 import { Account, BUSY } from './account'
+import { CHANGED_ELSEWHERE } from './changes'
 import { handleMcp } from './mcp'
 import { bearer, CORS, oauth, type OAuthContext } from './oauth'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
@@ -189,7 +192,10 @@ async function trips(request: Request, env: Env, id: string | undefined): Promis
       const created = await store.createTrip(patch)
       return typeof created === 'string' ? json({ error: created }, 409) : json(created, 201)
     }
-    const saved = await store.saveTrip(id, patch)
+    // The rev the page's trip is from: a save from before another app's change is refused (the page then reloads it).
+    const base = (raw as { rev?: unknown }).rev
+    const saved = await store.saveTrip(id, patch, typeof base === 'number' ? base : undefined)
+    if (saved === CHANGED_ELSEWHERE) return json({ error: saved, changed: true }, 409)
     if (typeof saved === 'string') return json({ error: saved, busy: true }, 409)
     return saved ? json(saved) : json({ error: 'Trip not found' }, 404)
   }
@@ -222,6 +228,24 @@ async function items(request: Request, env: Env, id: string): Promise<Response> 
   return saved ? json({ items: saved }) : json({ error: 'Trip not found' }, 404)
 }
 
+/** Other apps' changes to a trip (changes.ts): the trip's rev and the changes since the rev the page has (GET), or
+ *  one undone with the later ones (POST …/undo). */
+async function tripChanges(request: Request, env: Env, id: string, change: string | undefined): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  if (request.method === 'GET' && !change) {
+    const since = Number(new URL(request.url).searchParams.get('since') ?? NaN)
+    const list = await store.listChanges(id, Number.isInteger(since) ? since : undefined)
+    return list ? json(list) : json({ error: 'Trip not found' }, 404)
+  }
+  if (request.method !== 'POST' || !change) return json({ error: 'Not found' }, 404)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  const out = await store.undoChange(id, { id: change })
+  if (!out) return json({ error: 'Trip not found' }, 404)
+  return typeof out === 'string' ? json({ error: out }, 409) : json(out)
+}
+
 // ---------------------------------------------------------------- the assistant's runs (runs.ts)
 
 /** Starts a run: saves the trip and chat as on screen, adds the run, and hands it to the runner. */
@@ -240,8 +264,9 @@ async function startRun(request: Request, env: Env, user: User): Promise<Respons
     const error = daily > 0 ? 'You have used today\'s assistant allowance.' : 'The assistant is turned off for this account.'
     return json({ error, usage: usageOf(allowed.count, daily) }, 429)
   }
-  const run = await account(env, user).startRun(start.tripId, patch, start.request, user.email)
+  const run = await account(env, user).startRun(start.tripId, patch, start.request, user.email, start.rev)
   if (!run) return json({ error: 'Trip not found' }, 404)
+  if (run === CHANGED_ELSEWHERE) return json({ error: run, changed: true }, 409)
   if (typeof run === 'string') return json({ error: run, busy: true }, 409)
   // The runner queues it and answers at once; the run itself reports back on /internal/runs.
   const res = await fetch(`${env.RUNNER_URL}/start`, {
@@ -408,9 +433,18 @@ async function outside(request: Request, env: Env, pathname: string): Promise<Re
   if (!(await env.SAVE_LIMIT.limit({ key: `mcp:${who.sub}` })).success) return json({ error: 'Too many requests: wait a minute.' }, 429, CORS)
   const store = account(env, who)
   return handleMcp(request, {
+    scope: who.scope,
     listTrips: () => store.listTrips(),
     tripTexts: (id, extra) => store.tripTexts(id, extra),
     runTool: (body) => runnerTool(env, body),
+    saveChange: async (tripId, base, data, change) => {
+      // The runner's trip, checked as one from the browser.
+      const patch = parseTripPatch({ data })
+      if (typeof patch === 'string') return patch
+      return (await store.saveChange(tripId, base, patch.data!, { grant: who.grant, app: who.app, ...change })) ?? 'Trip not found'
+    },
+    changes: async (tripId) => (await store.listChanges(tripId))?.changes ?? [],
+    undo: async (tripId, change) => (await store.undoChange(tripId, change ? { id: change } : { grant: who.grant })) ?? 'Trip not found',
   })
 }
 
@@ -435,6 +469,11 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (journalPath) {
     if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return journal(request, env, journalPath[1])
+  }
+  const changesPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/changes(?:\/([\w-]{1,64})\/undo)?$/)
+  if (changesPath) {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return tripChanges(request, env, changesPath[1], changesPath[2])
   }
   const itemsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/items$/)
   if (itemsPath) {

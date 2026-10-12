@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { b64url, signSession, verifySession, type User } from './auth'
+import type { ChangeView } from './changes'
 import { handleMcp, type McpContext } from './mcp'
 import { bearer, oauth, parseRegistration, redirectAllowed, redirectMatches, seal, unseal, type GrantStore, type OAuthContext } from './oauth'
 
@@ -9,12 +10,12 @@ const user: User = { sub: '42', name: 'Zeke', email: 'zeke@example.com' }
 
 /** The grants as the Account keeps them (account.ts), in memory. */
 function fakeGrants() {
-  const rows = new Map<string, { scope: string; status: 'pending' | 'active'; gen: number }>()
+  const rows = new Map<string, { scope: string; client: string; status: 'pending' | 'active'; gen: number }>()
   let n = 0
   const store: GrantStore = {
     addGrant: async (g) => {
       const id = `g${++n}`
-      rows.set(id, { scope: g.scope, status: 'pending', gen: 0 })
+      rows.set(id, { scope: g.scope, client: g.client, status: 'pending', gen: 0 })
       return id
     },
     activateGrant: async (id) => {
@@ -39,7 +40,7 @@ function fakeGrants() {
     },
     useGrant: async (id) => {
       const g = rows.get(id)
-      return g?.status === 'active' ? { scope: g.scope } : null
+      return g?.status === 'active' ? { scope: g.scope, client: g.client } : null
     },
   }
   return { rows, store }
@@ -62,8 +63,9 @@ async function pkce() {
   return { verifier, challenge }
 }
 
-/** Registers an app, has the user allow it, and returns its code, as Claude's or Codex's sign-in does. */
-async function connect(ctx: OAuthContext, redirect = 'http://127.0.0.1:33418/callback') {
+/** Registers an app, has the user allow it (to change the trips too, if `write`), and returns its code, as Claude's
+ *  or Codex's sign-in does. */
+async function connect(ctx: OAuthContext, redirect = 'http://127.0.0.1:33418/callback', write = false) {
   const reg = await send(ctx, post('/oauth/register', JSON.stringify({ client_name: 'Claude', redirect_uris: [redirect] }), { 'Content-Type': 'application/json' }))
   expect(reg.status).toBe(201)
   const { client_id: clientId } = await reg.json() as { client_id: string }
@@ -73,8 +75,10 @@ async function connect(ctx: OAuthContext, redirect = 'http://127.0.0.1:33418/cal
   })
   const page = await send(ctx, new Request(`${ORIGIN}/oauth/authorize?${params}`))
   expect(page.status).toBe(200)
-  expect(await page.text()).toContain('Allow <b>Claude</b> to see your trips?')
-  const answer = await send(ctx, post('/oauth/authorize', `${params}&decision=allow`))
+  const html = await page.text()
+  expect(html).toContain('Allow <b>Claude</b> to see your trips?')
+  expect(html).toContain('name="write" value="1" checked')
+  const answer = await send(ctx, post('/oauth/authorize', `${params}&decision=allow${write ? '&write=1' : ''}`))
   expect(answer.status).toBe(303)
   const back = new URL(answer.headers.get('Location')!)
   expect(back.searchParams.get('state')).toBe('s1')
@@ -132,7 +136,7 @@ describe('connecting other apps (OAuth)', () => {
     expect(first.scope).toBe('trips:read')
 
     const mcp = (token: string) => new Request(`${ORIGIN}/mcp`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
-    expect(await bearer(mcp(first.access_token), ctx)).toEqual({ sub: '42', scope: 'trips:read' })
+    expect(await bearer(mcp(first.access_token), ctx)).toEqual({ sub: '42', scope: 'trips:read', grant: 'g1', app: 'Claude' })
 
     const refreshed = await (await exchange(ctx, { grant_type: 'refresh_token', refresh_token: first.refresh_token, client_id: clientId })).json() as typeof first
     expect(refreshed.refresh_token).not.toBe(first.refresh_token)
@@ -141,6 +145,21 @@ describe('connecting other apps (OAuth)', () => {
     expect((await exchange(ctx, { grant_type: 'refresh_token', refresh_token: first.refresh_token })).status).toBe(400)
     expect(grants.rows.size).toBe(0)
     expect(((await bearer(mcp(refreshed.access_token), ctx)) as Response).status).toBe(401)
+  })
+
+  it('lets an app change the trips only if the user left that ticked', async () => {
+    const { ctx } = context()
+    const allowed = await connect(ctx, undefined, true)
+    const res = await exchange(ctx, { grant_type: 'authorization_code', code: allowed.code, client_id: allowed.clientId, code_verifier: allowed.verifier })
+    expect((await res.json() as { scope: string }).scope).toBe('trips:read trips:write')
+    // An app that asks only to read isn't offered more.
+    const reg = await send(ctx, post('/oauth/register', JSON.stringify({ client_name: 'Reader', redirect_uris: ['https://reader.example/cb'] }), { 'Content-Type': 'application/json' }))
+    const { client_id: clientId } = await reg.json() as { client_id: string }
+    const { challenge } = await pkce()
+    const params = new URLSearchParams({ response_type: 'code', client_id: clientId, code_challenge: challenge, code_challenge_method: 'S256', scope: 'trips:read' })
+    const page = await (await send(ctx, new Request(`${ORIGIN}/oauth/authorize?${params}`))).text()
+    expect(page).not.toContain('name="write"')
+    expect(page).toContain('It can\'t change anything.')
   })
 
   it('refuses a code used twice (and drops its grant), for another app, or without the right verifier', async () => {
@@ -186,17 +205,33 @@ describe('connecting other apps (OAuth)', () => {
 
 describe('the MCP server', () => {
   const trips = [
-    { id: 'a1', name: 'Balkans', startDate: '2027-05-01', endDate: '2027-06-01', stops: 6, updated: Date.parse('2026-10-01'), share: null },
-    { id: 'b2', name: 'Asia', startDate: null, endDate: null, stops: 0, updated: Date.parse('2026-09-01'), share: null },
+    { id: 'a1', name: 'Balkans', startDate: '2027-05-01', endDate: '2027-06-01', stops: 6, updated: Date.parse('2026-10-01'), share: null, rev: 7 },
+    { id: 'b2', name: 'Asia', startDate: null, endDate: null, stops: 0, updated: Date.parse('2026-09-01'), share: null, rev: 3 },
   ]
-  function server() {
+  const change = (id: string, summary: string[]): ChangeView => ({ id, app: 'Claude', tool: 'add_stop', summary, rev: 8, created: Date.parse('2026-10-12T10:00Z'), undone: false })
+  function server(scope = 'trips:read') {
     const sent: string[] = []
+    const saves: unknown[][] = []
+    const undos: unknown[][] = []
+    let refuse: string | null = null
     const ctx: McpContext = {
+      scope,
       listTrips: async () => ({ trips, lastId: 'b2' }),
-      tripTexts: async (id, extra) => ({ data: `{"trip":"${id}"}`, extra: extra && '{"x":1}' }),
+      tripTexts: async (id, extra) => ({ data: `{"trip":"${id}"}`, extra: extra && '{"x":1}', rev: trips.find((t) => t.id === id)!.rev }),
       runTool: async (body) => {
         sent.push(body)
+        const { name } = JSON.parse(body) as { name: string }
+        if (name === 'add_stop') return { ok: true, result: { trip: 'Balkans', done: 'Added Kotor (3 nights)', description: 'Dates: …' }, data: { input: {}, stops: [] }, changes: ['Added Kotor (3 nights)'] }
         return { ok: true, result: { done: true } }
+      },
+      saveChange: async (...args) => {
+        saves.push(args)
+        return refuse ?? { change: change('c1', args[3].summary) }
+      },
+      changes: async () => [change('c1', ['Added Kotor (3 nights)'])],
+      undo: async (...args) => {
+        undos.push(args)
+        return { undone: [{ ...change('c1', ['Added Kotor (3 nights)']), undone: true }] }
       },
     }
     /** A request, or a notification (no id). */
@@ -205,7 +240,7 @@ describe('the MCP server', () => {
       const res = await handleMcp(new Request(`${ORIGIN}/mcp`, { method: 'POST', body }), ctx)
       return { status: res.status, body: res.status === 202 ? null : await res.json() as { result?: Record<string, unknown>; error?: { code: number } } }
     }
-    return { rpc, sent }
+    return { rpc, sent, saves, undos, refuse: (why: string) => void (refuse = why) }
   }
   const textOf = (r: { result?: Record<string, unknown> }) => JSON.parse((r.result!.content as { text: string }[])[0].text)
 
@@ -231,7 +266,46 @@ describe('the MCP server', () => {
     const missing = (await rpc('tools/call', { name: 'get_trip', arguments: { trip: 'Mars' } })).body!
     expect(missing.result).toMatchObject({ isError: true })
     expect(textOf(missing).error).toMatch(/Balkans, Asia/)
-    expect((await rpc('tools/call', { name: 'remove_stop', arguments: {} })).body?.error?.code).toBe(-32602)
+    expect((await rpc('tools/call', { name: 'no_such_tool', arguments: {} })).body?.error?.code).toBe(-32602)
     expect(sent).toHaveLength(2)
+  })
+
+  it('offers an app allowed only to read no tools that change trips, and refuses them', async () => {
+    const { rpc, sent } = server()
+    const names = ((await rpc('tools/list')).body!.result!.tools as { name: string }[]).map((t) => t.name)
+    expect(names).not.toContain('add_stop')
+    expect(names).not.toContain('undo')
+    const refused = (await rpc('tools/call', { name: 'add_stop', arguments: { city: 'Kotor' } })).body!
+    expect(refused.result).toMatchObject({ isError: true })
+    expect(textOf(refused).error).toMatch(/connect it again/)
+    expect((await rpc('tools/call', { name: 'undo', arguments: {} })).body?.result).toMatchObject({ isError: true })
+    expect(sent).toHaveLength(0)
+  })
+
+  it('saves a change made on the trip as it was, with its id to undo it', async () => {
+    const { rpc, saves, undos, refuse } = server('trips:read trips:write')
+    const tools = (await rpc('tools/list')).body?.result?.tools as { name: string; annotations: Record<string, boolean> }[]
+    expect(tools.find((t) => t.name === 'remove_stop')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true })
+    expect(tools.find((t) => t.name === 'add_stop')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: false })
+
+    const done = textOf((await rpc('tools/call', { name: 'add_stop', arguments: { trip: 'Balkans', city: 'Kotor' } })).body!)
+    expect(saves[0]).toEqual(['a1', 7, { input: {}, stops: [] }, { tool: 'add_stop', summary: ['Added Kotor (3 nights)'] }])
+    expect(done).toMatchObject({ trip: 'Balkans', done: 'Added Kotor (3 nights)', changes: ['Added Kotor (3 nights)'], change_id: 'c1', description: 'Dates: …' })
+    // Reading saves nothing.
+    await rpc('tools/call', { name: 'get_trip', arguments: {} })
+    expect(saves).toHaveLength(1)
+
+    refuse('The app\'s own assistant is working on this trip right now: try again when it has finished.')
+    const busy = (await rpc('tools/call', { name: 'add_stop', arguments: { city: 'Kotor' } })).body!
+    expect(busy.result).toMatchObject({ isError: true })
+    expect(textOf(busy).error).toMatch(/^Not changed: .*assistant is working/)
+
+    const undone = textOf((await rpc('tools/call', { name: 'undo', arguments: {} })).body!)
+    expect(undos[0]).toEqual(['b2', null])
+    expect(undone.undone[0]).toMatchObject({ id: 'c1', changes: ['Added Kotor (3 nights)'] })
+    await rpc('tools/call', { name: 'undo', arguments: { trip: 'a1', change: 'c9' } })
+    expect(undos[1]).toEqual(['a1', 'c9'])
+    const list = textOf((await rpc('tools/call', { name: 'get_changes', arguments: {} })).body!)
+    expect(list.changes[0]).toMatchObject({ id: 'c1', app: 'Claude', changes: ['Added Kotor (3 nights)'], when: '2026-10-12 10:00 UTC' })
   })
 })

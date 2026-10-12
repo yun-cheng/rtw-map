@@ -39,8 +39,8 @@ export const RUN_KEEP_MS = 24 * 3_600_000
 export const RUN_LIMITS = { textChars: 4_000, viewItems: 10, viewBytes: 20_000, replyBytes: 200_000 }
 
 /** Validates the browser's start request: the trip and its chat as on screen (saved first, so the run starts from
- *  them) and the message. */
-export function parseRunStart(raw: unknown): { tripId: string; data: unknown; chat: unknown; request: RunRequest } | string {
+ *  them; `rev`, the version it's from) and the message. */
+export function parseRunStart(raw: unknown): { tripId: string; data: unknown; chat: unknown; request: RunRequest; rev?: number } | string {
   if (!raw || typeof raw !== 'object') return 'Invalid request'
   const r = raw as Record<string, unknown>
   if (typeof r.tripId !== 'string' || !/^[\w-]{1,64}$/.test(r.tripId)) return 'Invalid trip'
@@ -56,7 +56,7 @@ export function parseRunStart(raw: unknown): { tripId: string; data: unknown; ch
   }
   if (r.data === undefined || r.chat === undefined) return 'Invalid trip'
   return {
-    tripId: r.tripId, data: r.data, chat: r.chat,
+    tripId: r.tripId, data: r.data, chat: r.chat, ...(Number.isInteger(r.rev) && { rev: r.rev as number }),
     request: { text: r.text.trim(), view, think: r.think === true, ...(r.plan ? { plan: r.plan as 'new' | 'update' } : {}), display },
   }
 }

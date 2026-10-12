@@ -88,8 +88,10 @@ it are refused, and the assistant suggests such changes instead.
 ## Other apps' assistants (MCP)
 
 The Worker is an MCP server at `/mcp` (`worker/mcp.ts`) for other apps' AI assistants, with OAuth sign-in
-(`worker/oauth.ts`). It only reads. The tools (`src/agent/mcpTools.ts`) are the assistant's own read tools, each
-with an optional `trip` (an id or name; default: the trip opened last in the app), and a few of its own:
+(`worker/oauth.ts`): scope `trips:read`, and `trips:write` if the user leaves it ticked on the page where they allow
+the app (an app allowed only to read isn't offered the tools that change trips). The tools (`src/agent/mcpTools.ts`)
+are the assistant's own, each with an optional `trip` (an id or name; default: the trip opened last in the app), and
+a few of its own:
 
 | Tool | What it does |
 |---|---|
@@ -98,6 +100,17 @@ with an optional `trip` (an id or name; default: the trip opened last in the app
 | `find_cities`, `get_city_info`, `compare_cities`, `get_route`, `get_options` | As for the assistant (above) |
 | `get_visit` | My visit: stays, albums, links and notes per city or journey, in the trip's order (one city if asked) |
 | `get_journal` | The journal's days (the latest 60, or from and to given days) |
+| `update_settings` … `reorder_stops` | The assistant's tools that change the trip (above), with `trips:write` |
+| `get_changes` | The changes apps made to the trip (the latest 30 of the last two weeks), with their ids |
+| `undo` | Undoes the app's latest change, or a given one with every later one |
+
+A change is saved at once (`worker/changes.ts`): the Account keeps the trip from before it, with the trip's `rev`
+(counted up whenever its data changes) before and after. Undoing a change puts that trip back, with every later
+change still on, only while nothing else changed the trip since (otherwise it would lose those edits). Changes are
+refused while the app's own assistant works on the trip; a read-only trip and the days already travelled stay as
+they are, as for the assistant. The page sends the `rev` it has with each save, and a save from before another app's
+change is refused (409 `changed`): the page then shows the trip as it is. It checks `/api/trips/:id/changes?since=REV`
+when it comes into view and every 15 seconds, and lists those changes with Undo (`POST /api/trips/:id/changes/:change/undo`).
 
 To connect: add `https://<site>/mcp` as a custom connector (Claude, ChatGPT), or
 `claude mcp add --transport http rtw-map https://<site>/mcp`, `codex mcp add rtw-map --url https://<site>/mcp`,
@@ -140,7 +153,7 @@ scripts/       data pipeline (TypeScript, run with tsx)
 worker/        the site's Cloudflare Worker: static files, Google sign-in (auth.ts), per-user data: saved trips (and their
                journals and items) and the daily assistant cost cap, with admin-set limits per email (account.ts, trips.ts,
                limits.ts), /api/chat (Gemini), the assistant's runs (runs.ts), the MCP server for other apps' assistants
-               (mcp.ts) and how they sign in (oauth.ts)
+               (mcp.ts), how they sign in (oauth.ts) and their changes with undo (changes.ts)
 runner/        the assistant's runner on Google Cloud Run: answers a message on the server, so it finishes with the page
                closed (run.ts), queued on Cloud Tasks (index.ts); runs other apps' tool calls (tool.ts)
 ```
@@ -182,7 +195,7 @@ To review the seed data as tables, run `npm run dev` and open `/data.html` (deve
 
 The site is published as static files on a Cloudflare Worker (`rtw-map`, configured in `wrangler.jsonc`) by `.github/workflows/deploy.yml`: on every push to `main`, by hand, and after the weekly data refresh. It pulls the data from R2, runs the tests, builds and runs `wrangler deploy`. Repository secrets: the four `R2_*` settings, `CLOUDFLARE_API_TOKEN` (permissions: Workers Scripts Edit, Account Settings Read, User Details Read, Memberships Read) and `CLOUDFLARE_ACCOUNT_ID`.
 
-The Worker also serves the API (`worker/`): `/api/session`, `/api/auth/google`, `/api/auth/logout`, `/api/trips` (list, create, open, save, delete the user's trips), `/api/chat`, which forwards the assistant conversation to Gemini, `/api/admin/limits` (admins: other daily limits per email), `/api/connections` (the apps allowed to read the trips), and `/mcp` with `/oauth/…` and `/.well-known/oauth-…` for other apps' assistants (above; `run_worker_first` in `wrangler.jsonc` sends those paths to the Worker). The MCP tools that need the city data run on the runner (`POST /tool`, with `RUNNER_SECRET`); without a runner only `list_trips` works. Per-user data (trips and assistant usage) lives in one Durable Object per Google account (`Account`, SQLite); the admin list of limits in a `_settings` instance of it. Secrets, set once with `npx wrangler secret put <name>`: `GEMINI_API_KEY`, `SESSION_SECRET` (random; signs the session cookie) and `ADMIN_EMAILS` (comma-separated; who may edit the limits). In `wrangler.jsonc`: `GEMINI_MODEL`, `GOOGLE_CLIENT_ID` (the OAuth client for Sign in with Google; its authorised JavaScript origins are the site and `http://localhost:5317`), the `Account` Durable Object and the per-minute rate limits (assistant calls, trip saves). For local development, put `GEMINI_API_KEY` and `SESSION_SECRET` in `.env.local`.
+The Worker also serves the API (`worker/`): `/api/session`, `/api/auth/google`, `/api/auth/logout`, `/api/trips` (list, create, open, save, delete the user's trips), `/api/chat`, which forwards the assistant conversation to Gemini, `/api/admin/limits` (admins: other daily limits per email), `/api/connections` (the apps allowed to read or change the trips), `/api/trips/:id/changes` (their changes, and undo), and `/mcp` with `/oauth/…` and `/.well-known/oauth-…` for other apps' assistants (above; `run_worker_first` in `wrangler.jsonc` sends those paths to the Worker). The MCP tools that need the city data run on the runner (`POST /tool`, with `RUNNER_SECRET`); without a runner only `list_trips` works. Per-user data (trips and assistant usage) lives in one Durable Object per Google account (`Account`, SQLite); the admin list of limits in a `_settings` instance of it. Secrets, set once with `npx wrangler secret put <name>`: `GEMINI_API_KEY`, `SESSION_SECRET` (random; signs the session cookie) and `ADMIN_EMAILS` (comma-separated; who may edit the limits). In `wrangler.jsonc`: `GEMINI_MODEL`, `GOOGLE_CLIENT_ID` (the OAuth client for Sign in with Google; its authorised JavaScript origins are the site and `http://localhost:5317`), the `Account` Durable Object and the per-minute rate limits (assistant calls, trip saves). For local development, put `GEMINI_API_KEY` and `SESSION_SECRET` in `.env.local`.
 
 A message to the assistant about a trip saved to the account is answered on the server, so it finishes even when the page is closed or the phone loses its connection: `POST /api/runs` saves the trip and chat as on screen and hands the run to the runner (`runner/`, a Node service on Google Cloud Run), which queues it on Cloud Tasks; Cloud Tasks calls the runner back and holds that request open while the run goes (Cloud Run gives a request CPU only while it's open, for up to 30 minutes). The runner runs the same loop and tools as the browser (`src/agent/engine.ts`) on its own copy of the trip, calls the model through the Worker (`/internal/runs/…`, with `RUNNER_SECRET`: same allowance and cost tracking as `/api/chat`), and saves the trip and the reply after each step. The page follows the run (`GET /api/runs/:id`, with the trip when it changed), shows its changes as they land, picks it up again when the trip is opened, and stops it (`POST /api/runs/:id/stop`: the runner hears it after the step under way, or within 5 seconds while it waits to retry); the trip can't be saved from the page meanwhile. A run not heard of for 5 minutes is marked failed. Without a runner (`RUNNER_URL` unset) the browser answers itself, as before. Setup, once: `scripts/gcp-setup.sh <project-id>` (APIs, the image repository, the runner's service account and queue, and a deployer that GitHub Actions uses with Workload Identity Federation); then the repository variables it prints and the `RUNNER_SECRET` secret, the same value as the Worker's (`npx wrangler secret put RUNNER_SECRET`), and `RUNNER_URL` (the Cloud Run service's address) in `wrangler.jsonc`. The Deploy workflow builds the runner (`npm run build:runner`), pushes its image and deploys it.
 

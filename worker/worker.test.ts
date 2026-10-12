@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
+import { joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord } from './changes'
 import { isNewMessage } from './chat'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
@@ -233,5 +234,40 @@ describe('assistant runs', () => {
     expect(isStale('running', now - 60_000, now)).toBe(false)
     expect(isStale('done', 0, now)).toBe(false)
     expect(runView({ id: 'r', tripId: 't', text: 'Hi?', status: 'running', reply: '{"text":"Hi"}', version: 2, error: null, created: now, updated: now }).reply).toEqual({ text: 'Hi' })
+  })
+})
+
+describe('other apps\' changes and undo', () => {
+  const c = (id: string, revBefore: number, grant = 'claude', undone = false): ChangeRecord =>
+    ({ id, tripId: 't', grant, app: grant, tool: 'add_stop', summary: [id], revBefore, revAfter: revBefore + 1, created: revBefore, undone })
+
+  it('undoes a change with every later one, only while nothing else changed the trip', () => {
+    const changes = [c('a', 1), c('b', 2), c('d', 3, 'codex')]
+    expect((undoSet(changes, changes[1], 4) as ChangeRecord[]).map((x) => x.id)).toEqual(['b', 'd'])
+    expect((undoSet(changes, changes[2], 4) as ChangeRecord[]).map((x) => x.id)).toEqual(['d'])
+    // Edited in the app after the last change (rev 5), or between two of them.
+    expect(undoSet(changes, changes[1], 5)).toMatch(/changed after that/)
+    expect(undoSet([c('a', 1), c('b', 3)], c('a', 1), 4)).toMatch(/changed after that/)
+    expect(undoSet(changes, { ...changes[0], undone: true }, 4)).toMatch(/already undone/)
+  })
+
+  it('undoes an app\'s own latest change, and then the one before it', () => {
+    const changes = [c('a', 1), c('b', 2), c('x', 3, 'codex')]
+    expect(latestOf(changes, 'claude')?.id).toBe('b')
+    expect(latestOf(changes, null)?.id).toBe('x')
+    // b undone (the trip back as a left it, at a new rev 5): a now ends at rev 5, so it can be undone in turn.
+    const set = undoSet(changes.slice(0, 2), changes[1], 3) as ChangeRecord[]
+    expect(joinedBefore(changes, set)).toBe('a')
+    const after = [{ ...changes[0], revAfter: 5 }, { ...changes[1], undone: true }]
+    expect(latestOf(after, 'claude')?.id).toBe('a')
+    expect((undoSet(after, after[0], 5) as ChangeRecord[]).map((x) => x.id)).toEqual(['a'])
+  })
+
+  it('refuses a save from the page made before another app\'s change', () => {
+    expect(overwrites(4, 5)).toBe(true)
+    expect(overwrites(5, 5)).toBe(false)
+    expect(overwrites(4, null)).toBe(false)
+    // (A page from before revs saves as it did.)
+    expect(overwrites(undefined, 5)).toBe(false)
   })
 })

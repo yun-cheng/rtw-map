@@ -8,13 +8,14 @@
 //   GET  /oauth/authorize   the page where the user allows the app (signed in with the site's own session)
 //   POST /oauth/authorize   their answer: back to the app with a code (or the refusal)
 //   POST /oauth/token       a code or a refresh token for an access token (an hour) and a new refresh token
-// Each app a user allows is a grant in their Account (account.ts): the app lists them (Account, AI apps) and a grant
-// removed there stops its tokens at once. A code or refresh token used twice removes its grant (someone else may have
+// Each app a user allows is a grant in their Account (account.ts), to read the trips and, if the user ticks it, to
+// change them: the app lists them (Account, AI apps) and a grant removed there stops its tokens at once. A code or refresh token used twice removes its grant (someone else may have
 // it). Tokens are signed with a key of their own, not the session's, so one can't pass for the other.
 import { b64url, fromB64url, type User } from './auth'
 
-/** What an app may be allowed: reading the trips (changing them comes later). */
-export const SCOPES = ['trips:read'] as const
+/** What an app may be allowed: reading the trips, and changing them (which includes reading). */
+export const SCOPES = ['trips:read', 'trips:write'] as const
+export const canWrite = (scope: string) => scope.split(' ').includes('trips:write')
 export const OAUTH = {
   accessMs: 3_600_000, refreshMs: 60 * 86_400_000, codeMs: 5 * 60_000,
   nameChars: 80, redirects: 10, redirectChars: 500, stateChars: 1000, bodyBytes: 20_000,
@@ -27,7 +28,7 @@ export type GrantStore = {
   addGrant: (g: NewGrant) => Promise<string>
   activateGrant: (id: string) => Promise<{ scope: string; gen: number } | null>
   rotateGrant: (id: string, gen: number) => Promise<{ scope: string; gen: number } | null>
-  useGrant: (id: string) => Promise<{ scope: string } | null>
+  useGrant: (id: string) => Promise<{ scope: string; client: string } | null>
 }
 export type OAuthContext = {
   secret: string
@@ -145,10 +146,11 @@ export const mcpUrl = (origin: string) => `${origin}/mcp`
 /** The resource an app asks for (RFC 8707): the MCP server, as it was given (the site's address, with or without /mcp). */
 const isOurResource = (resource: string, origin: string) => [origin, mcpUrl(origin)].includes(resource.replace(/\/+$/, ''))
 
-/** The scopes allowed: those asked for that exist, or all if none of them do (apps ask for all sorts). */
+/** The scopes allowed: those asked for that exist, or all if none of them do (apps ask for all sorts); changing
+ *  the trips comes with reading them. */
 const scopeOf = (asked: string | null) => {
   const known = (asked ?? '').split(/\s+/).filter((s) => (SCOPES as readonly string[]).includes(s))
-  return (known.length ? known : [...SCOPES]).join(' ')
+  return SCOPES.filter((s) => !known.length || known.includes(s) || (s === 'trips:read' && known.includes('trips:write'))).join(' ')
 }
 
 const withParams = (uri: string, params: Record<string, string | null>) => {
@@ -246,11 +248,13 @@ async function authorize(request: Request, ctx: OAuthContext, params: URLSearchP
     ['code_challenge_method', 'S256'], ['scope', req.scope], ...(req.state ? [['state', req.state]] : []), ...(params.get('resource') ? [['resource', params.get('resource')!]] : []),
   ].map(([k, v]) => `<input type="hidden" name="${k}" value="${esc(v)}">`).join('')
   const name = `<b>${esc(req.name)}</b>`
+  const write = canWrite(req.scope)
   return page(`Allow ${req.name}?`, `
     <h1>Allow ${name} to see your trips?</h1>
-    <p>It will be able to read your saved trips in rtw-map: their plans, dates and costs, your journal and My visit (stays, links and notes). It can't change anything.</p>
-    <p class="muted">Allow it only if you just started connecting it: the app chose its own name. You can disconnect it any time in the app (Account, AI apps). After you answer, you go back to ${esc(redirectLabel(req.redirectUri))}.</p>
+    <p>It will be able to read your saved trips in rtw-map: their plans, dates and costs, your journal and My visit (stays, links and notes).${write ? '' : ' It can\'t change anything.'}</p>
     <form method="post" action="/oauth/authorize">${fields}
+      ${write ? `<label class="check"><input type="checkbox" name="write" value="1" checked><span><b>Also let it change your trips</b><br><span class="muted">Their plans, stops, nights and settings, as the app's own assistant can. Its changes show in the app, and each can be undone.</span></span></label>` : ''}
+      <p class="muted">Allow it only if you just started connecting it: the app chose its own name. You can disconnect it any time in the app (Account, AI apps). After you answer, you go back to ${esc(redirectLabel(req.redirectUri))}.</p>
       <div class="row"><button name="decision" value="deny">Cancel</button><button name="decision" value="allow" class="primary">Allow</button></div>
     </form>
     <p class="muted small">Signed in as ${esc(user.name)}${user.email ? ` (${esc(user.email)})` : ''}.</p>`)
@@ -276,13 +280,17 @@ async function decide(request: Request, ctx: OAuthContext): Promise<Response> {
   const req = parsed.ok
   const user = await ctx.user()
   const allow = form.get('decision') === 'allow'
+  const write = form.get('write') === '1'
   form.delete('decision')
+  form.delete('write')
   // Signed out meanwhile: ask again.
   if (!user) return Response.redirect(`${url.origin}/oauth/authorize?${form}`, 303)
   if (!allow) {
     return Response.redirect(withParams(req.redirectUri, { error: 'access_denied', error_description: 'The user said no', state: req.state, iss: url.origin }), 303)
   }
-  const g = await ctx.grants(user.sub).addGrant({ client: req.name, redirect: redirectLabel(req.redirectUri), scope: req.scope })
+  // Changing the trips only if the user left that ticked.
+  const scope = write ? req.scope : req.scope.split(' ').filter((s) => s !== 'trips:write').join(' ')
+  const g = await ctx.grants(user.sub).addGrant({ client: req.name, redirect: redirectLabel(req.redirectUri), scope })
   const code = await seal('code', { sub: user.sub, g, cid: await digest(req.clientId), uri: req.redirectUri, ch: req.challenge, exp: Date.now() + OAUTH.codeMs } satisfies Code, ctx.secret)
   return Response.redirect(withParams(req.redirectUri, { code, state: req.state, iss: url.origin }), 303)
 }
@@ -346,8 +354,9 @@ async function tokens(secret: string, origin: string, sub: string, g: string, gr
   return json({ access_token: access, token_type: 'Bearer', expires_in: OAUTH.accessMs / 1000, refresh_token: refresh, scope: grant.scope })
 }
 
-/** The user an MCP request is from (its access token, still allowed), or the 401 that tells the app to sign in. */
-export async function bearer(request: Request, ctx: OAuthContext): Promise<{ sub: string; scope: string } | Response> {
+/** The user an MCP request is from (its access token, still allowed), what the app may do and which app it is
+ *  (`grant`, `app`), or the 401 that tells the app to sign in. */
+export async function bearer(request: Request, ctx: OAuthContext): Promise<{ sub: string; scope: string; grant: string; app: string } | Response> {
   const origin = new URL(request.url).origin
   const unauthorized = (error?: string) => json({ error: error ?? 'unauthorized', error_description: 'Connect the app to rtw-map first.' }, 401, {
     'WWW-Authenticate': `Bearer resource_metadata="${origin}/.well-known/oauth-protected-resource/mcp", scope="${SCOPES.join(' ')}"${error ? `, error="${error}"` : ''}`,
@@ -357,7 +366,7 @@ export async function bearer(request: Request, ctx: OAuthContext): Promise<{ sub
   const t = await unseal<Access>('access', raw, ctx.secret)
   if (!t || t.aud !== mcpUrl(origin)) return unauthorized('invalid_token')
   const grant = await ctx.grants(t.sub).useGrant(t.g)
-  return grant ? { sub: t.sub, scope: grant.scope } : unauthorized('invalid_token')
+  return grant ? { sub: t.sub, scope: grant.scope, grant: t.g, app: grant.client } : unauthorized('invalid_token')
 }
 
 // ---------------------------------------------------------------- pages
@@ -393,6 +402,8 @@ main { max-width: 440px; margin: 10vh auto; padding: 28px 24px; background: var(
 @media (max-width: 500px) { main { margin: 16px; } }
 h1 { font-size: 20px; line-height: 1.3; margin: 0 0 12px; font-weight: 600 } p { margin: 0 0 12px }
 .muted { color: var(--muted); font-size: 14px } .small { font-size: 13px; margin: 16px 0 0 } .error { color: var(--danger) }
+.check { display: flex; gap: 10px; align-items: flex-start; margin: 4px 0 16px; padding: 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer }
+.check input { margin: 3px 0 0; width: 16px; height: 16px; accent-color: var(--accent); flex: none } .check .muted { font-size: 13px }
 .row { display: flex; gap: 8px; justify-content: flex-end; margin-top: 20px }
 button { font: inherit; font-weight: 600; padding: 8px 18px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); cursor: pointer }
 button.primary { background: var(--accent); border-color: var(--accent); color: var(--panel) }

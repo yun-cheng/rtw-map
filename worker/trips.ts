@@ -3,8 +3,9 @@
 
 export const TRIP_LIMITS = { trips: 50, plans: 8, nameChars: 80, dataBytes: 400_000, chatBytes: 600_000, noteChars: 2000 }
 
-/** What a trip list shows without loading each trip; `share`: the token of its public link, if it's shared. */
-export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share: string | null }
+/** What a trip list shows without loading each trip; `share`: the token of its public link, if it's shared; `rev`:
+ *  counted up with each save (the page knows which version it has). */
+export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share: string | null; rev: number }
 export type TripPatch = { name?: string; data?: string; chat?: string }
 
 /** Validates a create/save request; trip data and chat are kept as JSON text. */

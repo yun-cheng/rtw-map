@@ -1,8 +1,9 @@
 // One Durable Object per signed-in Google account (keyed by its account ID). It holds that user's saved trips
-// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage and the other apps allowed to read the
-// trips (oauth.ts). A Durable Object handles one request
-// at a time, so nothing can race. The rules are plain functions in limits.ts, trips.ts and runs.ts.
+// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage, the other apps allowed to read and
+// change the trips (oauth.ts) and those apps' changes (changes.ts). A Durable Object handles one request at a time,
+// so nothing can race. The rules are plain functions in limits.ts, trips.ts, runs.ts and changes.ts.
 import { DurableObject } from 'cloudflare:workers'
+import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView } from './changes'
 import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { ITEM_LIMITS, mergeItems, type Items, type TripItem } from '../src/store/itemsCore'
@@ -10,19 +11,24 @@ import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../sr
 import type { Grant, NewGrant } from './oauth'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
-type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null }
+type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null; rev: number; outside: number | null }
 type GrantRow = Grant & { status: 'pending' | 'active'; gen: number }
+type ChangeRow = {
+  id: string; trip_id: string; grant_id: string | null; app: string; tool: string; summary: string
+  rev_before: number; rev_after: number; created: number; undone: number
+}
 type RunRow = {
   id: string; trip_id: string; status: RunStatus; request: string; email: string | null; reply: string | null
   version: number; stop: number; error: string | null; created: number; updated: number
 }
-/** Trips a run is working on can't be saved from the browser (the run's changes would be lost). */
 /** How long an app has to take its tokens after the user allowed it; how many apps an account keeps; how often a
  *  grant's last use is written down. */
 const GRANT_PENDING_MS = 10 * 60_000
 const GRANT_LIMIT = 50
 const GRANT_USED_MS = 10 * 60_000
 export const BUSY = 'The assistant is working on this trip: wait for it to finish, or stop it.'
+/** Another app's change, refused while the app's own assistant works on the trip. */
+const BUSY_OUTSIDE = 'The app\'s own assistant is working on this trip right now: try again when it has finished.'
 
 export class Account extends DurableObject {
   constructor(ctx: DurableObjectState, env: Cloudflare.Env) {
@@ -44,6 +50,16 @@ export class Account extends DurableObject {
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'items')) {
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN items TEXT')
     }
+    // Each save counts the trip's `rev` up; `outside`: its rev when another app last changed it (changes.ts), so the
+    // browser's save from before that is refused instead of overwriting the change.
+    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'rev')) {
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN rev INTEGER NOT NULL DEFAULT 0')
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN outside INTEGER')
+    }
+    // Other apps' changes to the trips, with each trip as it was before, for undo (changes.ts).
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS changes (
+      id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, grant_id TEXT, app TEXT NOT NULL, tool TEXT NOT NULL, summary TEXT NOT NULL,
+      before TEXT, rev_before INTEGER NOT NULL, rev_after INTEGER NOT NULL, created INTEGER NOT NULL, undone INTEGER NOT NULL DEFAULT 0)`)
     // Apps allowed to read the trips (oauth.ts): pending from the user's yes until the app takes its first tokens.
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS grants (
       id TEXT PRIMARY KEY, client TEXT NOT NULL, redirect TEXT NOT NULL, scope TEXT NOT NULL, status TEXT NOT NULL,
@@ -103,16 +119,16 @@ export class Account extends DurableObject {
   // ---------------------------------------------------------------- trips
 
   private row(id: string): Row | null {
-    return this.ctx.storage.sql.exec<Row>('SELECT id, name, data, chat, updated, share FROM trips WHERE id = ?', id).toArray()[0] ?? null
+    return this.ctx.storage.sql.exec<Row>('SELECT id, name, data, chat, updated, share, rev, outside FROM trips WHERE id = ?', id).toArray()[0] ?? null
   }
 
   private summary(r: Row): TripSummary {
-    return { id: r.id, name: r.name, updated: r.updated, share: r.share ?? null, ...summarize(r.data) }
+    return { id: r.id, name: r.name, updated: r.updated, share: r.share ?? null, rev: r.rev, ...summarize(r.data) }
   }
 
   /** All trips, most recently changed first, and the one opened last (to open again on any device). */
   async listTrips(): Promise<{ trips: TripSummary[]; lastId: string | null }> {
-    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, data, NULL AS chat, updated, share FROM trips ORDER BY updated DESC').toArray()
+    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, data, NULL AS chat, updated, share, rev, outside FROM trips ORDER BY updated DESC').toArray()
     return { trips: rows.map((r) => this.summary(r)), lastId: (await this.ctx.storage.get<string>('lastTripId')) ?? null }
   }
 
@@ -126,12 +142,12 @@ export class Account extends DurableObject {
     }
   }
 
-  /** A trip as stored (JSON text), with its items or journal if asked, for another app's assistant (mcp.ts): unlike
-   *  opening it, this doesn't make it the trip the app opens next. */
-  async tripTexts(id: string, extra: 'items' | 'journal' | null): Promise<{ data: string | null; extra: string | null } | null> {
+  /** A trip as stored (JSON text) and its rev, with its items or journal if asked, for another app's assistant
+   *  (mcp.ts): unlike opening it, this doesn't make it the trip the app opens next. */
+  async tripTexts(id: string, extra: 'items' | 'journal' | null): Promise<{ data: string | null; extra: string | null; rev: number } | null> {
     const r = this.row(id)
     if (!r) return null
-    return { data: r.data, extra: extra && JSON.stringify(this.kept(id, extra)) }
+    return { data: r.data, extra: extra && JSON.stringify(this.kept(id, extra)), rev: r.rev }
   }
 
   /** A trip's journal or items (null if there's no such trip). */
@@ -181,16 +197,23 @@ export class Account extends DurableObject {
     return this.summary(this.row(id)!)
   }
 
-  /** Saves a trip from the browser: refused (BUSY) while a run is working on it. */
-  async saveTrip(id: string, patch: TripPatch): Promise<TripSummary | null | string> {
-    if (!this.row(id)) return null
+  /** Saves a trip from the browser: refused while a run is working on it (BUSY), and, when `base` (the rev the page
+   *  has) is given, if another app has changed it since (CHANGED_ELSEWHERE). */
+  async saveTrip(id: string, patch: TripPatch, base?: number): Promise<TripSummary | null | string> {
+    const r = this.row(id)
+    if (!r) return null
     if (this.activeRun(id)) return BUSY
+    if (patch.data !== undefined && overwrites(base, r.outside)) return CHANGED_ELSEWHERE
     return this.write(id, patch)
   }
 
-  private write(id: string, patch: TripPatch): TripSummary {
+  /** Saves a trip; its rev counts up when its data changes (a new name, or the chat alone, leaves it as it is, so
+   *  other apps' changes can still be undone). `outside`: another app's change. */
+  private write(id: string, patch: TripPatch, outside = false): TripSummary {
     const sets = Object.entries(patch).filter(([, v]) => v !== undefined)
-    this.ctx.storage.sql.exec(`UPDATE trips SET ${[...sets.map(([k]) => `${k} = ?`), 'updated = ?'].join(', ')} WHERE id = ?`,
+    const bump = outside || (patch.data !== undefined && patch.data !== this.row(id)?.data)
+    const revs = bump ? ['rev = rev + 1', ...(outside ? ['outside = rev + 1'] : [])] : []
+    this.ctx.storage.sql.exec(`UPDATE trips SET ${[...sets.map(([k]) => `${k} = ?`), 'updated = ?', ...revs].join(', ')} WHERE id = ?`,
       ...sets.map(([, v]) => v), Date.now(), id)
     return this.summary(this.row(id)!)
   }
@@ -200,6 +223,7 @@ export class Account extends DurableObject {
     if (this.activeRun(id)) return BUSY
     this.ctx.storage.sql.exec('DELETE FROM trips WHERE id = ?', id)
     this.ctx.storage.sql.exec('DELETE FROM runs WHERE trip_id = ?', id)
+    this.ctx.storage.sql.exec('DELETE FROM changes WHERE trip_id = ?', id)
     if ((await this.ctx.storage.get<string>('lastTripId')) === id) await this.ctx.storage.delete('lastTripId')
     return existed
   }
@@ -249,10 +273,13 @@ export class Account extends DurableObject {
     return { id: r.id, tripId: r.trip_id, text: (JSON.parse(r.request) as RunRequest).text, status: r.status, reply: r.reply, version: r.version, error: r.error, created: r.created, updated: r.updated }
   }
 
-  /** Starts a run on a trip: saves the trip and chat as on screen, then adds the run (one at a time per trip). */
-  async startRun(tripId: string, patch: TripPatch, request: RunRequest, email: string | undefined): Promise<RunRecord | string | null> {
-    if (!this.row(tripId)) return null
+  /** Starts a run on a trip: saves the trip and chat as on screen, then adds the run (one at a time per trip; not
+   *  from a trip on screen older than another app's change, `base` as in saveTrip). */
+  async startRun(tripId: string, patch: TripPatch, request: RunRequest, email: string | undefined, base?: number): Promise<RunRecord | string | null> {
+    const trip = this.row(tripId)
+    if (!trip) return null
     if (this.activeRun(tripId)) return 'The assistant is already working on this trip.'
+    if (overwrites(base, trip.outside)) return CHANGED_ELSEWHERE
     const now = Date.now()
     this.ctx.storage.sql.exec("DELETE FROM runs WHERE status != 'running' AND updated < ?", now - RUN_KEEP_MS)
     this.write(tripId, patch)
@@ -319,6 +346,60 @@ export class Account extends DurableObject {
     this.ctx.storage.sql.exec("UPDATE runs SET status = 'failed', error = ?, updated = ? WHERE id = ?", error, Date.now(), id)
   }
 
+  // ---------------------------------------------------------------- other apps' changes (changes.ts)
+
+  private changeRecords(tripId: string): ChangeRecord[] {
+    // (Without the trips from before: they're large, and needed only to undo.)
+    return this.ctx.storage.sql.exec<ChangeRow>('SELECT id, trip_id, grant_id, app, tool, summary, rev_before, rev_after, created, undone FROM changes WHERE trip_id = ? ORDER BY rev_after DESC', tripId).toArray().map((c) => ({
+      id: c.id, tripId: c.trip_id, grant: c.grant_id, app: c.app, tool: c.tool, summary: JSON.parse(c.summary) as string[],
+      revBefore: c.rev_before, revAfter: c.rev_after, created: c.created, undone: c.undone === 1,
+    }))
+  }
+
+  /** Another app's change to a trip (its data, checked, as JSON text), made on the trip at rev `base`: saved, with the
+   *  trip from before for undo. Refused while the app's assistant works on the trip, or if the trip changed since. */
+  async saveChange(tripId: string, base: number, data: string, change: { grant: string | null; app: string; tool: string; summary: string[] }): Promise<{ change: ChangeView } | string | null> {
+    const r = this.row(tripId)
+    if (!r) return null
+    if (this.activeRun(tripId)) return BUSY_OUTSIDE
+    if (r.rev !== base) return 'The trip changed while this was being done (in the app, or by another app): look at it again and retry.'
+    const saved = this.write(tripId, { data }, true)
+    const now = Date.now()
+    const id = crypto.randomUUID()
+    this.ctx.storage.sql.exec('INSERT INTO changes (id, trip_id, grant_id, app, tool, summary, before, rev_before, rev_after, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      id, tripId, change.grant, change.app, change.tool, JSON.stringify(change.summary), r.data, r.rev, saved.rev, now)
+    // The oldest go (and with them, undoing that far back).
+    this.ctx.storage.sql.exec('DELETE FROM changes WHERE trip_id = ? AND (created < ? OR id IN (SELECT id FROM changes WHERE trip_id = ? ORDER BY rev_after DESC LIMIT -1 OFFSET ?))',
+      tripId, now - CHANGE_KEEP_MS, tripId, CHANGE_KEEP)
+    return { change: changeView(this.changeRecords(tripId).find((c) => c.id === id)!) }
+  }
+
+  /** A trip's rev and the changes other apps made to it from rev `since` on (all those kept without it), newest first. */
+  async listChanges(tripId: string, since?: number): Promise<{ rev: number; changes: ChangeView[] } | null> {
+    const r = this.row(tripId)
+    if (!r) return null
+    return { rev: r.rev, changes: this.changeRecords(tripId).filter((c) => since === undefined || c.revBefore >= since).map(changeView) }
+  }
+
+  /** Undoes a change (`id`), or an app's own latest (`grant`; null: anyone's), with every later one still on: puts
+   *  back the trip from before it. Refused when the trip has changed in other ways since (changes.ts). */
+  async undoChange(tripId: string, which: { id: string } | { grant: string | null }): Promise<{ undone: ChangeView[]; rev: number } | string | null> {
+    const r = this.row(tripId)
+    if (!r) return null
+    if (this.activeRun(tripId)) return BUSY_OUTSIDE
+    const changes = this.changeRecords(tripId)
+    const target = 'id' in which ? changes.find((c) => c.id === which.id) : latestOf(changes, which.grant)
+    if (!target) return 'id' in which ? 'No such change (only the latest few of the last two weeks are kept).' : 'There\'s no change to undo.'
+    const set = undoSet(changes, target, r.rev)
+    if (typeof set === 'string') return set
+    const joined = joinedBefore(changes, set)
+    const before = this.ctx.storage.sql.exec<{ before: string | null }>('SELECT before FROM changes WHERE id = ?', target.id).one().before
+    const saved = this.write(tripId, { data: before } as TripPatch, true)
+    for (const c of set) this.ctx.storage.sql.exec('UPDATE changes SET undone = 1 WHERE id = ?', c.id)
+    if (joined) this.ctx.storage.sql.exec('UPDATE changes SET rev_after = ? WHERE id = ?', saved.rev, joined)
+    return { undone: set.map((c) => changeView({ ...c, undone: true })), rev: saved.rev }
+  }
+
   // ---------------------------------------------------------------- other apps allowed (oauth.ts)
 
   private grant(id: string): GrantRow | null {
@@ -368,13 +449,14 @@ export class Account extends DurableObject {
     return { scope: g.scope, gen: gen + 1 }
   }
 
-  /** An access token of the grant's, used: whether it's still allowed (and when it was last used, roughly). */
-  async useGrant(id: string): Promise<{ scope: string } | null> {
+  /** An access token of the grant's, used: whether it's still allowed, what for and which app it is (and when it was
+   *  last used, roughly). */
+  async useGrant(id: string): Promise<{ scope: string; client: string } | null> {
     const g = this.grant(id)
     if (g?.status !== 'active') return null
     const now = Date.now()
     if (now - g.used > GRANT_USED_MS) this.ctx.storage.sql.exec('UPDATE grants SET used = ? WHERE id = ?', now, id)
-    return { scope: g.scope }
+    return { scope: g.scope, client: g.client }
   }
 
   /** The apps allowed, the one used last first. */

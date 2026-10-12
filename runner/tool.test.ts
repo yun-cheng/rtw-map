@@ -20,15 +20,32 @@ const call = (name: string, args: Record<string, unknown> = {}, extra: unknown =
   callTool({ name, args, trip: { id: 't1', name: 'Europe' }, data: savedTrip(), extra })
 
 describe('tools for other apps (MCP)', () => {
-  it('offers only tools that read', () => {
+  it('offers the assistant\'s tools, each marked whether it changes the trip', () => {
     for (const t of MCP_TOOLS) {
-      expect(WRITE_TOOLS.has(t.name)).toBe(false)
-      expect(t.annotations.readOnlyHint).toBe(true)
+      expect(t.annotations.readOnlyHint).toBe(!WRITE_TOOLS.has(t.name) && t.name !== 'undo')
       expect(t.inputSchema.type).toBe('object')
+      expect(t.title).toBeTruthy()
     }
-    expect(MCP_TOOLS.map((t) => t.name).sort()).toEqual(['list_trips', ...Object.keys(RUNNER_TOOLS)].sort())
-    expect(parseToolCall({ name: 'remove_stop', args: {} })).toBeNull()
+    expect(MCP_TOOLS.map((t) => t.name).sort()).toEqual(['list_trips', 'get_changes', 'undo', ...Object.keys(RUNNER_TOOLS)].sort())
+    for (const name of WRITE_TOOLS) expect(RUNNER_TOOLS[name]).toEqual({ trip: true, write: true })
+    expect(parseToolCall({ name: 'undo', args: {} })).toBeNull()
     expect(parseToolCall({ name: 'get_trip', args: [] })).toBeNull()
+  })
+
+  it('changes the trip it was sent: the trip after, and what changed', () => {
+    const was = createTripStore(savedTrip()).getState().stops
+    const out = call('set_nights', { city: ds.cities[was[0].cityId].name, nights: was[0].nights + 2 })
+    expect(out.ok).toBe(true)
+    expect(out.changes).toEqual([`${ds.cities[was[0].cityId].name}: ${was[0].nights} → ${was[0].nights + 2} nights`])
+    expect(out.data!.stops[0].nights).toBe(was[0].nights + 2)
+    expect(out.result).toMatchObject({ trip: 'Europe', done: expect.stringContaining('nights'), description: expect.stringContaining('Dates:') })
+    // Nothing to save when nothing changed, nor when the change is refused.
+    const same = call('set_nights', { city: ds.cities[was[0].cityId].name, nights: was[0].nights })
+    expect(same).toMatchObject({ ok: true, result: { done: expect.stringMatching(/no change/) } })
+    expect(same.data).toBeUndefined()
+    const locked = callTool({ name: 'remove_stop', args: { city: was[0].cityId }, trip: { id: 't1', name: 'Europe' }, data: { ...savedTrip(), readOnly: true }, extra: null })
+    expect(locked).toMatchObject({ ok: false, result: { error: expect.stringMatching(/read-only/) } })
+    expect(locked.data).toBeUndefined()
   })
 
   it('describes the trip it was sent, and looks up cities without one', () => {
