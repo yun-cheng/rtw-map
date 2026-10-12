@@ -8,6 +8,7 @@ import { Section, Sections, Segmented } from '../ui/kit'
 import { useTheme, type ThemeChoice } from '../ui/theme'
 import { useMoney } from '../ui/useMoney'
 import { AccountLimits } from './AccountLimits'
+import { AiApps } from './AiApps'
 import { AccountDetails, AccountMenu } from './AccountMenu'
 import { OfflineMapSettings } from './OfflineMap'
 import { SHARED_TOKEN } from '../store/shareLink'
@@ -27,6 +28,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const { choice, setChoice } = useTheme()
   const user = useAccount((s) => s.user)
   const [limits, setLimits] = useState(false)
+  const [apps, setApps] = useState(false)
 
   // Esc closes it.
   useEffect(() => {
@@ -88,9 +90,10 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
               // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
               <Section title="Account">
                 <div className="-mx-4 -mb-3 overflow-hidden rounded-b-xl">
-                  <AccountDetails top="pt-0" onLimits={() => setLimits(true)} onSignOut={onClose} />
+                  <AccountDetails top="pt-0" onApps={() => setApps(true)} onLimits={() => setLimits(true)} onSignOut={onClose} />
                 </div>
                 {limits && <AccountLimits onClose={() => setLimits(false)} />}
+                {apps && <AiApps onClose={() => setApps(false)} />}
               </Section>
             ) : (
               <Section title="Account" aside={<AccountMenu />}>

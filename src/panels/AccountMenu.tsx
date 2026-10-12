@@ -3,12 +3,14 @@ import { useEffect, useRef, useState } from 'react'
 import { allowanceNote, renderGoogleButton, useAccount } from '../agent/account'
 import { useTheme } from '../ui/theme'
 import { AccountLimits } from './AccountLimits'
+import { AiApps } from './AiApps'
 
 /** Top-right account control: "Sign in" when signed out; the user's picture with a menu (name, usage, sign out) when signed in. */
 export function AccountMenu() {
   const { loaded, clientId, user, load } = useAccount()
   const [open, setOpen] = useState(false)
   const [limits, setLimits] = useState(false)
+  const [apps, setApps] = useState(false)
   const box = useRef<HTMLDivElement>(null)
   const button = useRef<HTMLDivElement>(null)
   const theme = useTheme((s) => s.theme)
@@ -42,6 +44,7 @@ export function AccountMenu() {
   return (
     <div key="menu" ref={box} className="relative">
       {limits && <AccountLimits onClose={() => setLimits(false)} />}
+      {apps && <AiApps onClose={() => setApps(false)} />}
       <button
         onClick={() => setOpen(!open)}
         aria-haspopup="menu"
@@ -56,7 +59,7 @@ export function AccountMenu() {
       </button>
       {open && (
         <div role="menu" className="absolute top-full right-0 z-30 mt-1 w-64 overflow-hidden rounded-lg border border-line bg-panel text-[13px] shadow-lg">
-          <AccountDetails menu onLimits={() => { setOpen(false); setLimits(true) }} onSignOut={() => setOpen(false)} />
+          <AccountDetails menu onLimits={() => { setOpen(false); setLimits(true) }} onApps={() => { setOpen(false); setApps(true) }} onSignOut={() => setOpen(false)} />
         </div>
       )}
     </div>
@@ -64,12 +67,14 @@ export function AccountMenu() {
 }
 
 /**
- * The signed-in account: picture and name, today's assistant use as a bar, then Assistant limits (admins) and Sign out
- * as full-width rows. In the top bar's account menu (`menu`) and, as it is, in a phone's settings panel (`top`: the
- * padding above it, none under the card's own heading). `onLimits` opens the limits dialog; `onSignOut` runs before
- * signing out (e.g. to close the menu).
+ * The signed-in account: picture and name, today's assistant use as a bar, then AI apps, Assistant limits (admins) and
+ * Sign out as full-width rows. In the top bar's account menu (`menu`) and, as it is, in a phone's settings panel
+ * (`top`: the padding above it, none under the card's own heading). `onApps` and `onLimits` open their dialogs;
+ * `onSignOut` runs before signing out (e.g. to close the menu).
  */
-export function AccountDetails({ menu, top = 'pt-3', onLimits, onSignOut }: { menu?: boolean; top?: string; onLimits: () => void; onSignOut?: () => void }) {
+export function AccountDetails({ menu, top = 'pt-3', onApps, onLimits, onSignOut }: {
+  menu?: boolean; top?: string; onApps: () => void; onLimits: () => void; onSignOut?: () => void
+}) {
   const { user, admin, usage, signOut } = useAccount()
   if (!user) return null
   const low = !!usage && usage.remaining <= 15
@@ -100,6 +105,10 @@ export function AccountDetails({ menu, top = 'pt-3', onLimits, onSignOut }: { me
         )}
       </div>
       <div className="mt-3 border-t border-line">
+        <button role={role} onClick={onApps} className="flex w-full items-center justify-between border-b border-line px-4 py-2.5 text-left font-medium hover:bg-canvas">
+          AI apps
+          <ChevronRight size={16} className="text-muted" />
+        </button>
         {admin && (
           <button role={role} onClick={onLimits} className="flex w-full items-center justify-between border-b border-line px-4 py-2.5 text-left font-medium hover:bg-canvas">
             Assistant limits
