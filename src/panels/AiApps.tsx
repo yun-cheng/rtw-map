@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Button } from '../ui/kit'
 
-type App = { id: string; client: string; redirect: string; created: number; used: number }
+type App = { id: string; client: string; redirect: string; scope: string; created: number; used: number }
 
 const day = (ms: number) => new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })
 
@@ -62,8 +62,8 @@ export function AiApps({ onClose }: { onClose: () => void }) {
           <button onClick={onClose} className="h-6 w-6 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         <p className="mb-3 text-[12px] text-muted">
-          Connect the assistant you already use (Claude, ChatGPT, Codex, Gemini) and it can read your trips: plans, costs, the app's city data,
-          your journal and My visit. It can't change anything. You sign in here once for each app.
+          Connect the assistant you already use (Claude, ChatGPT, Codex, Gemini) and it can read your trips (plans, costs, the app's city data,
+          your journal and My visit) and, if you let it, change them: its changes show here, each with Undo. You sign in here once for each app.
         </p>
 
         <p className="mb-1 font-medium">Server address</p>
@@ -94,7 +94,9 @@ export function AiApps({ onClose }: { onClose: () => void }) {
               <li key={a.id} className="flex items-center gap-2 px-2.5 py-2">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{a.client}</p>
-                  <p className="truncate text-[11px] text-muted">{a.redirect} · since {day(a.created)} · last used {day(a.used)}</p>
+                  <p className="truncate text-[11px] text-muted">
+                    {a.scope.split(' ').includes('trips:write') ? 'Reads and changes trips' : 'Reads trips'} · {a.redirect} · since {day(a.created)} · last used {day(a.used)}
+                  </p>
                 </div>
                 <Button onClick={() => void disconnect(a)} className="text-danger">Disconnect</Button>
               </li>

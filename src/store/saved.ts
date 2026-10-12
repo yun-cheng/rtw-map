@@ -7,6 +7,9 @@
 // reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
 // The trip's journal and the cities' items (stays, albums, links, notes) are sent on their own (store/journal.ts,
 // items.ts): merged entry by entry on the server, also while the assistant works on the trip.
+// Other apps' AI assistants (worker/mcp.ts) change trips on the server: the page checks for that when it comes back
+// into view and every little while, puts their changes on screen and lists them with Undo (useOutside). Each save
+// says which version of the trip (`rev`) it's from, so a save from before such a change is refused, not overwriting it.
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
@@ -18,7 +21,9 @@ import { localNotes, newTripInput, useTrip, type TripData } from './trip'
 import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
 
-export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share?: string | null }
+export type TripSummary = { id: string; name: string; startDate: string | null; endDate: string | null; stops: number; updated: number; share?: string | null; rev?: number }
+/** Another app's change to the trip (worker/changes.ts). */
+export type OutsideChange = { id: string; app: string; tool: string; summary: string[]; rev: number; created: number; undone: boolean }
 type Status = 'idle' | 'loading' | 'saving' | 'saved' | 'offline' | 'error'
 
 type SavedState = {
@@ -43,12 +48,15 @@ const UNSAVED_KEY = 'rtw-map-unsaved'
 
 /** A request that didn't reach the server (no connection). */
 class Offline extends Error {}
+/** A save refused because another app changed the trip since the version on screen. */
+class Changed extends Error {}
 
 const call = async (method: string, url: string, body?: unknown) => {
   const res = await fetch(url, { method, headers: body ? { 'Content-Type': 'application/json' } : undefined, body: body ? JSON.stringify(body) : undefined })
     .catch(() => { throw new Offline('No connection') })
   const data = await res.json().catch(() => null)
   if (res.status === 401) useAccount.getState().signedOut()
+  if (res.status === 409 && data?.changed) throw new Changed(data.error)
   if (!res.ok) throw new Error(data?.error ?? `Request failed (${res.status})`)
   return data
 }
@@ -101,18 +109,22 @@ const unsaved = () => {
 /** True while a trip is being put on screen, so that isn't mistaken for an edit to save. */
 let applying = false
 let timer: ReturnType<typeof setTimeout> | undefined
+/** Which version of the open trip is on screen (the server counts it up with each save; unknown: none checked). */
+let rev: number | undefined
 
 /** What the server keeps of a trip apart from its data, merged entry by entry. */
 type Kept = { journal?: Journal | null; items?: Items | null }
 
-/** Puts a saved trip, its chat, its journal and items on screen (`kept` none: those on this device). */
-function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, kept: Kept = {}) {
+/** Puts a saved trip (of version `at`), its chat, its journal and items on screen (`kept` none: those on this device). */
+function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, kept: Kept = {}, at?: number) {
   applying = true
   useTrip.getState().openTrip(data, keepView)
   useChat.getState().load(chat)
   applying = false
   remember(id)
+  if (useSaved.getState().activeId !== id) useOutside.setState({ from: null, changes: [], error: null })
   useSaved.setState({ activeId: id })
+  seen(id, at)
   useJournal.getState().open(id, kept.journal)
   useItems.getState().open(id, kept.items)
   // (Notes kept with the trip's data before items.)
@@ -135,8 +147,11 @@ export const useSaved = create<SavedState>()((set, get) => {
       set({ status: 'loading', error: null })
       try {
         const trip = await call('GET', `/api/trips/${id}`)
-        show(id, trip.data, trip.chat, keepView, { journal: trip.journal ?? {}, items: trip.items ?? {} })
+        const before = lastSeen(id)
+        show(id, trip.data, trip.chat, keepView, { journal: trip.journal ?? {}, items: trip.items ?? {} }, trip.rev)
         set({ status: 'idle' })
+        // Changed by other apps since this browser last showed it: say so.
+        if (before !== undefined && trip.rev > before) void listOutside(id, before)
         // The assistant is still answering on the server: follow it.
         if (trip.run) {
           useChat.setState({ busy: true, runId: trip.run.id, messages: [...useChat.getState().messages, { role: 'user', text: trip.run.text }] })
@@ -153,7 +168,7 @@ export const useSaved = create<SavedState>()((set, get) => {
         const data: TripData = { input: newSetup(), stops: [] }
         const created: TripSummary = await call('POST', '/api/trips', { name, data })
         upsert(created)
-        show(created.id, data, null, false, { journal: {}, items: {} })
+        show(created.id, data, null, false, { journal: {}, items: {} }, created.rev)
         set({ status: 'saved', error: null })
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
@@ -162,7 +177,9 @@ export const useSaved = create<SavedState>()((set, get) => {
 
     rename: async (id, name) => {
       try {
-        upsert(await call('PUT', `/api/trips/${id}`, { name }))
+        const saved: TripSummary = await call('PUT', `/api/trips/${id}`, { name })
+        upsert(saved)
+        if (id === get().activeId) seen(id, saved.rev)
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
       }
@@ -210,10 +227,19 @@ async function flush() {
   dirty = false
   useSaved.setState({ status: 'saving' })
   try {
-    const saved: TripSummary = await call('PUT', `/api/trips/${id}`, { data: tripData(), chat: chatData() })
+    const saved: TripSummary = await call('PUT', `/api/trips/${id}`, { data: tripData(), chat: chatData(), rev })
+    if (useSaved.getState().activeId === id) seen(id, saved.rev)
     if (!dirty) setDirty(false)
     useSaved.setState((s) => ({ status: dirty ? 'saving' : 'saved', error: null, trips: [saved, ...s.trips.filter((t) => t.id !== saved.id)] }))
   } catch (e) {
+    if (e instanceof Changed) {
+      // Another app changed the trip since it was put on screen: its version is shown instead of these edits.
+      setDirty(false)
+      useSaved.setState({ status: 'idle', error: null })
+      useOutside.setState({ error: 'Another app changed this trip while you were editing it here, so your latest edits weren\'t saved: here is the trip as it is now.' })
+      void checkOutside(true)
+      return
+    }
     setDirty(true)
     useSaved.setState(e instanceof Offline ? { status: 'offline', error: null } : { status: 'error', error: (e as Error).message })
   }
@@ -223,6 +249,8 @@ function changed() {
   // (While the assistant answers on the server, the trip is the run's: edits on screen are replaced by its changes.)
   if (applying || !useSaved.getState().activeId || useChat.getState().runId) return
   setDirty(true)
+  // Other apps' changes can't be undone once the trip is edited again (that would lose the edit).
+  if (useOutside.getState().changes.length) dismissOutside()
   if (useAccount.getState().offline) return useSaved.setState({ status: 'offline' })
   useSaved.setState({ status: 'saving' })
   clearTimeout(timer)
@@ -352,7 +380,7 @@ async function follow(tripId: string, run: Run) {
     try {
       const trip = await call('GET', `/api/trips/${tripId}`)
       if (useSaved.getState().activeId !== tripId) break
-      show(tripId, trip.data, trip.chat, true, { journal: trip.journal, items: trip.items })
+      show(tripId, trip.data, trip.chat, true, { journal: trip.journal, items: trip.items }, trip.rev)
       // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
       // again, in the chat (saved as usual).
       const last = useChat.getState().messages.at(-1)
@@ -383,9 +411,11 @@ setServerRuns({
     const { currency, tempUnit, tempFeels } = useTrip.getState()
     const res = await fetch('/api/runs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tripId, text, view, think, plan, display: { currency, tempUnit, tempFeels }, data: tripData(), chat }),
+      body: JSON.stringify({ tripId, text, view, think, plan, display: { currency, tempUnit, tempFeels }, data: tripData(), chat, rev }),
     }).catch(() => null)
-    const body = (await res?.json().catch(() => null)) as { run?: Run; error?: string } | null
+    const body = (await res?.json().catch(() => null)) as { run?: Run; error?: string; changed?: boolean } | null
+    // Another app changed the trip since it was put on screen: show it as it is now (asking again starts from it).
+    if (body?.changed) void checkOutside()
     // No runner on the server (yet): answer here instead.
     if (res?.status === 503) {
       useChat.setState({ busy: false, messages: chat.messages, note: chat.note })
@@ -424,6 +454,7 @@ async function signedIn() {
       const created: TripSummary = await call('POST', '/api/trips', { name: 'My trip', data: tripData(), chat: chatData() })
       useSaved.setState({ trips: [created, ...trips], activeId: created.id, status: 'saved' })
       remember(created.id)
+      seen(created.id, created.rev)
       // (Its journal and items too, written signed out.)
       useJournal.getState().adopt(created.id)
       useItems.getState().adopt(created.id)
@@ -440,6 +471,8 @@ function signedOut() {
   clearTimeout(timer)
   setDirty(false)
   remember(null)
+  rev = undefined
+  useOutside.setState({ from: null, changes: [], error: null })
   useSaved.setState({ trips: [], activeId: null, status: 'idle', error: null })
   applying = true
   useTrip.getState().openTrip(null)
@@ -465,3 +498,113 @@ useAccount.subscribe((s, prev) => {
   if (s.user) void signedIn()
   else if (prev.user) signedOut()
 })
+
+// ---------------------------------------------------------------- other apps' changes (worker/changes.ts)
+
+type Outside = {
+  /** The version of the trip before the changes listed; they're the changes since. */
+  from: number | null
+  changes: OutsideChange[]
+  /** Undoing them. */
+  undoing: boolean
+  error: string | null
+}
+export const useOutside = create<Outside>()(() => ({ from: null, changes: [], undoing: false, error: null }))
+
+/** How often the page checks for other apps' changes while it's in view. */
+const CHECK_MS = 15_000
+/** The version of each trip this browser showed last (across reloads, so changes made meanwhile are listed). */
+const SEEN_KEY = 'rtw-map-seen-rev'
+const seenRevs = (): Record<string, number> => {
+  try {
+    return JSON.parse(localStorage.getItem(SEEN_KEY) ?? '{}') as Record<string, number>
+  } catch {
+    return {}
+  }
+}
+const lastSeen = (id: string): number | undefined => seenRevs()[id]
+/** The trip on screen is now of version `at`; kept for the next visit (from before the changes still listed). */
+function seen(id: string, at: number | undefined) {
+  rev = at
+  if (at === undefined) return
+  try {
+    const keep = Object.fromEntries(Object.entries({ ...seenRevs(), [id]: useOutside.getState().from ?? at }).slice(-50))
+    localStorage.setItem(SEEN_KEY, JSON.stringify(keep))
+  } catch {
+    // Storage unavailable: changes made while the page was closed just aren't listed.
+  }
+}
+
+/** Lists the changes other apps made to the open trip since version `from` (still on). */
+async function listOutside(id: string, from: number) {
+  const now = (await call('GET', `/api/trips/${id}/changes?since=${from}`).catch(() => null)) as { changes: OutsideChange[] } | null
+  if (!now || useSaved.getState().activeId !== id) return
+  const changes = now.changes.filter((c) => !c.undone).reverse()
+  useOutside.setState({ from: changes.length ? from : null, changes })
+  seen(id, rev)
+}
+
+let checking = false
+/** Whether another app has changed the open trip since it was put on screen: if so, it's put on screen again as it
+ *  is now, and the changes listed (`force`: even when they can't be, after a refused save). */
+async function checkOutside(force = false) {
+  const id = useSaved.getState().activeId
+  if (!id || checking || (rev === undefined && !force) || useChat.getState().busy || useAccount.getState().offline) return
+  checking = true
+  try {
+    const at = rev
+    const now = (await call('GET', `/api/trips/${id}/changes?since=${at ?? 0}`)) as { rev: number; changes: OutsideChange[] }
+    if (useSaved.getState().activeId !== id || useChat.getState().busy || (!force && (at === undefined || now.rev <= at))) return
+    // Edits here not saved yet: saved first (refused if another app changed the trip: then it's checked again, and
+    // shown as it is now).
+    if (dirty) {
+      checking = false
+      return void (await flush())
+    }
+    const trip = (await call('GET', `/api/trips/${id}`)) as { data: TripData | null; rev: number }
+    if (useSaved.getState().activeId !== id || dirty || useChat.getState().busy) return
+    applying = true
+    useTrip.getState().openTrip(trip.data, true)
+    applying = false
+    const from = useOutside.getState().from ?? at ?? null
+    if (from !== null) useOutside.setState({ from })
+    seen(id, trip.rev)
+    if (from !== null) await listOutside(id, from)
+  } catch {
+    // Offline for a moment: checked again later.
+  } finally {
+    checking = false
+  }
+}
+
+/** The changes listed, seen: not listed any more. */
+export function dismissOutside() {
+  useOutside.setState({ from: null, changes: [], error: null })
+  const id = useSaved.getState().activeId
+  if (id) seen(id, rev)
+}
+
+/** Undoes the changes listed (the first, with all after it): the trip is put back as it was before them. */
+export async function undoOutside() {
+  const id = useSaved.getState().activeId
+  const first = useOutside.getState().changes[0]
+  if (!id || !first || useOutside.getState().undoing) return
+  await flush()
+  useOutside.setState({ undoing: true, error: null })
+  try {
+    await call('POST', `/api/trips/${id}/changes/${first.id}/undo`)
+    useOutside.setState({ from: null, changes: [], undoing: false })
+    await checkOutside(true)
+  } catch (e) {
+    useOutside.setState({ undoing: false, error: (e as Error).message })
+  }
+}
+
+if (typeof window !== 'undefined' && !SHARED_TOKEN) {
+  const check = () => {
+    if (document.visibilityState === 'visible') void checkOutside()
+  }
+  document.addEventListener('visibilitychange', check)
+  window.addEventListener('focus', check)
+  setInterval(check, CHECK_MS)
+}

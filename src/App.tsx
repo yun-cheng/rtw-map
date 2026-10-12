@@ -14,7 +14,8 @@ import { SetupPanel } from './panels/SetupPanel'
 import { SharedGone } from './panels/SharedTrip'
 import { Timeline } from './panels/Timeline'
 import { Today } from './panels/Today'
-import { UpdateNotice } from './panels/UpdateNotice'
+import { OutsideNotice } from './panels/OutsideNotice'
+import { Notices, UpdateNotice } from './panels/UpdateNotice'
 import { isTravelling, localToday } from './planner'
 import { useUndoKeys } from './store/history'
 import { SHARED_TOKEN } from './store/shareLink'
@@ -189,7 +190,10 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <SharedGone />
-      <UpdateNotice />
+      <Notices>
+        <UpdateNotice />
+        <OutsideNotice />
+      </Notices>
       {!phone && <Header onSettings={() => setSettings(true)} />}
       {/* (From the gear over the map on a phone, in the top bar on a computer.) */}
       <SettingsPanel open={settings} onClose={() => setSettings(false)} />
