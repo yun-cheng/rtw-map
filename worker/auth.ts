@@ -11,8 +11,8 @@ const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.
 const GOOGLE_KEYS = 'https://www.googleapis.com/oauth2/v3/certs'
 
 const enc = new TextEncoder()
-const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0))
+export const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+export const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0))
 const decodeJson = (s: string) => JSON.parse(new TextDecoder().decode(fromB64url(s)))
 
 // ---------------------------------------------------------------- Google ID token

@@ -1,19 +1,27 @@
 // One Durable Object per signed-in Google account (keyed by its account ID). It holds that user's saved trips
-// (SQLite), the assistant's runs on them (runs.ts) and today's assistant usage. A Durable Object handles one request
+// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage and the other apps allowed to read the
+// trips (oauth.ts). A Durable Object handles one request
 // at a time, so nothing can race. The rules are plain functions in limits.ts, trips.ts and runs.ts.
 import { DurableObject } from 'cloudflare:workers'
 import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { ITEM_LIMITS, mergeItems, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
+import type { Grant, NewGrant } from './oauth'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
 type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null }
+type GrantRow = Grant & { status: 'pending' | 'active'; gen: number }
 type RunRow = {
   id: string; trip_id: string; status: RunStatus; request: string; email: string | null; reply: string | null
   version: number; stop: number; error: string | null; created: number; updated: number
 }
 /** Trips a run is working on can't be saved from the browser (the run's changes would be lost). */
+/** How long an app has to take its tokens after the user allowed it; how many apps an account keeps; how often a
+ *  grant's last use is written down. */
+const GRANT_PENDING_MS = 10 * 60_000
+const GRANT_LIMIT = 50
+const GRANT_USED_MS = 10 * 60_000
 export const BUSY = 'The assistant is working on this trip: wait for it to finish, or stop it.'
 
 export class Account extends DurableObject {
@@ -36,6 +44,10 @@ export class Account extends DurableObject {
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'items')) {
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN items TEXT')
     }
+    // Apps allowed to read the trips (oauth.ts): pending from the user's yes until the app takes its first tokens.
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS grants (
+      id TEXT PRIMARY KEY, client TEXT NOT NULL, redirect TEXT NOT NULL, scope TEXT NOT NULL, status TEXT NOT NULL,
+      gen INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, used INTEGER NOT NULL)`)
     // On the settings instance only: which account and trip each public link opens.
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
   }
@@ -112,6 +124,14 @@ export class Account extends DurableObject {
       ...this.summary(r), data: r.data ? JSON.parse(r.data) : null, chat: r.chat ? JSON.parse(r.chat) : null,
       journal: this.kept<Journal>(id, 'journal') ?? {}, items: this.kept<Items>(id, 'items') ?? {},
     }
+  }
+
+  /** A trip as stored (JSON text), with its items or journal if asked, for another app's assistant (mcp.ts): unlike
+   *  opening it, this doesn't make it the trip the app opens next. */
+  async tripTexts(id: string, extra: 'items' | 'journal' | null): Promise<{ data: string | null; extra: string | null } | null> {
+    const r = this.row(id)
+    if (!r) return null
+    return { data: r.data, extra: extra && JSON.stringify(this.kept(id, extra)) }
   }
 
   /** A trip's journal or items (null if there's no such trip). */
@@ -297,5 +317,75 @@ export class Account extends DurableObject {
   /** A run that couldn't be started (the runner wasn't reachable). */
   async failRun(id: string, error: string): Promise<void> {
     this.ctx.storage.sql.exec("UPDATE runs SET status = 'failed', error = ?, updated = ? WHERE id = ?", error, Date.now(), id)
+  }
+
+  // ---------------------------------------------------------------- other apps allowed (oauth.ts)
+
+  private grant(id: string): GrantRow | null {
+    return this.ctx.storage.sql.exec<GrantRow>('SELECT * FROM grants WHERE id = ?', id).toArray()[0] ?? null
+  }
+
+  private dropGrant(id: string) {
+    this.ctx.storage.sql.exec('DELETE FROM grants WHERE id = ?', id)
+  }
+
+  /** The user allowed an app: its grant, pending until the app takes its tokens. */
+  async addGrant(g: NewGrant): Promise<string> {
+    const now = Date.now()
+    // Apps allowed and never connected (the code not used in time) are forgotten, and the ones used longest ago go
+    // when there are too many.
+    this.ctx.storage.sql.exec("DELETE FROM grants WHERE status = 'pending' AND created < ?", now - GRANT_PENDING_MS)
+    const id = crypto.randomUUID()
+    this.ctx.storage.sql.exec("INSERT INTO grants (id, client, redirect, scope, status, gen, created, used) VALUES (?, ?, ?, ?, 'pending', 0, ?, ?)",
+      id, g.client, g.redirect, g.scope, now, now)
+    this.ctx.storage.sql.exec('DELETE FROM grants WHERE id IN (SELECT id FROM grants ORDER BY used DESC LIMIT -1 OFFSET ?)', GRANT_LIMIT)
+    return id
+  }
+
+  /** The app took its first tokens with the code: its refresh tokens' generation. A code used again removes the
+   *  grant (whoever has it may not be the app). */
+  async activateGrant(id: string): Promise<{ scope: string; gen: number } | null> {
+    const g = this.grant(id)
+    if (!g) return null
+    if (g.status !== 'pending') {
+      this.dropGrant(id)
+      return null
+    }
+    this.ctx.storage.sql.exec("UPDATE grants SET status = 'active', gen = 1, used = ? WHERE id = ?", Date.now(), id)
+    return { scope: g.scope, gen: 1 }
+  }
+
+  /** The app's refresh token of this generation, used: the next one's. An older one removes the grant (refresh
+   *  tokens are used once, so it was copied). */
+  async rotateGrant(id: string, gen: number): Promise<{ scope: string; gen: number } | null> {
+    const g = this.grant(id)
+    if (g?.status !== 'active') return null
+    if (g.gen !== gen) {
+      this.dropGrant(id)
+      return null
+    }
+    this.ctx.storage.sql.exec('UPDATE grants SET gen = ?, used = ? WHERE id = ?', gen + 1, Date.now(), id)
+    return { scope: g.scope, gen: gen + 1 }
+  }
+
+  /** An access token of the grant's, used: whether it's still allowed (and when it was last used, roughly). */
+  async useGrant(id: string): Promise<{ scope: string } | null> {
+    const g = this.grant(id)
+    if (g?.status !== 'active') return null
+    const now = Date.now()
+    if (now - g.used > GRANT_USED_MS) this.ctx.storage.sql.exec('UPDATE grants SET used = ? WHERE id = ?', now, id)
+    return { scope: g.scope }
+  }
+
+  /** The apps allowed, the one used last first. */
+  async listGrants(): Promise<Grant[]> {
+    return this.ctx.storage.sql.exec<Grant>("SELECT id, client, redirect, scope, created, used FROM grants WHERE status = 'active' ORDER BY used DESC").toArray()
+  }
+
+  /** Disconnects an app: its tokens stop working at once. */
+  async revokeGrant(id: string): Promise<boolean> {
+    const existed = !!this.grant(id)
+    this.dropGrant(id)
+    return existed
   }
 }

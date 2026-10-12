@@ -15,11 +15,17 @@
 //   POST /api/runs/:id/stop        stop it
 //   /internal/runs/…               the runner's side of a run (with the RUNNER_SECRET)
 //   GET|PUT /api/admin/limits      other daily limits for particular accounts, by email (admins only)
+//   GET  /api/connections          the other apps allowed to read the trips (oauth.ts)
+//   DELETE /api/connections/:id    disconnect one
+//   POST /mcp                      the MCP server for other apps' AI assistants (mcp.ts), with an access token
+//   /oauth/…, /.well-known/oauth-… how those apps are connected (oauth.ts)
 // Everything else goes to the static files.
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession, type User } from './auth'
 import { GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
 import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
 import { Account, BUSY } from './account'
+import { handleMcp } from './mcp'
+import { bearer, CORS, oauth, type OAuthContext } from './oauth'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
 import { isShareToken, parseTripPatch } from './trips'
 import { parseItems } from '../src/store/itemsCore'
@@ -364,6 +370,59 @@ async function shared(request: Request, env: Env, token: string): Promise<Respon
   return json(trip)
 }
 
+// ---------------------------------------------------------------- other apps' AI assistants (oauth.ts, mcp.ts)
+
+const oauthContext = (request: Request, env: Env & { SESSION_SECRET: string }): OAuthContext => ({
+  secret: env.SESSION_SECRET,
+  googleClientId: env.GOOGLE_CLIENT_ID ?? null,
+  user: () => currentUser(request, env),
+  grants: (sub) => account(env, { sub }),
+  limit: async (key) => (await env.SAVE_LIMIT.limit({ key })).success,
+})
+
+/** A tool call on the runner (it has the city data): its answer, or why there's none. */
+async function runnerTool(env: Env, body: string): Promise<{ ok: boolean; result: unknown }> {
+  if (!env.RUNNER_URL || !env.RUNNER_SECRET) return { ok: false, result: { error: 'The trip tools aren\'t set up on this server yet.' } }
+  const res = await fetch(`${env.RUNNER_URL}/tool`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Runner-Secret': env.RUNNER_SECRET }, body,
+  }).catch((e: Error) => {
+    console.error('Runner unreachable', e.message)
+    return null
+  })
+  const out = (await res?.json().catch(() => null)) as { ok: boolean; result: unknown } | null
+  if (!res?.ok || !out) {
+    console.error('Runner tool failed', res?.status)
+    return { ok: false, result: { error: 'The trip tools didn\'t answer: try again in a moment.' } }
+  }
+  return out
+}
+
+/** The MCP server and how apps connect to it. */
+async function outside(request: Request, env: Env, pathname: string): Promise<Response> {
+  if (!env.SESSION_SECRET) return json({ error: 'Sign-in is not set up yet.' }, 503, CORS)
+  const ctx = oauthContext(request, { ...env, SESSION_SECRET: env.SESSION_SECRET })
+  if (pathname !== '/mcp') return (await oauth(request, ctx, pathname)) ?? json({ error: 'Not found' }, 404, CORS)
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: { ...CORS, 'Access-Control-Max-Age': '86400' } })
+  const who = await bearer(request, ctx)
+  if (who instanceof Response) return who
+  if (!(await env.SAVE_LIMIT.limit({ key: `mcp:${who.sub}` })).success) return json({ error: 'Too many requests: wait a minute.' }, 429, CORS)
+  const store = account(env, who)
+  return handleMcp(request, {
+    listTrips: () => store.listTrips(),
+    tripTexts: (id, extra) => store.tripTexts(id, extra),
+    runTool: (body) => runnerTool(env, body),
+  })
+}
+
+/** The apps allowed to read the user's trips: the list, or one disconnected. */
+async function connections(request: Request, env: Env, id: string | undefined): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  if (request.method === 'GET' && !id) return json({ apps: await account(env, user).listGrants() })
+  if (request.method === 'DELETE' && id) return json({ ok: await account(env, user).revokeGrant(id) })
+  return json({ error: 'Not found' }, 404)
+}
+
 async function api(request: Request, env: Env, pathname: string): Promise<Response> {
   const sharedPath = pathname.match(/^\/api\/shared\/([\w-]{1,64})$/)
   if (sharedPath && request.method === 'GET') return shared(request, env, sharedPath[1])
@@ -381,6 +440,11 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (itemsPath) {
     if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return items(request, env, itemsPath[1])
+  }
+  const connectionPath = pathname.match(/^\/api\/connections(?:\/([\w-]{1,64}))?$/)
+  if (connectionPath) {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return connections(request, env, connectionPath[1])
   }
   if (pathname === '/api/admin/limits') {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
@@ -411,6 +475,7 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const { pathname } = new URL(request.url)
     if (pathname.startsWith('/api/')) return api(request, env, pathname)
+    if (pathname === '/mcp' || pathname.startsWith('/oauth/') || pathname.startsWith('/.well-known/oauth-')) return outside(request, env, pathname)
     const internalPath = pathname.match(/^\/internal\/runs\/(\w{1,64})\/([\w-]{1,64})(?:\/(chat|progress|finish))?$/)
     if (internalPath) return internal(request, env, internalPath[1], internalPath[2], internalPath[3])
     return env.ASSETS.fetch(request)

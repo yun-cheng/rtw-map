@@ -3,15 +3,20 @@
 //   POST /start  from the Worker: queues the run on Cloud Tasks and answers at once
 //   POST /run    from Cloud Tasks: runs it to the end, holding the request open meanwhile (Cloud Run gives a
 //                request CPU only while it's open, and Cloud Tasks waits up to 30 minutes for it)
+//   POST /tool   from the Worker: one tool call of another app's assistant on a trip (tool.ts; the MCP server,
+//                worker/mcp.ts), answered at once
 // Without TASKS_QUEUE (local development) /start runs it here at once instead.
 //
 // Settings (environment): RUNNER_SECRET; PORT (Cloud Run sets it); TASKS_QUEUE, the queue's full name
 // ("projects/…/locations/…/queues/…").
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { execute } from './run'
+import { callTool, parseToolCall } from './tool'
 
 const SECRET = process.env.RUNNER_SECRET ?? ''
 const QUEUE = process.env.TASKS_QUEUE
+/** A tool call's body: a trip with its journal or items (each at most a few MB on the Worker). */
+const TOOL_BYTES = 4_000_000
 /** How long Cloud Tasks waits for /run (its most). */
 const DEADLINE = '1800s'
 
@@ -24,12 +29,12 @@ const parseJob = (raw: unknown): Job | null => {
   return ok ? (j as Job) : null
 }
 
-const readBody = (req: IncomingMessage) => new Promise<string>((resolve, reject) => {
+const readBody = (req: IncomingMessage, most = 10_000) => new Promise<string>((resolve, reject) => {
   let body = ''
   req.setEncoding('utf8')
   req.on('data', (chunk: string) => {
     body += chunk
-    if (body.length > 10_000) req.destroy(new Error('Too large'))
+    if (body.length > most) req.destroy(new Error('Too large'))
   })
   req.on('end', () => resolve(body))
   req.on('error', reject)
@@ -72,8 +77,12 @@ async function enqueue(job: Job, self: string): Promise<void> {
 const server = createServer(async (req, res) => {
   try {
     if (req.method === 'GET' && req.url === '/') return send(res, 200, { ok: true })
-    if (req.method !== 'POST' || (req.url !== '/start' && req.url !== '/run')) return send(res, 404, { error: 'Not found' })
+    if (req.method !== 'POST' || !['/start', '/run', '/tool'].includes(req.url ?? '')) return send(res, 404, { error: 'Not found' })
     if (!SECRET || req.headers['x-runner-secret'] !== SECRET) return send(res, 403, { error: 'Not allowed' })
+    if (req.url === '/tool') {
+      const call = parseToolCall(JSON.parse(await readBody(req, TOOL_BYTES)))
+      return call ? send(res, 200, callTool(call)) : send(res, 400, { error: 'Invalid tool call' })
+    }
     const job = parseJob(JSON.parse(await readBody(req)))
     if (!job) return send(res, 400, { error: 'Invalid run' })
     if (req.url === '/run') {

@@ -60,12 +60,12 @@ function pickingDates(args: Args): boolean {
 }
 
 const key = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().replace(/[^a-z0-9]/g, '')
-const cityName = (id: string) => ds.cities[id]?.name ?? id
+export const cityName = (id: string) => ds.cities[id]?.name ?? id
 const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
 
 class ToolError extends Error {}
 
-function cityId(ref: unknown): string {
+export function cityId(ref: unknown): string {
   const k = key(String(ref ?? ''))
   const city = Object.values(ds.cities).find((c) => c.id === k || key(c.name) === k)
   if (city) return city.id
