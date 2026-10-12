@@ -8,12 +8,16 @@ import type { Journal } from '../src/store/journalCore'
 import { createTripStore, tripData } from '../src/store/tripCore'
 import { callTool, parseToolCall } from './tool'
 
-/** A trip as saved: the test case with its drafted stops. */
+/** A trip as saved: the test case with its drafted stops. Drafted once (it's slow), a fresh copy each time. */
+let drafted: ReturnType<typeof tripData> | undefined
 function savedTrip() {
-  const store = createTripStore(null)
-  store.getState().setInput(testCaseInput(ds, 'US'))
-  store.getState().setStops(draftStops(ds, store.getState().input))
-  return tripData(store.getState())
+  if (!drafted) {
+    const store = createTripStore(null)
+    store.getState().setInput(testCaseInput(ds, 'US'))
+    store.getState().setStops(draftStops(ds, store.getState().input))
+    drafted = tripData(store.getState())
+  }
+  return structuredClone(drafted)
 }
 
 const call = (name: string, args: Record<string, unknown> = {}, extra: unknown = null) =>
