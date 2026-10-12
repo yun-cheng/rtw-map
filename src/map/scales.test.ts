@@ -54,7 +54,10 @@ describe('map legends', () => {
     expect(visaOf('EU', 'HR')?.band.label).toBe('Visa-free')
     expect(visaOf('TW', 'TW')?.band.label).toBe('Visa-free')
     expect(visaOf('EU', 'XX')).toBeNull()
+    // Every country, not only those with cities: free movement in the EEA and Switzerland too, rules far afield.
+    expect(['FR', 'NO', 'CH'].map((c) => visaOf('EU', c)?.rule.req)).toEqual(['free_movement', 'free_movement', 'free_movement'])
+    expect(visaOf('US', 'BR')).not.toBeNull()
     expect(visaLegend('TW').map((l) => l.label)).toEqual(['Visa-free', 'On arrival or ETA', 'E-visa', 'Visa in advance', 'Not admitted'])
-    expect(visaLegend('EU').map((l) => l.label)).toEqual(['Visa-free', 'On arrival or ETA', 'E-visa'])
+    expect(visaLegend('EU').map((l) => l.label)).toEqual(['Visa-free', 'On arrival or ETA', 'E-visa', 'Visa in advance'])
   })
 })

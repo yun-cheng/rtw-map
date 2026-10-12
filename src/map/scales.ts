@@ -42,9 +42,9 @@ export function visaOf(passport: string, iso2: string) {
   const band = rule && VISA_BANDS.find((b) => b.reqs.includes(rule.req))
   return rule && band ? { rule, band } : null
 }
-/** The bands the passport meets in the app's countries (most passports only a few). */
+/** The bands the passport meets in the world's countries (the map colours them all). */
 export const visaLegend = (passport: string): LegendItem[] => {
-  const met = new Set(Object.keys(ds.countries).map((iso2) => visaOf(passport, iso2)?.band))
+  const met = new Set(Object.keys(ds.visa.rules[passport] ?? {}).map((iso2) => visaOf(passport, iso2)?.band))
   return VISA_BANDS.filter((b) => met.has(b)).map((b) => ({ color: b.color, label: b.label }))
 }
 

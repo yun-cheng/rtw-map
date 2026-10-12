@@ -1,11 +1,12 @@
 // Visa requirements for the supported passports from the Passport Index dataset
 // (github.com/imorte/passport-index-data, MIT). Always verify with official sources.
 import { join } from 'node:path'
-import { GEN, SEED, readJson, today, writeJson } from './lib.ts'
+import { FREE_MOVEMENT } from '../src/data/areas'
+import { GEN, today, writeJson } from './lib.ts'
 
 const URL = 'https://raw.githubusercontent.com/imorte/passport-index-data/main/passport-index-tidy-iso2.csv'
 
-// EU/EEA/Swiss citizens are one group; Germany's row stands in for non-EU destinations.
+// EU/EEA/Swiss citizens are one group: free movement in those countries, Germany's row elsewhere.
 const PASSPORTS = [
   { code: 'EU', name: 'EU / EEA / Swiss', proxy: 'DE' },
   { code: 'GB', name: 'United Kingdom', proxy: 'GB' },
@@ -18,13 +19,12 @@ const PASSPORTS = [
   { code: 'TW', name: 'Taiwan', proxy: 'TW' },
 ]
 
-type Country = { iso2: string; eu: boolean }
-const { countries } = readJson<{ countries: Country[] }>(join(SEED, 'countries.json'))
-
 const res = await fetch(URL)
 if (!res.ok) throw new Error(`visa dataset: ${res.status}`)
 const lines = (await res.text()).trim().split('\n').slice(1)
 const table = new Map(lines.map((l) => { const [p, d, r] = l.split(','); return [`${p}-${d}`, r.trim()] }))
+// Every destination in the dataset, not only the app's countries: the Visa map colours the whole world.
+const destinations = [...new Set(lines.map((l) => l.split(',')[1]))].sort()
 
 function normalize(raw: string | undefined) {
   if (raw === undefined) return { req: 'unknown' }
@@ -39,15 +39,15 @@ function normalize(raw: string | undefined) {
 const rules: Record<string, Record<string, unknown>> = {}
 for (const p of PASSPORTS) {
   rules[p.code] = {}
-  for (const c of countries) {
-    rules[p.code][c.iso2] =
-      p.code === 'EU' && c.eu ? { req: 'free_movement' } : normalize(table.get(`${p.proxy}-${c.iso2}`))
+  for (const iso2 of new Set([...destinations, ...FREE_MOVEMENT])) {
+    rules[p.code][iso2] =
+      p.code === 'EU' && FREE_MOVEMENT.has(iso2) ? { req: 'free_movement' } : normalize(table.get(`${p.proxy}-${iso2}`))
   }
 }
 
 writeJson(join(GEN, 'visa.json'), {
   _meta: {
-    source: 'Passport Index dataset (github.com/imorte/passport-index-data, MIT). EU group uses Germany as a proxy outside the EU.',
+    source: 'Passport Index dataset (github.com/imorte/passport-index-data, MIT). EU group uses Germany as a proxy outside the EU, EEA and Switzerland.',
     updatedAt: today(),
   },
   passports: PASSPORTS.map(({ code, name }) => ({ code, name })),

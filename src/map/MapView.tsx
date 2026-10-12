@@ -4,6 +4,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMouseEvent, Map as MlMap, PointLike } from 'maplibre-gl'
 import { useEffect, useRef } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
+import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
 import { citiesIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
@@ -588,13 +589,16 @@ function pickTip(input: TripInput, how: 'region' | 'country', iso2: string) {
   }
 }
 
+/** The countries' tint: the whole Schengen area (the rest left clear), every country's visa rule (grey where there's
+ *  none, as for many territories), or else the trip's countries. */
 function countryFill(layer: string, tripCountries: Set<string>, passport: string): ExpressionSpecification | string {
-  const entries = Object.values(ds.countries).flatMap((c) => {
+  const entries = Object.keys(ds.world).flatMap((iso2) => {
     let color = 'transparent'
-    if (layer === 'schengen') color = c.schengen ? '#2563eb' : '#d97706'
-    else if (layer === 'visa') color = visaOf(passport, c.iso2)?.band.color ?? NO_DATA
-    else if (tripCountries.has(c.iso2)) color = '#0f766e'
-    return [c.iso2, color]
+    if (layer === 'schengen') color = SCHENGEN.has(iso2) ? '#2563eb' : 'transparent'
+    else if (layer === 'visa') color = visaOf(passport, iso2)?.band.color ?? NO_DATA
+    else if (tripCountries.has(iso2)) color = '#0f766e'
+    return color === 'transparent' ? [] : [iso2, color]
   })
+  if (!entries.length) return 'transparent'
   return ['match', ['get', 'iso2'], ...entries, 'transparent'] as unknown as ExpressionSpecification
 }
