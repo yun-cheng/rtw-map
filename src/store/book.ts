@@ -1,6 +1,6 @@
 // What's kept on this device of something the trip holds apart from its data and merges entry by entry on the server
-// (the journal, journal.ts): each trip's under its id (signed out, the browser's own trip under "local"), with the
-// entries changed here and not yet on the server. Sending is in saved.ts.
+// (the journal, journal.ts; the cities' items, items.ts): each trip's under its id (signed out, the browser's own trip
+// under "local"), with the entries changed here and not yet on the server. Sending is in saved.ts.
 
 /** The browser's own trip (signed out). */
 export const LOCAL = 'local'

@@ -4,6 +4,7 @@
 import { DurableObject } from 'cloudflare:workers'
 import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
+import { ITEM_LIMITS, mergeItems, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
@@ -30,6 +31,10 @@ export class Account extends DurableObject {
     // The trip's journal (src/store/journalCore.ts), apart from its data: merged day by day, never touched by a run.
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'journal')) {
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN journal TEXT')
+    }
+    // The cities' items (stays, albums, links, notes; src/store/itemsCore.ts), the same way: merged item by item.
+    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'items')) {
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN items TEXT')
     }
     // On the settings instance only: which account and trip each public link opens.
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
@@ -99,27 +104,43 @@ export class Account extends DurableObject {
     return { trips: rows.map((r) => this.summary(r)), lastId: (await this.ctx.storage.get<string>('lastTripId')) ?? null }
   }
 
-  async getTrip(id: string): Promise<(TripSummary & { data: unknown; chat: unknown; journal: Journal }) | null> {
+  async getTrip(id: string): Promise<(TripSummary & { data: unknown; chat: unknown; journal: Journal; items: Items }) | null> {
     const r = this.row(id)
     if (!r) return null
     await this.ctx.storage.put('lastTripId', id)
-    return { ...this.summary(r), data: r.data ? JSON.parse(r.data) : null, chat: r.chat ? JSON.parse(r.chat) : null, journal: this.journal(id) ?? {} }
+    return {
+      ...this.summary(r), data: r.data ? JSON.parse(r.data) : null, chat: r.chat ? JSON.parse(r.chat) : null,
+      journal: this.kept<Journal>(id, 'journal') ?? {}, items: this.kept<Items>(id, 'items') ?? {},
+    }
   }
 
-  private journal(id: string): Journal | null {
-    const r = this.ctx.storage.sql.exec<{ journal: string | null }>('SELECT journal FROM trips WHERE id = ?', id).toArray()[0]
-    return r ? JSON.parse(r.journal ?? '{}') as Journal : null
+  /** A trip's journal or items (null if there's no such trip). */
+  private kept<T>(id: string, column: 'journal' | 'items'): T | null {
+    const r = this.ctx.storage.sql.exec<{ kept: string | null }>(`SELECT ${column} AS kept FROM trips WHERE id = ?`, id).toArray()[0]
+    return r ? JSON.parse(r.kept ?? '{}') as T : null
   }
 
   /** Adds days written on a device to a trip's journal (each day's latest edit wins): the whole journal after, or
    *  null if there's no such trip. Also while the assistant works on the trip: a run never changes the journal. */
   async saveJournal(id: string, entries: DayEntry[]): Promise<Journal | null | string> {
-    const journal = this.journal(id)
+    const journal = this.kept<Journal>(id, 'journal')
     if (!journal) return null
     const merged = mergeJournal(journal, entries)
     const text = JSON.stringify(merged)
     if (Object.keys(merged).length > JOURNAL_LIMITS.days || text.length > JOURNAL_LIMITS.bytes) return "This trip's journal is too long to save"
     this.ctx.storage.sql.exec('UPDATE trips SET journal = ? WHERE id = ?', text, id)
+    return merged
+  }
+
+  /** Adds items changed on a device to a trip's (each one's latest edit wins), as the journal: all of them after, or
+   *  null if there's no such trip. */
+  async saveItems(id: string, entries: TripItem[]): Promise<Items | null | string> {
+    const items = this.kept<Items>(id, 'items')
+    if (!items) return null
+    const merged = mergeItems(items, entries)
+    const text = JSON.stringify(merged)
+    if (Object.keys(merged).length > ITEM_LIMITS.items || text.length > ITEM_LIMITS.bytes) return "This trip's stays, links and notes are too many to save"
+    this.ctx.storage.sql.exec('UPDATE trips SET items = ? WHERE id = ?', text, id)
     return merged
   }
 

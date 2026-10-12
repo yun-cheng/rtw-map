@@ -7,6 +7,7 @@
 //   GET|PUT|DELETE /api/trips/:id  open, save or delete a trip
 //   POST|DELETE /api/trips/:id/share  turn a trip's public link on (its token) or off
 //   PUT  /api/trips/:id/journal    add days written on a device to the trip's journal (merged day by day)
+//   PUT  /api/trips/:id/items      add the stays, albums, links and notes changed on a device (merged item by item)
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
@@ -21,6 +22,7 @@ import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, u
 import { Account, BUSY } from './account'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
 import { isShareToken, parseTripPatch } from './trips'
+import { parseItems } from '../src/store/itemsCore'
 import { parseEntries } from '../src/store/journalCore'
 
 export { Account }
@@ -201,6 +203,19 @@ async function journal(request: Request, env: Env, id: string): Promise<Response
   return saved ? json({ journal: saved }) : json({ error: 'Trip not found' }, 404)
 }
 
+/** Items changed on a device (stays, albums, links, notes), added to the trip's: answers with all of them, merged. */
+async function items(request: Request, env: Env, id: string): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  const entries = parseItems(await request.json().catch(() => null))
+  if (typeof entries === 'string') return json({ error: entries }, 400)
+  const saved = await account(env, user).saveItems(id, entries)
+  if (typeof saved === 'string') return json({ error: saved }, 413)
+  return saved ? json({ items: saved }) : json({ error: 'Trip not found' }, 404)
+}
+
 // ---------------------------------------------------------------- the assistant's runs (runs.ts)
 
 /** Starts a run: saves the trip and chat as on screen, adds the run, and hands it to the runner. */
@@ -361,6 +376,11 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (journalPath) {
     if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return journal(request, env, journalPath[1])
+  }
+  const itemsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/items$/)
+  if (itemsPath) {
+    if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return items(request, env, itemsPath[1])
   }
   if (pathname === '/api/admin/limits') {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)

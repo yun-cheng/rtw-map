@@ -150,24 +150,6 @@ describe('a read-only trip', () => {
   })
 })
 
-describe('notes', () => {
-  it('keeps a note per city and journey for the whole trip, also read-only, and saves them', () => {
-    state().setNote('cities', 'krakow', 'Hostel on Floriańska')
-    state().setNote('legs', 'krakow>warsaw', 'EIP 06:40')
-    state().addPlan()
-    expect(state().notes.cities?.krakow).toBe('Hostel on Floriańska')
-    state().setReadOnly(true)
-    state().setNote('cities', 'krakow', 'Changed hostel')
-    expect(state().notes.cities?.krakow).toBe('Changed hostel')
-    expect(tripData(state()).notes).toEqual({ cities: { krakow: 'Changed hostel' }, legs: { 'krakow>warsaw': 'EIP 06:40' } })
-    expect(loadTrip(tripData(state())).notes.legs?.['krakow>warsaw']).toBe('EIP 06:40')
-
-    state().setNote('cities', 'krakow', '  ')
-    state().setNote('legs', 'krakow>warsaw', '')
-    expect(tripData(state())).not.toHaveProperty('notes')
-  })
-})
-
 describe('editing a trip under way by hand', () => {
   afterEach(() => {
     vi.useRealTimers()

@@ -39,7 +39,8 @@ export function parseTripPatch(raw: unknown): TripPatch | string {
   return patch
 }
 
-/** The user's notes on cities and journeys: text only, each cut to the most allowed; anything else is dropped. */
+/** The user's notes on cities and journeys, as the app kept them before items (src/store/itemsCore.ts; an app open
+ *  since then still sends them, and the app moves them into items): text only, each cut to the most allowed. */
 function notesOf(raw: unknown): { notes?: Record<'cities' | 'legs', Record<string, string>> } {
   if (!raw || typeof raw !== 'object') return {}
   const texts = (x: unknown) => Object.fromEntries(

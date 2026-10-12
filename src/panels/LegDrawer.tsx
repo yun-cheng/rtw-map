@@ -68,7 +68,7 @@ export function LegDrawer({ index }: { index: number }) {
           </ol>
         </Section>
       )}
-      <NoteBox key={legKey(leg.from, leg.to)} kind="legs" id={legKey(leg.from, leg.to)} placeholder="Anything to remember about this journey: your ticket, the bus time, where it leaves from…" />
+      <NoteBox key={legKey(leg.from, leg.to)} at={legKey(leg.from, leg.to)} placeholder="Anything to remember about this journey: your ticket, the bus time, where it leaves from…" />
       </Sections>
     </div>
   )

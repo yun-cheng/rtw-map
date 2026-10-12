@@ -4,6 +4,7 @@ import { ChevronRight, Sparkles } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, SCHENGEN_LIMIT, schengenApplies, schengenUsed, travelDay, type Leg } from '../planner'
+import { useNote } from '../store/items'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, cityName, dayDate, duration, flag, transitUrl } from '../ui/format'
 import { Button, Named, Section, Sections } from '../ui/kit'
@@ -25,7 +26,7 @@ function fromToday(today: string, iso: string) {
 type Journey = { leg: Leg; date: string; index?: number; home?: boolean }
 
 export function Today() {
-  const { plan, input, notes, select, askAssistant } = useTrip()
+  const { plan, input, select, askAssistant } = useTrip()
   const today = localToday()
   if (!plan || !isTravelling(input, today)) return null
   const { day, of, at } = travelDay(input, plan.stops, today)
@@ -84,12 +85,7 @@ export function Today() {
       <Sections>
         {journey && <JourneyCard journey={journey} today={today} />}
         {/* The journey's own note (the ticket, the bus time…), when written: from the journey panel. */}
-        {journey && notes.legs?.[legKey(journey.leg.from, journey.leg.to)]?.trim() && (
-          <NoteBox
-            key={legKey(journey.leg.from, journey.leg.to)} kind="legs" id={legKey(journey.leg.from, journey.leg.to)} title="Journey notes"
-            placeholder="Your ticket, the bus time, where it leaves from…"
-          />
-        )}
+        {journey && <JourneyNote key={legKey(journey.leg.from, journey.leg.to)} at={legKey(journey.leg.from, journey.leg.to)} />}
         {stop && (
           <Section title="Weather" aside={<OpenTab cityId={stop.cityId} section="weather" label="Next 10 days" />}>
             <div className="grid grid-cols-2 gap-3">
@@ -118,6 +114,12 @@ export function Today() {
       </Sections>
     </div>
   )
+}
+
+/** A journey's note, when written. */
+function JourneyNote({ at }: { at: string }) {
+  if (!useNote(at).trim()) return null
+  return <NoteBox at={at} title="Journey notes" placeholder="Your ticket, the bus time, where it leaves from…" />
 }
 
 /** The journey: when, how, how long and for how much, the timetable's tips and its checks; on its day or the day

@@ -5,15 +5,16 @@
 // Signed out, the app keeps one trip in this browser only (store/trip.ts persists it locally).
 // Offline, the trip on screen is the one kept in the browser: edits are marked unsaved (in the browser too, so a
 // reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
-// The trip's journal is sent on its own (store/journal.ts): merged day by day on the server, also while the assistant
-// works on the trip.
+// The trip's journal and the cities' items (stays, albums, links, notes) are sent on their own (store/journal.ts,
+// items.ts): merged entry by entry on the server, also while the assistant works on the trip.
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
 import type { Book, BookState } from './book'
+import { setItemsSync, useItems, type Items } from './items'
 import { setJournalSync, useJournal, type Journal } from './journal'
-import { newTripInput, useTrip, type TripData } from './trip'
+import { localNotes, newTripInput, useTrip, type TripData } from './trip'
 import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
 
@@ -30,7 +31,7 @@ type SavedState = {
   create: (name: string) => Promise<void>
   rename: (id: string, name: string) => Promise<void>
   remove: (id: string) => Promise<void>
-  /** Turns the trip's public link on or off (anyone with it sees the trip read-only, without the notes and chat). */
+  /** Turns the trip's public link on or off (anyone with it sees the trip read-only, without the notes, items and chat). */
   setShared: (id: string, on: boolean) => Promise<void>
 }
 
@@ -52,7 +53,7 @@ const call = async (method: string, url: string, body?: unknown) => {
   return data
 }
 
-/** The open trip as saved: the active plan's setup and stops, all of its plans, and the trip's own settings and notes. */
+/** The open trip as saved: the active plan's setup and stops, all of its plans, and the trip's own settings. */
 const tripData = (): TripData => saveable(useTrip.getState())
 const chatData = (): SavedChat => {
   const { messages, contents, note } = useChat.getState()
@@ -101,18 +102,10 @@ const unsaved = () => {
 let applying = false
 let timer: ReturnType<typeof setTimeout> | undefined
 
-/** The run's trip is the one sent when it started: notes written on the page since then stay (the run never changes
- *  notes). */
-function keepNotes(load: () => void) {
-  const { notes } = useTrip.getState()
-  load()
-  useTrip.setState({ notes })
-}
-
 /** What the server keeps of a trip apart from its data, merged entry by entry. */
-type Kept = { journal?: Journal | null }
+type Kept = { journal?: Journal | null; items?: Items | null }
 
-/** Puts a saved trip, its chat and its journal on screen (`kept` none: the journal on this device). */
+/** Puts a saved trip, its chat, its journal and items on screen (`kept` none: those on this device). */
 function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, kept: Kept = {}) {
   applying = true
   useTrip.getState().openTrip(data, keepView)
@@ -121,7 +114,11 @@ function show(id: string, data: TripData | null, chat: SavedChat | null, keepVie
   remember(id)
   useSaved.setState({ activeId: id })
   useJournal.getState().open(id, kept.journal)
+  useItems.getState().open(id, kept.items)
+  // (Notes kept with the trip's data before items.)
+  useItems.getState().takeNotes(data?.notes)
   void journalSync.send()
+  void itemsSync.send()
 }
 
 export const useSaved = create<SavedState>()((set, get) => {
@@ -138,7 +135,7 @@ export const useSaved = create<SavedState>()((set, get) => {
       set({ status: 'loading', error: null })
       try {
         const trip = await call('GET', `/api/trips/${id}`)
-        show(id, trip.data, trip.chat, keepView, { journal: trip.journal ?? {} })
+        show(id, trip.data, trip.chat, keepView, { journal: trip.journal ?? {}, items: trip.items ?? {} })
         set({ status: 'idle' })
         // The assistant is still answering on the server: follow it.
         if (trip.run) {
@@ -156,7 +153,7 @@ export const useSaved = create<SavedState>()((set, get) => {
         const data: TripData = { input: newSetup(), stops: [] }
         const created: TripSummary = await call('POST', '/api/trips', { name, data })
         upsert(created)
-        show(created.id, data, null, false, { journal: {} })
+        show(created.id, data, null, false, { journal: {}, items: {} })
         set({ status: 'saved', error: null })
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
@@ -232,9 +229,9 @@ function changed() {
   timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
 }
 
-/** Sends what a book (book.ts: the journal) has changed on this device for the open trip, a moment after a
+/** Sends what a book (book.ts: the journal, the items) has changed on this device for the open trip, a moment after a
  *  change: the server answers with all of the trip's, merged. */
-function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journal') {
+function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journal' | 'items') {
   const DELAY_MS = 1500
   let timer: ReturnType<typeof setTimeout> | undefined
   let sending = false
@@ -279,11 +276,15 @@ function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journa
   }
 }
 const journalSync = bookSync(useJournal, 'journal')
+const itemsSync = bookSync(useItems, 'items')
 setJournalSync(journalSync.soon)
+setItemsSync(itemsSync.soon)
+// Notes this browser kept with its trip before items: into the trip's items.
+if (!SHARED_TOKEN) useItems.getState().takeNotes(localNotes)
 
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
-  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly || s.notes !== prev.notes) changed()
+  if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly) changed()
 })
 useChat.subscribe((s, prev) => {
   if (!s.busy && (s.messages !== prev.messages || s.contents !== prev.contents)) changed()
@@ -295,10 +296,12 @@ if (typeof window !== 'undefined') {
   window.addEventListener('online', () => {
     void flush()
     void journalSync.send()
+    void itemsSync.send()
   })
   window.addEventListener('pagehide', () => {
-    // The journal's last days, if not sent yet.
+    // The journal's and items' last changes, if not sent yet.
     journalSync.last()
+    itemsSync.last()
     const id = useSaved.getState().activeId
     if (!id || !dirty) return
     void fetch(`/api/trips/${id}`, {
@@ -340,7 +343,7 @@ async function follow(tripId: string, run: Run) {
     if (now.run.reply?.spent) useChat.setState({ spent: now.run.reply.spent })
     if (now.data && now.run.status === 'running') {
       applying = true
-      keepNotes(() => useTrip.getState().openTrip(now.data!, true))
+      useTrip.getState().openTrip(now.data!, true)
       applying = false
     }
     version = now.run.version
@@ -349,7 +352,7 @@ async function follow(tripId: string, run: Run) {
     try {
       const trip = await call('GET', `/api/trips/${tripId}`)
       if (useSaved.getState().activeId !== tripId) break
-      keepNotes(() => show(tripId, trip.data, trip.chat, true, { journal: trip.journal }))
+      show(tripId, trip.data, trip.chat, true, { journal: trip.journal, items: trip.items })
       // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
       // again, in the chat (saved as usual).
       const last = useChat.getState().messages.at(-1)
@@ -421,8 +424,9 @@ async function signedIn() {
       const created: TripSummary = await call('POST', '/api/trips', { name: 'My trip', data: tripData(), chat: chatData() })
       useSaved.setState({ trips: [created, ...trips], activeId: created.id, status: 'saved' })
       remember(created.id)
-      // (Its journal too, written signed out.)
+      // (Its journal and items too, written signed out.)
       useJournal.getState().adopt(created.id)
+      useItems.getState().adopt(created.id)
     } else {
       await useSaved.getState().open(lastId && trips.some((t) => t.id === lastId) ? lastId : trips[0].id)
     }
@@ -442,6 +446,7 @@ function signedOut() {
   useChat.getState().clear()
   applying = false
   useJournal.getState().clear()
+  useItems.getState().clear()
 }
 
 useAccount.subscribe((s, prev) => {
@@ -452,6 +457,7 @@ useAccount.subscribe((s, prev) => {
     useSaved.setState({ activeId: remembered(), status: unsaved() === remembered() ? 'offline' : 'idle' })
     dirty = unsaved() === remembered()
     useJournal.getState().open(remembered()!)
+    useItems.getState().open(remembered()!)
   }
   // Back online but signed out (the session ended meanwhile): the edits stay marked, sent at the next sign-in.
   if (prev.offline && !s.offline && !s.user) useSaved.setState({ activeId: null, status: 'idle' })

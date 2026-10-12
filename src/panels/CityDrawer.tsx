@@ -708,7 +708,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         </Section>
         </>
       ) : tabInfo.key === 'notes' ? (
-        <NoteBox kind="cities" id={cityId} tall placeholder={`Anything to remember about ${city.name}: where you're staying, a friend's number, places to try…`} />
+        <NoteBox at={cityId} tall placeholder={`Anything to remember about ${city.name}: where you're staying, a friend's number, places to try…`} />
       ) : (
         (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
       )}

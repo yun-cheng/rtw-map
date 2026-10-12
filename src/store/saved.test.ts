@@ -18,13 +18,16 @@ const { useTrip } = await import('./trip')
 const { useSaved } = await import('./saved')
 const { useJournal } = await import('./journal')
 const { mergeJournal } = await import('./journalCore')
+const { useItems } = await import('./items')
+const { mergeItems } = await import('./itemsCore')
 
-type Call = { method: string; url: string; body: { data?: { input?: { wishes?: string } }; entries?: { text: string }[] } | null }
+type Call = { method: string; url: string; body: { data?: { input?: { wishes?: string }; notes?: unknown }; entries?: { text?: string; id?: string }[] } | null }
 let calls: Call[] = []
 /** The server: one trip, "t1", whose saved data is what was last sent to it, and its journal (one day written on
  *  another device). */
-function server({ offline = false } = {}) {
-  let saved: unknown = { input: useTrip.getState().input, stops: [] }
+function server({ offline = false, notes }: { offline?: boolean; notes?: Record<string, Record<string, string>> } = {}) {
+  let saved: unknown = { input: useTrip.getState().input, stops: [], ...(notes && { notes }) }
+  let items: Record<string, { id: string; kind: 'stay'; at: string; title?: string; updatedAt: number }> = { 'stay:l': { id: 'stay:l', kind: 'stay', at: 'krakow', title: 'from the laptop', updatedAt: 1 } }
   let journal: Record<string, { date: string; highlight: string; text: string; updatedAt: number }> = { '2027-05-01': { date: '2027-05-01', highlight: '', text: 'on the laptop', updatedAt: 1 } }
   calls = []
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
@@ -39,7 +42,11 @@ function server({ offline = false } = {}) {
       saved = body.data
       return json(summary)
     }
-    if (url === '/api/trips/t1' && method === 'GET') return json({ data: saved, chat: null, journal })
+    if (url === '/api/trips/t1' && method === 'GET') return json({ data: saved, chat: null, journal, items })
+    if (url === '/api/trips/t1/items' && method === 'PUT') {
+      items = mergeItems(items, body.entries) as typeof items
+      return json({ items })
+    }
     if (url === '/api/trips/t1/journal' && method === 'PUT') {
       journal = mergeJournal(journal, body.entries)
       return json({ journal })
@@ -54,6 +61,7 @@ beforeEach(() => {
   useAccount.setState({ loaded: false, offline: false, user: null })
   useSaved.setState({ trips: [], activeId: null, status: 'idle', error: null })
   useJournal.getState().clear()
+  useItems.getState().clear()
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -115,5 +123,25 @@ describe('saved trips, offline', () => {
     await vi.waitFor(() => expect(useJournal.getState().books.t1.pending).toEqual([]))
     const { entries } = useJournal.getState().books.t1
     expect(Object.values(entries).map((e) => e.text).sort()).toEqual(['on the laptop', 'on the phone, offline'])
+  })
+
+  it("sends a stay added offline when back online, and moves the notes kept with the trip's data into items", async () => {
+    stored.setItem('rtw-map-active-trip', 't1')
+    server({ notes: { cities: { krakow: 'Ana: +48 …' } } })
+    useAccount.setState({ loaded: true, offline: true })
+    useItems.getState().put({ id: 'stay:p', kind: 'stay', at: 'krakow', title: 'from the phone' })
+    await new Promise((r) => setTimeout(r, 1700))
+    expect(calls).toEqual([])
+
+    useAccount.setState({ offline: false, user: { sub: 'u1', name: 'U' } })
+    await vi.waitFor(() => expect(useItems.getState().books.t1?.pending).toEqual([]))
+    const sent = calls.filter((c) => c.url.endsWith('/items')).flatMap((c) => c.body?.entries?.map((e) => e.id) ?? [])
+    expect(sent.sort()).toEqual(['note:krakow', 'stay:p'])
+    const { entries } = useItems.getState().books.t1
+    expect(Object.keys(entries).sort()).toEqual(['note:krakow', 'stay:l', 'stay:p'])
+    // The trip's data is saved without them at its next change.
+    useTrip.getState().setInput({ wishes: 'slow' })
+    await vi.waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url === '/api/trips/t1' && c.body?.data?.input?.wishes === 'slow')).toBe(true), { timeout: 3000 })
+    expect(calls.findLast((c) => c.url === '/api/trips/t1' && c.method === 'PUT')?.body?.data).not.toHaveProperty('notes')
   })
 })

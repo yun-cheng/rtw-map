@@ -6,9 +6,9 @@ import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
 import { evaluatePlan, isTravelling, localToday, pastChanges, withPrefs, type CostKind, type PastChange } from '../planner'
 import { SHARED_TOKEN } from './shareLink'
-import { createTripStore, loadTrip, newTripInput, planFor, planId, tripActions, tripData, tripPlans, type TripCore, type TripData } from './tripCore'
+import { createTripStore, loadTrip, newTripInput, planFor, planId, tripActions, tripData, tripPlans, type TripCore, type TripData, type TripNotes } from './tripCore'
 
-export { MAX_NOTE_CHARS, MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
+export { MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
 export type CityTab = 'overview' | 'notes' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
@@ -98,6 +98,9 @@ export const onPastEdit = (ask: (changes: PastChange[]) => boolean) => { askPast
 /** The edits that can reach back into the trip's days so far. */
 const PAST_EDITS = ['setInput', 'setNights', 'removeStop', 'moveStop', 'reorderStops', 'addCity'] as const
 
+/** Notes this browser kept with its trip before items (store/items.ts), to move there (saved.ts). */
+export let localNotes: TripNotes | undefined
+
 /** localStorage can be missing or throw (private mode); fall back to memory. A shared trip's page (shareLink.ts) keeps
  *  everything in memory, so the visitor's own trip in this browser is neither shown nor overwritten. */
 const safeStorage = createJSONStorage(() => {
@@ -137,7 +140,6 @@ export const useTrip = create<State>()(
         activePlanId: firstPlan,
         plan: null,
         readOnly: false,
-        notes: {},
         selected: null,
         layer: 'none',
         layerMonth: 0,
@@ -234,9 +236,12 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, notes: s.notes, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
       merge: (persisted, current) => {
-        const merged = { ...current, ...(persisted as Partial<State>) }
+        const { notes, ...kept } = persisted as Partial<State> & { notes?: TripNotes }
+        // Notes were kept with the trip before items: they move there (saved.ts).
+        localNotes = notes
+        const merged = { ...current, ...kept }
         // A map view that has since been removed (Cards, English, Safety).
         if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
         // Preferences were a tab of their own; now they're in the Trip tab.

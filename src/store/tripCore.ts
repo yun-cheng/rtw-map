@@ -16,13 +16,12 @@ export type TripData = {
   input: TripInput; stops: Stop[]; plans?: TripPlan[]; activePlanId?: string
   /** Read-only: nothing about the trip changes, by hand or by the assistant, until the user makes it editable again. */
   readOnly?: boolean
+  /** The user's notes as kept before items (itemsCore.ts), where the app moves them when it opens the trip. */
   notes?: TripNotes
 }
-/** The user's own notes, per city and per journey (`from>to`, city ids): for the trip, whichever plan is shown. Private:
- *  never in a shared trip. */
+/** The user's notes, per city and per journey (`from>to`, city ids), as kept with the trip's data before items. */
 export type TripNotes = { cities?: Record<string, string>; legs?: Record<string, string> }
-export const MAX_NOTE_CHARS = 2000
-/** A journey's key in `TripNotes.legs`. */
+/** A journey's key (in items' `at`). */
 export const legKey = (from: string, to: string) => `${from}>${to}`
 export const MAX_PLANS = 8
 
@@ -48,11 +47,8 @@ export type TripCore = Display & {
   /** Nothing about the trip changes (every change below is ignored, except switching plans, to look at them) until
    *  the user turns it off: so neither they nor the assistant change it by accident, e.g. once it's under way. */
   readOnly: boolean
-  notes: TripNotes
 
   setReadOnly: (on: boolean) => void
-  /** The user's note on a city or a journey (`legKey`); empty removes it. Also on a read-only trip: notes aren't the plan. */
-  setNote: (kind: 'cities' | 'legs', key: string, text: string) => void
   setInput: (patch: Partial<TripInput>) => void
   /** Picks a travel style: its preferences replace the style fields, and daily costs use its price level. */
   setStyle: (style: Budget) => void
@@ -97,10 +93,9 @@ export const tripPlans = (s: { plans: TripPlan[]; activePlanId: string; input: T
   s.plans.map((p) => (p.id === s.activePlanId ? { ...p, input: s.input, stops: s.stops } : p))
 
 /** The trip as saved, from its state. */
-export const tripData = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[]; readOnly?: boolean; notes?: TripNotes }): TripData => ({
+export const tripData = (s: { plans: TripPlan[]; activePlanId: string; input: TripInput; stops: Stop[]; readOnly?: boolean }): TripData => ({
   input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId,
   ...(s.readOnly && { readOnly: true }),
-  ...(s.notes && (Object.keys(s.notes.cities ?? {}).length || Object.keys(s.notes.legs ?? {}).length) && { notes: s.notes }),
 })
 
 /** Setup of a new trip: no regions yet, starting in two months. */
@@ -142,7 +137,7 @@ export function planFor(input: TripInput, stops: Stop[], feels = false): Plan | 
 
 /** A saved trip (or a new, empty one) as state; `broken` when its stops refer to data that no longer exists (they
  *  are dropped, the setup kept). */
-export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId' | 'readOnly' | 'notes'> & { broken: boolean } {
+export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId' | 'readOnly'> & { broken: boolean } {
   const norm = (x: { input: TripInput; stops?: Stop[] }) => ({ input: { ...newTripInput(), ...withPrefs(x.input) }, stops: x.stops ?? [] })
   // Trips saved before plans existed have one plan.
   const plans: TripPlan[] = data?.plans?.length
@@ -153,14 +148,14 @@ export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, '
   const { input, stops } = data && data.plans?.length ? norm(data) : plans.find((p) => p.id === activePlanId)!
   const plan = planFor(input, stops, feels)
   const broken = stops.length > 0 && !plan
-  return { input, stops: broken ? [] : stops, plan, plans, activePlanId, readOnly: data?.readOnly === true, notes: data?.notes ?? {}, broken }
+  return { input, stops: broken ? [] : stops, plan, plans, activePlanId, readOnly: data?.readOnly === true, broken }
 }
 
 type Get = () => TripCore
 type Set = (patch: Partial<TripCore>) => void
 
 /** The changes, for a store holding a `TripCore` (or more: the app's store adds what's on screen). */
-export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly' | 'notes'> {
+export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly'> {
   const actions = changes(set, get)
   // A read-only trip ignores every change (the app's own buttons are disabled too; the assistant's tools are refused).
   const guarded = Object.fromEntries(Object.entries(actions).map(([name, fn]) => [
@@ -170,15 +165,10 @@ export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 
   return {
     ...guarded,
     setReadOnly: (readOnly) => set({ readOnly }),
-    setNote: (kind, key, text) => {
-      const { [key]: _, ...others } = get().notes[kind] ?? {}
-      const note = text.slice(0, MAX_NOTE_CHARS)
-      set({ notes: { ...get().notes, [kind]: note.trim() ? { ...others, [key]: note } : others } })
-    },
   }
 }
 
-function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly' | 'notes' | 'setReadOnly' | 'setNote'> {
+function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly' | 'setReadOnly'> {
   const apply = (plan: Plan, extra: Partial<TripCore> = {}) => set({ plan, stops: toStops(plan), ...extra })
   // The checks read temperatures as the user sees them.
   const evaluate = (input: TripInput, stops: Stop[]) => evaluatePlan(ds, input, stops, { feels: get().tempFeels })

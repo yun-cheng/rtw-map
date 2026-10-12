@@ -17,7 +17,7 @@ import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
-  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, readOnly, notes } = useTrip()
+  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, readOnly } = useTrip()
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
@@ -92,7 +92,7 @@ export function Itinerary() {
                   {day}
                 </span>
                 <div className={`min-w-0 flex-1 ${time === 'done' ? 'opacity-55' : ''}`} title={time === 'done' ? 'Done: you were here' : undefined}>
-                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark note={notes.cities?.[s.cityId]} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
+                  <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark at={s.cityId} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
                   <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
                 </div>
                 {readOnly ? (
@@ -121,7 +121,7 @@ export function Itinerary() {
                       {leg.hops.length > 1 && <span className="truncate">· via {leg.hops.slice(0, -1).map((h) => cityName(h.to)).join(', ')}</span>}
                       {leg.overnight && <Badge>night</Badge>}
                       {leg.estimated && <span title="Estimated from road distance">≈</span>}
-                      <NoteMark note={notes.legs?.[legKey(leg.from, leg.to)]} />
+                      <NoteMark at={legKey(leg.from, leg.to)} />
                     </>
                   ) : (
                     <span>No known route</span>

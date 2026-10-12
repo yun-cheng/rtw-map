@@ -1,22 +1,25 @@
-// The user's own notes on a city or a journey (the trip's `notes`, store/tripCore.ts): for the trip, whichever plan is
-// shown, also on a read-only trip, and private (never in a shared trip).
+// The user's own notes on a city or a journey (a note among the trip's items, store/items.ts): for the trip, whichever
+// plan is shown, also on a read-only trip, and private (never in a shared trip).
 import { Check, Pencil, StickyNote } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
+import { noteId, useItems, useNote } from '../store/items'
+import { ITEM_LIMITS } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
-import { MAX_NOTE_CHARS, useTrip } from '../store/trip'
 import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
 
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
 
 /**
- * "My notes" for a city (`kind` cities, its id; `tall` in its own tab) or a journey (`kind` legs, `legKey(from, to)`),
- * written in Markdown: shown formatted (tasks can be ticked there), and as text to write while editing (an empty
- * note is always being written).
+ * "My notes" for a city (`at` its id; `tall` in its own tab) or a journey (`at` its `legKey(from, to)`), written in
+ * Markdown: shown formatted (tasks can be ticked there), and as text to write while editing (an empty note is always
+ * being written).
  */
-export function NoteBox({ kind, id, placeholder, tall, title = 'My notes' }: { kind: 'cities' | 'legs'; id: string; placeholder: string; tall?: boolean; title?: string }) {
-  const note = useTrip((s) => s.notes[kind]?.[id] ?? '')
-  const setNote = useTrip((s) => s.setNote)
+export function NoteBox({ at, placeholder, tall, title = 'My notes' }: { at: string; placeholder: string; tall?: boolean; title?: string }) {
+  const note = useNote(at)
+  const put = useItems((s) => s.put)
+  const remove = useItems((s) => s.remove)
+  const setNote = (text: string) => (text.trim() ? put({ id: noteId(at), kind: 'note', at, text }) : remove(noteId(at)))
   const [editing, setEditing] = useState(false)
   // Someone else's shared trip: its notes are the owner's own, and aren't in it.
   if (SHARED_TOKEN) return null
@@ -42,10 +45,10 @@ export function NoteBox({ kind, id, placeholder, tall, title = 'My notes' }: { k
             onChange={(e) => {
               // (A note started from empty stays in writing until Done.)
               setEditing(true)
-              setNote(kind, id, e.target.value)
+              setNote(e.target.value)
             }}
             rows={Math.min(tall ? 24 : 10, Math.max(tall ? 10 : note ? 3 : 2, note.split('\n').length + 1))}
-            maxLength={MAX_NOTE_CHARS}
+            maxLength={ITEM_LIMITS.textChars}
             placeholder={placeholder}
             aria-label="My notes"
             className="w-full resize-y rounded-md border border-line bg-panel px-2.5 py-1.5 font-mono text-[12.5px] outline-none focus:border-accent"
@@ -58,7 +61,7 @@ export function NoteBox({ kind, id, placeholder, tall, title = 'My notes' }: { k
         // A double click (or Edit) to change it.
         <div onDoubleClick={() => setEditing(true)} title="Double-click to edit">
           <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{note}</p>}>
-            <NoteMarkdown text={note} onToggle={(n) => setNote(kind, id, toggleTask(note, n))} />
+            <NoteMarkdown text={note} onToggle={(n) => setNote(toggleTask(note, n))} />
           </Suspense>
         </div>
       )}
@@ -67,8 +70,9 @@ export function NoteBox({ kind, id, placeholder, tall, title = 'My notes' }: { k
 }
 
 /** A mark by a stop or journey in the itinerary that has a note; the note on hover. */
-export function NoteMark({ note }: { note?: string }) {
-  if (!note) return null
+export function NoteMark({ at }: { at: string }) {
+  const note = useNote(at)
+  if (!note.trim()) return null
   return (
     <span title={note} aria-label="Has a note" className="shrink-0 text-muted">
       <StickyNote size={12} />
