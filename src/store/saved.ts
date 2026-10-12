@@ -7,11 +7,12 @@
 // reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
 // The trip's journal is sent on its own (store/journal.ts): merged day by day on the server, also while the assistant
 // works on the trip.
-import { create } from 'zustand'
+import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
-import { setJournalSync, useJournal, type DayEntry, type Journal } from './journal'
+import type { Book, BookState } from './book'
+import { setJournalSync, useJournal, type Journal } from './journal'
 import { newTripInput, useTrip, type TripData } from './trip'
 import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
@@ -108,16 +109,19 @@ function keepNotes(load: () => void) {
   useTrip.setState({ notes })
 }
 
-/** Puts a saved trip, its chat and its journal on screen. */
-function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, journal: Journal | null = {}) {
+/** What the server keeps of a trip apart from its data, merged entry by entry. */
+type Kept = { journal?: Journal | null }
+
+/** Puts a saved trip, its chat and its journal on screen (`kept` none: the journal on this device). */
+function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, kept: Kept = {}) {
   applying = true
   useTrip.getState().openTrip(data, keepView)
   useChat.getState().load(chat)
   applying = false
   remember(id)
   useSaved.setState({ activeId: id })
-  useJournal.getState().open(id, journal)
-  void sendJournal()
+  useJournal.getState().open(id, kept.journal)
+  void journalSync.send()
 }
 
 export const useSaved = create<SavedState>()((set, get) => {
@@ -134,7 +138,7 @@ export const useSaved = create<SavedState>()((set, get) => {
       set({ status: 'loading', error: null })
       try {
         const trip = await call('GET', `/api/trips/${id}`)
-        show(id, trip.data, trip.chat, keepView, trip.journal ?? {})
+        show(id, trip.data, trip.chat, keepView, { journal: trip.journal ?? {} })
         set({ status: 'idle' })
         // The assistant is still answering on the server: follow it.
         if (trip.run) {
@@ -152,7 +156,7 @@ export const useSaved = create<SavedState>()((set, get) => {
         const data: TripData = { input: newSetup(), stops: [] }
         const created: TripSummary = await call('POST', '/api/trips', { name, data })
         upsert(created)
-        show(created.id, data, null)
+        show(created.id, data, null, false, { journal: {} })
         set({ status: 'saved', error: null })
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
@@ -228,36 +232,54 @@ function changed() {
   timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
 }
 
-const JOURNAL_DELAY_MS = 1500
-let journalTimer: ReturnType<typeof setTimeout> | undefined
-let sendingJournal = false
-/** The open trip's journal days changed here, sent (the server answers with its whole journal, merged). */
-async function sendJournal() {
-  clearTimeout(journalTimer)
-  journalTimer = undefined
-  const id = useSaved.getState().activeId
-  const book = useJournal.getState().books[id ?? '']
-  if (!id || useJournal.getState().key !== id || !book?.pending.length || sendingJournal) return
-  // (Offline: sent once the account is reached again.)
-  if (useAccount.getState().offline) return
-  const entries = book.pending.map((d) => book.entries[d]).filter((e): e is DayEntry => !!e)
-  sendingJournal = true
-  try {
-    const { journal } = (await call('PUT', `/api/trips/${id}/journal`, { entries })) as { journal: Journal }
-    useJournal.getState().sent(id, entries, journal)
-  } catch (e) {
-    if (!(e instanceof Offline)) useJournal.setState({ problem: (e as Error).message })
-    return
-  } finally {
-    sendingJournal = false
+/** Sends what a book (book.ts: the journal) has changed on this device for the open trip, a moment after a
+ *  change: the server answers with all of the trip's, merged. */
+function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journal') {
+  const DELAY_MS = 1500
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let sending = false
+  const changed = (book: Book<T>) => book.pending.map((k) => book.entries[k]).filter(Boolean)
+  async function send() {
+    clearTimeout(timer)
+    timer = undefined
+    const id = useSaved.getState().activeId
+    const book = store.getState().books[id ?? '']
+    if (!id || store.getState().key !== id || !book?.pending.length || sending) return
+    // (Offline: sent once the account is reached again.)
+    if (useAccount.getState().offline) return
+    const entries = changed(book)
+    sending = true
+    try {
+      const answer = (await call('PUT', `/api/trips/${id}/${path}`, { entries })) as Record<typeof path, Record<string, T>>
+      store.getState().sent(id, entries, answer[path])
+    } catch (e) {
+      if (!(e instanceof Offline)) store.setState({ problem: (e as Error).message })
+      return
+    } finally {
+      sending = false
+    }
+    // Changed again meanwhile.
+    if (store.getState().books[id]?.pending.length) timer = setTimeout(() => void send(), DELAY_MS)
   }
-  // Written again meanwhile.
-  if (useJournal.getState().books[id]?.pending.length) journalTimer = setTimeout(() => void sendJournal(), JOURNAL_DELAY_MS)
+  return {
+    send,
+    soon: () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void send(), DELAY_MS)
+    },
+    /** The page is closing: what's waiting, sent anyway. */
+    last: () => {
+      const id = useSaved.getState().activeId
+      const book = store.getState().books[id ?? '']
+      if (!id || !timer || !book?.pending.length) return
+      void fetch(`/api/trips/${id}/${path}`, {
+        method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: changed(book) }),
+      })
+    },
+  }
 }
-setJournalSync(() => {
-  clearTimeout(journalTimer)
-  journalTimer = setTimeout(() => void sendJournal(), JOURNAL_DELAY_MS)
-})
+const journalSync = bookSync(useJournal, 'journal')
+setJournalSync(journalSync.soon)
 
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
@@ -272,18 +294,12 @@ if (typeof window !== 'undefined') {
   // A save that failed for want of a connection: send it when the connection is back.
   window.addEventListener('online', () => {
     void flush()
-    void sendJournal()
+    void journalSync.send()
   })
   window.addEventListener('pagehide', () => {
-    const id = useSaved.getState().activeId
     // The journal's last days, if not sent yet.
-    const book = useJournal.getState().books[id ?? '']
-    if (id && journalTimer && book?.pending.length) {
-      void fetch(`/api/trips/${id}/journal`, {
-        method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ entries: book.pending.map((d) => book.entries[d]).filter(Boolean) }),
-      })
-    }
+    journalSync.last()
+    const id = useSaved.getState().activeId
     if (!id || !dirty) return
     void fetch(`/api/trips/${id}`, {
       method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' },
@@ -333,7 +349,7 @@ async function follow(tripId: string, run: Run) {
     try {
       const trip = await call('GET', `/api/trips/${tripId}`)
       if (useSaved.getState().activeId !== tripId) break
-      keepNotes(() => show(tripId, trip.data, trip.chat, true))
+      keepNotes(() => show(tripId, trip.data, trip.chat, true, { journal: trip.journal }))
       // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
       // again, in the chat (saved as usual).
       const last = useChat.getState().messages.at(-1)
