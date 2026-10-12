@@ -1,7 +1,8 @@
 // What the user keeps for a city (the trip's items, store/items.ts): where they stay, photo albums and links, with
 // their notes, in the city panel's "My visit" tab; tonight's stay on Today; a stop's stay and album by it in the
 // itinerary, and its album in the journal. Kept per city for the trip (whichever plan), also on a read-only trip, and
-// private (never in a shared trip). A stay carries its dates, so two visits to a city each show theirs.
+// private (never in a shared trip). A stay carries its dates, so two visits to a city each show theirs. A link to a
+// social post can show the post (PostPreview.tsx).
 import { BedDouble, Camera, Check, ExternalLink, Link2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { localToday, type ScheduledStop } from '../planner'
@@ -12,6 +13,8 @@ import { useTrip } from '../store/trip'
 import { cityName, dayDate } from '../ui/format'
 import { Section } from '../ui/kit'
 import { NoteBox } from './Notes'
+import { PostPreview } from './PostPreview'
+import { socialPost } from './socialPost'
 
 /** Whether a stay is for a stop's visit (one without dates is for every visit). */
 const stayCovers = (stay: TripItem, stop: Pick<ScheduledStop, 'arrive' | 'depart'>) =>
@@ -26,6 +29,11 @@ const host = (url: string) => {
   } catch {
     return url
   }
+}
+/** A link's name when it has no title: the post's network ("Instagram post"), or the site. */
+const linkName = (url: string) => {
+  const post = socialPost(url)
+  return post ? `${post.platform} ${post.ratio ? 'video' : 'post'}` : host(url)
 }
 const mapUrl = (stay: TripItem) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([stay.title, stay.address, cityName(stay.at)].filter(Boolean).join(', '))}`
@@ -188,7 +196,7 @@ function EditorButtons({ onDone, onRemove, what }: { onDone: () => void; onRemov
 
 const LIST = {
   album: { title: 'Photos', add: 'Add an album', icon: Camera, empty: 'A Google Photos (or any) album\'s share link, to open from here, the itinerary and the journal.', placeholder: 'Album name (optional)' },
-  link: { title: 'Links', add: 'Add a link', icon: Link2, empty: 'Tours, tickets, restaurants, a saved Maps list…', placeholder: 'What it is' },
+  link: { title: 'Links', add: 'Add a link', icon: Link2, empty: 'Tours, tickets, restaurants, a saved Maps list, posts and videos (Instagram, Threads, Facebook, X, TikTok, YouTube) to see here…', placeholder: 'What it is' },
 } as const
 
 /** The city's photo albums or links: each opens in a new tab, to change by its pencil. */
@@ -203,13 +211,16 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
         {items.map((i) => (
           <li key={i.id}>
             {editing === i.id ? <LinkEditor id={i.id} cityId={cityId} kind={kind} onDone={() => setEditing(null)} /> : (
-              <div className="flex items-center gap-2 text-[13px]">
-                <Icon size={14} className="shrink-0 text-muted" />
-                {i.url
-                  ? <a href={i.url} {...external} className="flex min-w-0 flex-1 items-center gap-1 text-accent hover:underline"><span className="truncate">{i.title || host(i.url)}</span><ExternalLink size={11} className="shrink-0" /></a>
-                  : <span className="min-w-0 flex-1 truncate">{i.title}</span>}
-                <button onClick={() => setEditing(i.id)} className={small} aria-label={`Change ${i.title || 'this link'}`}><Pencil size={12} /></button>
-              </div>
+              <>
+                <div className="flex items-center gap-2 text-[13px]">
+                  <Icon size={14} className="shrink-0 text-muted" />
+                  {i.url
+                    ? <a href={i.url} {...external} className="flex min-w-0 flex-1 items-center gap-1 text-accent hover:underline"><span className="truncate">{i.title || linkName(i.url)}</span><ExternalLink size={11} className="shrink-0" /></a>
+                    : <span className="min-w-0 flex-1 truncate">{i.title}</span>}
+                  <button onClick={() => setEditing(i.id)} className={small} aria-label={`Change ${i.title || 'this link'}`}><Pencil size={12} /></button>
+                </div>
+                {kind === 'link' && i.url && <PostPreview url={i.url} />}
+              </>
             )}
           </li>
         ))}
