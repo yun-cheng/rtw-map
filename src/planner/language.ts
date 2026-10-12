@@ -10,11 +10,13 @@ export const ENGLISH_LABELS: Record<number, { short: string; long: string }> = {
 
 /**
  * How easy it is to get by in English in a city: the country estimate, one step easier in big or
- * very touristy cities, one step harder in small, less-visited towns.
+ * very touristy cities, one step harder in small, less-visited towns. Null where the country has no estimate.
  */
-export function englishLevel(ds: Dataset, cityId: string): { level: number; countryLevel: number; reason: string | null } {
+export function englishLevel(ds: Dataset, cityId: string): { level: number; countryLevel: number; reason: string | null } | null {
   const city = ds.cities[cityId]
-  const countryLevel = ds.countries[city.iso2]?.english.level ?? 3
+  // No estimate for a country with only its capital from open data (auto): none made up.
+  const countryLevel = ds.countries[city.iso2]?.english?.level
+  if (countryLevel === undefined) return null
   let level = countryLevel
   let reason: string | null = null
   if ((city.population ?? 0) >= 300_000 || city.popularity >= 5) {

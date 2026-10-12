@@ -2,22 +2,28 @@
 
 export type Meta = { source: string; updatedAt: string; confidence?: string }
 
+/**
+ * A country: hand-curated, or (`auto`) only what open data gives (GeoNames, Wikidata; build-capitals.ts) for a country
+ * with just its capital, without what's written for the app (block, religion, English, notes) and maybe without
+ * plugs, voltage or an emergency number.
+ */
 export type Country = {
   iso2: string
   name: string
-  block: string
-  fcdoSlug: string
+  block?: string
+  fcdoSlug?: string
   schengen: boolean
   eu: boolean
   currency: string
   languages: string[]
-  religion: string
+  religion?: string
   plugs: string[]
-  voltage: number
-  emergency: string
+  voltage: number | null
+  emergency: string | null
   notes: string[]
   /** How easy it is to get by in English: 1 = hard … 5 = easy almost everywhere (our estimate). */
-  english: { level: number; otherLanguages: string[]; script: string }
+  english?: { level: number; otherLanguages: string[]; script: string }
+  auto?: true
 }
 
 export type City = {
@@ -34,6 +40,8 @@ export type City = {
   costFactor: number
   longStay: boolean
   blurb: string
+  /** A country's capital added from open data only (build-capitals.ts): no tags, plain defaults for the rest. */
+  auto?: true
 }
 
 export type ClimateMonth = {

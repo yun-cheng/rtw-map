@@ -216,7 +216,13 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <p className="mt-1 text-[12px] text-muted">A night, in this city. Hotel and apartment prices aren't in our data yet.</p>
       </Section>
     ),
-    food: cost && (
+    // Without curated prices, still the national price level and Big Mac price (open data), with no prices of ours.
+    food: !cost ? ds.priceLevels.levels[city.iso2] && (
+      <Section title="Price level">
+        <p className="text-[13px] text-muted">No prices for {country.name} yet.</p>
+        <PriceLevel iso2={city.iso2} countryName={country.name} />
+      </Section>
+    ) : (
       <Section title="Food & drink" aside={roughCosts}>
         <Row label="Local meal" hint={COST_HINTS.mealLocal}>{fmt(cost.mealLocal * city.costFactor)}</Row>
         <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{fmt(cost.mealDinner * city.costFactor)}</Row>
@@ -232,7 +238,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ),
-    money: pay && (
+    money: pay && card && (
       <Section title="Paying & cash" aside={<Badge tone="warn">estimate</Badge>}>
         {notes('money')}
         <div className="flex items-center gap-2">
@@ -294,7 +300,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <p className="text-[13px] text-muted">No data for {city.name} yet.</p>
         )}
         <div className="mt-2">
-          <Row label="Emergency number">{country.emergency}</Row>
+          {country.emergency && <Row label="Emergency number">{country.emergency}</Row>}
         </div>
       </Section>
     ),
@@ -313,7 +319,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
 
       </Section>
     ),
-    vaccines: health && (
+    // CDC's advice where it has a page, even for a country without a curated health entry (only its capital, open data).
+    vaccines: (health || vaccines.source === 'cdc') && (
       <Section title="Vaccines & medicines">
         <p className="mb-1 text-[12px] text-muted">To discuss with a travel clinic, ideally 4–6 weeks before going.</p>
         <ul className="list-disc space-y-0.5 pl-4 text-[13px]">
@@ -327,7 +334,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               ))}
         </ul>
         <Links>
-          <a className="text-accent hover:underline" href={`https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
+          <a className="text-accent hover:underline" href={vaccines.url ?? `https://wwwnc.cdc.gov/travel/destinations/traveler/none/${health?.cdcSlug}`} target="_blank" rel="noreferrer">CDC: {country.name} ↗</a>
         </Links>
       </Section>
     ),
@@ -345,7 +352,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
         {mobile && <p className="mt-1 text-[13px]">{mobile.long}.</p>}
         <div className="mt-2">
-          <Row label="Plugs">Type {country.plugs.join(' / ')} · {country.voltage}V</Row>
+          {(country.plugs.length > 0 || country.voltage) && (
+            <Row label="Plugs">{[country.plugs.length && `Type ${country.plugs.join(' / ')}`, country.voltage && `${country.voltage}V`].filter(Boolean).join(' · ')}</Row>
+          )}
         </div>
       </Section>
     ),
@@ -388,7 +397,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             ))}
           </ul>
         ) : (
-          <p className="text-[13px] text-muted">No timetable data yet; travel times are estimated from road distance.</p>
+          <p className="text-[13px] text-muted">
+            {city.auto
+              ? `No connections yet: plans leave ${country.name} out until it has curated cities.`
+              : 'No timetable data yet; travel times are estimated from road distance.'}
+          </p>
         )}
       </Section>
     ),
@@ -410,7 +423,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           ))}
         </div>
         <div className="mt-2">
-          <Row label="Emergency number">{country.emergency}</Row>
+          {country.emergency && <Row label="Emergency number">{country.emergency}</Row>}
           <Row label="Travel insurance">Strongly recommended</Row>
         </div>
         {adv.excludedByDefault && <p className="mt-1 text-[13px]">⚠ Many policies don't cover countries with do-not-travel advice: check yours covers {country.name}.</p>}
@@ -423,21 +436,25 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     language: (
       <Section title="Language" aside={<Badge tone="warn">estimate</Badge>}>
         {notes('language')}
-        <div className="flex items-center gap-2">
-          <span className="text-[13px] text-muted">English</span>
-          <LevelBar level={english.level} label="English" />
-          <b className="text-[13px]">{ENGLISH_LABELS[english.level].short}</b>
-        </div>
-        <p className="mt-1 text-[13px]">{ENGLISH_LABELS[english.level].long}.</p>
-        {english.reason && (
-          <p className="mt-1 text-[12px] text-muted">
-            {country.name} overall: {ENGLISH_LABELS[english.countryLevel].short.toLowerCase()}; {english.level > english.countryLevel ? 'easier' : 'harder'} here ({english.reason}).
-          </p>
+        {english && (
+          <>
+            <div className="flex items-center gap-2">
+              <span className="text-[13px] text-muted">English</span>
+              <LevelBar level={english.level} label="English" />
+              <b className="text-[13px]">{ENGLISH_LABELS[english.level].short}</b>
+            </div>
+            <p className="mt-1 text-[13px]">{ENGLISH_LABELS[english.level].long}.</p>
+            {english.reason && (
+              <p className="mt-1 text-[12px] text-muted">
+                {country.name} overall: {ENGLISH_LABELS[english.countryLevel].short.toLowerCase()}; {english.level > english.countryLevel ? 'easier' : 'harder'} here ({english.reason}).
+              </p>
+            )}
+          </>
         )}
-        <div className="mt-2">
+        <div className={english ? 'mt-2' : undefined}>
           <Row label="Local language">{country.languages.join(', ')}</Row>
-          {country.english.otherLanguages.length > 0 && <Row label="Also useful">{country.english.otherLanguages.join('; ')}</Row>}
-          <Row label="Alphabet">{country.english.script}</Row>
+          {!!country.english?.otherLanguages.length && <Row label="Also useful">{country.english.otherLanguages.join('; ')}</Row>}
+          {country.english && <Row label="Alphabet">{country.english.script}</Row>}
         </div>
       </Section>
     ),
@@ -489,7 +506,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       <Section title="People & culture">
         {city.population && <Row label="City population">{compact(city.population)}</Row>}
         {pop && <Row label={`${country.name} population (${pop.year})`}>{compact(pop.value)}</Row>}
-        <Row label="Religion">{country.religion}</Row>
+        {country.religion && <Row label="Religion">{country.religion}</Row>}
         {country.notes.length > 0 && (
           <>
           <div className="mt-2 mb-1 text-[12px] font-semibold">Good to know</div>
@@ -560,11 +577,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(climShown ? [{ icon: '☀️', label: `Weather in ${monthName}`, value: `${climShown.feels ? 'feels like ' : ''}${range(climShown.low, climShown.high)}, ~${Math.round(clim!.rainDays)} rain days${weatherNote ? ` (${weatherNote})` : ''}`, tab: 'weather' as const, warn: !!weatherNote }] : []),
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tab: 'weather' as const, warn: checksIn('air').length > 0 }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tab: 'health' as const }] : []),
-    ...(health ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tab: 'health' as const }] : []),
+    ...(health || vaccines.source === 'cdc' ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tab: 'health' as const }] : []),
     ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))} (${dayNote})`, tab: 'costs' as const, part: 'daily', warn: dayChecks.length > 0 }] : []),
-    ...(pay ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
+    ...(card ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
     ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tab: 'daily' as const }] : []),
-    { icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tab: 'daily' as const },
+    ...(english ? [{ icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tab: 'daily' as const }] : []),
   ].sort((a, b) =>
     // Problems first, most serious first (can't get in, then don't go, then cash only); then the stop's warnings; then
     // in tab order.
@@ -607,7 +624,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
               {!readOnly && <Button className="ml-auto" onClick={() => { if (!confirmRemove(city.name, stop.nights)) return; removeStop(stopIndex); select(null) }}>Remove</Button>}
             </>
-          ) : plan && !readOnly ? (
+          ) : plan && !readOnly && !city.auto ? (
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
           ) : null}
         </div>
@@ -657,10 +674,16 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       {tabInfo.key === 'overview' ? (
         <>
         <Section>
-          <p className="text-[13px]">{city.blurb}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-1">
-            {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
-          </div>
+          {city.blurb && <p className="text-[13px]">{city.blurb}</p>}
+          {city.tags.length > 0 && (
+            <div className="mt-2 flex flex-wrap items-center gap-1">
+              {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
+            </div>
+          )}
+          {/* A capital from open data only: no suggested stay (its days are a plain default), so say what it has. */}
+          {city.auto ? (
+            <p className={`${city.blurb ? 'mt-2 ' : ''}text-[12px] text-muted`}>Only open data here so far (GeoNames, Wikidata, official advice, weather and map data): no local tips or prices yet, and plans leave it out.</p>
+          ) : (
           <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
             <span className="text-muted">Suggested days:</span>
             {PACES.map((p) => (
@@ -673,6 +696,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
               </span>
             ))}
           </div>
+          )}
         </Section>
 
         <Section title="At a glance">
@@ -698,7 +722,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       ) : tabInfo.key === 'notes' ? (
         <VisitTab cityId={cityId} />
       ) : (
-        (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
+        (part?.sections ?? tabInfo.sections).some((k) => sections[k])
+          ? (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
+          // Nothing for this city yet (a capital from open data has no phrases; the UK has no UK travel advice).
+          : <Section><p className="text-[13px] text-muted">Nothing here for {city.name} yet.</p></Section>
       )}
       </Sections>
     </div>

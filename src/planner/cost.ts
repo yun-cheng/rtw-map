@@ -81,11 +81,12 @@ export function estimatedCosts(ds: Dataset, iso2: string): CostProfile | null {
   return result
 }
 
-/** The cost profile for a country: hand-entered if we have it, otherwise estimated from the price level. */
+/**
+ * The cost profile for a country: hand-entered, or none. (No estimate from the price level for the others: that
+ * would be our curated prices scaled, made-up numbers for a country we have no prices for.)
+ */
 export function costProfile(ds: Dataset, iso2: string): { profile: CostProfile; estimated: boolean } | null {
-  if (ds.costs[iso2]) return { profile: ds.costs[iso2], estimated: false }
-  const est = estimatedCosts(ds, iso2)
-  return est ? { profile: est, estimated: true } : null
+  return ds.costs[iso2] ? { profile: ds.costs[iso2], estimated: false } : null
 }
 
 /** The day choices the preferences give every city (no taxis: those are chosen per city). */

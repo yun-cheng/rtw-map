@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Check, ChevronRight, Search } from 'lucide-react'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, citiesIn, dayRangeText, daysBetween, isTravelling, localToday, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
+import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, plannedIn, dayRangeText, daysBetween, isTravelling, localToday, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
@@ -23,7 +23,8 @@ const MODE_STYLE: Record<CountryMode, string> = {
 const NEXT_MODE: Record<CountryMode, CountryMode> = { optional: 'must', must: 'excluded', excluded: 'optional' }
 
 const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
-const hasCities = (iso2: string) => citiesIn(ds).has(iso2)
+/** Whether plans go there: a country with curated cities (not just its capital from open data). */
+const planned = (iso2: string) => plannedIn(ds).has(iso2)
 
 export function SetupPanel() {
   const s = useTrip()
@@ -150,8 +151,8 @@ export function SetupPanel() {
                             <button
                               onClick={() => setCountry({ mode: NEXT_MODE[c.mode] })}
                               onMouseEnter={() => setHovered([c.iso2], g.countries.map((y) => y.iso2))} onMouseLeave={() => setHovered(g.countries.map((y) => y.iso2))}
-                              className={`min-w-0 truncate rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${hasCities(c.iso2) ? '' : 'opacity-60'}`}
-                              title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${hasCities(c.iso2) ? '' : ' · no cities in the app yet'} (click to change)`}
+                              className={`min-w-0 truncate rounded-full border px-2 py-0.5 text-[12px] ${MODE_STYLE[c.mode]} hover:border-point hover:ring-1 hover:ring-point ${planned(c.iso2) ? '' : 'opacity-60'}`}
+                              title={`${c.mode === 'must' ? 'Must visit' : c.mode === 'optional' ? 'Optional' : 'Excluded'}${adv?.excludedByDefault ? ' · do-not-travel advisory' : ''}${planned(c.iso2) ? '' : ' · not in plans yet (only open data there)'} (click to change)`}
                             >
                               {flag(c.iso2)} {countryName(c.iso2)}
                               {adv?.excludedByDefault && ' ⚠'}
@@ -325,8 +326,8 @@ function GiveOrTake({ unit, children }: { unit: string; children: React.ReactNod
 
 /**
  * Adding to the trip: whole regions or single countries, ticked in the list or clicked on the map (both toggle at
- * once, so several can be picked in a row). Every country in the world is here; those the app has no cities in yet
- * say so.
+ * once, so several can be picked in a row). Every country in the world is here; those plans leave out (no curated
+ * cities yet, just the capital from open data) say so.
  */
 function Picker() {
   const { input, picking, setPicking, toggleRegion, toggleCountry, addAs, setAddAs, setHovered } = useTrip()
@@ -365,22 +366,22 @@ function Picker() {
                 <PickRow
                   key={iso2} on={!!mode && mode !== 'excluded'} onClick={() => toggleCountry(iso2)} onHover={() => setHovered([iso2])}
                   label={`${flag(iso2)} ${countryName(iso2)}`}
-                  sub={[REGION_OF[iso2], !hasCities(iso2) && 'no cities yet'].filter(Boolean).join(' · ')}
+                  sub={[REGION_OF[iso2], !planned(iso2) && 'not in plans yet'].filter(Boolean).join(' · ')}
                 />
               )
             })
           : regions.map((r) => {
-              const covered = r.countries.filter(hasCities).length
+              const covered = r.countries.filter(planned).length
               return (
                 <PickRow
                   key={r.name} on={input.groups.some((g) => g.name === r.name)} onClick={() => toggleRegion(r.name)} onHover={() => setHovered(r.countries)}
                   label={r.name}
-                  sub={`${r.countries.length} ${r.countries.length > 1 ? 'countries' : 'country'}${covered === r.countries.length ? '' : covered ? `, ${covered} with cities` : ' · no cities yet'}`}
+                  sub={`${r.countries.length} ${r.countries.length > 1 ? 'countries' : 'country'}${covered === r.countries.length ? '' : covered ? `, ${covered} in plans` : ' · not in plans yet'}`}
                 />
               )
             })}
       </div>
-      <p className="mt-1.5 text-[11px] text-muted">Or click {picking === 'country' ? 'countries' : 'regions'} on the map. A country added as optional is one the planner may leave out; countries with no cities yet can be added, and the plan leaves them out until the app covers them.</p>
+      <p className="mt-1.5 text-[11px] text-muted">Or click {picking === 'country' ? 'countries' : 'regions'} on the map. A country added as optional is one the planner may leave out; countries not in plans yet (no curated cities, only the capital from open data) can be added, and the plan leaves them out until they have some.</p>
     </div>
   )
 }

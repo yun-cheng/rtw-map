@@ -4,7 +4,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, estimatedCosts, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary, schengenUsed } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -138,17 +138,19 @@ describe('edits', () => {
 
 describe('english level', () => {
   it('is easier in big cities and harder in small towns than the country estimate', () => {
-    const ru = ds.countries.RU.english.level
-    expect(englishLevel(ds, 'moscow').level).toBe(Math.min(5, ru + 1))
-    const sigulda = englishLevel(ds, 'sigulda')
-    expect(sigulda.level).toBe(Math.max(1, ds.countries.LV.english.level - 1))
+    const ru = ds.countries.RU.english!.level
+    expect(englishLevel(ds, 'moscow')!.level).toBe(Math.min(5, ru + 1))
+    const sigulda = englishLevel(ds, 'sigulda')!
+    expect(sigulda.level).toBe(Math.max(1, ds.countries.LV.english!.level - 1))
     expect(sigulda.reason).toMatch(/small town/)
+    // No estimate made up for a country with only its capital from open data.
+    expect(englishLevel(ds, 'nairobi')).toBeNull()
   })
 
   it('adds a language note for stops where English is limited', () => {
     const input = testTrip('US')
     const stop = (cityId: string) => ({ cityId, nights: 3, locked: false, groupId: '' })
-    expect(englishLevel(ds, 'pskov').level).toBeLessThanOrEqual(2)
+    expect(englishLevel(ds, 'pskov')!.level).toBeLessThanOrEqual(2)
     const ru = evaluatePlan(ds, input, [stop('stpetersburg'), stop('pskov')])
     expect(ru.warnings.find((w) => w.kind === 'language')?.title).toMatch(/Pskov/)
     const ee = evaluatePlan(ds, input, [stop('tallinn'), stop('tartu')])
@@ -158,7 +160,9 @@ describe('english level', () => {
 
 describe('phrases', () => {
   it('has every phrase, with how to say it, in every language of every city', () => {
-    for (const id of Object.keys(ds.cities)) {
+    // Hand-curated cities only: a capital from open data has no phrases (none made up).
+    expect(phrasesFor(ds, 'nairobi')).toBeNull()
+    for (const id of Object.keys(ds.cities).filter((id) => !ds.cities[id].auto)) {
       const p = phrasesFor(ds, id)
       expect(p, id).not.toBeNull()
       if (!p!.languages.length) expect(p!.note, id).toBeTruthy()
@@ -174,8 +178,9 @@ describe('phrases', () => {
 
 describe('local transport', () => {
   it('has transport info for every city and taxi info for every country', () => {
-    for (const id of Object.keys(ds.cities)) expect(ds.localTransport.cities[id], id).toBeDefined()
-    for (const iso2 of Object.keys(ds.countries)) expect(ds.localTransport.countries[iso2], iso2).toBeDefined()
+    // Hand-curated ones: capitals from open data have none.
+    for (const c of Object.values(ds.cities)) if (!c.auto) expect(ds.localTransport.cities[c.id], c.id).toBeDefined()
+    for (const c of Object.values(ds.countries)) if (!c.auto) expect(ds.localTransport.countries[c.iso2], c.iso2).toBeDefined()
   })
 
   it('lists rentals for every city, with prices for car and scooter rentals', () => {
@@ -549,14 +554,15 @@ describe('money & payments', () => {
   const stop = (cityId: string, nights = 3) => ({ cityId, nights, locked: false, groupId: '' })
 
   it('has payment info for every country', () => {
-    for (const iso2 of Object.keys(ds.countries)) expect(ds.payments.countries[iso2], iso2).toBeDefined()
+    for (const c of Object.values(ds.countries)) if (!c.auto) expect(ds.payments.countries[c.iso2], c.iso2).toBeDefined()
   })
 
   it('rates card use per city: country level, city size, overrides, and countries where foreign cards fail', () => {
-    expect(cardLevel(ds, 'moscow').level).toBe(1) // foreign cards don't work, however big the city
-    expect(cardLevel(ds, 'theth').level).toBe(1) // city override: cash only
-    expect(cardLevel(ds, 'tirana').level).toBe(ds.payments.countries.AL.cardLevel + 1) // capital: easier
-    expect(cardLevel(ds, 'prague').level).toBe(5)
+    expect(cardLevel(ds, 'moscow')!.level).toBe(1) // foreign cards don't work, however big the city
+    expect(cardLevel(ds, 'theth')!.level).toBe(1) // city override: cash only
+    expect(cardLevel(ds, 'tirana')!.level).toBe(ds.payments.countries.AL.cardLevel + 1) // capital: easier
+    expect(cardLevel(ds, 'prague')!.level).toBe(5)
+    expect(cardLevel(ds, 'nairobi')).toBeNull() // no payments entry: none made up
   })
 
   it('warns where foreign cards fail and lists cash-only stops', () => {
@@ -571,7 +577,10 @@ describe('money & payments', () => {
 
 describe('price levels and estimated costs', () => {
   it('has a price level for every country we cover', () => {
-    for (const iso2 of Object.keys(ds.countries)) expect(ds.priceLevels.levels[iso2]?.level, iso2).toBeGreaterThan(0)
+    for (const c of Object.values(ds.countries)) if (!c.auto) expect(ds.priceLevels.levels[c.iso2]?.level, c.iso2).toBeGreaterThan(0)
+    // Most others too (not small territories the World Bank and IMF don't cover).
+    const auto = Object.values(ds.countries).filter((c) => c.auto)
+    expect(auto.filter((c) => ds.priceLevels.levels[c.iso2]).length).toBeGreaterThan(auto.length * 0.8)
   })
 
   it('describes price differences in plain language', () => {
@@ -580,15 +589,15 @@ describe('price levels and estimated costs', () => {
     expect(comparePrices(0.81, 0.8, 'Germany')).toBe('about the same as Germany')
   })
 
-  it('estimates costs from the price level for a country without hand-entered prices', () => {
+  it('has no costs for a country without hand-entered prices (none made up from the price level)', () => {
     const { PL: _removed, ...costs } = ds.costs
     const noPoland = { ...ds, costs }
-    const info = costProfile(noPoland, 'PL')
-    expect(info?.estimated).toBe(true)
-    expect(dailyCost(noPoland, 'krakow', { prefs: stylePrefs('backpacker') })).toBeGreaterThan(0)
-    // The estimate should land near our hand-entered Polish prices.
-    expect(info!.profile.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
-    expect(info!.profile.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)
+    expect(costProfile(noPoland, 'PL')).toBeNull()
+    expect(dailyCost(noPoland, 'krakow', { prefs: stylePrefs('backpacker') })).toBe(0)
+    // The price level still checks our hand-entered prices: Poland's land near what it suggests.
+    const est = estimatedCosts(ds, 'PL')!
+    expect(est.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
+    expect(est.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)
   })
 
   it('converts costs from local money at the current exchange rate', () => {
@@ -757,13 +766,14 @@ describe('a country added on its own as optional', () => {
   })
 })
 
-describe('countries without cities', () => {
+describe('countries without curated cities', () => {
   it('plans the rest of the trip and says which countries were left out', () => {
+    // Brazil has only its capital, from open data: plans leave it out.
     const input = testTrip('TW', { groups: [makeGroup(ds, 'Balkans', ['AL', 'ME', 'HR']), makeGroup(ds, 'Brazil', ['BR'])] })
     const plan = generatePlan(ds, input)
     expect(plan.stops.length).toBeGreaterThan(0)
     expect(plan.stops.every((s) => ['AL', 'ME', 'HR'].includes(iso(s.cityId)))).toBe(true)
-    expect(plan.warnings.find((w) => w.kind === 'coverage')?.title).toBe('No cities yet in Brazil')
+    expect(plan.warnings.map((w) => w.title)).toContain('Brazil left out: no curated cities there yet')
   })
 })
 

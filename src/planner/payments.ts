@@ -11,13 +11,15 @@ export const CARD_LABELS: Record<number, { short: string; long: string }> = {
 /**
  * How easy it is to pay by card in a city: a city-specific level if there is one; otherwise the
  * country level, one step easier in big or very touristy cities and one step harder in small towns.
- * Where foreign cards don't work at all (e.g. Russia), it's always cash only.
+ * Where foreign cards don't work at all (e.g. Russia), it's always cash only. Null where the country has no entry.
  */
-export function cardLevel(ds: Dataset, cityId: string): { level: number; countryLevel: number; reason: string | null } {
+export function cardLevel(ds: Dataset, cityId: string): { level: number; countryLevel: number; reason: string | null } | null {
   const city = ds.cities[cityId]
   const country = ds.payments.countries[city.iso2]
-  const countryLevel = country?.cardLevel ?? 3
-  if (country && !country.foreignCardsWork) return { level: 1, countryLevel, reason: 'foreign cards do not work in this country' }
+  // No estimate for a country without a payments entry (only its capital, from open data): none made up.
+  if (!country) return null
+  const countryLevel = country.cardLevel
+  if (!country.foreignCardsWork) return { level: 1, countryLevel, reason: 'foreign cards do not work in this country' }
   const override = ds.payments.cities[cityId]?.cardLevel
   if (override) return { level: override, countryLevel, reason: override === countryLevel ? null : 'local conditions' }
   if ((city.population ?? 0) >= 300_000 || city.popularity >= 5) {

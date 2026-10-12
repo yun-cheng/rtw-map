@@ -61,6 +61,13 @@ function pickingDates(args: Args): boolean {
 
 const key = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/ł/g, 'l').toLowerCase().replace(/[^a-z0-9]/g, '')
 export const cityName = (id: string) => ds.cities[id]?.name ?? id
+
+const OPEN_DATA_ONLY = 'only open data so far (no curated profile, prices or connections): plans leave it out'
+/** A city plans can use: not a capital from open data only (auto). */
+function plannable(id: string): string {
+  if (ds.cities[id]?.auto) throw new ToolError(`${cityName(id)} has ${OPEN_DATA_ONLY}`)
+  return id
+}
 const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
 
 class ToolError extends Error {}
@@ -103,6 +110,8 @@ function regionsText(input: TripInput): string {
 /** A compact description of the trip, sent with every message so the assistant knows the current state. */
 /** One traveller's daily cost in a city on this trip's choices, and on each travel style's for comparison (EUR). */
 function dailyCosts(input: TripInput, id: string) {
+  // None for a country without curated prices (only its capital, from open data): not 0.
+  if (!costProfile(ds, ds.cities[id].iso2)) return 'no prices for this country yet'
   return {
     this_trip: Math.round(dailyCost(ds, id, input)),
     ...Object.fromEntries(BUDGETS.map((b) => [b, Math.round(dailyCost(ds, id, { prefs: stylePrefs(b, input.prefs) }))])),
@@ -220,13 +229,16 @@ function findCities(args: Args): ToolResult {
   const q = args.query ? key(String(args.query)) : null
   const cities = Object.values(ds.cities)
     .filter((c) => (!iso2 || c.iso2 === iso2) && (!tag || c.tags.includes(tag)) && (!q || key(c.name).includes(q)))
-    .sort((a, b) => b.popularity - a.popularity)
+    .sort((a, b) => Number(!!a.auto) - Number(!!b.auto) || b.popularity - a.popularity)
   return {
     count: cities.length,
-    cities: cities.slice(0, 60).map((c) => ({
-      id: c.id, name: c.name, country: countryName(c.iso2), tags: c.tags, popularity: c.popularity, blurb: c.blurb,
-      suggested_days: suggestedDays(ds, c.id), in_itinerary: stops.some((s) => s.cityId === c.id),
-    })),
+    cities: cities.slice(0, 60).map((c) => c.auto
+      // A capital from open data: for reading about, not for plans (no curated profile, so no popularity or days).
+      ? { id: c.id, name: c.name, country: countryName(c.iso2), blurb: c.blurb, open_data_only: OPEN_DATA_ONLY }
+      : {
+        id: c.id, name: c.name, country: countryName(c.iso2), tags: c.tags, popularity: c.popularity, blurb: c.blurb,
+        suggested_days: suggestedDays(ds, c.id), in_itinerary: stops.some((s) => s.cityId === c.id),
+      }),
   }
 }
 
@@ -267,7 +279,7 @@ function cityInfo(args: Args): ToolResult {
   const pay = ds.payments.countries[city.iso2]
   return {
     name: city.name, country: country.name, schengen: country.schengen, currency: country.currency, blurb: city.blurb, tags: city.tags,
-    suggested_days: suggestedDays(ds, id),
+    ...(city.auto ? { open_data_only: OPEN_DATA_ONLY } : { suggested_days: suggestedDays(ds, id) }),
     in_itinerary: stop ? { arrive: stop.arrive, depart: stop.depart, nights: stop.nights, locked: stop.locked } : false,
     weather: clim && {
       month: monthName(month),
@@ -284,8 +296,8 @@ function cityInfo(args: Args): ToolResult {
     },
     public_transport: transit && { ease: TRANSIT_LABELS[transit.ease]?.short, modes: transit.modes, walkable: transit.walkable, how_to_pay: transit.pay },
     taxi_apps: ds.localTransport.countries[city.iso2]?.taxi?.apps,
-    english: ENGLISH_LABELS[englishLevel(ds, id).level]?.short,
-    cards: pay && { level: CARD_LABELS[cardLevel(ds, id).level]?.short, foreign_cards_work: pay.foreignCardsWork, cash_for: pay.cashFor },
+    english: ENGLISH_LABELS[englishLevel(ds, id)?.level ?? 0]?.short,
+    cards: pay && { level: CARD_LABELS[cardLevel(ds, id)?.level ?? 0]?.short, foreign_cards_work: pay.foreignCardsWork, cash_for: pay.cashFor },
     tap_water: water && TAP_WATER_LABELS[water.level]?.short,
     vaccines: vaccinesFor(ds, city.iso2).items.map((v) => `${v.name} (${v.advice})`),
     mobile_internet: mobileView(id),
@@ -378,7 +390,7 @@ function citySections(id: string, sections: string[]): ToolResult {
     }
     if (section === 'daily') {
       out.daily = {
-        english: { level: ENGLISH_LABELS[englishLevel(ds, id).level]?.short, other_languages: country.english.otherLanguages, script: country.english.script },
+        english: country.english && { level: ENGLISH_LABELS[englishLevel(ds, id)?.level ?? 0]?.short, other_languages: country.english.otherLanguages, script: country.english.script },
         languages: country.languages, religion: country.religion, plugs: country.plugs, voltage: country.voltage, emergency_number: country.emergency,
         notes: country.notes, timezone: city.timezone, population: city.population, mobile_internet: mobileView(id),
         nearby: amen && { supermarkets: amen.supermarket, convenience_stores: amen.convenience, atms: amen.atm, within_km: ds.amenities.radiusKm, note: 'rough counts: map data misses places' },
@@ -440,13 +452,13 @@ function compareCities(args: Args): ToolResult {
         const a = ds.air.byCity[id]?.[m - 1]
         if (a) Object.assign(row, { pm25: a.pm25, air: airBand(a.pm25).short })
       }
-      if (f === 'daily_cost') row.daily_cost_eur = Math.round(dailyCost(ds, id, input))
-      if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id).level]?.short
-      if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id).level]?.short
+      if (f === 'daily_cost') row.daily_cost_eur = costProfile(ds, c.iso2) ? Math.round(dailyCost(ds, id, input)) : 'no prices'
+      if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id)?.level ?? 0]?.short
+      if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id)?.level ?? 0]?.short
       if (f === 'mobile_internet') row.mobile_internet = mobileView(id)
       if (f === 'travel_advice') row.uk_advice_level = ds.advisories[c.iso2]?.level
       if (f === 'tap_water') row.tap_water = TAP_WATER_LABELS[tapWater(ds, id)?.level ?? '']?.short
-      if (f === 'suggested_days') row.suggested_days = suggestedDays(ds, id)[input.pace]
+      if (f === 'suggested_days' && !c.auto) row.suggested_days = suggestedDays(ds, id)[input.pace]
       if (f === 'population') row.population = c.population
     }
     return row
@@ -533,6 +545,7 @@ function viewDetails(ref: ViewRef): ToolResult {
       }
       case 'cost': {
         const kind = ref.costKind ?? 'day'
+        if (!costProfile(ds, iso2)) return { cost: 'no prices for this country yet' }
         const eur = costOf(ds, cityId, kind, input)
         return kind === 'day' ? { daily_cost_eur: Math.round(eur), on: 'this trip’s choices' } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
       }
@@ -721,7 +734,7 @@ function targetIndex(from: number, after: unknown): number {
 }
 
 function addStopTool(args: Args): string {
-  const id = cityId(args.city)
+  const id = plannable(cityId(args.city))
   const t = trip()
   if (t.stops.some((s) => s.cityId === id)) throw new ToolError(`${cityName(id)} is already in the itinerary`)
   t.addCity(id)
@@ -742,7 +755,7 @@ function setItinerary(args: Args): string {
   if (list.length > MAX_STOPS) throw new ToolError(`At most ${MAX_STOPS} stops`)
   const { stops: was, input } = trip()
   const stops: Stop[] = list.map((x) => {
-    const id = cityId(x.city)
+    const id = plannable(cityId(x.city))
     const nights = Math.round(Number(x.nights))
     if (!(nights >= 1)) throw new ToolError(`${cityName(id)}: nights must be at least 1`)
     const old = was.find((s) => s.cityId === id)

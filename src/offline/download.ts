@@ -147,7 +147,7 @@ async function syncOnce() {
   const template = tileJson.tiles[0]
   const version = template.match(/\/planet\/([^/]+)\//)?.[1] ?? ''
   // (Labels' scripts: of the countries ahead, which the overview names too.)
-  const scripts = [...new Set([...todo.map((id) => ds.cities[id]), ...ahead].map((c) => ds.countries[c.iso2]?.english.script).filter((x): x is string => !!x))]
+  const scripts = [...new Set([...todo.map((id) => ds.cities[id]), ...ahead].map((c) => ds.countries[c.iso2]?.english?.script).filter((x): x is string => !!x))]
   const jobs: Job[] = glyphFiles(scripts).map((f) => {
     const url = `${TILES_HOST}/fonts/${f.split('/').map(encodeURIComponent).join('/')}`
     return { key: url, url, version: '', group: GLYPHS }

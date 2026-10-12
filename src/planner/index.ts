@@ -62,6 +62,11 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
         blocked.push({ iso2: c.iso2, reason: 'not admitted on this passport' })
         continue
       }
+      // Plans use only curated cities: a country with just its capital from open data (auto) is left out.
+      if (citiesIn(ds).has(c.iso2) && !plannedIn(ds).has(c.iso2)) {
+        blocked.push({ iso2: c.iso2, reason: 'no curated cities there yet' })
+        continue
+      }
       groupIndex.set(c.iso2, input.keepGroupOrder ? gi : 0)
       if (c.minDays || c.maxDays) areas.push(areaOf(ds.countries[c.iso2]?.name ?? c.iso2, [c.iso2], c, c.iso2))
       groupCountries[gi].push(c.iso2)
@@ -73,10 +78,10 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   const lastGroup = input.keepGroupOrder ? Math.max(0, input.groups.length - 1) : 0
   for (const id of extraCities) {
     const iso2 = ds.cities[id]?.iso2
-    if (iso2 && !groupIndex.has(iso2)) groupIndex.set(iso2, lastGroup)
+    if (iso2 && !ds.cities[id].auto && !groupIndex.has(iso2)) groupIndex.set(iso2, lastGroup)
   }
 
-  const candidates = Object.values(ds.cities).filter((c) => groupIndex.has(c.iso2)).map((c) => c.id)
+  const candidates = Object.values(ds.cities).filter((c) => groupIndex.has(c.iso2) && !c.auto).map((c) => c.id)
   const graph = buildGraph(ds, new Set(candidates))
   const totalNights = Math.max(1, daysBetween(input.startDate, input.endDate))
 
@@ -100,6 +105,14 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
     if (input.groups[gi].countries.length > 1) requireBestIn(countries)
   })
   return ctx
+}
+
+/** The countries with curated cities, the only ones plans use (not those with just a capital from open data). */
+const planned = new WeakMap<Dataset, Set<string>>()
+export function plannedIn(ds: Dataset): Set<string> {
+  let set = planned.get(ds)
+  if (!set) planned.set(ds, (set = new Set(Object.values(ds.cities).filter((c) => !c.auto).map((c) => c.iso2))))
+  return set
 }
 
 /** The countries the app has cities in. */
@@ -179,7 +192,8 @@ let everywhere: { ds: Dataset; graph: Graph } | null = null
 
 /** The best way between any two cities in the app, through any others (the planner's routing, without its region limits). */
 export function routeBetween(ds: Dataset, from: string, to: string): Leg {
-  if (everywhere?.ds !== ds) everywhere = { ds, graph: buildGraph(ds, new Set(Object.keys(ds.cities))) }
+  // Curated cities only: a capital from open data has no connections, and no bus ride is made up to it.
+  if (everywhere?.ds !== ds) everywhere = { ds, graph: buildGraph(ds, new Set(Object.values(ds.cities).filter((c) => !c.auto).map((c) => c.id))) }
   return legBetween(everywhere.graph, from, to)
 }
 
@@ -709,14 +723,14 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
   // Language: countries where getting by in English is hard
   for (const iso2 of countries) {
     const country = ds.countries[iso2]
-    const hard = sched.filter((s) => ds.cities[s.cityId].iso2 === iso2 && englishLevel(ds, s.cityId).level <= 2)
+    const hard = sched.filter((s) => ds.cities[s.cityId].iso2 === iso2 && (englishLevel(ds, s.cityId)?.level ?? 3) <= 2)
     if (hard.length) {
-      const worst = Math.min(...hard.map((s) => englishLevel(ds, s.cityId).level))
-      const also = country.english.otherLanguages.length ? ` ${country.english.otherLanguages[0]} also helps.` : ''
+      const worst = Math.min(...hard.map((s) => englishLevel(ds, s.cityId)!.level))
+      const also = country.english!.otherLanguages.length ? ` ${country.english!.otherLanguages[0]} also helps.` : ''
       warnings.push({
         kind: 'language', severity: 'info', iso2, cityId: hard[0].cityId, inCity: true,
         title: `English is ${ENGLISH_LABELS[worst].short.toLowerCase()} in ${hard.map((s) => ds.cities[s.cityId].name).join(', ')}`,
-        detail: `Get an offline translator app (${country.languages[0]}).${also} Script: ${country.english.script}.`,
+        detail: `Get an offline translator app (${country.languages[0]}).${also} Script: ${country.english!.script}.`,
       })
     }
   }
@@ -756,7 +770,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
       warnings.push({ kind: 'money', severity: 'warn', iso2, title: `${ds.countries[iso2].name}: foreign bank cards don't work`, detail: pay.atm })
     }
   }
-  const cashStops = sched.filter((s) => ds.payments.countries[ds.cities[s.cityId].iso2]?.foreignCardsWork !== false && cardLevel(ds, s.cityId).level <= 2)
+  const cashStops = sched.filter((s) => ds.payments.countries[ds.cities[s.cityId].iso2]?.foreignCardsWork !== false && (cardLevel(ds, s.cityId)?.level ?? 3) <= 2)
   if (cashStops.length) {
     warnings.push({
       kind: 'money', severity: 'info', cityId: cashStops[0].cityId, inCity: true,

@@ -20,13 +20,15 @@ describe('map legends', () => {
       const input = { prefs: stylePrefs(budget) }
       const scale = costScale('day', input, 'EUR')
       expect(scale.legend).toHaveLength(5)
+      // Over the cities with prices (not the capitals from open data, which have none).
+      const priced = Object.keys(ds.cities).filter((id) => dailyCost(ds, id, input) > 0)
       const counts = new Map<string, number>()
-      for (const id of Object.keys(ds.cities)) {
+      for (const id of priced) {
         const c = scale.color(dailyCost(ds, id, input))
         counts.set(c, (counts.get(c) ?? 0) + 1)
       }
       expect(counts.size).toBe(5)
-      for (const n of counts.values()) expect(n).toBeGreaterThan(Object.keys(ds.cities).length / 10)
+      for (const n of counts.values()) expect(n).toBeGreaterThan(priced.length / 10)
     }
     // The splits move as cities are added, so only the format is fixed.
     const labels = costScale('day', BACKPACKER, 'EUR').legend.map((l) => l.label)

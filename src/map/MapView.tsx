@@ -7,7 +7,7 @@ import boundaries from '../../data/gen/boundaries.json'
 import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
-import { citiesIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
+import { plannedIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
@@ -566,17 +566,17 @@ function pickFill(input: TripInput): ExpressionSpecification | string {
 /** What a click would do while adding places: the country or region under the pointer, and whether it's in the trip. */
 function pickTip(input: TripInput, how: 'region' | 'country', iso2: string) {
   const name = ds.countries[iso2]?.name ?? ds.world[iso2] ?? iso2
-  const covered = citiesIn(ds)
+  const covered = plannedIn(ds)
   const mode = input.groups.flatMap((g) => g.countries).find((c) => c.iso2 === iso2)?.mode
   if (how === 'region') {
     const region = REGIONS.find((r) => r.name === REGION_OF[iso2])
     if (!region) return { title: name }
     const added = input.groups.some((g) => g.name === region.name)
-    const withCities = region.countries.filter((c) => covered.has(c)).length
+    const withWay = region.countries.filter((c) => covered.has(c)).length
     return {
       title: region.name,
       lines: [
-        `${region.countries.length} ${region.countries.length > 1 ? 'countries' : 'country'}${withCities === region.countries.length ? '' : withCities ? `, ${withCities} with cities` : ', no cities yet'}`,
+        `${region.countries.length} ${region.countries.length > 1 ? 'countries' : 'country'}${withWay === region.countries.length ? '' : withWay ? `, ${withWay} in plans` : ', not in plans yet'}`,
         added ? 'In your trip: click to remove' : 'Click to add',
       ],
     }
@@ -584,7 +584,7 @@ function pickTip(input: TripInput, how: 'region' | 'country', iso2: string) {
   return {
     title: name,
     lines: [
-      ...(covered.has(iso2) ? [] : ['No cities yet']),
+      ...(covered.has(iso2) ? [] : ['Not in plans yet (only open data)']),
       mode && mode !== 'excluded' ? 'In your trip: click to remove' : mode === 'excluded' ? 'Excluded: click to add' : 'Click to add',
     ],
   }
