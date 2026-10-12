@@ -2,7 +2,7 @@ import type { FeatureCollection, Point } from 'geojson'
 import * as maplibregl from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMouseEvent, Map as MlMap, PointLike } from 'maplibre-gl'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
@@ -17,6 +17,7 @@ import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
 import { showLocalNames, withLabels } from './baseLabels'
 import { NO_DATA, cityMetrics, cityTip, stopTip } from './cityMetric'
+import { OffscreenCity, type CityNode } from './OffscreenCity'
 import { visaOf } from './scales'
 import { shapeOf } from './shapes'
 import { tipElement } from '../ui/tipBody'
@@ -118,6 +119,10 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const editingRef = useRef(editing)
   editingRef.current = editing
   const mapRef = useRef<MlMap | null>(null)
+  // (Also as state, for the parts drawn over it.)
+  const [shown, setShown] = useState<MlMap | null>(null)
+  // How the open city is drawn, for OffscreenCity.
+  const [node, setNode] = useState<CityNode | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
   const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, picking, localNames } = useTrip()
@@ -130,6 +135,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     const view = initialMapView ?? { center: [22, 50] as [number, number], zoom: 3.6 }
     const map = new maplibregl.Map({ container: container.current!, ...view, attributionControl: { compact: true } })
     mapRef.current = map
+    setShown(map)
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
     // The map's credits start folded into their ⓘ button, which shows them: MapLibre opens them once, when its sources
     // first say what to credit (some time after loading), so fold them the moment that happens.
@@ -365,6 +371,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
           routeEnds.set(a, [...(routeEnds.get(a) ?? []), [ds.cities[b].lon, ds.cities[b].lat]])
         }
       }
+      let openStop: CityNode | null = null
       const stopFeatures = stops.map(({ s, metrics, text }, i) => {
         const time = times[i]
         // (Other views keep their colours: they're what the view shows.)
@@ -373,6 +380,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
         const c = ds.cities[s.cityId]
         const radius = layer === 'none' ? half(Math.max(fitRadius(text), 7 + 1.2 * Math.sqrt(s.nights))) : sameRadius
         const isSelected = selected?.type === 'city' && selected.id === c.id
+        if (isSelected) openStop = { stop: true, color: color ?? STOP_COLOR, radius, text, textSize: textSize(text), rain, ink: INK[shownTheme.current] }
         return point([c.lon, c.lat], {
           ...(color ? { color } : {}),
           ...(rain !== undefined ? { ring: ringId(rain, radius, isSelected) } : {}),
@@ -390,6 +398,12 @@ export function MapView({ editing = false }: { editing?: boolean }) {
         if (typeof id === 'string' && !map.hasImage(id)) map.addImage(id, drawRing(id, shownTheme.current)!, { pixelRatio: 2 })
       }
       ;(map.getSource('stops') as GeoJSONSource).setData({ type: 'FeatureCollection', features: stopFeatures })
+
+      // The open city as drawn, for OffscreenCity: its stop (unless editing hides them), else its dot (city-dots), at
+      // its size at about the middle zoom.
+      const ink = INK[shownTheme.current]
+      const open = selected?.type === 'city' ? selected.id : null
+      setNode(!open ? null : (!editing && openStop) || { stop: false, color: (!editing && metric(open).color) || ink.dot, radius: 5, ink })
 
       // The Route view colours each hop by how you travel and dashes estimated ones (legend in MapControls); the
       // other views draw the route plainly so it doesn't compete with their own colours.
@@ -501,7 +515,10 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   }, [fitRequest])
 
   return (
-    <div ref={container} className="h-full w-full" />
+    <>
+      <div ref={container} className="h-full w-full" />
+      {shown && <OffscreenCity map={shown} node={node} />}
+    </>
   )
 }
 

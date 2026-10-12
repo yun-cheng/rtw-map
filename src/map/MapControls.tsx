@@ -110,7 +110,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   )
   if (editing) {
     return (
-      <div className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: selected ? DRAWER_WIDTH + 12 : 12 }}>
+      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: selected ? DRAWER_WIDTH + 12 : 12 }}>
         <div className={LEGEND_BOX}>
           {(['must', 'optional', 'excluded'] as const).map((m) => (
             <span key={m} className="flex items-center gap-1.5">
@@ -130,7 +130,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
       // rows of buttons and switches: the view, then its month or kind, and the legend's switches.
       <>
         {/* (Clear of the settings gear at the top right, see App.) */}
-        <div className="pointer-events-none absolute top-2 right-12 left-2 flex flex-col items-start">{legends}</div>
+        <div data-map-top className="pointer-events-none absolute top-2 right-12 left-2 flex flex-col items-start">{legends}</div>
         <div className="pointer-events-none absolute right-10 left-2 flex transition-[bottom] duration-300 ease-out" style={{ bottom: 'calc(var(--sheet-height, 0px) + 8px)' }}>
           <div className="no-scrollbar pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto">
             <Pick label="Map view" value={layer} onChange={(v) => setLayer(v as MapLayer)}>
@@ -181,7 +181,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   }
   return (
     // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge (their rows scroll sideways).
-    <div className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
+    <div data-map-top className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
       <SwitchRow picked={layer} width={selected}>
         {LAYERS.map((l) => (
           <button
