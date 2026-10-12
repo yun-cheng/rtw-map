@@ -8,7 +8,8 @@
 //   areas downloaded for the trip's cities (src/offline/download.ts, OFFLINE, written by the page). Kept by place,
 //   not by the map's weekly version: the current version's tile when there's a connection, else any kept one.
 // - The map's style, sprites and labels' fonts, and the app's font: the cached copy at once, refreshed behind it.
-// - /api (the account, trips, assistant) and everything else: the network only.
+// - /api (the account, trips, assistant), the pages and addresses of other apps' sign-in (/oauth, /.well-known) and
+//   their MCP server (/mcp), and everything else: the network only.
 
 declare const self: ServiceWorkerGlobalScope
 declare const PRECACHE: string[]
@@ -19,6 +20,8 @@ const TILES = 'map-tiles-2'
 const OFFLINE = 'map-offline'
 const STATIC = 'map-style'
 const TILE_LIMIT = 2500
+/** Paths the site's Worker answers, never the app: a page there (the sign-in for other apps) must not be the app. */
+const SERVER = ['/api/', '/internal/', '/oauth/', '/.well-known/', '/mcp']
 /** Caches of earlier versions of this worker, no longer used. */
 const OLD = ['map-tiles']
 
@@ -43,7 +46,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET' || req.cache === 'no-store') return
   const url = new URL(req.url)
   if (url.origin === self.location.origin) {
-    if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/internal/')) return
+    if (SERVER.some((p) => url.pathname.startsWith(p))) return
     // Any page is the app (it reads the address itself).
     if (req.mode === 'navigate') return e.respondWith(fromApp('/', req))
     return e.respondWith(fromApp(req, req))
