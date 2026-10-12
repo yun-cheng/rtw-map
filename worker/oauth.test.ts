@@ -170,6 +170,11 @@ describe('connecting other apps (OAuth)', () => {
     expect(no.headers.get('Location')).toMatch(/^https:\/\/claude\.ai\/cb\?error=access_denied&.*state=abc/)
     const elsewhere = await send(ctx, post('/oauth/authorize', `${params}&decision=allow`, { Origin: 'https://evil.example' }))
     expect(elsewhere.status).toBe(403)
+    // Chrome sends Origin "null" from a page that hides its referrer: then only its own Sec-Fetch-Site counts.
+    const hidden = await send(ctx, post('/oauth/authorize', `${params}&decision=allow`, { Origin: 'null', 'Sec-Fetch-Site': 'same-origin' }))
+    expect(hidden.headers.get('Location')).toMatch(/^https:\/\/claude\.ai\/cb\?code=/)
+    expect((await send(ctx, post('/oauth/authorize', `${params}&decision=allow`, { Origin: 'null', 'Sec-Fetch-Site': 'cross-site' }))).status).toBe(403)
+    expect(signedOut.headers.get('Referrer-Policy')).toBe('same-origin')
 
     const noPkce = await send(ctx, new Request(`${ORIGIN}/oauth/authorize?${new URLSearchParams({ response_type: 'code', client_id: clientId })}`))
     expect(noPkce.headers.get('Location')).toContain('error=invalid_request')

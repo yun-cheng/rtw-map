@@ -256,11 +256,18 @@ async function authorize(request: Request, ctx: OAuthContext, params: URLSearchP
     <p class="muted small">Signed in as ${esc(user.name)}${user.email ? ` (${esc(user.email)})` : ''}.</p>`)
 }
 
+/** Whether a form was sent from this site's own page: its Origin, or (a browser that sends "null", as some do for
+ *  a page that keeps its address private) the browser's own word that it came from this site. */
+export function fromHere(request: Request, origin: string): boolean {
+  const from = request.headers.get('Origin')
+  if (from && from !== 'null') return from === origin
+  return request.headers.get('Sec-Fetch-Site') === 'same-origin'
+}
+
 /** The user's answer, from the page above (only from this site, signed in). */
 async function decide(request: Request, ctx: OAuthContext): Promise<Response> {
   const url = new URL(request.url)
-  const from = request.headers.get('Origin')
-  if (!from || from !== url.origin) return page('Not allowed', '<h1>Not allowed</h1><p>Answer on the page of this site.</p>', 403)
+  if (!fromHere(request, url.origin)) return page('Not allowed', '<h1>Not allowed</h1><p>Answer on the page of this site.</p>', 403)
   const text = await request.text()
   const form = new URLSearchParams(text.length <= OAUTH.bodyBytes ? text : '')
   const parsed = await parseAuthorize(form, url.origin, ctx.secret)
@@ -393,7 +400,7 @@ button.primary { background: var(--accent); border-color: var(--accent); color: 
     status,
     headers: {
       'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': 'frame-ancestors \'none\'', 'Referrer-Policy': 'no-referrer',
+      'Content-Security-Policy': 'frame-ancestors \'none\'', 'Referrer-Policy': 'same-origin',
     },
   })
 }
