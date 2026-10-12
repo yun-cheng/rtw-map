@@ -13,6 +13,8 @@ export type SocialPost = {
    *  which the page may change (`postHeight`). */
   ratio?: number
   height?: number
+  /** A YouTube video's id, for its title and thumbnail. */
+  youtube?: string
 }
 
 const hostOf = (u: URL) => u.hostname.toLowerCase().replace(/^(www|m|mobile|web)\./, '')
@@ -33,7 +35,7 @@ export function socialPost(url: string, theme: Theme = 'light'): SocialPost | nu
     const id = host === 'youtu.be' ? path.slice(1) : path === '/watch' ? u.searchParams.get('v') : path.match(/^\/(?:shorts|live|embed)\/([\w-]+)/)?.[1]
     if (!id || !/^[\w-]{11}$/.test(id)) return null
     const start = startSeconds(u.searchParams.get('t') ?? u.searchParams.get('start'))
-    return { platform: 'YouTube', src: `https://www.youtube-nocookie.com/embed/${id}${start ? `?start=${start}` : ''}`, ratio: path.startsWith('/shorts/') ? 9 / 16 : 16 / 9 }
+    return { platform: 'YouTube', src: `https://www.youtube-nocookie.com/embed/${id}${start ? `?start=${start}` : ''}`, ratio: path.startsWith('/shorts/') ? 9 / 16 : 16 / 9, youtube: id }
   }
   if (host === 'instagram.com' && (m = path.match(/^\/(?:[\w.]+\/)?(p|reels?|tv)\/([\w-]+)/))) {
     return { platform: 'Instagram', src: `https://www.instagram.com/${m[1] === 'p' || m[1] === 'tv' ? m[1] : 'reel'}/${m[2]}/embed/captioned/`, height: 640 }
