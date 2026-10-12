@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { COST_KINDS, airBand, costOf, dailyCost, stylePrefs } from '../planner'
-import { COST_GROUPS, airLegend, costScale } from './scales'
+import { COST_KINDS, airBand, costOf, dailyCost, stylePrefs, type VisaReq } from '../planner'
+import { COST_GROUPS, VISA_BANDS, airLegend, costScale, visaLegend, visaOf } from './scales'
 
 const BACKPACKER = { prefs: stylePrefs('backpacker') }
 
@@ -46,5 +46,15 @@ describe('map legends', () => {
     expect(costScale('transport', BACKPACKER, 'EUR').legend[0].label).toMatch(/^<€\d+\.\d\d$/)
     // Beds follow the city: Dubrovnik's dorm costs more than Zagreb's on the same national prices.
     expect(costOf(ds, 'dubrovnik', 'dorm', BACKPACKER)).toBeGreaterThan(costOf(ds, 'zagreb', 'dorm', BACKPACKER))
+  })
+  it('bands each visa rule once, and lists only the bands the passport meets', () => {
+    const reqs: VisaReq[] = ['free_movement', 'visa_free', 'eta', 'e_visa', 'visa_on_arrival', 'visa_required', 'no_admission', 'own_country']
+    expect(VISA_BANDS.flatMap((b) => b.reqs).sort()).toEqual(reqs.sort())
+    // Free movement and your own country read as visa-free; no rule, no band.
+    expect(visaOf('EU', 'HR')?.band.label).toBe('Visa-free')
+    expect(visaOf('TW', 'TW')?.band.label).toBe('Visa-free')
+    expect(visaOf('EU', 'XX')).toBeNull()
+    expect(visaLegend('TW').map((l) => l.label)).toEqual(['Visa-free', 'On arrival or ETA', 'E-visa', 'Visa in advance', 'Not admitted'])
+    expect(visaLegend('EU').map((l) => l.label)).toEqual(['Visa-free', 'On arrival or ETA', 'E-visa'])
   })
 })

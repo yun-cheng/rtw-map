@@ -36,6 +36,7 @@ const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
   mobile: { name: 'Mobile', about: 'mobile internet: typical download speed on phones, in Mbps (the number on each stop), in five bands from slow (under 25) to very fast (200+)' },
   cost: { name: 'Cost', about: 'daily cost for their budget, in five bands of about a fifth of all cities each' },
   schengen: { name: 'Schengen', about: 'which countries are in the Schengen area' },
+  visa: { name: 'Visa', about: 'the visa rule for the trip’s passport in each country, from visa-free to not admitted' },
 }
 const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
 const COST_NAMES: Record<CostKind, string> = {

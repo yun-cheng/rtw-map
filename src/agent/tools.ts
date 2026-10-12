@@ -537,6 +537,10 @@ function viewDetails(ref: ViewRef): ToolResult {
         return kind === 'day' ? { daily_cost_eur: Math.round(eur), on: 'this trip’s choices' } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
       }
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
+      case 'visa': {
+        const rule = ds.visa.rules[input.passport]?.[iso2]
+        return rule ? { visa: rule.req, ...(rule.days && { visa_free_days: rule.days }) } : { visa: 'unknown' }
+      }
     }
   }
   // The Route view: each stop with its dates and how you get there (line colour = mode, dashed = estimated).

@@ -1,7 +1,7 @@
 // The map views' colour scales, shared by the map (MapView) and its legend (MapControls) so the legend shows
 // exactly the bands the map colours by. Each has five bands from red (worst) to dark green (best), see LEVEL_COLORS.
 import { dataset as ds } from '../data/dataset'
-import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, costOf, prefsDay, type CostInput, type CostKind } from '../planner'
+import { AIR_BANDS, MOBILE_BANDS, NEARBY_BANDS, costOf, prefsDay, type CostInput, type CostKind, type VisaReq } from '../planner'
 import type { NearbyKind } from '../store/trip'
 import { levelColor, money } from '../ui/format'
 
@@ -27,6 +27,26 @@ export const nearbyColor = (level: number) => levelColor(level + 1)
 /** Names of the kinds of place the Nearby view shows. */
 export const NEARBY_LABELS: Record<NearbyKind, string> = { supermarket: 'Supermarkets', pharmacy: 'Pharmacies', clinic: 'Clinics & doctors', atm: 'ATMs' }
 export const nearbyLegend = (): LegendItem[] => NEARBY_BANDS.map((b, i) => ({ color: nearbyColor(i), label: b.label }))
+
+/** Visa: how easy entry is on a passport, from visa-free (dark green) to not admitted (red). */
+export const VISA_BANDS: { reqs: VisaReq[]; color: string; label: string }[] = [
+  { reqs: ['free_movement', 'own_country', 'visa_free'], color: levelColor(5), label: 'Visa-free' },
+  { reqs: ['visa_on_arrival', 'eta'], color: levelColor(4), label: 'On arrival or ETA' },
+  { reqs: ['e_visa'], color: levelColor(3), label: 'E-visa' },
+  { reqs: ['visa_required'], color: levelColor(2), label: 'Visa in advance' },
+  { reqs: ['no_admission'], color: levelColor(1), label: 'Not admitted' },
+]
+/** A country's visa rule on a passport and its band, if the rules are known. */
+export function visaOf(passport: string, iso2: string) {
+  const rule = ds.visa.rules[passport]?.[iso2]
+  const band = rule && VISA_BANDS.find((b) => b.reqs.includes(rule.req))
+  return rule && band ? { rule, band } : null
+}
+/** The bands the passport meets in the app's countries (most passports only a few). */
+export const visaLegend = (passport: string): LegendItem[] => {
+  const met = new Set(Object.keys(ds.countries).map((iso2) => visaOf(passport, iso2)?.band))
+  return VISA_BANDS.filter((b) => met.has(b)).map((b) => ({ color: b.color, label: b.label }))
+}
 
 /** Names of the kinds of cost the Cost view shows, and what each price is for (after the amount: "€12/night"). */
 export const COST_LABELS: Record<CostKind, { label: string; per: string }> = {

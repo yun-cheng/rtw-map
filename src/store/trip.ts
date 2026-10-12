@@ -12,8 +12,8 @@ export { MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
 export type CityTab = 'overview' | 'notes' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
-export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen'
-export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen']
+export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen' | 'visa'
+export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen', 'visa']
 /** The kinds of place the Nearby map view can show. */
 export type NearbyKind = 'supermarket' | 'pharmacy' | 'clinic' | 'atm'
 export const NEARBY_KINDS: NearbyKind[] = ['supermarket', 'pharmacy', 'clinic', 'atm']

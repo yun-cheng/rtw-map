@@ -3,8 +3,8 @@
 import { dataset as ds } from '../data/dataset'
 import { airBand, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type ScheduledStop } from '../planner'
 import type { useTrip } from '../store/trip'
-import { WEATHER_STYLE, levelColor, money, rainShare, shownTemps, tempKind, tempRange, tempValue } from '../ui/format'
-import { COST_LABELS, NEARBY_LABELS, costScale, nearbyColor } from './scales'
+import { VISA_TEXT, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, tempKind, tempRange, tempValue } from '../ui/format'
+import { COST_LABELS, NEARBY_LABELS, costScale, nearbyColor, visaOf } from './scales'
 
 /** An amount in EUR rounded to two significant digits in the display currency (6.57 → 6.6), back in EUR. */
 function roundTo2(eur: number, currency: string): number {
@@ -58,6 +58,11 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
     if (layer === 'schengen') {
       const inside = !!ds.countries[ds.cities[cityId]?.iso2]?.schengen
       return { color: inside ? '#2563eb' : '#d97706', lines: [inside ? 'Schengen area' : 'Outside Schengen'] }
+    }
+    if (layer === 'visa') {
+      const v = visaOf(input.passport, ds.cities[cityId]?.iso2)
+      if (!v) return { color: NO_DATA, lines: ['No data'] }
+      return { color: v.band.color, lines: [VISA_TEXT[v.rule.req].label, ...(v.rule.days ? [`Up to ${v.rule.days} days`] : [])] }
     }
     if (layer === 'mobile') {
       const m = mobileInternet(ds, cityId)

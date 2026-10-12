@@ -15,7 +15,8 @@ import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
 import { recolorDark } from './darkStyle'
 import { showLocalNames, withLabels } from './baseLabels'
-import { cityMetrics, cityTip, stopTip } from './cityMetric'
+import { NO_DATA, cityMetrics, cityTip, stopTip } from './cityMetric'
+import { visaOf } from './scales'
 import { shapeOf } from './shapes'
 import { tipElement } from '../ui/tipBody'
 
@@ -414,9 +415,9 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       }))
       ;(map.getSource('route') as GeoJSONSource).setData({ type: 'FeatureCollection', features: [...homeFeatures, ...routeFeatures] })
 
-      map.setPaintProperty('country-fill', 'fill-color', editing ? 'transparent' : countryFill(layer, tripCountries))
+      map.setPaintProperty('country-fill', 'fill-color', editing ? 'transparent' : countryFill(layer, tripCountries, input.passport))
       // Country tints need a little more strength to show on the dark map.
-      map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
+      map.setPaintProperty('country-fill', 'fill-opacity', (layer === 'schengen' || layer === 'visa' ? 0.25 : 0.1) * INK[shownTheme.current].tint)
 
       // Editing the trip: its countries instead of its route and stops; while adding places, every country's outline.
       const show = (ids: string[], on: boolean) => ids.forEach((id) => map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none'))
@@ -587,10 +588,11 @@ function pickTip(input: TripInput, how: 'region' | 'country', iso2: string) {
   }
 }
 
-function countryFill(layer: string, tripCountries: Set<string>): ExpressionSpecification | string {
+function countryFill(layer: string, tripCountries: Set<string>, passport: string): ExpressionSpecification | string {
   const entries = Object.values(ds.countries).flatMap((c) => {
     let color = 'transparent'
     if (layer === 'schengen') color = c.schengen ? '#2563eb' : '#d97706'
+    else if (layer === 'visa') color = visaOf(passport, c.iso2)?.band.color ?? NO_DATA
     else if (tripCountries.has(c.iso2)) color = '#0f766e'
     return [c.iso2, color]
   })

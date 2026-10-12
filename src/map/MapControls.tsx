@@ -6,7 +6,8 @@ import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
-import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, type LegendItem } from './scales'
+import { dataset as ds } from '../data/dataset'
+import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, visaLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'none', label: 'Route' },
@@ -16,6 +17,7 @@ const LAYERS: { value: MapLayer; label: string }[] = [
   { value: 'mobile', label: 'Mobile' },
   { value: 'nearby', label: 'Nearby' },
   { value: 'schengen', label: 'Schengen' },
+  { value: 'visa', label: 'Visa' },
 ]
 
 const LEGENDS: Partial<Record<MapLayer, LegendItem[]>> = {
@@ -62,13 +64,14 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
-  const legend = layer === 'climate' ? temperatureLegend(tempUnit, input.prefs.tempBreaks) : layer === 'cost' ? costScale(costKind, input, currency).legend : LEGENDS[layer]
+  const legend = layer === 'climate' ? temperatureLegend(tempUnit, input.prefs.tempBreaks) : layer === 'cost' ? costScale(costKind, input, currency).legend : layer === 'visa' ? visaLegend(input.passport) : LEGENDS[layer]
   // What the numbers in the legend measure, shown on hover: the view's name is already on its button or dropdown.
   const about = {
     air: "Monthly average of fine particles (PM2.5) in µg/m³, the number on each stop. The WHO's guideline is 5 over a year and 15 on any one day.",
     nearby: `Roughly how many ${NEARBY_LABELS[nearbyKind].toLowerCase()} within 1.5 km of the centre, from map data and business listings; both miss places, so treat it as a rough guide`,
     mobile: 'Typical download speed of mobile internet on phones in the city, in Mbps; the number on each stop',
     cost: COST_ABOUT[costKind],
+    visa: `Entry rules for the trip's passport (set in the Trip tab), from the Passport Index as of ${ds.meta.visa.updatedAt}. Rules change: check the official government website before you go.`,
   }[layer as string]
   // The legend: what the route's lines or the view's colours mean.
   const legends = (
@@ -100,6 +103,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
           ))}
           {layer === 'climate' && <RainRing />}
           {layer === 'schengen' && plan && <SchengenDays s={plan.schengen} />}
+          {layer === 'visa' && <span className="border-l border-line pl-3 text-muted">{ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport} passport</span>}
         </div>
       )}
     </>
