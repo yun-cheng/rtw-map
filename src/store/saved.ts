@@ -5,10 +5,13 @@
 // Signed out, the app keeps one trip in this browser only (store/trip.ts persists it locally).
 // Offline, the trip on screen is the one kept in the browser: edits are marked unsaved (in the browser too, so a
 // reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
+// The trip's journal is sent on its own (store/journal.ts): merged day by day on the server, also while the assistant
+// works on the trip.
 import { create } from 'zustand'
 import { useAccount } from '../agent/account'
 import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { TripInput } from '../planner'
+import { setJournalSync, useJournal, type DayEntry, type Journal } from './journal'
 import { newTripInput, useTrip, type TripData } from './trip'
 import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
@@ -105,14 +108,16 @@ function keepNotes(load: () => void) {
   useTrip.setState({ notes })
 }
 
-/** Puts a saved trip and its chat on screen. */
-function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false) {
+/** Puts a saved trip, its chat and its journal on screen. */
+function show(id: string, data: TripData | null, chat: SavedChat | null, keepView = false, journal: Journal | null = {}) {
   applying = true
   useTrip.getState().openTrip(data, keepView)
   useChat.getState().load(chat)
   applying = false
   remember(id)
   useSaved.setState({ activeId: id })
+  useJournal.getState().open(id, journal)
+  void sendJournal()
 }
 
 export const useSaved = create<SavedState>()((set, get) => {
@@ -129,7 +134,7 @@ export const useSaved = create<SavedState>()((set, get) => {
       set({ status: 'loading', error: null })
       try {
         const trip = await call('GET', `/api/trips/${id}`)
-        show(id, trip.data, trip.chat, keepView)
+        show(id, trip.data, trip.chat, keepView, trip.journal ?? {})
         set({ status: 'idle' })
         // The assistant is still answering on the server: follow it.
         if (trip.run) {
@@ -223,6 +228,37 @@ function changed() {
   timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
 }
 
+const JOURNAL_DELAY_MS = 1500
+let journalTimer: ReturnType<typeof setTimeout> | undefined
+let sendingJournal = false
+/** The open trip's journal days changed here, sent (the server answers with its whole journal, merged). */
+async function sendJournal() {
+  clearTimeout(journalTimer)
+  journalTimer = undefined
+  const id = useSaved.getState().activeId
+  const book = useJournal.getState().books[id ?? '']
+  if (!id || useJournal.getState().key !== id || !book?.pending.length || sendingJournal) return
+  // (Offline: sent once the account is reached again.)
+  if (useAccount.getState().offline) return
+  const entries = book.pending.map((d) => book.entries[d]).filter((e): e is DayEntry => !!e)
+  sendingJournal = true
+  try {
+    const { journal } = (await call('PUT', `/api/trips/${id}/journal`, { entries })) as { journal: Journal }
+    useJournal.getState().sent(id, entries, journal)
+  } catch (e) {
+    if (!(e instanceof Offline)) useJournal.setState({ problem: (e as Error).message })
+    return
+  } finally {
+    sendingJournal = false
+  }
+  // Written again meanwhile.
+  if (useJournal.getState().books[id]?.pending.length) journalTimer = setTimeout(() => void sendJournal(), JOURNAL_DELAY_MS)
+}
+setJournalSync(() => {
+  clearTimeout(journalTimer)
+  journalTimer = setTimeout(() => void sendJournal(), JOURNAL_DELAY_MS)
+})
+
 // Save after edits to the trip or its chat.
 useTrip.subscribe((s, prev) => {
   if (s.input !== prev.input || s.stops !== prev.stops || s.plans !== prev.plans || s.activePlanId !== prev.activePlanId || s.readOnly !== prev.readOnly || s.notes !== prev.notes) changed()
@@ -234,9 +270,20 @@ useChat.subscribe((s, prev) => {
 // Don't lose the last edit when the page closes.
 if (typeof window !== 'undefined') {
   // A save that failed for want of a connection: send it when the connection is back.
-  window.addEventListener('online', () => void flush())
+  window.addEventListener('online', () => {
+    void flush()
+    void sendJournal()
+  })
   window.addEventListener('pagehide', () => {
     const id = useSaved.getState().activeId
+    // The journal's last days, if not sent yet.
+    const book = useJournal.getState().books[id ?? '']
+    if (id && journalTimer && book?.pending.length) {
+      void fetch(`/api/trips/${id}/journal`, {
+        method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entries: book.pending.map((d) => book.entries[d]).filter(Boolean) }),
+      })
+    }
     if (!id || !dirty) return
     void fetch(`/api/trips/${id}`, {
       method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' },
@@ -358,6 +405,8 @@ async function signedIn() {
       const created: TripSummary = await call('POST', '/api/trips', { name: 'My trip', data: tripData(), chat: chatData() })
       useSaved.setState({ trips: [created, ...trips], activeId: created.id, status: 'saved' })
       remember(created.id)
+      // (Its journal too, written signed out.)
+      useJournal.getState().adopt(created.id)
     } else {
       await useSaved.getState().open(lastId && trips.some((t) => t.id === lastId) ? lastId : trips[0].id)
     }
@@ -376,6 +425,7 @@ function signedOut() {
   useTrip.getState().openTrip(null)
   useChat.getState().clear()
   applying = false
+  useJournal.getState().clear()
 }
 
 useAccount.subscribe((s, prev) => {
@@ -385,6 +435,7 @@ useAccount.subscribe((s, prev) => {
   if (s.offline && !prev.offline && !s.user && remembered()) {
     useSaved.setState({ activeId: remembered(), status: unsaved() === remembered() ? 'offline' : 'idle' })
     dirty = unsaved() === remembered()
+    useJournal.getState().open(remembered()!)
   }
   // Back online but signed out (the session ended meanwhile): the edits stay marked, sent at the next sign-in.
   if (prev.offline && !s.offline && !s.user) useSaved.setState({ activeId: null, status: 'idle' })

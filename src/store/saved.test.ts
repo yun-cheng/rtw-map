@@ -16,12 +16,16 @@ const stored = vi.hoisted(() => {
 const { useAccount } = await import('../agent/account')
 const { useTrip } = await import('./trip')
 const { useSaved } = await import('./saved')
+const { useJournal } = await import('./journal')
+const { mergeJournal } = await import('./journalCore')
 
-type Call = { method: string; url: string; body: { data?: { input?: { wishes?: string } } } | null }
+type Call = { method: string; url: string; body: { data?: { input?: { wishes?: string } }; entries?: { text: string }[] } | null }
 let calls: Call[] = []
-/** The server: one trip, "t1", whose saved data is what was last sent to it. */
+/** The server: one trip, "t1", whose saved data is what was last sent to it, and its journal (one day written on
+ *  another device). */
 function server({ offline = false } = {}) {
   let saved: unknown = { input: useTrip.getState().input, stops: [] }
+  let journal: Record<string, { date: string; highlight: string; text: string; updatedAt: number }> = { '2027-05-01': { date: '2027-05-01', highlight: '', text: 'on the laptop', updatedAt: 1 } }
   calls = []
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
@@ -35,7 +39,11 @@ function server({ offline = false } = {}) {
       saved = body.data
       return json(summary)
     }
-    if (url === '/api/trips/t1' && method === 'GET') return json({ data: saved, chat: null })
+    if (url === '/api/trips/t1' && method === 'GET') return json({ data: saved, chat: null, journal })
+    if (url === '/api/trips/t1/journal' && method === 'PUT') {
+      journal = mergeJournal(journal, body.entries)
+      return json({ journal })
+    }
     return new Response('{}', { status: 404 })
   })
 }
@@ -45,6 +53,7 @@ beforeEach(() => {
   stored.clear()
   useAccount.setState({ loaded: false, offline: false, user: null })
   useSaved.setState({ trips: [], activeId: null, status: 'idle', error: null })
+  useJournal.getState().clear()
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -90,5 +99,21 @@ describe('saved trips, offline', () => {
     useTrip.getState().setInput({ wishes: 'on a bus' })
     await vi.waitFor(() => expect(useSaved.getState().status).toBe('offline'), { timeout: 3000 })
     expect(stored.getItem('rtw-map-unsaved')).toBe('t1')
+  })
+
+  it("sends the journal's days written offline when back online, merged with those written elsewhere", async () => {
+    stored.setItem('rtw-map-active-trip', 't1')
+    server()
+    useAccount.setState({ loaded: true, offline: true })
+    useJournal.getState().write('2027-05-02', { text: 'on the phone, offline' })
+    await new Promise((r) => setTimeout(r, 1700))
+    expect(calls).toEqual([])
+
+    useAccount.setState({ offline: false, user: { sub: 'u1', name: 'U' } })
+    await vi.waitFor(() => expect(calls.map((c) => `${c.method} ${c.url}`)).toContain('PUT /api/trips/t1/journal'))
+    expect(calls.find((c) => c.url.endsWith('/journal'))?.body?.entries?.map((e) => e.text)).toEqual(['on the phone, offline'])
+    await vi.waitFor(() => expect(useJournal.getState().books.t1.pending).toEqual([]))
+    const { entries } = useJournal.getState().books.t1
+    expect(Object.values(entries).map((e) => e.text).sort()).toEqual(['on the laptop', 'on the phone, offline'])
   })
 })

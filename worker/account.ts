@@ -4,6 +4,7 @@
 import { DurableObject } from 'cloudflare:workers'
 import { canCall, current, spend, type AccountLimits, type Count } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
+import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 
 type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null }
@@ -25,6 +26,10 @@ export class Account extends DurableObject {
     // A trip's public link (its token), added after the table: older accounts get the column now.
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'share')) {
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN share TEXT')
+    }
+    // The trip's journal (src/store/journalCore.ts), apart from its data: merged day by day, never touched by a run.
+    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'journal')) {
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN journal TEXT')
     }
     // On the settings instance only: which account and trip each public link opens.
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
@@ -94,11 +99,28 @@ export class Account extends DurableObject {
     return { trips: rows.map((r) => this.summary(r)), lastId: (await this.ctx.storage.get<string>('lastTripId')) ?? null }
   }
 
-  async getTrip(id: string): Promise<(TripSummary & { data: unknown; chat: unknown }) | null> {
+  async getTrip(id: string): Promise<(TripSummary & { data: unknown; chat: unknown; journal: Journal }) | null> {
     const r = this.row(id)
     if (!r) return null
     await this.ctx.storage.put('lastTripId', id)
-    return { ...this.summary(r), data: r.data ? JSON.parse(r.data) : null, chat: r.chat ? JSON.parse(r.chat) : null }
+    return { ...this.summary(r), data: r.data ? JSON.parse(r.data) : null, chat: r.chat ? JSON.parse(r.chat) : null, journal: this.journal(id) ?? {} }
+  }
+
+  private journal(id: string): Journal | null {
+    const r = this.ctx.storage.sql.exec<{ journal: string | null }>('SELECT journal FROM trips WHERE id = ?', id).toArray()[0]
+    return r ? JSON.parse(r.journal ?? '{}') as Journal : null
+  }
+
+  /** Adds days written on a device to a trip's journal (each day's latest edit wins): the whole journal after, or
+   *  null if there's no such trip. Also while the assistant works on the trip: a run never changes the journal. */
+  async saveJournal(id: string, entries: DayEntry[]): Promise<Journal | null | string> {
+    const journal = this.journal(id)
+    if (!journal) return null
+    const merged = mergeJournal(journal, entries)
+    const text = JSON.stringify(merged)
+    if (Object.keys(merged).length > JOURNAL_LIMITS.days || text.length > JOURNAL_LIMITS.bytes) return "This trip's journal is too long to save"
+    this.ctx.storage.sql.exec('UPDATE trips SET journal = ? WHERE id = ?', text, id)
+    return merged
   }
 
   /** The assistant's run on a trip, if one is under way. */
