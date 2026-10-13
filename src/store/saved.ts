@@ -410,10 +410,10 @@ setServerRuns({
     const chat = chatData()
     const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
     useChat.setState({ busy: true, note: null, spent: NO_SPENT, startedAt: Date.now(), messages: [...chat.messages, asked] })
-    const { currency, tempUnit, tempFeels } = useTrip.getState()
+    const { currency, tempUnit, tempFeels, speaker } = useTrip.getState()
     const res = await fetch('/api/runs', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tripId, text, view, think, plan, media, display: { currency, tempUnit, tempFeels }, data: tripData(), chat, rev }),
+      body: JSON.stringify({ tripId, text, view, think, plan, media, display: { currency, tempUnit, tempFeels, speaker }, data: tripData(), chat, rev }),
     }).catch(() => null)
     const body = (await res?.json().catch(() => null)) as { run?: Run; error?: string; changed?: boolean } | null
     // Another app changed the trip since it was put on screen: show it as it is now (asking again starts from it).

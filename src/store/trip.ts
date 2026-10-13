@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
-import { evaluatePlan, isTravelling, localToday, pastChanges, withPrefs, type CostKind, type PastChange } from '../planner'
+import { evaluatePlan, isTravelling, localToday, pastChanges, withPrefs, type CostKind, type PastChange, type Speaker } from '../planner'
 import { useItems } from './items'
 import { seenPrices } from './itemsCore'
 import { SHARED_TOKEN } from './shareLink'
@@ -55,6 +55,8 @@ type State = TripCore & {
   priceCompare: string | null
   /** The city panel's daily cost and prices show the city's own currency instead of the display currency. */
   costsLocal: boolean
+  /** Who says the phrases: a woman's or a man's words where they differ (Settings). */
+  speaker: Speaker
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
   cityTab: CityTab
   /** The sub-tab open in each city panel tab that has them (e.g. Costs: daily, prices, paying). */
@@ -85,6 +87,7 @@ type State = TripCore & {
   setLocalNames: (on: boolean) => void
   setPriceCompare: (iso2: string) => void
   setCostsLocal: (on: boolean) => void
+  setSpeaker: (speaker: Speaker) => void
   /** Opens a city panel tab, and with `part` one of its sub-tabs. */
   setCityTab: (tab: CityTab, part?: string) => void
   /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
@@ -170,6 +173,7 @@ export const useTrip = create<State>()(
         localNames: true,
         priceCompare: null,
         costsLocal: false,
+        speaker: 'female',
         cityTab: 'overview',
         cityPart: {},
 
@@ -228,6 +232,7 @@ export const useTrip = create<State>()(
         setLocalNames: (localNames) => set({ localNames }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCostsLocal: (costsLocal) => set({ costsLocal }),
+        setSpeaker: (speaker) => set({ speaker }),
         setCityTab: (cityTab, part) => set((s) => ({ cityTab, ...(part && { cityPart: { ...s.cityPart, [cityTab]: part } }) })),
         openTrip: (data, keepView = false) => {
           const { broken, ...trip } = loadTrip(data, evalOptions(get()))
@@ -249,7 +254,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, costsLocal: s.costsLocal, cityTab: s.cityTab, cityPart: s.cityPart }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, costsLocal: s.costsLocal, speaker: s.speaker, cityTab: s.cityTab, cityPart: s.cityPart }),
       merge: (persisted, current) => {
         const { notes, ...kept } = persisted as Partial<State> & { notes?: TripNotes }
         // Notes were kept with the trip before items: they move there (saved.ts).

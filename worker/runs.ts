@@ -24,7 +24,7 @@ export type RunRequest = {
   /** Files attached to the message (src/agent/media.ts). */
   media?: Attachment[]
   /** How the user reads amounts and temperatures. */
-  display: { currency: string; tempUnit: 'C' | 'F'; tempFeels: boolean }
+  display: { currency: string; tempUnit: 'C' | 'F'; tempFeels: boolean; speaker: 'female' | 'male' }
 }
 
 /** A run as the Account keeps it: the message it answers (`text`), the reply so far as JSON text (text, steps, what
@@ -59,6 +59,7 @@ export function parseRunStart(raw: unknown): { tripId: string; data: unknown; ch
     currency: typeof d.currency === 'string' && /^[A-Z]{3}$/.test(d.currency) ? d.currency : 'USD',
     tempUnit: d.tempUnit === 'F' ? 'F' as const : 'C' as const,
     tempFeels: d.tempFeels !== false,
+    speaker: d.speaker === 'male' ? 'male' as const : 'female' as const,
   }
   if (r.data === undefined || r.chat === undefined) return 'Invalid trip'
   return {

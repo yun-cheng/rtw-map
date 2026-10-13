@@ -172,8 +172,11 @@ export type BigMac = { localPrice: number; currency: string }
 
 /** The everyday phrases each city's Phrases tab shows, in this order. */
 export type PhraseKey = 'hello' | 'thanks' | 'bye' | 'howMuch' | 'thisOne' | 'dontUnderstand' | 'cheers'
-/** A phrase in the local script, how to say it, and a note if it needs one. */
-export type Phrase = { text: string; say: string; note?: string }
+/** A phrase in the local script, how to say it, and a note if it needs one; `woman`, how a woman says it where it
+ *  differs (Portuguese "Obrigada"), with a note on the man's. */
+export type Phrase = { text: string; say: string; note?: string; woman?: { text: string; say: string; note?: string } }
+/** Who says the phrases (a setting): the words where a man and a woman say them differently. */
+export type Speaker = 'female' | 'male'
 /** A language's phrases, keyed by its language tag ("sr", "zh-TW"). */
 export type PhraseLanguage = { name: string; note?: string; phrases: Record<PhraseKey, Phrase> }
 /** Where each language is spoken: the first is the main one, the rest can be switched to. */

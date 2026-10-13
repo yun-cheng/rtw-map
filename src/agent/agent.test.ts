@@ -304,9 +304,14 @@ describe('My visit tools', () => {
     expect(run('remove_visit_item', { id: 'phrase:pl:i-m-vegetarian' }).summary).toBe('Removed phrase "I\'m vegetarian" (Polish)')
   })
 
-  it("tells the model the trip's languages, for phrases", () => {
+  it("tells the model the trip's languages and who says the phrases", () => {
     const ctx = tripContext()
     expect(ctx).toMatch(/Languages on the trip \(tag: name, where\), for phrases: .*mk: Macedonian \(North Macedonia\)/)
+    // And who says them (Settings), for the words a woman and a man say differently.
+    expect(ctx).toMatch(/says phrases as a woman/)
+    useTrip.getState().setSpeaker('male')
+    expect(tripContext()).toMatch(/says phrases as a man/)
+    useTrip.getState().setSpeaker('female')
   })
 
   it('changes My visit on a read-only trip, which keeps only its plans as they are', () => {

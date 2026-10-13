@@ -1,6 +1,6 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
 import { MODE_ICON, VISA_TEXT, compact, duration, flag, rateText, shortDate, shownTemps } from '../ui/format'
 import { CurrencyToggle } from '../ui/CurrencyToggle'
@@ -99,6 +99,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   // The language the Phrases tab is in: the city's main one until another is picked.
   const [phraseLang, setPhraseLang] = useState<string | null>(null)
   const lang = phrases?.languages.find((l) => l.tag === phraseLang) ?? phrases?.languages[0]
+  // (As a woman or a man says them: Settings.)
+  const speaker = useTrip((s) => s.speaker)
   const card = cardLevel(ds, cityId)
   const payNote = ds.payments.cities[cityId]?.note
   const entryNotices = country.schengen && schengenApplies(ds, input.passport)
@@ -507,7 +509,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
         {(phrases.note || lang?.note) && <p className="mb-1.5 text-[12px] text-muted">{[lang?.note, phrases.note].filter(Boolean).join(' ')}</p>}
         {lang && PHRASES.map(({ key, label }) => {
-          const p = lang.phrases[key]
+          const p = phraseAs(lang.tag, lang.phrases[key], speaker)
           return (
             <div key={key} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="shrink-0 text-[13px] text-muted">{label}</span>

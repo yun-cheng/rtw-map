@@ -216,9 +216,9 @@ describe('assistant runs', () => {
   it('checks what the browser sends to start a run', () => {
     expect(parseRunStart(start)).toMatchObject({
       tripId: 'trip-1',
-      request: { text: 'Plan my trip', view: [], think: false, plan: 'new', display: { currency: 'USD', tempUnit: 'C', tempFeels: true } },
+      request: { text: 'Plan my trip', view: [], think: false, plan: 'new', display: { currency: 'USD', tempUnit: 'C', tempFeels: true, speaker: 'female' } },
     })
-    expect(parseRunStart({ ...start, display: { currency: 'TWD', tempUnit: 'F', tempFeels: false } })).toMatchObject({ request: { display: { currency: 'TWD', tempUnit: 'F', tempFeels: false } } })
+    expect(parseRunStart({ ...start, display: { currency: 'TWD', tempUnit: 'F', tempFeels: false, speaker: 'male' } })).toMatchObject({ request: { display: { currency: 'TWD', tempUnit: 'F', tempFeels: false, speaker: 'male' } } })
     expect(parseRunStart({ ...start, text: ' ' })).toBe('Invalid message')
     expect(parseRunStart({ ...start, tripId: '../x' })).toBe('Invalid trip')
     expect(parseRunStart({ ...start, plan: 'redo' })).toBe('Invalid plan')

@@ -5,7 +5,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla'
 import { dataset as ds } from '../data/dataset'
 import {
   DEFAULT_PREFS, addDays, addStop, evaluatePlan, stylePrefs, withPrefs,
-  type Budget, type EvalOptions, type Plan, type SeenPrices, type Stop, type TravelPrefs, type TripInput,
+  type Budget, type EvalOptions, type Plan, type SeenPrices, type Speaker, type Stop, type TravelPrefs, type TripInput,
 } from '../planner'
 import type { TempUnit } from '../ui/format'
 
@@ -36,6 +36,8 @@ export type Display = {
   tempFeels: boolean
   /** Prices the user saw in cities (My visit, in EUR): they replace ours in the plan's costs and budget checks. */
   seenPrices?: SeenPrices
+  /** Who says the phrases (a woman, unless set): the assistant saves the forms they use. */
+  speaker?: Speaker
 }
 /** How the plan is checked for this display: temperatures as shown, the prices seen. */
 export const evalOptions = (d: Display): EvalOptions => ({ feels: d.tempFeels, prices: d.seenPrices })

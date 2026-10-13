@@ -1,4 +1,4 @@
-import type { Dataset, PhraseKey, PhraseLanguage } from './types'
+import type { Dataset, Phrase, PhraseKey, PhraseLanguage, Speaker } from './types'
 
 /** The phrases every language has, in the order shown: just enough for a few days anywhere. */
 export const PHRASES: { key: PhraseKey; label: string }[] = [
@@ -19,4 +19,18 @@ export function phrasesFor(ds: Dataset, cityId: string): { languages: ({ tag: st
   const place = ds.phrases.cities?.[cityId] ?? ds.phrases.countries[ds.cities[cityId].iso2]
   if (!place) return null
   return { languages: place.languages.map((tag) => ({ tag, ...ds.phrases.languages[tag] })), note: place.note }
+}
+
+/**
+ * A phrase as the speaker says it: a woman's own form where it has one; Thai's polite word, written for both
+ * ("ขอบคุณครับ/ค่ะ", "khrap/kha"), as theirs (men ครับ, women ค่ะ or คะ).
+ */
+export function phraseAs(tag: string, p: Phrase, speaker: Speaker): Phrase {
+  const own = speaker === 'female' && p.woman ? { ...p.woman } : { text: p.text, say: p.say, note: p.note }
+  if (tag !== 'th') return own
+  return {
+    ...own,
+    text: own.text.replace(/ครับ\/(ค่ะ|คะ)/g, (_, her: string) => (speaker === 'male' ? 'ครับ' : her)),
+    say: own.say.replace(/khrap\/kha/g, speaker === 'male' ? 'khrap' : 'kha'),
+  }
 }

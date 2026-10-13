@@ -5,7 +5,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, cityPrices, comparePrices, costOf, costProfile, costSanity, estimatedCosts, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, cityPrices, comparePrices, costOf, costProfile, costSanity, estimatedCosts, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phraseAs, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary, schengenUsed } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -174,6 +174,19 @@ describe('phrases', () => {
     expect(phrasesFor(ds, 'tokyo')!.languages[0].phrases.thanks.text).toBe('ありがとうございます')
     expect(phrasesFor(ds, 'minsk')!.languages.map((l) => l.tag)).toEqual(['ru', 'be'])
     expect(phrasesFor(ds, 'singapore')!.languages).toEqual([])
+  })
+  it("shows a phrase as a woman or a man says it, where they differ", () => {
+    const thanks = ds.phrases.languages['pt-PT'].phrases.thanks
+    expect(phraseAs('pt-PT', thanks, 'male').text).toBe('Obrigado')
+    expect(phraseAs('pt-PT', thanks, 'female')).toMatchObject({ text: 'Obrigada', say: 'oh-bree-GAH-dah' })
+    // Thai's polite word, written for both, as the speaker's.
+    const hello = ds.phrases.languages.th.phrases.hello
+    expect(phraseAs('th', hello, 'male')).toMatchObject({ text: 'สวัสดีครับ', say: 'sa-wat-DEE khrap' })
+    expect(phraseAs('th', ds.phrases.languages.th.phrases.howMuch, 'female')).toMatchObject({ text: 'เท่าไหร่คะ', say: 'tao-RAI kha' })
+    // The same for both everywhere else.
+    expect(phraseAs('sq', ds.phrases.languages.sq.phrases.thanks, 'female').text).toBe('Faleminderit')
+    // Every woman's form is whole.
+    for (const l of Object.values(ds.phrases.languages)) for (const p of Object.values(l.phrases)) if (p.woman) expect(p.woman.text && p.woman.say).toBeTruthy()
   })
 })
 

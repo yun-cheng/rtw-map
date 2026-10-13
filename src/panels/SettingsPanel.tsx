@@ -11,6 +11,7 @@ import { AccountLimits } from './AccountLimits'
 import { AiApps } from './AiApps'
 import { AccountDetails, AccountMenu } from './AccountMenu'
 import { OfflineMapSettings } from './OfflineMap'
+import { PhraseSettings } from './PhraseSettings'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
@@ -18,7 +19,7 @@ import { TripSwitcher } from './TripSwitcher'
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
 
 /**
- * All the settings (trips, currency, temperature unit, theme, offline map, account) in a panel that slides in from the
+ * All the settings (trips, currency, temperature unit, theme, phrases, offline map, account) in a panel that slides in from the
  * right: on a phone from the gear over the map (the map gets the top bar's room), on a computer from the gear in the
  * top bar (which has the display settings at hand too).
  */
@@ -80,6 +81,9 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                   <div className="w-32"><Segmented value={localNames ? 'show' : 'hide'} onChange={(v) => setLocalNames(v === 'show')} options={[{ value: 'show', label: 'Show' }, { value: 'hide', label: 'Hide' }]} /></div>
                 </div>
               </div>
+            </Section>
+            <Section title="Phrases">
+              <PhraseSettings />
             </Section>
             {!SHARED_TOKEN && plan && (
               <Section title="Offline map">

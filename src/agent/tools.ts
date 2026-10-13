@@ -219,7 +219,7 @@ export function tripContext(): string {
     })
     lines.push(`Cost estimate: €${Math.round(plan.cost.min)}–€${Math.round(plan.cost.max)} (≈€${Math.round(plan.cost.perDay)}/day).`)
     const languages = tripLanguages(plan.stops.map((s) => s.cityId))
-    if (languages) lines.push(`Languages on the trip (tag: name, where), for phrases: ${languages}.`)
+    if (languages) lines.push(`Languages on the trip (tag: name, where), for phrases: ${languages}. The user says phrases as ${trip().speaker === 'male' ? 'a man' : 'a woman'} (their setting): where a man and a woman say a phrase differently, save the form they use.`)
     if (plan.schengen.applies) lines.push(`Schengen: ${plan.schengen.maxInWindow} of ${plan.schengen.limit} days used in the worst 180-day window.`)
     const warnings = plan.warnings.filter((w) => w.severity !== 'info' && !w.cityId)
     if (warnings.length) lines.push(`Other problems:\n${warnings.slice(0, 15).map((w) => `- ${warningTitle(w, 'C')}`).join('\n')}`)

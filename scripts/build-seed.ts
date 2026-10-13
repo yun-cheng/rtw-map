@@ -105,6 +105,9 @@ const phraseProblems = [
   ...Object.entries(phrases.cities ?? {}).flatMap(([id, x]) => [...(cityIds.includes(id) ? [] : [`unknown city ${id}`]), ...placeProblems(id, x)]),
   ...Object.entries(phrases.languages).flatMap(([tag, l]) =>
     PHRASES.filter((p) => !l.phrases[p.key]?.text || !l.phrases[p.key]?.say).map((p) => `${tag}: missing ${p.key}`)),
+  // (A woman's form is whole: her text and how to say it.)
+  ...Object.entries(phrases.languages).flatMap(([tag, l]) =>
+    PHRASES.filter((p) => { const w = l.phrases[p.key]?.woman; return w && (!w.text || !w.say) }).map((p) => `${tag}: ${p.key}'s woman form needs text and say`)),
 ]
 if (phraseProblems.length) {
   console.error(`phrases.json: ${phraseProblems.join('; ')}`)
