@@ -222,6 +222,8 @@ The `data/` folder is kept in a private **Cloudflare R2** bucket instead of git,
 
 Seed data is hand-made and can't be rebuilt, so it gets dated copies; generated data is rebuilt by the scripts.
 
+Files go up and down 16 at a time (a full pull of the thousand-odd files takes about 15 s).
+
 Setup (once):
 1. In the Cloudflare dashboard, create an R2 bucket (private, the default).
 2. Create an R2 API token with **Object Read & Write** on that bucket. Note the Access Key ID, the Secret Access Key and your Account ID.

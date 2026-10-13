@@ -6,6 +6,7 @@
 //   tsx scripts/r2.ts restore <date>    put that day's seed copy back into data/seed/ (then push to make it current)
 // When a push changes any seed file, the whole seed folder is also copied to snapshots/<date>/seed/, so earlier
 // versions of the hand-curated data can be restored. Generated data needs no copies: the scripts rebuild it.
+// Files go up and down several at a time (the data is a thousand-odd files, most of them small speech clips).
 // Credentials come from the environment or .env.local (git-ignored):
 //   R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET
 import { createHash } from 'node:crypto'
@@ -70,27 +71,32 @@ const md5 = (buf: Buffer) => createHash('md5').update(buf).digest('hex')
 const put = (key: string, body: Buffer) =>
   call(objectUrl(key), { method: 'PUT', body: new Uint8Array(body), headers: { 'Content-Type': CONTENT_TYPES[key.split('.').pop() ?? ''] ?? 'application/octet-stream' } })
 
+/** Runs the work on every item, several at a time. */
+async function each<T>(items: T[], work: (item: T) => Promise<void>, at = 16) {
+  let next = 0
+  await Promise.all(Array.from({ length: Math.min(at, items.length) }, async () => {
+    while (next < items.length) await work(items[next++])
+  }))
+}
+
 const keyOf = (path: string) => `${PREFIX}${relative(DATA, path).split('\\').join('/')}`
 
 async function push() {
   const remote = await listRemote()
-  let uploaded = 0
-  let seedChanged = false
-  for (const path of localFiles(DATA)) {
-    const key = keyOf(path)
-    const body = readFileSync(path)
-    if (remote.get(key) === md5(body)) continue
-    await put(key, body)
-    console.log(`uploaded ${key}`)
-    uploaded++
-    if (key.startsWith(`${PREFIX}seed/`)) seedChanged = true
-  }
-  console.log(`${uploaded} file(s) uploaded, ${remote.size} already in the bucket before`)
+  const changed = localFiles(DATA).filter((path) => remote.get(keyOf(path)) !== md5(readFileSync(path)))
+  await each(changed, async (path) => {
+    await put(keyOf(path), readFileSync(path))
+    console.log(`uploaded ${keyOf(path)}`)
+  })
+  const seedChanged = changed.some((path) => keyOf(path).startsWith(`${PREFIX}seed/`))
+  console.log(`${changed.length} file(s) uploaded, ${remote.size} already in the bucket before`)
 
   // Keep a dated copy of the whole seed folder (one per day; a later push the same day replaces it).
   if (seedChanged) {
     const date = new Date().toISOString().slice(0, 10)
-    for (const path of localFiles(join(DATA, 'seed'))) await put(`${SNAPSHOTS}${date}/${keyOf(path).slice(PREFIX.length)}`, readFileSync(path))
+    await each(localFiles(join(DATA, 'seed')), async (path) => {
+      await put(`${SNAPSHOTS}${date}/${keyOf(path).slice(PREFIX.length)}`, readFileSync(path))
+    })
     console.log(`seed data changed: saved a copy as ${SNAPSHOTS}${date}/seed/`)
   }
 }
@@ -104,27 +110,26 @@ async function restore(date: string | undefined) {
   if (!date) throw new Error('Usage: tsx scripts/r2.ts restore <date>   (see: tsx scripts/r2.ts snapshots)')
   const files = await listRemote(`${SNAPSHOTS}${date}/seed/`)
   if (!files.size) throw new Error(`No snapshot for ${date}.`)
-  for (const key of files.keys()) {
+  await each([...files.keys()], async (key) => {
     const path = join(DATA, key.slice(`${SNAPSHOTS}${date}/`.length))
+    const body = Buffer.from(await (await call(objectUrl(key))).arrayBuffer())
     mkdirSync(dirname(path), { recursive: true })
-    writeFileSync(path, Buffer.from(await (await call(objectUrl(key))).arrayBuffer()))
-  }
+    writeFileSync(path, body)
+  })
   console.log(`Restored ${files.size} seed file(s) from ${date} into data/seed/. Check them, then run "npm run data:push" to make them current.`)
 }
 
 async function pull() {
   const remote = await listRemote()
   if (!remote.size) throw new Error(`The bucket ${R2_BUCKET} has no files under ${PREFIX}; run "npm run data:push" first.`)
-  let downloaded = 0
-  for (const [key, etag] of remote) {
-    const path = join(DATA, key.slice(PREFIX.length))
-    if (existsSync(path) && md5(readFileSync(path)) === etag) continue
+  const pathOf = (key: string) => join(DATA, key.slice(PREFIX.length))
+  const changed = [...remote].filter(([key, etag]) => !existsSync(pathOf(key)) || md5(readFileSync(pathOf(key))) !== etag).map(([key]) => key)
+  await each(changed, async (key) => {
     const body = Buffer.from(await (await call(objectUrl(key))).arrayBuffer())
-    mkdirSync(dirname(path), { recursive: true })
-    writeFileSync(path, body)
-    downloaded++
-  }
-  console.log(`${downloaded} file(s) downloaded, ${remote.size - downloaded} already up to date`)
+    mkdirSync(dirname(pathOf(key)), { recursive: true })
+    writeFileSync(pathOf(key), body)
+  })
+  console.log(`${changed.length} file(s) downloaded, ${remote.size - changed.length} already up to date`)
 }
 
 const command = process.argv[2]
