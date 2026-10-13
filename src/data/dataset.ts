@@ -51,7 +51,8 @@ export const dataset: Dataset = {
   shopping: shoppingJson.countries as Dataset['shopping'],
   payments: paymentsJson as unknown as Dataset['payments'],
   phrases: phrasesJson as unknown as Dataset['phrases'],
-  priceLevels: { compare: priceLevelsJson.compare, levels: priceLevelsJson.levels },
+  // (Only real levels: an older file may hold a 0 where the source had a gap.)
+  priceLevels: { compare: priceLevelsJson.compare, levels: Object.fromEntries(Object.entries(priceLevelsJson.levels).filter(([, l]) => l.level > 0)) },
   bigMac: bigMacJson as unknown as Dataset['bigMac'],
   meta: {
     cities: citiesJson._meta,

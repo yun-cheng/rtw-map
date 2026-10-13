@@ -49,8 +49,10 @@ for (const { iso2, currency } of wanted) {
   const fromImf = imf?.[iso3[iso2]]?.[imfYear]
   const ppp = fromWb ? { value: fromWb.value, year: fromWb.year, source: 'World Bank' } : fromImf ? { value: fromImf, year: Number(imfYear), source: 'IMF' } : null
   if (!ppp && !imf && previous[iso2]) { levels[iso2] = previous[iso2]; continue } // IMF unreachable: keep last year's figure
-  if (!ppp || !lcuPerUsd) { console.error(`no price level for ${iso2}`); continue }
-  levels[iso2] = { level: Math.round((ppp.value / lcuPerUsd) * 100) / 100, year: ppp.year, source: ppp.source }
+  const level = ppp && lcuPerUsd ? Math.round((ppp.value / lcuPerUsd) * 100) / 100 : 0
+  // (A level that rounds to 0 is a gap in the source, as for Liberia: no level rather than a wrong one.)
+  if (!(level > 0)) { console.error(`no price level for ${iso2}`); continue }
+  levels[iso2] = { level, year: ppp!.year, source: ppp!.source }
   console.log(`${iso2} ${levels[iso2].level} (${ppp.source} ${ppp.year})`)
 }
 
