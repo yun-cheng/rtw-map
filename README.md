@@ -186,6 +186,7 @@ Hand-curated files are in `data/seed/`; scripts enrich them from open sources in
 | `fetch-population.ts` | World Bank (CC-BY); national statistics where missing (Taiwan: Ministry of the Interior household registration) | `population.json` |
 | `fetch-price-levels.ts` | World Bank PPP (IMF where missing) ÷ our exchange rates | `price-levels.json`: US = 1.00; also used to estimate costs where we have none |
 | `fetch-big-mac.ts` | The Economist's Big Mac index (MIT) | `big-mac.json` |
+| `fetch-holidays.ts` | Google Calendar's public holiday calendars (`en.<country code>#holiday`, or an older name like `en.german`), as iCal | `holidays.json`: each country's entries marked *Public holiday* (nationwide) or *Public holiday in …* (with its regions), every year Google has (from 2021 to about five years ahead). Years Google no longer has are kept from the last run, for past trips; a calendar that can't be reached keeps its holidays. None for 6 territories (Åland, Palestine, Western Sahara, Niue, Norfolk Island, Pitcairn). Days set each year (bridge and substitute days, Islamic holidays) come in as they're announced |
 | `build-speech.ts` | Azure AI Speech, neural text-to-speech (Microsoft; computer voices) | `speech.json` and `speech/<tag>/*.mp3`: the seven phrases of every language Azure has a voice for, read aloud by a woman's and a man's voice; see "Phrases read aloud" |
 
 ```bash

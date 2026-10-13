@@ -1,4 +1,4 @@
-# Refreshes fast-changing data (advisories, exchange rates, population, price levels) weekly, on Mondays.
+# Refreshes fast-changing data (advisories, exchange rates, population, price levels, public holidays) weekly, on Mondays.
 # Start it by hand (Actions tab, or `gh workflow run "Refresh data"`) after a big advisory change.
 # The data lives in a private Cloudflare R2 bucket, not in git: pull it, refresh, test, upload the result.
 # Then the site is rebuilt and published with the new data (deploy.yml).
