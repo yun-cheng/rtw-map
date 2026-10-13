@@ -131,7 +131,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
         <div className="mt-2">
           {transit.pay && <Row label="How to pay">{transit.pay}</Row>}
-          <Row label="Local transport / day">{cost ? fmt(cost.localTransportDay) : '–'}</Row>
+          <Row label="Local transport / day">{!cost ? '–' : cost.localTransportDay ? fmt(cost.localTransportDay) : 'Free'}</Row>
         </div>
         {transit.note && <p className="mt-1 text-[13px]">{transit.note}</p>}
 

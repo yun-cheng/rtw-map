@@ -25,7 +25,8 @@ writeJson(join(GEN, 'countries.json'), {
 writeJson(join(GEN, 'notices.json'), readJson(join(SEED, 'notices.json')))
 
 // Prices in the money they're quoted in (the country's currency; US dollars in Cambodia). The app converts them to
-// EUR with the current exchange rates (costsInEur), so they don't go stale when a currency moves.
+// EUR with the current exchange rates (costsInEur), so they don't go stale when a currency moves. Local transport is
+// 0 where it's free (Luxembourg).
 const costs = Object.fromEntries(
   readCsv(join(SEED, 'costs.csv')).map((r) => {
     const profile = {
@@ -34,13 +35,13 @@ const costs = Object.fromEntries(
       localTransportDay: num(r.localTransportDay), coffee: num(r.coffee), beerBar: num(r.beerBar),
       groceries: Object.fromEntries(GROCERY_KEYS.map((k) => [k, num(r[k])])),
     }
-    const bad = [...Object.entries(profile), ...Object.entries(profile.groceries)].filter(([, v]) => typeof v === 'number' && !(v > 0))
+    const bad = [...Object.entries(profile), ...Object.entries(profile.groceries)].filter(([k, v]) => typeof v === 'number' && !(v > 0 || (k === 'localTransportDay' && v === 0)))
     if (!/^[A-Z]{3}$/.test(r.currency) || bad.length) throw new Error(`costs.csv ${r.iso2}: ${bad.length ? `bad ${bad.map(([k]) => k).join(', ')}` : 'no currency'}`)
     return [r.iso2, profile]
   }),
 )
 writeJson(join(GEN, 'costs.json'), {
-  _meta: { source: 'Seed estimates in local currency, not yet verified', updatedAt: COSTS_DATE, confidence: 'low' },
+  _meta: { source: 'Seed estimates in local currency, not yet verified; those for the countries added on 2026-10-13 are AI-drafted', updatedAt: COSTS_DATE, confidence: 'low' },
   costs,
 })
 
@@ -50,7 +51,7 @@ const connections = readCsv(join(SEED, 'connections.csv')).map((r) => ({
   overnight: r.overnight === '1', note: r.note || undefined,
 }))
 writeJson(join(GEN, 'connections.json'), {
-  _meta: { source: 'Seed estimates (Wikivoyage, operator sites); verify before booking', updatedAt: SEED_DATE, confidence: 'low' },
+  _meta: { source: 'Seed estimates (Wikivoyage, operator sites); those for the countries added on 2026-10-13 are AI-drafted. Verify before booking', updatedAt: SEED_DATE, confidence: 'low' },
   connections,
 })
 

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
+import { openDataOnly } from '../data/openDataOnly'
 import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
@@ -144,7 +145,7 @@ describe('english level', () => {
     expect(sigulda.level).toBe(Math.max(1, ds.countries.LV.english!.level - 1))
     expect(sigulda.reason).toMatch(/small town/)
     // No estimate made up for a country with only its capital from open data.
-    expect(englishLevel(ds, 'nairobi')).toBeNull()
+    expect(englishLevel(openDataOnly(ds, ['KE']), 'nairobi')).toBeNull()
   })
 
   it('adds a language note for stops where English is limited', () => {
@@ -161,7 +162,7 @@ describe('english level', () => {
 describe('phrases', () => {
   it('has every phrase, with how to say it, in every language of every city', () => {
     // Hand-curated cities only: a capital from open data has no phrases (none made up).
-    expect(phrasesFor(ds, 'nairobi')).toBeNull()
+    expect(phrasesFor(openDataOnly(ds, ['KE']), 'nairobi')).toBeNull()
     for (const id of Object.keys(ds.cities).filter((id) => !ds.cities[id].auto)) {
       const p = phrasesFor(ds, id)
       expect(p, id).not.toBeNull()
@@ -562,7 +563,7 @@ describe('money & payments', () => {
     expect(cardLevel(ds, 'theth')!.level).toBe(1) // city override: cash only
     expect(cardLevel(ds, 'tirana')!.level).toBe(ds.payments.countries.AL.cardLevel + 1) // capital: easier
     expect(cardLevel(ds, 'prague')!.level).toBe(5)
-    expect(cardLevel(ds, 'nairobi')).toBeNull() // no payments entry: none made up
+    expect(cardLevel(openDataOnly(ds, ['KE']), 'nairobi')).toBeNull() // no payments entry: none made up
   })
 
   it('warns where foreign cards fail and lists cash-only stops', () => {
@@ -576,11 +577,11 @@ describe('money & payments', () => {
 })
 
 describe('price levels and estimated costs', () => {
-  it('has a price level for every country we cover', () => {
-    for (const c of Object.values(ds.countries)) if (!c.auto) expect(ds.priceLevels.levels[c.iso2]?.level, c.iso2).toBeGreaterThan(0)
-    // Most others too (not small territories the World Bank and IMF don't cover).
-    const auto = Object.values(ds.countries).filter((c) => c.auto)
-    expect(auto.filter((c) => ds.priceLevels.levels[c.iso2]).length).toBeGreaterThan(auto.length * 0.8)
+  it('has a price level for nearly every country', () => {
+    // Not for small territories the World Bank and IMF don't cover, or gaps in their data (Liberia, Cuba).
+    const missing = Object.values(ds.countries).filter((c) => !(ds.priceLevels.levels[c.iso2]?.level > 0))
+    expect(missing.length).toBeLessThan(Object.keys(ds.countries).length * 0.2)
+    for (const iso2 of ['PL', 'RU', 'JP', 'TH', 'DE', 'US', 'BR', 'KE']) expect(ds.priceLevels.levels[iso2]?.level, iso2).toBeGreaterThan(0)
   })
 
   it('describes price differences in plain language', () => {
@@ -768,9 +769,10 @@ describe('a country added on its own as optional', () => {
 
 describe('countries without curated cities', () => {
   it('plans the rest of the trip and says which countries were left out', () => {
-    // Brazil has only its capital, from open data: plans leave it out.
-    const input = testTrip('TW', { groups: [makeGroup(ds, 'Balkans', ['AL', 'ME', 'HR']), makeGroup(ds, 'Brazil', ['BR'])] })
-    const plan = generatePlan(ds, input)
+    // Brazil with only its capital, from open data: plans leave it out.
+    const data = openDataOnly(ds, ['BR'])
+    const input = testTrip('TW', { groups: [makeGroup(data, 'Balkans', ['AL', 'ME', 'HR']), makeGroup(data, 'Brazil', ['BR'])] })
+    const plan = generatePlan(data, input)
     expect(plan.stops.length).toBeGreaterThan(0)
     expect(plan.stops.every((s) => ['AL', 'ME', 'HR'].includes(iso(s.cityId)))).toBe(true)
     expect(plan.warnings.map((w) => w.title)).toContain('Brazil left out: no curated cities there yet')

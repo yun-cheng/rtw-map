@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
@@ -7,9 +7,16 @@ import { evaluatePlan, generatePlan } from '../planner'
 import { MAP_LAYERS, useTrip } from '../store/trip'
 import { CITY_SECTIONS, COMPARE_FIELDS, bindTrip, runTool } from './tools'
 
-// Capitals added from open data only (build-capitals.ts) have none of the hand-curated data (tags, health, payments,
-// local transport, phrases, connections), and their countries none of what's written for the app: every tool, view
-// and check must work without it, and say nothing made up.
+// A capital added from open data only (build-capitals.ts) has none of the curated data (tags, health, payments, local
+// transport, phrases, connections), and its country none of what's written for the app: every tool, view and check
+// must work without it, and say nothing made up. Every country has curated data now, so these countries are cut back
+// to open data for the test (openDataOnly).
+const OPEN_DATA_ONLY = vi.hoisted(() => ['DE', 'KE', 'BR', 'FJ', 'US', 'IN', 'EG', 'MX', 'AU', 'IS', 'SO', 'TV'])
+vi.mock('../data/dataset', async (importOriginal) => {
+  const { dataset } = await importOriginal<typeof import('../data/dataset')>()
+  const { openDataOnly } = await import('../data/openDataOnly')
+  return { dataset: openDataOnly(dataset, OPEN_DATA_ONLY) }
+})
 const auto = Object.values(ds.cities).filter((c) => c.auto)
 
 beforeEach(() => {
@@ -18,9 +25,9 @@ beforeEach(() => {
 })
 
 describe('capitals from open data only', () => {
-  it('are there for every country on the map without curated cities', () => {
+  it('are marked, with no curated profile', () => {
     const curated = new Set(Object.values(ds.cities).filter((c) => !c.auto).map((c) => c.iso2))
-    expect(auto.length).toBeGreaterThan(150)
+    expect(new Set(auto.map((c) => c.iso2))).toEqual(new Set(OPEN_DATA_ONLY))
     for (const c of auto) {
       expect(curated.has(c.iso2), c.id).toBe(false)
       expect(ds.countries[c.iso2]?.auto, c.iso2).toBe(true)
@@ -69,7 +76,7 @@ describe('capitals from open data only', () => {
 
   it('are checked in a plan without errors', () => {
     const input = testCaseInput(ds, 'US')
-    const stops = auto.slice(0, 40).map((c) => ({ cityId: c.id, nights: 2, locked: false, groupId: '' }))
+    const stops = auto.map((c) => ({ cityId: c.id, nights: 2, locked: false, groupId: '' }))
     expect(() => evaluatePlan(ds, input, stops)).not.toThrow()
   })
 })
