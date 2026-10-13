@@ -1,7 +1,8 @@
 // Cloudflare Worker for the site: serves the built app (dist/) as static files, and /api/* from worker/index.ts
 // (the trip assistant, which calls Gemini). Build first: npm run data:pull && npm run build
-// Secrets (not in this file): GEMINI_API_KEY, SESSION_SECRET and ADMIN_EMAILS (who may edit the assistant's
-// per-account limits, comma-separated), set with `wrangler secret put <name>`.
+// Secrets (not in this file): GEMINI_API_KEY, SESSION_SECRET, ADMIN_EMAILS (who may edit the assistant's
+// per-account limits, comma-separated) and AZURE_SPEECH_KEY (reads the user's phrases aloud), set with
+// `wrangler secret put <name>`.
 // Local development: npm run dev:api (reads .env.local) next to npm run dev, which forwards /api to it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -19,7 +20,9 @@
     // The trip assistant's runner on Google Cloud Run (runner/), which answers messages on the server.
     "RUNNER_URL": "https://rtw-runner-74681591008.asia-east1.run.app",
     // OAuth client ID for "Sign in with Google" (public, not a secret).
-    "GOOGLE_CLIENT_ID": "1006259365129-beetumg7v2gv10r49f218m2hqlcg6n7m.apps.googleusercontent.com"
+    "GOOGLE_CLIENT_ID": "1006259365129-beetumg7v2gv10r49f218m2hqlcg6n7m.apps.googleusercontent.com",
+    // Azure AI Speech's region (its key is a secret): reads the user's phrases aloud.
+    "AZURE_SPEECH_REGION": "eastasia"
   },
   // Per-user data (worker/account.ts): saved trips and assistant usage, one Durable Object per Google account.
   "durable_objects": {
@@ -30,7 +33,9 @@
   "ratelimits": [
     { "name": "CHAT_LIMIT", "namespace_id": "1001", "simple": { "limit": 20, "period": 60 } },
     // Trip saves per user per minute (the app saves about a second after each change).
-    { "name": "SAVE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } }
+    { "name": "SAVE_LIMIT", "namespace_id": "1002", "simple": { "limit": 60, "period": 60 } },
+    // The user's phrases read aloud (Azure) per user per minute.
+    { "name": "SPEECH_LIMIT", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } }
   ],
   "workers_dev": true,
   "preview_urls": false

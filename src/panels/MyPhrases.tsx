@@ -7,6 +7,7 @@ import { dataset as ds } from '../data/dataset'
 import { useItems, useItemsAt, type TripItem } from '../store/items'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { ask } from '../ui/dialog'
+import { Speak } from '../ui/Speak'
 
 /** The same phrase in every language: the ids that end alike (`phrase:<tag>:<meaning>`). */
 const meaning = (id: string) => id.split(':').slice(2).join(':')
@@ -45,7 +46,10 @@ export function MyPhrases({ tag }: { tag: string }) {
             )}
           </span>
           <div className="min-w-0 text-right">
-            <div lang={tag} className="text-[15px] font-medium">{p.text}</div>
+            <div className="flex items-baseline justify-end gap-1.5">
+              <Speak tag={tag} text={p.text!} />
+              <span lang={tag} className="text-[15px] font-medium">{p.text}</span>
+            </div>
             {p.say && <div className="text-[12px] text-muted">{p.say}</div>}
             {p.tip && <div className="text-[11px] text-muted">{p.tip}</div>}
           </div>

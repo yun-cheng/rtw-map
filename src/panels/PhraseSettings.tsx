@@ -1,4 +1,5 @@
-// Settings → Phrases: who says the phrases, a woman or a man (their words where they differ).
+// Settings → Phrases: who says the phrases, a woman or a man (their words where they differ, and the voice that reads
+// them aloud).
 import { type Speaker } from '../planner'
 import { useTrip } from '../store/trip'
 import { Segmented } from '../ui/kit'
@@ -15,7 +16,7 @@ export function PhraseSettings() {
         <span className="text-muted">Said as</span>
         <div className="w-44"><Segmented value={speaker} onChange={setSpeaker} options={SPEAKERS} /></div>
       </div>
-      <p className="text-[12px] text-muted">The words where a woman and a man say them differently (Thai, Portuguese, Hebrew).</p>
+      <p className="text-[12px] text-muted">The voice that reads them aloud, and the words where a woman and a man say them differently (Thai, Portuguese, Hebrew).</p>
     </div>
   )
 }

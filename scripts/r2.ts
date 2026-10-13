@@ -17,7 +17,7 @@ import { ROOT } from './lib.ts'
 const DATA = join(ROOT, 'data')
 const PREFIX = 'data/'
 const SNAPSHOTS = 'snapshots/'
-const CONTENT_TYPES: Record<string, string> = { json: 'application/json', csv: 'text/csv' }
+const CONTENT_TYPES: Record<string, string> = { json: 'application/json', csv: 'text/csv', mp3: 'audio/mpeg' }
 
 const envFile = join(ROOT, '.env.local')
 if (existsSync(envFile)) process.loadEnvFile(envFile)

@@ -19,6 +19,7 @@ import { confirmRemove } from './Itinerary'
 import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { MyPhrases } from './MyPhrases'
+import { Speak } from '../ui/Speak'
 import { PriceEdit } from './PriceEdit'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
@@ -514,7 +515,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <div key={key} className="flex items-baseline justify-between gap-3 py-1.5">
               <span className="shrink-0 text-[13px] text-muted">{label}</span>
               <div className="min-w-0 text-right">
-                <div lang={lang.tag} className="text-[15px] font-medium">{p.text}</div>
+                <div className="flex items-baseline justify-end gap-1.5">
+                  <Speak tag={lang.tag} text={p.text} phrase={key} />
+                  <span lang={lang.tag} className="text-[15px] font-medium">{p.text}</span>
+                </div>
                 <div className="text-[12px] text-muted">{p.say}</div>
                 {p.note && <div className="text-[11px] text-muted">{p.note}</div>}
               </div>

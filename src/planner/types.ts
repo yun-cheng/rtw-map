@@ -175,7 +175,7 @@ export type PhraseKey = 'hello' | 'thanks' | 'bye' | 'howMuch' | 'thisOne' | 'do
 /** A phrase in the local script, how to say it, and a note if it needs one; `woman`, how a woman says it where it
  *  differs (Portuguese "Obrigada"), with a note on the man's. */
 export type Phrase = { text: string; say: string; note?: string; woman?: { text: string; say: string; note?: string } }
-/** Who says the phrases (a setting): the words where a man and a woman say them differently. */
+/** Who says the phrases (a setting): the words where a man and a woman say them differently, and the voice. */
 export type Speaker = 'female' | 'male'
 /** A language's phrases, keyed by its language tag ("sr", "zh-TW"). */
 export type PhraseLanguage = { name: string; note?: string; phrases: Record<PhraseKey, Phrase> }

@@ -55,7 +55,7 @@ type State = TripCore & {
   priceCompare: string | null
   /** The city panel's daily cost and prices show the city's own currency instead of the display currency. */
   costsLocal: boolean
-  /** Who says the phrases: a woman's or a man's words where they differ (Settings). */
+  /** Who says the phrases: a woman's or a man's words where they differ, and voice (Settings). */
   speaker: Speaker
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
   cityTab: CityTab

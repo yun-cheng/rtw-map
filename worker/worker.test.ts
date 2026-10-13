@@ -5,7 +5,9 @@ import { isNewMessage } from './chat'
 import { mediaAllowed, mediaToken, uploadFile } from './media'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
+import { parseSpeechRequest } from './speech'
 import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
+import { clipName, SPEECH_CHARS, spokenText, ssml } from '../src/data/speech'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)))
@@ -311,5 +313,39 @@ describe('attachments', () => {
     expect(await uploadFile(new ArrayBuffer(10), 'text/html', 'x.html', 'key', fetcher)).toMatch(/images and PDFs/)
     expect(await uploadFile(new ArrayBuffer(0), 'image/png', 'x.png', 'key', fetcher)).toMatch(/empty/)
     expect(await uploadFile(new ArrayBuffer(10_000_001), 'image/png', 'x.png', 'key', fetcher)).toMatch(/too large/)
+  })
+})
+
+describe('phrases read aloud', () => {
+  const anila = { voice: 'sq-AL-AnilaNeural', locale: 'sq-AL', gender: 'female' as const }
+  const ilir = { voice: 'sq-AL-IlirNeural', locale: 'sq-AL', gender: 'male' as const }
+  const premwadee = { voice: 'th-TH-PremwadeeNeural', locale: 'th-TH', gender: 'female' as const }
+  const index = { voices: { sq: { female: anila, male: ilir }, th: { female: premwadee } } }
+
+  it('reads a phrase in the speaker\'s voice, the other one where the language has one only', () => {
+    expect(parseSpeechRequest({ lang: 'sq', text: ' Faleminderit ' }, index)).toEqual({ voice: anila, text: 'Faleminderit' })
+    expect(parseSpeechRequest({ lang: 'sq', text: 'Faleminderit', speaker: 'male' }, index)).toEqual({ voice: ilir, text: 'Faleminderit' })
+    // Thai's polite word is the speaker's, whatever the voice.
+    expect(parseSpeechRequest({ lang: 'th', text: 'ขอบคุณครับ/ค่ะ', speaker: 'male' }, index)).toEqual({ voice: premwadee, text: 'ขอบคุณครับ' })
+  })
+
+  it('reads nothing else', () => {
+    expect(parseSpeechRequest({ lang: 'kl', text: 'Qujanaq' }, index)).toBe('No voice for this language')
+    expect(parseSpeechRequest({ lang: 'toString', text: 'x' }, index)).toBe('No voice for this language')
+    expect(parseSpeechRequest({ lang: 'sq', text: '  ' }, index)).toBe('Invalid request')
+    expect(parseSpeechRequest({ lang: 'sq', text: 'a'.repeat(SPEECH_CHARS + 1) }, index)).toMatch(/Too long/)
+    expect(parseSpeechRequest(null, index)).toBe('Invalid request')
+  })
+
+  it('says Thai\'s polite word as the speaker\'s own', () => {
+    expect(spokenText('th', 'ขอบคุณครับ/ค่ะ', 'male')).toBe('ขอบคุณครับ')
+    expect(spokenText('th', 'เท่าไหร่ครับ/คะ', 'female')).toBe('เท่าไหร่คะ')
+    expect(spokenText('sq', 'Po/Jo', 'male')).toBe('Po/Jo')
+  })
+
+  it('sends Azure the text escaped, and names a clip by its voice and text', async () => {
+    expect(ssml(anila, 'Fish & <chips>')).toContain('<voice name="sq-AL-AnilaNeural"><prosody rate="-10%">Fish &amp; &lt;chips&gt;</prosody>')
+    expect(await clipName('sq-AL-AnilaNeural', 'Hvala')).toBe(await clipName('sq-AL-AnilaNeural', ' Hvala '))
+    expect(await clipName('sq-AL-AnilaNeural', 'Hvala')).not.toBe(await clipName('hr-HR-GabrijelaNeural', 'Hvala'))
   })
 })

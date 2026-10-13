@@ -13,6 +13,7 @@
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
+//   POST /api/speech               a phrase of the user's read aloud by Azure (speech.ts): the MP3
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
 //   POST /api/runs/:id/stop        stop it
@@ -33,6 +34,7 @@ import { CHANGED_ELSEWHERE } from './changes'
 import { handleMcp } from './mcp'
 import { bearer, CORS, oauth, type OAuthContext } from './oauth'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
+import { speech } from './speech'
 import { isShareToken, parseTripPatch } from './trips'
 import { parseItems } from '../src/store/itemsCore'
 import { parseEntries } from '../src/store/journalCore'
@@ -43,6 +45,7 @@ type Env = {
   ASSETS: Fetcher
   CHAT_LIMIT: RateLimit
   SAVE_LIMIT: RateLimit
+  SPEECH_LIMIT: RateLimit
   ACCOUNT: DurableObjectNamespace<Account>
   GEMINI_API_KEY?: string
   GEMINI_MODEL: string
@@ -53,6 +56,9 @@ type Env = {
   /** The runner (runner/, on Cloud Run) that answers messages on the server, and the secret it and the Worker share. */
   RUNNER_URL?: string
   RUNNER_SECRET?: string
+  /** Azure AI Speech, which reads the user's phrases aloud: its key (a secret) and region ("westeurope"). */
+  AZURE_SPEECH_KEY?: string
+  AZURE_SPEECH_REGION?: string
 }
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -187,6 +193,15 @@ async function media(request: Request, env: Env): Promise<Response> {
   const uploaded = await uploadFile(await request.arrayBuffer(), type, name, env.GEMINI_API_KEY)
   if (typeof uploaded === 'string') return json({ error: uploaded }, 400)
   return json({ attachment: await attachment(user.sub, name, uploaded, env.SESSION_SECRET) }, 201)
+}
+
+/** A phrase of the user's read aloud ({ lang, text }): the MP3. */
+async function readAloud(request: Request, env: Env): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) return json({ error: 'Reading aloud is not set up yet.' }, 503)
+  if (!(await env.SPEECH_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Too many phrases at once: wait a minute.' }, 429)
+  return speech(await request.json().catch(() => null), env.AZURE_SPEECH_KEY, env.AZURE_SPEECH_REGION)
 }
 
 async function trips(request: Request, env: Env, id: string | undefined): Promise<Response> {
@@ -541,6 +556,7 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   }
   if (pathname === '/api/chat') return chat(request, env)
   if (pathname === '/api/media') return media(request, env)
+  if (pathname === '/api/speech') return readAloud(request, env)
   return json({ error: 'Not found' }, 404)
 }
 
