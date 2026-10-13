@@ -2,7 +2,8 @@
 // (data/gen/speech, scripts/build-speech.ts); the user's own are read by Azure when first played (POST /api/speech,
 // signed in); both are kept on the device (src/offline/phrases.ts), so a phrase played once plays offline (and
 // Settings can save them all beforehand). Where there's no clip (Azure has no voice for the language, or it can't be
-// reached), the device's own voice reads it, if it has one for the language. No button when there's neither.
+// reached), the device's own voice reads it, if it has one for the language. No button when there's neither. Played
+// again straight after, a phrase is slower every second time (2nd, 4th, …), to catch each sound.
 import { Volume2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
@@ -32,6 +33,17 @@ function deviceVoice(tag: string, voices: SpeechSynthesisVoice[]): SpeechSynthes
   return voices.find((v) => lang(v) === want) ?? voices.find((v) => lang(v).split('-')[0] === want.split('-')[0])
 }
 
+/** How fast a phrase plays: normal, and slower (the clip's speed, keeping its pitch; the device voice's rate). */
+const SLOW = 0.5
+const DEVICE_RATE = { normal: 0.9, slow: 0.5 }
+
+/** The phrase played last and how many times in a row, so every second play of the same one is slower. */
+let last: { id: string; times: number } | null = null
+function slowNow(id: string): boolean {
+  last = last?.id === id ? { id, times: last.times + 1 } : { id, times: 1 }
+  return last.times % 2 === 0
+}
+
 /** What's playing, so a second phrase stops the first. */
 let playing: { audio: HTMLAudioElement; url: string } | null = null
 function stop() {
@@ -43,10 +55,11 @@ function stop() {
   if (hasDeviceSpeech) speechSynthesis.cancel()
 }
 
-function playBlob(blob: Blob, done: () => void) {
+function playBlob(blob: Blob, slow: boolean, done: () => void) {
   stop()
   const url = URL.createObjectURL(blob)
   const audio = new Audio(url)
+  if (slow) audio.playbackRate = SLOW
   playing = { audio, url }
   audio.onended = audio.onerror = () => {
     if (playing?.audio === audio) stop()
@@ -55,12 +68,12 @@ function playBlob(blob: Blob, done: () => void) {
   return audio.play()
 }
 
-function playDevice(voice: SpeechSynthesisVoice, text: string, done: () => void) {
+function playDevice(voice: SpeechSynthesisVoice, text: string, slow: boolean, done: () => void) {
   stop()
   const u = new SpeechSynthesisUtterance(text)
   u.voice = voice
   u.lang = voice.lang
-  u.rate = 0.9
+  u.rate = slow ? DEVICE_RATE.slow : DEVICE_RATE.normal
   u.onend = u.onerror = done
   speechSynthesis.speak(u)
 }
@@ -82,13 +95,14 @@ export function Speak({ tag, text, phrase }: { tag: string; text: string; phrase
   const done = () => setBusy(false)
   const play = async () => {
     setBusy(true)
+    const slow = slowNow(`${tag}|${speaker}|${text}`)
     try {
-      if (clip) return await playBlob(await appClip(clip), done)
-      if (server) return await playBlob(await userClip(tag, text, speaker), done)
+      if (clip) return await playBlob(await appClip(clip), slow, done)
+      if (server) return await playBlob(await userClip(tag, text, speaker), slow, done)
     } catch {
       // (Offline and not kept, or Azure couldn't read it: the device's voice, below.)
     }
-    if (device) playDevice(device, phraseAs(tag, { text, say: '' }, speaker).text, done)
+    if (device) playDevice(device, phraseAs(tag, { text, say: '' }, speaker).text, slow, done)
     else done()
   }
 
@@ -96,7 +110,7 @@ export function Speak({ tag, text, phrase }: { tag: string; text: string; phrase
     <button
       onClick={() => void play()}
       aria-label={`Listen to "${text}"`}
-      title={clip || server ? 'Listen (a computer voice)' : 'Listen (your device\'s voice)'}
+      title={`${clip || server ? 'Listen (a computer voice)' : 'Listen (your device\'s voice)'}: again for slower`}
       className={`shrink-0 self-center rounded-full p-0.5 hover:bg-accent-soft hover:text-accent ${busy ? 'animate-pulse text-accent' : 'text-muted'}`}
     >
       <Volume2 size={14} />
