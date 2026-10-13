@@ -1,7 +1,7 @@
 // The phrases' clips on the device (Cache Storage, `phrase-speech`): those played are kept (src/ui/Speak.tsx), and
 // Settings' Phrases card saves a set of them beforehand to play with no connection, the trip's languages or every
 // language, as the speaker set there says them (their words and voice), with the user's own phrases (read by Azure
-// through the Worker, signed in). The app's phrases are static files (/speech/<tag>/…, scripts/build-speech.ts);
+// through the Worker, signed in, 10 a day). The app's phrases are static files (/speech/<tag>/…, scripts/build-speech.ts);
 // the user's are kept under a made-up address with the same text, language and voice in it, so each is read once.
 import { create } from 'zustand'
 import speechJson from '../../data/gen/speech.json'
@@ -38,13 +38,25 @@ async function openCache(): Promise<Cache | null> {
   }
 }
 
+/** A clip that couldn't be fetched: the Worker's reason, and whether the day's own phrases are used up. */
+class SpeechError extends Error {
+  readonly daily: boolean
+  constructor(message: string, daily = false) {
+    super(message)
+    this.daily = daily
+  }
+}
+
 /** The clip from the device, else fetched (and kept). */
 async function cached(key: string, get: () => Promise<Response>): Promise<Blob> {
   const cache = await openCache()
   const hit = await cache?.match(key).catch(() => undefined)
   if (hit) return hit.blob()
   const res = await get()
-  if (!res.ok || !res.headers.get('Content-Type')?.startsWith('audio/')) throw new Error(`speech ${res.status}`)
+  if (!res.ok || !res.headers.get('Content-Type')?.startsWith('audio/')) {
+    const body = (await res.json().catch(() => null)) as { error?: string; daily?: boolean } | null
+    throw new SpeechError(body?.error ?? `speech ${res.status}`, body?.daily === true)
+  }
   const blob = await res.blob()
   await cache?.put(key, new Response(blob, { headers: { 'Content-Type': 'audio/mpeg' } })).catch(() => {})
   useSavedPhrases.getState().count()
@@ -122,7 +134,12 @@ export const useSavedPhrases = create<SavedPhrases>()((set, get) => ({
     for (const [i, j] of todo.entries()) {
       try {
         await cached(j.key, j.get)
-      } catch {
+      } catch (e) {
+        // (The day's own phrases used up: the rest are left for tomorrow.)
+        if (e instanceof SpeechError && e.daily) {
+          problem = e.message
+          break
+        }
         problem = navigator.onLine ? 'Some phrases couldn\'t be saved: try again in a minute.' : 'No connection: try again when you\'re online.'
         if (!navigator.onLine) break
       }

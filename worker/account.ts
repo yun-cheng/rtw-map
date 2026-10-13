@@ -1,10 +1,11 @@
 // One Durable Object per signed-in Google account (keyed by its account ID). It holds that user's saved trips
-// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage, the other apps allowed to read and
-// change the trips (oauth.ts) and those apps' changes (changes.ts). A Durable Object handles one request at a time,
-// so nothing can race. The rules are plain functions in limits.ts, trips.ts, runs.ts and changes.ts.
+// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage and phrases read aloud, the other apps
+// allowed to read and change the trips (oauth.ts) and those apps' changes (changes.ts). A Durable Object handles one
+// request at a time, so nothing can race. The rules are plain functions in limits.ts, trips.ts, runs.ts and
+// changes.ts.
 import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView } from './changes'
-import { canCall, current, spend, type AccountLimits, type Count } from './limits'
+import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { ITEM_LIMITS, mergeItems, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
@@ -89,6 +90,21 @@ export class Account extends DurableObject {
     const next = spend(await this.count(day), usd)
     await this.ctx.storage.put('count', next)
     return next
+  }
+
+  // ---------------------------------------------------------------- phrases read aloud
+
+  /** Counts one of today's phrases read aloud, or says the day's are used up (false). */
+  async takeSpeech(day: string): Promise<boolean> {
+    const next = takeSpeech(await this.ctx.storage.get<SpeechCount>('speech'), day)
+    if (next) await this.ctx.storage.put('speech', next)
+    return !!next
+  }
+
+  /** Gives one back, when Azure couldn't read it. */
+  async giveBackSpeech(day: string): Promise<void> {
+    const kept = await this.ctx.storage.get<SpeechCount>('speech')
+    if (kept?.day === day && kept.n > 0) await this.ctx.storage.put('speech', { day, n: kept.n - 1 })
   }
 
   // ---------------------------------------------------------------- account limits (on the "settings" instance only)

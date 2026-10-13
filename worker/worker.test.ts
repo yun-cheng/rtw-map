@@ -3,7 +3,7 @@ import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, ver
 import { joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord } from './changes'
 import { isNewMessage } from './chat'
 import { mediaAllowed, mediaToken, uploadFile } from './media'
-import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, spend, spentOf, today, usageOf } from './limits'
+import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, SPEECH_DAILY, spend, spentOf, takeSpeech, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
 import { parseSpeechRequest } from './speech'
 import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
@@ -341,6 +341,13 @@ describe('phrases read aloud', () => {
     expect(spokenText('th', 'ขอบคุณครับ/ค่ะ', 'male')).toBe('ขอบคุณครับ')
     expect(spokenText('th', 'เท่าไหร่ครับ/คะ', 'female')).toBe('เท่าไหร่คะ')
     expect(spokenText('sq', 'Po/Jo', 'male')).toBe('Po/Jo')
+  })
+
+  it('reads SPEECH_DAILY of the user\'s phrases a day, from zero again the next day', () => {
+    expect(takeSpeech(undefined, '2026-10-13')).toEqual({ day: '2026-10-13', n: 1 })
+    expect(takeSpeech({ day: '2026-10-13', n: SPEECH_DAILY - 1 }, '2026-10-13')).toEqual({ day: '2026-10-13', n: SPEECH_DAILY })
+    expect(takeSpeech({ day: '2026-10-13', n: SPEECH_DAILY }, '2026-10-13')).toBeNull()
+    expect(takeSpeech({ day: '2026-10-12', n: SPEECH_DAILY }, '2026-10-13')).toEqual({ day: '2026-10-13', n: 1 })
   })
 
   it('sends Azure the text escaped, and names a clip by its voice and text', async () => {

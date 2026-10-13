@@ -13,7 +13,7 @@
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
-//   POST /api/speech               a phrase of the user's read aloud by Azure (speech.ts): the MP3
+//   POST /api/speech               a phrase of the user's read aloud by Azure (speech.ts): the MP3; 10 a day
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
 //   POST /api/runs/:id/stop        stop it
@@ -28,7 +28,7 @@ import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, ver
 import { fileUris, GEMINI_TRIES, geminiRequest, isBrokenReply, isNewMessage, LIMITS, parseChatRequest, type GeminiResponse } from './chat'
 import { attachment, mediaAllowed, uploadFile } from './media'
 import { MEDIA_LIMITS } from '../src/agent/media'
-import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, spentOf, today, usageOf, type Spent } from './limits'
+import { addSpent, DAILY_USD, dailyUsdFor, parseAccountLimits, SPEECH_DAILY, spentOf, today, usageOf, type Spent } from './limits'
 import { Account, BUSY } from './account'
 import { CHANGED_ELSEWHERE } from './changes'
 import { handleMcp } from './mcp'
@@ -195,13 +195,21 @@ async function media(request: Request, env: Env): Promise<Response> {
   return json({ attachment: await attachment(user.sub, name, uploaded, env.SESSION_SECRET) }, 201)
 }
 
-/** A phrase of the user's read aloud ({ lang, text }): the MP3. */
+/** A phrase of the user's read aloud ({ lang, text }): the MP3. SPEECH_DAILY a day per account (counted when Azure
+ *  reads it; `daily` in the error when they're used up). */
 async function readAloud(request: Request, env: Env): Promise<Response> {
   const user = await currentUser(request, env)
   if (!user) return signInFirst()
   if (!env.AZURE_SPEECH_KEY || !env.AZURE_SPEECH_REGION) return json({ error: 'Reading aloud is not set up yet.' }, 503)
   if (!(await env.SPEECH_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Too many phrases at once: wait a minute.' }, 429)
-  return speech(await request.json().catch(() => null), env.AZURE_SPEECH_KEY, env.AZURE_SPEECH_REGION)
+  const day = today()
+  const store = account(env, user)
+  if (!(await store.takeSpeech(day))) {
+    return json({ error: `You've had ${SPEECH_DAILY} of your phrases read aloud today, the most for a day: the rest can be read tomorrow.`, daily: true }, 429)
+  }
+  const res = await speech(await request.json().catch(() => null), env.AZURE_SPEECH_KEY, env.AZURE_SPEECH_REGION)
+  if (!res.ok) await store.giveBackSpeech(day)
+  return res
 }
 
 async function trips(request: Request, env: Env, id: string | undefined): Promise<Response> {

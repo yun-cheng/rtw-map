@@ -66,6 +66,17 @@ const priceOn = (day: string) => PRICES.findLast((p) => p.from <= day) ?? PRICES
 export const current = (stored: Partial<Count> | undefined, day: string): Count =>
   ({ day, usd: stored?.day === day && Number.isFinite(stored.usd) ? stored.usd! : 0 })
 
+/** How many of the user's own phrases Azure reads aloud for an account a day (POST /api/speech; the app's own
+ *  phrases are static clips and don't count, and a phrase once read is kept on the device). */
+export const SPEECH_DAILY = 10
+export type SpeechCount = { day: string; n: number }
+
+/** Today's count of phrases read aloud with one more, or null when the day's are used up. */
+export function takeSpeech(stored: Partial<SpeechCount> | undefined, day: string, cap = SPEECH_DAILY): SpeechCount | null {
+  const n = stored?.day === day && Number.isFinite(stored.n) ? stored.n! : 0
+  return n < cap ? { day, n: n + 1 } : null
+}
+
 /** What a model call (or several, added up) used, shown under each reply: tokens read (of which `cached`), written
  *  (with thinking) and what they cost. */
 export type Spent = { input: number; cached: number; output: number; usd: number }
