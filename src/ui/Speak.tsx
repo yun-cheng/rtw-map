@@ -1,8 +1,8 @@
 // 🔊 beside a phrase: plays it read aloud. The app's own phrases have clips made ahead of time by Azure
 // (data/gen/speech, scripts/build-speech.ts); the user's own are read by Azure when first played (POST /api/speech,
-// signed in); both are kept on the device (src/offline/phrases.ts), so a phrase played once plays offline. Where
-// there's no clip (Azure has no voice for the language, or it can't be reached), the device's own voice reads it, if
-// it has one for the language. No button when there's neither.
+// signed in); both are kept on the device (src/offline/phrases.ts), so a phrase played once plays offline (and
+// Settings can save them all beforehand). Where there's no clip (Azure has no voice for the language, or it can't be
+// reached), the device's own voice reads it, if it has one for the language. No button when there's neither.
 import { Volume2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
