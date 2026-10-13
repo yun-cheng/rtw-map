@@ -1,5 +1,6 @@
 // What the trip assistant is told and which tools it may call. Shared by the Worker (which sends it to Gemini, so
 // clients can't change it) and the browser (which runs the tools on the trip).
+import type { PriceKey } from '../planner/cost'
 
 export const SYSTEM_PROMPT = `You are the trip assistant of rtw-map, a planner for long multi-country trips.
 The user plans a trip in the app; you help by answering questions and by changing their trip with the tools.
@@ -68,6 +69,10 @@ How to work:
   and a note per city or journey. get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the
   user asks, e.g. "save this booking" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
   is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
+- Prices the user saw or paid in a city (on a receipt, a menu, a booking, or just told) are kept with
+  set_prices_seen, in the money they were paid in; the app then uses them for that city instead of its own (its daily
+  cost and the trip's total). Work out what each is per one: a booking's total over its nights is a night's price, a
+  receipt's coffee for one cup. Set them only when the user asks or gives you prices to fill in; say what you set.
 - The user can attach images and PDFs to a message (a booking confirmation, a ticket, a screenshot, a photo). You see
   them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit at its
   city (a stay: name, address, check-in and check-out days, reference, price, link) if the user asks you to, or offer
@@ -83,6 +88,31 @@ export type FunctionDeclaration = { name: string; description: string; parameter
 
 const obj = (properties: Record<string, JsonSchema> = {}, required: string[] = []): JsonSchema => ({ type: 'object', properties, required })
 const str = (description: string, extra: Partial<JsonSchema> = {}): JsonSchema => ({ type: 'string', description, ...extra })
+/** set_prices_seen's prices: what each is the price of in the app (PriceKey), and what it counts. */
+export const PRICE_ARGS: Record<string, [PriceKey, string]> = {
+  dorm_bed: ['dormBed', 'A night in a hostel dorm bed'],
+  private_room: ['privateRoom', 'A night in a private room (the room, not per person)'],
+  local_meal: ['mealLocal', 'A meal at a simple place where locals eat'],
+  restaurant_dinner: ['mealDinner', 'A main course and a drink at a sit-down restaurant'],
+  coffee: ['coffee', 'A café coffee'],
+  beer_in_bar: ['beerBar', 'Half a litre of beer in a bar'],
+  public_transport_day: ['localTransportDay', 'A day of public transport (day pass or the tickets used)'],
+  taxi_ride: ['taxiRide', 'A taxi ride of about 5 km'],
+  diy_breakfast: ['diyBreakfast', 'Breakfast from the supermarket'],
+  diy_meal: ['diyMeal', 'Lunch or dinner from the supermarket'],
+  groceries_day: ['groceryDay', 'A day of supermarket food and 1.5 L of water'],
+  whole_day: ['day', 'What a whole day there costs them, all in (replaces the sum of the items)'],
+  water_1_5l: ['water15', 'Water, 1.5 L, in a shop'],
+  coke_0_5l: ['coke05', 'Coca-Cola, 0.5 L, in a shop'],
+  shop_beer_0_5l: ['beer05', 'Beer, 0.5 L, in a shop'],
+  bread: ['bread', 'A loaf of bread'],
+  eggs_10: ['eggs10', '10 eggs'],
+  milk_1l: ['milk1l', 'Milk, 1 L'],
+  pasta_500g: ['pasta500g', 'Pasta, 500 g'],
+  bananas_1kg: ['bananas1kg', 'Bananas, 1 kg'],
+  tomatoes_1kg: ['tomatoes1kg', 'Tomatoes, 1 kg'],
+  chicken_500g: ['chicken500g', 'Chicken breast, 500 g'],
+}
 const CITY = str('City name or id as shown in the trip or by find_cities, e.g. "Kraków" or "krakow"')
 
 export const TOOLS: FunctionDeclaration[] = [
@@ -168,6 +198,16 @@ export const TOOLS: FunctionDeclaration[] = [
       text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s own note (door code, wifi, how to get in)'),
       append: { type: 'boolean', description: 'Add text to the end of the note instead of replacing it' },
     }),
+  },
+  {
+    name: 'set_prices_seen',
+    description: 'Keep prices the user saw or paid in a city, in place of the app\'s own for that city (its daily cost, the trip\'s total, budget checks). Kept in My visit; reset ones to go back to the app\'s prices.',
+    parametersJsonSchema: obj({
+      city: CITY,
+      currency: str('The money the prices are in, an ISO code such as MKD, EUR or USD; default: the city\'s own'),
+      prices: obj(Object.fromEntries(Object.entries(PRICE_ARGS).map(([arg, [, about]]) => [arg, { type: 'number', description: about }]))),
+      reset: { type: 'array', items: str('A price name, as in prices', { enum: Object.keys(PRICE_ARGS) }), description: 'Prices to set back to the app\'s own' },
+    }, ['city']),
   },
   {
     name: 'remove_visit_item',
@@ -326,4 +366,4 @@ export const WRITE_TOOLS = new Set([
 ])
 
 /** Names of tools that change My visit (the user's own stays, albums, links and notes; not the trip's plans). */
-export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item'])
+export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item', 'set_prices_seen'])

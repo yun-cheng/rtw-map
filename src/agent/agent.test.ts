@@ -261,6 +261,26 @@ describe('My visit tools', () => {
     expect(runTool('get_visit').result.error).toMatch(/isn't available/)
   })
 
+  it('keeps prices the user saw in a city, in the money given, and sets them back to ours', () => {
+    const { items, run } = visit()
+    const set = run('set_prices_seen', { city: 'Kraków', prices: { local_meal: 38.5, whole_day: 260 } })
+    expect(set).toMatchObject({ ok: true, summary: 'Prices seen in Kraków: a local meal 38.5 PLN; a whole day 260 PLN' })
+    expect(items.get()['price:krakow:mealLocal']).toMatchObject({ kind: 'price', at: 'krakow', amount: 38.5, currency: 'PLN' })
+    expect(run('set_prices_seen', { city: 'Kraków', currency: 'eur', prices: { coffee: 3 } }).ok).toBe(true)
+    expect(items.get()['price:krakow:coffee']).toMatchObject({ amount: 3, currency: 'EUR' })
+    expect(run('get_visit', { city: 'krakow' }).result.items).toContainEqual(expect.objectContaining({ kind: 'price', price_of: 'a café coffee', price_seen: '3 EUR' }))
+    expect(run('set_prices_seen', { city: 'Kraków', reset: ['whole_day'] }).summary).toBe("Prices seen in Kraków: a whole day back to the app's")
+    expect(items.get()['price:krakow:day'].deleted).toBe(true)
+    const error = (args: Record<string, unknown>) => run('set_prices_seen', { city: 'Kraków', ...args }).result.error
+    expect(error({ prices: { caviar: 9 } })).toMatch(/no price "caviar"/)
+    expect(error({ prices: { coffee: -1 } })).toMatch(/0 or more/)
+    expect(error({ currency: 'XXX', prices: { coffee: 1 } })).toMatch(/No exchange rate/)
+    expect(error({})).toMatch(/Give the prices/)
+    // (Nothing kept from a call that failed.)
+    expect(items.get()['price:krakow:mealDinner']).toBeUndefined()
+    expect(run('save_visit_item', { id: 'price:krakow:coffee', title: 'x' }).result.error).toMatch(/set_prices_seen/)
+  })
+
   it('changes My visit on a read-only trip, which keeps only its plans as they are', () => {
     useTrip.getState().setReadOnly(true)
     const { run } = visit()

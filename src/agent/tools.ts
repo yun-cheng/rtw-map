@@ -9,10 +9,10 @@ import {
   groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, newItemId, noteId, parseItems, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, newItemId, noteId, parseItems, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
-import { ITEM_TOOLS, WRITE_TOOLS } from './schema'
+import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
 import type { ViewItem, ViewRef } from './shared'
 
 type Args = Record<string, unknown>
@@ -297,7 +297,7 @@ function saveItem(args: Args): string {
   if (typeof args.id === 'string' && args.id) {
     old = all[args.id]
     if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
-    if (old.kind === 'price') throw new ToolError('A price seen is changed in the city panel\'s Costs tab, by the user; remove it to go back to ours.')
+    if (old.kind === 'price') throw new ToolError('A price seen is changed with set_prices_seen.')
     if (args.kind && args.kind !== old.kind) throw new ToolError(`That's a ${ITEM_NAMES[old.kind]}: to make it a ${args.kind}, remove it and add one.`)
     patch = { id: old.id }
   } else {
@@ -329,6 +329,32 @@ function saveItem(args: Args): string {
   if (isEmptyItem(item)) throw new ToolError('Nothing to keep: give a name, a link or a text.')
   items.put(patch)
   return `${old ? 'Changed' : 'Added'} ${itemText(item)}`
+}
+
+/** Keeps prices the user saw in a city (My visit items, in the money given), or sets some back to the app's own. */
+function setPrices(args: Args): string {
+  const items = visitItems()
+  const id = cityId(args.city)
+  const iso2 = ds.cities[id].iso2
+  if (!costProfile(ds, iso2)) throw new ToolError(`There are no prices for ${countryName(iso2)} in the app yet, so none to replace.`)
+  const own = ds.countries[iso2].currency
+  const currency = typeof args.currency === 'string' && args.currency.trim() ? args.currency.trim().toUpperCase() : own
+  if (currency !== 'EUR' && !ds.fx.rates[currency]) throw new ToolError(`No exchange rate for ${currency}: give the prices in ${own}, EUR or USD.`)
+  const keyOf = (arg: string) => {
+    if (!PRICE_ARGS[arg]) throw new ToolError(`There's no price "${arg}": use the names in prices.`)
+    return PRICE_ARGS[arg][0]
+  }
+  // (All checked before any is kept.)
+  const set = Object.entries((args.prices ?? {}) as Record<string, unknown>).map(([arg, v]) => {
+    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 1e9) throw new ToolError(`${arg} must be an amount, 0 or more.`)
+    return [keyOf(arg), Math.round(v * 100) / 100] as const
+  })
+  const reset = (Array.isArray(args.reset) ? args.reset : []).map((arg) => keyOf(String(arg)))
+  if (!set.length && !reset.length) throw new ToolError('Give the prices to keep, or the ones to reset.')
+  for (const [key, amount] of set) items.put({ id: priceId(id, key), kind: 'price', at: id, amount, currency })
+  for (const key of reset) items.remove(priceId(id, key))
+  const said = [...set.map(([key, amount]) => `${PRICE_LABELS[key]} ${amount} ${currency}`), ...reset.map((key) => `${PRICE_LABELS[key]} back to the app's`)]
+  return `Prices seen in ${cityName(id)}: ${said.join('; ')}`
 }
 
 function removeItem(args: Args): string {
@@ -930,6 +956,7 @@ function run(name: string, args: Args): string | ToolResult {
     case 'get_visit': return visit(args)
     case 'save_visit_item': return saveItem(args)
     case 'remove_visit_item': return removeItem(args)
+    case 'set_prices_seen': return setPrices(args)
     case 'update_settings': return updateSettings(args)
     case 'update_preferences': return updatePreferences(args)
     case 'new_plan': {
