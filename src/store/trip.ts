@@ -51,6 +51,8 @@ type State = TripCore & {
   localNames: boolean
   /** Country to compare price levels with; null = guess from the display currency. */
   priceCompare: string | null
+  /** The city panel's daily cost and prices show the city's own currency instead of the display currency. */
+  costsLocal: boolean
   /** Selected tab of the city panel; kept when switching cities so they're easy to compare. */
   cityTab: CityTab
   /** The sub-tab open in each city panel tab that has them (e.g. Costs: daily, prices, paying). */
@@ -80,6 +82,7 @@ type State = TripCore & {
   setTempFeels: (feels: boolean) => void
   setLocalNames: (on: boolean) => void
   setPriceCompare: (iso2: string) => void
+  setCostsLocal: (on: boolean) => void
   /** Opens a city panel tab, and with `part` one of its sub-tabs. */
   setCityTab: (tab: CityTab, part?: string) => void
   /** Shows a saved trip (or a new, empty one when `data` is null) and fits the map to it; with `keepView`, keeps the
@@ -158,6 +161,7 @@ export const useTrip = create<State>()(
         tempFeels: true,
         localNames: true,
         priceCompare: null,
+        costsLocal: false,
         cityTab: 'overview',
         cityPart: {},
 
@@ -215,6 +219,7 @@ export const useTrip = create<State>()(
         setTempFeels: (tempFeels) => set({ tempFeels, plan: planFor(get().input, get().stops, tempFeels) }),
         setLocalNames: (localNames) => set({ localNames }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
+        setCostsLocal: (costsLocal) => set({ costsLocal }),
         setCityTab: (cityTab, part) => set((s) => ({ cityTab, ...(part && { cityPart: { ...s.cityPart, [cityTab]: part } }) })),
         openTrip: (data, keepView = false) => {
           const { broken, ...trip } = loadTrip(data, get().tempFeels)
@@ -236,7 +241,7 @@ export const useTrip = create<State>()(
       name: 'rtw-map-trip',
       version: 1,
       storage: safeStorage,
-      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, cityTab: s.cityTab, cityPart: s.cityPart }),
+      partialize: (s) => ({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId, readOnly: s.readOnly, panel: s.panel, layer: s.layer, currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, localNames: s.localNames, priceCompare: s.priceCompare, costsLocal: s.costsLocal, cityTab: s.cityTab, cityPart: s.cityPart }),
       merge: (persisted, current) => {
         const { notes, ...kept } = persisted as Partial<State> & { notes?: TripNotes }
         // Notes were kept with the trip before items: they move there (saved.ts).

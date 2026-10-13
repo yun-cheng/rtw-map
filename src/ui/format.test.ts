@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, local, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -25,13 +25,6 @@ describe('rateText', () => {
     expect(rateText('EUR', 'RSD')).toMatch(/^1 EUR = [\d.]+ RSD$/)
     expect(rateText('TWD', 'EUR')).toMatch(/^1 EUR = [\d.]+ TWD$/)
     expect(rateText('EUR', 'EUR')).toBeNull()
-  })
-})
-
-describe('local', () => {
-  it('hides the local amount when it is already the display currency', () => {
-    expect(local(1, 'PLN', 'PLN')).toBeNull()
-    expect(local(1, 'PLN', 'EUR')).toMatch(/PLN$/)
   })
 })
 

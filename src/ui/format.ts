@@ -24,15 +24,6 @@ export function money(nEur: number, currency: string, precise = false): string {
   return f.format(v)
 }
 
-/** The amount in the country's local currency, e.g. "≈ 1,170 RSD", unless that's already the display currency. */
-export function local(nEur: number, currency: string, displayCurrency: string): string | null {
-  if (currency === displayCurrency) return null
-  const rate = currency === 'EUR' ? 1 : ds.fx.rates[currency]
-  if (!rate) return null
-  const v = nEur * rate
-  return `≈ ${v >= 100 ? Math.round(v).toLocaleString('en') : v.toFixed(1)} ${currency}`
-}
-
 export function duration(min: number): string {
   const h = Math.floor(min / 60)
   const m = Math.round(min % 60)

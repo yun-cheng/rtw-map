@@ -2,12 +2,13 @@ import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode }
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, VISA_TEXT, compact, duration, flag, local, rateText, shortDate, shownTemps } from '../ui/format'
+import { MODE_ICON, VISA_TEXT, compact, duration, flag, money, rateText, shortDate, shownTemps } from '../ui/format'
+import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
 import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
-import { useMoney } from '../ui/useMoney'
+import { MoneyCurrency, useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { AskButton } from './AskButton'
 import { CheckNotes, checkSection, checkTab } from './Checks'
@@ -62,6 +63,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const cost = costInfo?.profile
   // Prices are estimates anyway; only those worked out from the price level (no price list for the country) say so.
   const roughCosts = costInfo?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined
+  // The daily cost and prices can show the city's own currency instead (one setting for every city), where it has a rate.
+  const costsLocal = useTrip((s) => s.costsLocal)
+  const ownCurrency = country.currency !== currency && (country.currency === 'EUR' || ds.fx.rates[country.currency]) ? country.currency : null
+  const priceCurrency = costsLocal && ownCurrency ? ownCurrency : currency
+  const priceFmt = (nEur: number, precise = false) => money(nEur, priceCurrency, precise)
   const climate = ds.climate[cityId]
   const adv = ds.advisories[city.iso2]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
@@ -208,11 +214,11 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
       </Section>
     ),
-    day: cost && <CostDay cityId={cityId} />,
+    day: cost && <MoneyCurrency.Provider value={priceCurrency}><CostDay cityId={cityId} /></MoneyCurrency.Provider>,
     stay: cost && (
       <Section title="Stay" aside={roughCosts}>
-        <Row label="Hostel dorm bed">{fmt(cost.dormBed * city.costFactor)}</Row>
-        <Row label="Private room">{fmt(cost.privateRoom * city.costFactor)}</Row>
+        <Row label="Hostel dorm bed">{priceFmt(cost.dormBed * city.costFactor)}</Row>
+        <Row label="Private room">{priceFmt(cost.privateRoom * city.costFactor)}</Row>
         <p className="mt-1 text-[12px] text-muted">A night, in this city. Hotel and apartment prices aren't in our data yet.</p>
       </Section>
     ),
@@ -224,17 +230,17 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ) : (
       <Section title="Food & drink" aside={roughCosts}>
-        <Row label="Local meal" hint={COST_HINTS.mealLocal}>{fmt(cost.mealLocal * city.costFactor)}</Row>
-        <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{fmt(cost.mealDinner * city.costFactor)}</Row>
-        <Row label="Café coffee" hint={COST_HINTS.coffee}>{fmt(cost.coffee * city.costFactor, true)}</Row>
-        <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{fmt(cost.beerBar * city.costFactor, true)}</Row>
+        <Row label="Local meal" hint={COST_HINTS.mealLocal}>{priceFmt(cost.mealLocal * city.costFactor)}</Row>
+        <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{priceFmt(cost.mealDinner * city.costFactor)}</Row>
+        <Row label="Café coffee" hint={COST_HINTS.coffee}>{priceFmt(cost.coffee * city.costFactor, true)}</Row>
+        <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{priceFmt(cost.beerBar * city.costFactor, true)}</Row>
         <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket</div>
         {GROCERIES.map(([k, label]) => (
           <Row key={k} label={label}>
-            {fmt(cost.groceries[k], true)} <span className="font-normal text-muted">{local(cost.groceries[k], country.currency, currency)}</span>
+            {priceFmt(cost.groceries[k], true)}
           </Row>
         ))}
-        <Row label="Groceries for a day" hint={COST_HINTS.groceryDay}>{fmt(groceryDay(cost), true)}</Row>
+        <Row label="Groceries for a day" hint={COST_HINTS.groceryDay}>{priceFmt(groceryDay(cost), true)}</Row>
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ),
@@ -666,6 +672,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
                 <Dot severity={dots.get(`${tabInfo.key}:${p.key}`)} className="top-0.5 right-0.5" />
               </button>
             ))}
+            {cost && ownCurrency && (part!.key === 'daily' || part!.key === 'prices') && (
+              <span className="ml-auto self-center"><CurrencyToggle local={ownCurrency} /></span>
+            )}
           </div>
         )}
       </div>
