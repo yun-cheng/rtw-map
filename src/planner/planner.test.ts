@@ -5,7 +5,7 @@ import { makeGroup } from '../data/presets'
 import { testCaseInput } from '../data/testCase'
 import { allocate } from './allocate'
 import { addDays, daysBetween } from './dates'
-import { GROCERY_KEYS, airBand, cardLevel, comparePrices, costProfile, costSanity, estimatedCosts, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
+import { GROCERY_KEYS, airBand, cardLevel, cityPrices, comparePrices, costOf, costProfile, costSanity, estimatedCosts, costsInEur, dailyCost, dayChoices, dayRangeText, dayCost, englishLevel, groceryDay, groceryMeal, prefsDay, evaluatePlan, generatePlan, withDates, likelyMonth, rebalance, stayMonth, suggestedDays, tapWater, taxiEstimate, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, matchesStyle, homeLeg, stylePrefs, withPrefs, PHRASES, phrasesFor, type LocalCostProfile, type TripInput } from './index'
 import { schengenSummary, schengenUsed } from './schengen'
 
 /** The end-to-end test case from PLAN.md §3.3. */
@@ -357,6 +357,45 @@ describe('daily cost from your choices', () => {
     expect(dayChoices(input, 'krakow').dinner).toBe('restaurant')
     expect(dayChoices(input, 'warsaw').dinner).toBe(prefs.dinner)
     expect(dailyCost(ds, 'krakow', input)).toBeCloseTo(dailyCost(ds, 'krakow', { prefs }) + (c.mealDinner - c.mealLocal) * f)
+  })
+
+  it('uses the prices the user saw in a city in place of ours, there only', () => {
+    const input = { prefs, prices: { krakow: { mealLocal: 20, bread: 6, coffee: 0 } } }
+    const day = dayCost(ds, 'krakow', dayChoices(input, 'krakow'), input.prices)!
+    expect(day.items[2].eur).toBe(20)
+    expect(day.items[4].eur).toBe(0)
+    // A supermarket price seen changes the DIY meals made from it, and the day of groceries.
+    const p = cityPrices(ds, 'krakow', input.prices)!
+    expect(p.diyBreakfast).toBeCloseTo(groceryMeal(c, 'breakfast') + (6 - c.groceries.bread) / 6)
+    expect(day.items[1].eur).toBeCloseTo(p.diyBreakfast)
+    expect(p.groceryDay).toBeCloseTo(groceryDay(c) + (6 - c.groceries.bread) / 6)
+    expect(costOf(ds, 'krakow', 'meal', input)).toBe(20)
+    expect(dailyCost(ds, 'warsaw', input)).toBeCloseTo(dailyCost(ds, 'warsaw', { prefs }))
+    expect(day.own).toBe(false)
+  })
+
+  it("takes a day's own cost over the items' sum, and DIY meals seen over the groceries", () => {
+    const prices = { krakow: { day: 50, diyMeal: 4, bread: 100 } }
+    const day = dayCost(ds, 'krakow', prefsDay(prefs), prices)!
+    expect(day.own).toBe(true)
+    expect(day.total).toBe(50)
+    expect(day.sum).toBeCloseTo(day.items.reduce((t, i) => t + i.eur, 0))
+    expect(dailyCost(ds, 'krakow', { prefs, prices })).toBe(50)
+    const p = cityPrices(ds, 'krakow', prices)!
+    expect(p.diyMeal).toBe(4)
+    expect(p.groceryDay).toBeCloseTo(p.diyBreakfast + 8 + c.groceries.water15)
+  })
+
+  it('counts the prices seen in the plan: its total and the budget checks', () => {
+    const stop = (cityId: string, nights: number) => ({ cityId, nights, locked: false, groupId: '' })
+    const trip = { ...testTrip('US'), startDate: '2027-05-01', endDate: '2027-05-11' }
+    const input = { ...trip, prefs: { ...prefs, dailyBudget: Math.ceil(dailyCost(ds, 'krakow', { prefs })) + 5 } }
+    const stops = [stop('krakow', 5), stop('warsaw', 5)]
+    const plan = evaluatePlan(ds, input, stops)
+    const dear = evaluatePlan(ds, input, stops, { prices: { krakow: { day: 300 } } })
+    expect(dear.cost.max - plan.cost.max).toBeCloseTo((300 - dailyCost(ds, 'krakow', input)) * 5 * 1.2, -1)
+    expect(dear.warnings.some((w) => w.kind === 'budget' && w.cityId === 'krakow')).toBe(true)
+    expect(plan.warnings.some((w) => w.kind === 'budget' && w.cityId === 'krakow')).toBe(false)
   })
 
   it("counts a city's changes in the trip total", () => {

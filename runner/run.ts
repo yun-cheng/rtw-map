@@ -2,11 +2,12 @@
 // from the Worker, runs the assistant's loop on its own copy of the trip (src/agent/engine.ts, the same as in the
 // browser), calls the model through the Worker (which keeps the allowance and counts the cost), and saves the trip
 // and the reply after each step, so the page can follow along or be closed.
+import { dataset as ds } from '../src/data/dataset'
 import { runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from '../src/agent/engine'
 import type { Attachment } from '../src/agent/media'
 import type { ViewItem } from '../src/agent/shared'
 import { itemsHandle } from '../src/agent/tools'
-import type { Items } from '../src/store/itemsCore'
+import { seenPrices, type Items } from '../src/store/itemsCore'
 import { createTripStore, tripData, type Display, type TripData } from '../src/store/tripCore'
 
 type RunInput = {
@@ -74,7 +75,8 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
 
   const { request } = input
   const chat: SavedChat = { messages: input.chat?.messages ?? [], contents: input.chat?.contents ?? [], note: input.chat?.note ?? null }
-  const trip = createTripStore(input.data, request.display)
+  // (The prices the user saw in cities, kept in My visit, replace ours in the trip's costs, as in the app.)
+  const trip = createTripStore(input.data, { ...request.display, seenPrices: seenPrices(input.items ?? {}, ds.fx.rates) })
   const items = itemsHandle(input.items)
   /** The My visit items changed and not sent yet (they're merged item by item, as a device's). */
   const unsent = () => [...items.changed].map((id) => items.get()[id])

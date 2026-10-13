@@ -5,7 +5,7 @@ import { createStore, type StoreApi } from 'zustand/vanilla'
 import { dataset as ds } from '../data/dataset'
 import {
   DEFAULT_PREFS, addDays, addStop, evaluatePlan, stylePrefs, withPrefs,
-  type Budget, type Plan, type Stop, type TravelPrefs, type TripInput,
+  type Budget, type EvalOptions, type Plan, type SeenPrices, type Stop, type TravelPrefs, type TripInput,
 } from '../planner'
 import type { TempUnit } from '../ui/format'
 
@@ -34,7 +34,11 @@ export type Display = {
   /** Temperatures shown as how they feel (heat with humidity, cold with wind) rather than measured; one setting for the
    *  map, the city panel and the timeline. Planning and the preference limits use measured temperatures. */
   tempFeels: boolean
+  /** Prices the user saw in cities (My visit, in EUR): they replace ours in the plan's costs and budget checks. */
+  seenPrices?: SeenPrices
 }
+/** How the plan is checked for this display: temperatures as shown, the prices seen. */
+export const evalOptions = (d: Display): EvalOptions => ({ feels: d.tempFeels, prices: d.seenPrices })
 export const DEFAULT_DISPLAY: Display = { currency: 'USD', tempUnit: 'C', tempFeels: true }
 
 export type TripCore = Display & {
@@ -125,11 +129,11 @@ const setupOf = ({ planned: _, plannedStops: __, ...input }: TripInput): NonNull
 
 const toStops = (p: Plan): Stop[] => p.stops.map(({ cityId, nights, locked, groupId }) => ({ cityId, nights, locked, groupId }))
 
-/** The itinerary for a setup and stops, or none if the stops refer to data that no longer exists; `feels`: the
- *  checks read temperatures as they feel (the display setting). */
-export function planFor(input: TripInput, stops: Stop[], feels = false): Plan | null {
+/** The itinerary for a setup and stops, or none if the stops refer to data that no longer exists; `options`: how the
+ *  checks read the data (evalOptions). */
+export function planFor(input: TripInput, stops: Stop[], options: EvalOptions = {}): Plan | null {
   try {
-    return stops.length ? evaluatePlan(ds, input, stops, { feels }) : null
+    return stops.length ? evaluatePlan(ds, input, stops, options) : null
   } catch {
     return null
   }
@@ -137,7 +141,7 @@ export function planFor(input: TripInput, stops: Stop[], feels = false): Plan | 
 
 /** A saved trip (or a new, empty one) as state; `broken` when its stops refer to data that no longer exists (they
  *  are dropped, the setup kept). */
-export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId' | 'readOnly'> & { broken: boolean } {
+export function loadTrip(data: TripData | null, options: EvalOptions = {}): Pick<TripCore, 'input' | 'stops' | 'plan' | 'plans' | 'activePlanId' | 'readOnly'> & { broken: boolean } {
   const norm = (x: { input: TripInput; stops?: Stop[] }) => ({ input: { ...newTripInput(), ...withPrefs(x.input) }, stops: x.stops ?? [] })
   // Trips saved before plans existed have one plan.
   const plans: TripPlan[] = data?.plans?.length
@@ -146,7 +150,7 @@ export function loadTrip(data: TripData | null, feels = false): Pick<TripCore, '
   const activePlanId = plans.some((p) => p.id === data?.activePlanId) ? data!.activePlanId! : plans[0].id
   // The saved setup and stops at the top are the active plan's latest.
   const { input, stops } = data && data.plans?.length ? norm(data) : plans.find((p) => p.id === activePlanId)!
-  const plan = planFor(input, stops, feels)
+  const plan = planFor(input, stops, options)
   const broken = stops.length > 0 && !plan
   return { input, stops: broken ? [] : stops, plan, plans, activePlanId, readOnly: data?.readOnly === true, broken }
 }
@@ -171,7 +175,7 @@ export function tripActions(set: Set, get: Get): Omit<TripCore, keyof Display | 
 function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | 'stops' | 'plans' | 'activePlanId' | 'plan' | 'readOnly' | 'setReadOnly'> {
   const apply = (plan: Plan, extra: Partial<TripCore> = {}) => set({ plan, stops: toStops(plan), ...extra })
   // The checks read temperatures as the user sees them.
-  const evaluate = (input: TripInput, stops: Stop[]) => evaluatePlan(ds, input, stops, { feels: get().tempFeels })
+  const evaluate = (input: TripInput, stops: Stop[]) => evaluatePlan(ds, input, stops, evalOptions(get()))
   // Edits change only what they touch: the plan is updated (by the assistant) when the user asks.
   const edit = (fn: (stops: Stop[]) => Stop[]) => {
     const { input, stops } = get()
@@ -205,10 +209,10 @@ function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | '
     addCity: (cityId) => {
       const { input, stops } = get()
       if (stops.some((s) => s.cityId === cityId)) return
-      apply(addStop(ds, input, stops, cityId, { feels: get().tempFeels }))
+      apply(addStop(ds, input, stops, cityId, evalOptions(get())))
     },
     restore: ({ input, stops, plans, activePlanId }) =>
-      set({ input, stops, plan: planFor(input, stops, get().tempFeels), ...(plans?.length && activePlanId && { plans, activePlanId }) }),
+      set({ input, stops, plan: planFor(input, stops, evalOptions(get())), ...(plans?.length && activePlanId && { plans, activePlanId }) }),
     addPlan: ({ name, from, activate = true } = {}) => {
       const s = get()
       const plans = tripPlans(s)
@@ -224,7 +228,7 @@ function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | '
       const plans = tripPlans(s)
       const target = plans.find((p) => p.id === id)
       if (!target || id === s.activePlanId) return
-      const plan = planFor(target.input, target.stops, s.tempFeels)
+      const plan = planFor(target.input, target.stops, evalOptions(s))
       set({ plans, activePlanId: id, input: target.input, stops: plan ? target.stops : [], plan })
     },
     renamePlan: (id, name) => {
@@ -242,6 +246,6 @@ function changes(set: Set, get: Get): Omit<TripCore, keyof Display | 'input' | '
 
 /** A trip of its own, outside the app's store: what a run of the assistant on the server changes. */
 export function createTripStore(data: TripData | null, display: Display = DEFAULT_DISPLAY): StoreApi<TripCore> {
-  const { broken: _, ...trip } = loadTrip(data, display.tempFeels)
+  const { broken: _, ...trip } = loadTrip(data, evalOptions(display))
   return createStore<TripCore>()((set, get) => ({ ...display, ...trip, ...tripActions(set, get) }))
 }

@@ -5,8 +5,10 @@ import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import type { TempUnit } from '../ui/format'
 import { evaluatePlan, isTravelling, localToday, pastChanges, withPrefs, type CostKind, type PastChange } from '../planner'
+import { useItems } from './items'
+import { seenPrices } from './itemsCore'
 import { SHARED_TOKEN } from './shareLink'
-import { createTripStore, loadTrip, newTripInput, planFor, planId, tripActions, tripData, tripPlans, type TripCore, type TripData, type TripNotes } from './tripCore'
+import { createTripStore, evalOptions, loadTrip, newTripInput, planFor, planId, tripActions, tripData, tripPlans, type TripCore, type TripData, type TripNotes } from './tripCore'
 
 export { MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
 
@@ -128,7 +130,7 @@ export const useTrip = create<State>()(
         const s = get()
         const today = localToday()
         if (askPast && s.plan && !s.readOnly && isTravelling(s.input, today)) {
-          const copy = createTripStore(tripData(s), { currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels })
+          const copy = createTripStore(tripData(s), { currency: s.currency, tempUnit: s.tempUnit, tempFeels: s.tempFeels, seenPrices: s.seenPrices })
           ;(copy.getState()[name] as (...a: unknown[]) => void)(...args)
           const after = copy.getState()
           const changes = pastChanges({ input: s.input, stops: s.plan.stops }, { input: after.input, stops: after.plan?.stops ?? [] }, today)
@@ -216,13 +218,13 @@ export const useTrip = create<State>()(
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
         // The checks read temperatures as shown, so they follow the setting.
-        setTempFeels: (tempFeels) => set({ tempFeels, plan: planFor(get().input, get().stops, tempFeels) }),
+        setTempFeels: (tempFeels) => set({ tempFeels, plan: planFor(get().input, get().stops, { ...evalOptions(get()), feels: tempFeels }) }),
         setLocalNames: (localNames) => set({ localNames }),
         setPriceCompare: (priceCompare) => set({ priceCompare }),
         setCostsLocal: (costsLocal) => set({ costsLocal }),
         setCityTab: (cityTab, part) => set((s) => ({ cityTab, ...(part && { cityPart: { ...s.cityPart, [cityTab]: part } }) })),
         openTrip: (data, keepView = false) => {
-          const { broken, ...trip } = loadTrip(data, get().tempFeels)
+          const { broken, ...trip } = loadTrip(data, evalOptions(get()))
           if (broken) {
             // The trip refers to data that no longer exists: keep its setup, drop the itinerary.
             set({ ...trip, selected: null, panel: 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
@@ -267,3 +269,19 @@ export const useTrip = create<State>()(
     },
   ),
 )
+
+// Prices the user saw in cities (My visit) replace ours in the plan's costs and budget checks: the plan is checked
+// again when they change (and once now, with the items kept in this browser).
+let itemsSeen: unknown
+const takePrices = () => {
+  const { books, key } = useItems.getState()
+  const entries = books[key]?.entries ?? {}
+  if (entries === itemsSeen) return
+  itemsSeen = entries
+  const prices = seenPrices(entries, ds.fx.rates)
+  const t = useTrip.getState()
+  if (JSON.stringify(prices) === JSON.stringify(t.seenPrices ?? {})) return
+  useTrip.setState({ seenPrices: prices, plan: planFor(t.input, t.stops, { ...evalOptions(t), prices }) })
+}
+useItems.subscribe(takePrices)
+takePrices()

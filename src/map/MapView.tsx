@@ -125,7 +125,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const [node, setNode] = useState<CityNode | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, picking, localNames } = useTrip()
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, seenPrices, picking, localNames } = useTrip()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -445,11 +445,11 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       if (editing) map.setPaintProperty('pick-fill', 'fill-color', pickFill(input))
     }
 
-    const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels })
+    const metric = cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices })
 
     refresh.current = update
     if (loaded.current) update()
-  }, [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels, editing, picking])
+  }, [plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, currency, tempUnit, tempFeels, seenPrices, editing, picking])
 
   // Bring a selected city into view when it's off screen or under the city panel (it may have been picked from
   // the itinerary, the timeline or another city's panel).

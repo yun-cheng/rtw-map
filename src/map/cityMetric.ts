@@ -22,14 +22,14 @@ export type Metric = { color?: string; lines?: string[]; rain?: number; value?: 
 export type TipContent = { title?: string; sub?: string; lines?: string[] }
 
 type TripState = ReturnType<typeof useTrip.getState>
-type MetricState = Pick<TripState, 'plan' | 'input' | 'layer' | 'layerMonth' | 'nearbyKind' | 'costKind' | 'weatherBy' | 'currency' | 'tempUnit' | 'tempFeels'>
+type MetricState = Pick<TripState, 'plan' | 'input' | 'layer' | 'layerMonth' | 'nearbyKind' | 'costKind' | 'weatherBy' | 'currency' | 'tempUnit' | 'tempFeels' | 'seenPrices'>
 
 /**
  * The colour (and hover text) of each city in the current map view; for weather also the share of rainy days, and
  * for weather, air and mobile the number shown in the stop's circle. Route view: no colour (stops keep theirs).
  */
 export function cityMetrics(s: MetricState): (cityId: string) => Metric {
-  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels } = s
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices } = s
   const costs = layer === 'cost' ? costScale(costKind, input, currency) : null
   /** Month for the weather and air views: the chosen one, or (by default) when you're there on this trip. */
   const monthFor = (cityId: string) => layerMonth || likelyMonth(ds, plan, input, cityId)
@@ -76,7 +76,8 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       return { color: nearbyColor(nearbyLevel(n)), lines: [n ? `${roughCount(n)} ${what}` : `No ${what} found`] }
     }
     if (costs) {
-      const d = costOf(ds, cityId, costKind, input)
+      // (The bands are from our prices; a city's own is the user's where they saw one.)
+      const d = costOf(ds, cityId, costKind, { ...input, prices: seenPrices })
       // No rental price where that rental isn't usual in the city; for other costs, no data.
       if (!d) return { color: NO_DATA, lines: [costKind === 'car' || costKind === 'scooter' ? `No ${COST_LABELS[costKind].label.toLowerCase()} here` : 'No data'] }
       // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").

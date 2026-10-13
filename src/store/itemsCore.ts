@@ -1,11 +1,13 @@
-// What the user keeps for a city or a journey (PLAN.md, Progress: My visit): where they stay, photo albums, links and their notes.
+// What the user keeps for a city or a journey (PLAN.md, Progress: My visit): where they stay, photo albums, links, their
+// notes, and prices they saw (which replace ours for that city).
 // The trip's, not a plan's (kept by city, so switching plans or moving dates keeps them; a stay carries its own dates,
 // so two visits to a city each show theirs), private, and kept apart from the trip's data like the journal
 // (journalCore.ts): written on any device, offline too, and merged item by item, the latest edit of each winning.
 // Plain rules, shared by the app (store/items.ts) and the Worker (account.ts), tested in items.test.ts.
+import type { PriceKey, SeenPrices } from '../planner/cost'
 import type { TripNotes } from './tripCore'
 
-export type ItemKind = 'note' | 'stay' | 'album' | 'link'
+export type ItemKind = 'note' | 'stay' | 'album' | 'link' | 'price'
 
 /** One thing kept for a city or a journey. A removed one is kept as `deleted` (so the removal wins over older copies). */
 export type TripItem = {
@@ -28,6 +30,9 @@ export type TripItem = {
   ref?: string
   /** A stay's price, as written ("€84, paid"). */
   price?: string
+  /** A price seen in the city (`price:<city>:<what>`, see PriceKey), in the money it was seen in. */
+  amount?: number
+  currency?: string
   /** When last changed (ms), on the device that changed it: the latest wins. */
   updatedAt: number
   deleted?: true
@@ -36,13 +41,27 @@ export type Items = Record<string, TripItem>
 
 export const ITEM_LIMITS = { textChars: 4000, shortChars: 200, urlChars: 2000, items: 2000, bytes: 1_500_000 }
 const SHORT = ['title', 'address', 'ref', 'price'] as const
-const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link']
+const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link', 'price']
 
 /** A note's id: one per city or journey. */
 export const noteId = (at: string) => `note:${at}`
+/** A seen price's id: one per city and what it's the price of. */
+export const priceId = (cityId: string, key: PriceKey) => `price:${cityId}:${key}`
 /** An item with nothing in it (a note emptied, a stay with no name), as good as removed. */
 export const isEmptyItem = (i: TripItem | undefined) =>
-  !i || i.deleted || ![i.title, i.url, i.text, i.address, i.ref, i.price].some((v) => v?.trim())
+  !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : ![i.title, i.url, i.text, i.address, i.ref, i.price].some((v) => v?.trim()))
+
+/** The prices seen in each city, in EUR at these rates (units per EUR); one in money without a rate is left out. */
+export function seenPrices(items: Items, rates: Record<string, number>): SeenPrices {
+  const out: SeenPrices = {}
+  for (const i of Object.values(items)) {
+    if (i.kind !== 'price' || isEmptyItem(i)) continue
+    const rate = i.currency === 'EUR' ? 1 : rates[i.currency ?? '']
+    const key = i.id.split(':')[2] as PriceKey
+    if (rate && key) (out[i.at] ??= {})[key] = i.amount! / rate
+  }
+  return out
+}
 
 /** A link as typed, with https:// when it has no scheme; '' if it isn't a web address. */
 export function webUrl(raw: string): string {
@@ -77,6 +96,13 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
       const url = webUrl(x.url)
       if (!url || url.length > ITEM_LIMITS.urlChars) return 'Invalid link'
       item.url = url
+    }
+    if (item.kind === 'price') {
+      if (item.at.includes('>')) return 'Invalid price'
+      if (typeof x.amount !== 'number' || !Number.isFinite(x.amount) || x.amount < 0 || x.amount > 1e9) return 'Invalid price'
+      if (typeof x.currency !== 'string' || !/^[A-Z]{3}$/.test(x.currency)) return 'Invalid price'
+      item.amount = x.amount
+      item.currency = x.currency
     }
     for (const k of ['from', 'to'] as const) {
       if (x[k] === undefined || x[k] === '') continue

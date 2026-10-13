@@ -6,7 +6,7 @@ import { bookActions, changeBook, LOCAL, type BookState } from './book'
 import { changedItem, mergeItems, noteId, notesAsItems, removedItem, type Items, type TripItem } from './itemsCore'
 import type { TripNotes } from './tripCore'
 
-export { isEmptyItem, newItemId, noteId, webUrl, type ItemKind, type Items, type TripItem } from './itemsCore'
+export { isEmptyItem, newItemId, noteId, priceId, webUrl, type ItemKind, type Items, type TripItem } from './itemsCore'
 
 type ItemsState = BookState<TripItem> & {
   /** Adds or changes an item (`kind` and `at` are needed for a new one). */

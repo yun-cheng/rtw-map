@@ -1,5 +1,5 @@
 import { allocate, type AllocItem } from './allocate'
-import { dailyCost, dayChoices, dayCost } from './cost'
+import { dailyCost, dayChoices, dayCost, type SeenPrices } from './cost'
 import { addDays, daysBetween, monthOf } from './dates'
 import { AIRPORT_MIN, buildGraph, legBetween, travelWeight, type Graph } from './graph'
 import { TAP_WATER_LABELS, airBand, tapWater } from './health'
@@ -10,7 +10,7 @@ import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
 import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripInput } from './types'
 
 export * from './types'
-export { COST_HINTS, COST_KINDS, MEAL_HINTS, GROCERY_KEYS, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, estimatedCosts, groceryDay, groceryMeal, prefsDay, type CostInput, type CostItem, type CostKind } from './cost'
+export { COST_HINTS, COST_KINDS, MEAL_HINTS, GROCERY_KEYS, cityPrices, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, estimatedCosts, groceryDay, groceryMeal, prefsDay, PRICE_LABELS, type CityPrices, type CostInput, type CostItem, type CostKind, type PriceKey, type SeenPrices } from './cost'
 export { SCHENGEN_LIMIT, schengenApplies, schengenUsed } from './schengen'
 export { isTravelling, localToday, pastChanges, stopTime, travelDay, tripPhase, type PastChange } from './travel'
 export { ENGLISH_LABELS, englishLevel } from './language'
@@ -36,6 +36,8 @@ type Ctx = {
   candidates: string[]
   required: Set<string>
   blocked: { iso2: string; reason: string }[]
+  /** Prices the user saw in cities (My visit), replacing ours in the costs. */
+  prices?: SeenPrices
   /** Each candidate's daily cost on the trip's travel style, relative to the median candidate (1 = typical). */
   costRatio: Map<string, number>
   /** The days asked for in places: countries and regions with a fewest or a most set. */
@@ -49,7 +51,7 @@ const areaOf = (name: string, countries: string[], r: { minDays?: number | null;
 
 // ---------------------------------------------------------------- context
 
-function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []): Ctx {
+function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = [], prices?: SeenPrices): Ctx {
   const groupIndex = new Map<string, number>()
   const areas: Area[] = []
   const blocked: Ctx['blocked'] = []
@@ -89,10 +91,10 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = []):
   for (const id of [...input.mustCities, input.startCityId, input.endCityId]) {
     if (id && candidates.includes(id)) required.add(id)
   }
-  const daily = candidates.map((id) => dailyCost(ds, id, input)).filter((d) => d > 0).sort((a, b) => a - b)
+  const daily = candidates.map((id) => dailyCost(ds, id, { ...input, prices })).filter((d) => d > 0).sort((a, b) => a - b)
   const median = daily[daily.length >> 1] || 1
-  const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, input) || median) / median]))
-  const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, costRatio, areas }
+  const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, { ...input, prices }) || median) / median]))
+  const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, prices, costRatio, areas }
   const requireBestIn = (countries: string[]) => {
     if ([...required].some((id) => countries.includes(ds.cities[id].iso2))) return
     const best = candidates.filter((id) => countries.includes(ds.cities[id].iso2)).sort((a, b) => baseScore(ctx, b) - baseScore(ctx, a))[0]
@@ -563,18 +565,19 @@ export function reoptimize(ds: Dataset, input: TripInput, stops: Stop[]): Plan {
 /** Adds a city where it fits best in the route, with its usual stay at the trip's pace; the other stops stay as they
  *  are (the trip may then have more nights than its dates, until the plan is updated). */
 export function addStop(ds: Dataset, input: TripInput, stops: Stop[], cityId: string, options: EvalOptions = {}): Plan {
-  const ctx = makeContext(ds, input, [...stops.map((s) => s.cityId), cityId])
+  const ctx = makeContext(ds, input, [...stops.map((s) => s.cityId), cityId], options.prices)
   const nights = suggestedDays(ds, cityId)[input.pace]
   return evaluate(ctx, insertCheapest(ctx, stops, cityId, groupIdFor(ctx, cityId)).map((s) => (s.cityId === cityId ? { ...s, nights } : s)), [], options)
 }
 
 /** How the checks read the data: `feels`, temperatures as they feel (where known) for cold and hot, as the user sees
- *  them (the display setting); measured otherwise. */
-export type EvalOptions = { feels?: boolean }
+ *  them (the display setting), measured otherwise; `prices`, the prices the user saw in cities (My visit), which
+ *  replace ours in the costs and the budget checks. */
+export type EvalOptions = { feels?: boolean; prices?: SeenPrices }
 
 /** Dates, legs, warnings and costs for stops exactly as given (no changes). */
 export function evaluatePlan(ds: Dataset, input: TripInput, stops: Stop[], options: EvalOptions = {}): Plan {
-  return evaluate(makeContext(ds, input, stops.map((s) => s.cityId)), stops, [], options)
+  return evaluate(makeContext(ds, input, stops.map((s) => s.cityId), options.prices), stops, [], options)
 }
 
 /** A country's days asked for, as words: "5–7 days", "at least 5 days", "at most 7 days". */
@@ -857,7 +860,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
   const { dailyBudget, maxPerNight, expensive, maxTravelHours, overnight } = input.prefs
   for (const s of sched) {
     const name = ds.cities[s.cityId].name
-    const day = dayCost(ds, s.cityId, dayChoices(input, s.cityId))
+    const day = dayCost(ds, s.cityId, dayChoices(input, s.cityId), ctx.prices)
     if (!day) continue
     const overBudget = !!dailyBudget && day.total > dailyBudget
     if (overBudget) {
@@ -952,7 +955,7 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
   }
 
   // Cost
-  const stay = sched.reduce((t, s) => t + dailyCost(ds, s.cityId, input) * s.nights, 0)
+  const stay = sched.reduce((t, s) => t + dailyCost(ds, s.cityId, { ...input, prices: ctx.prices }) * s.nights, 0)
   const allLegs = [...legs, ...(home.out ? [home.out] : []), ...(home.back ? [home.back] : [])]
   const legMin = allLegs.reduce((t, l) => t + l.priceMin, 0)
   const legMax = allLegs.reduce((t, l) => t + l.priceMax, 0)

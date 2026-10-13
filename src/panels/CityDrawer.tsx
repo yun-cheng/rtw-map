@@ -1,8 +1,8 @@
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, groceryDay, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, VISA_TEXT, compact, duration, flag, money, rateText, shortDate, shownTemps } from '../ui/format'
+import { MODE_ICON, VISA_TEXT, compact, duration, flag, rateText, shortDate, shownTemps } from '../ui/format'
 import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
@@ -17,6 +17,7 @@ import { Forecast, SubHead } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
+import { PriceEdit } from './PriceEdit'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
 
@@ -67,7 +68,12 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const costsLocal = useTrip((s) => s.costsLocal)
   const ownCurrency = country.currency !== currency && (country.currency === 'EUR' || ds.fx.rates[country.currency]) ? country.currency : null
   const priceCurrency = costsLocal && ownCurrency ? ownCurrency : currency
-  const priceFmt = (nEur: number, precise = false) => money(nEur, priceCurrency, precise)
+  // The city's prices, the user's where they saw one (My visit), and ours.
+  const seenPrices = useTrip((s) => s.seenPrices)
+  const prices = cityPrices(ds, cityId, seenPrices)
+  const ours = cityPrices(ds, cityId)
+  const price = (what: Exclude<PriceKey, GroceryKey | 'day'>, label: string, precise = false) =>
+    prices && ours && <PriceEdit cityId={cityId} what={what} eur={prices[what]!} ours={ours[what]!} label={label} precise={precise} />
   const climate = ds.climate[cityId]
   const adv = ds.advisories[city.iso2]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
@@ -215,11 +221,14 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     day: cost && <MoneyCurrency.Provider value={priceCurrency}><CostDay cityId={cityId} /></MoneyCurrency.Provider>,
-    stay: cost && (
+    stay: prices && ours && (
       <Section title="Stay" aside={roughCosts}>
-        <Row label="Hostel dorm bed">{priceFmt(cost.dormBed * city.costFactor)}</Row>
-        <Row label="Private room">{priceFmt(cost.privateRoom * city.costFactor)}</Row>
+        <MoneyCurrency.Provider value={priceCurrency}>
+          <Row label="Hostel dorm bed">{price('dormBed', 'Hostel dorm bed')}</Row>
+          <Row label="Private room">{price('privateRoom', 'Private room')}</Row>
+        </MoneyCurrency.Provider>
         <p className="mt-1 text-[12px] text-muted">A night, in this city. Hotel and apartment prices aren't in our data yet.</p>
+        <p className="mt-1 text-[12px] text-muted">Click a price to put in the one you saw or paid; it's then used for this city.</p>
       </Section>
     ),
     // Without curated prices, still the national price level and Big Mac price (open data), with no prices of ours.
@@ -230,17 +239,19 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ) : (
       <Section title="Food & drink" aside={roughCosts}>
-        <Row label="Local meal" hint={COST_HINTS.mealLocal}>{priceFmt(cost.mealLocal * city.costFactor)}</Row>
-        <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{priceFmt(cost.mealDinner * city.costFactor)}</Row>
-        <Row label="Café coffee" hint={COST_HINTS.coffee}>{priceFmt(cost.coffee * city.costFactor, true)}</Row>
-        <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{priceFmt(cost.beerBar * city.costFactor, true)}</Row>
-        <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket</div>
-        {GROCERIES.map(([k, label]) => (
-          <Row key={k} label={label}>
-            {priceFmt(cost.groceries[k], true)}
-          </Row>
-        ))}
-        <Row label="Groceries for a day" hint={COST_HINTS.groceryDay}>{priceFmt(groceryDay(cost), true)}</Row>
+        <MoneyCurrency.Provider value={priceCurrency}>
+          <Row label="Local meal" hint={COST_HINTS.mealLocal}>{price('mealLocal', 'Local meal')}</Row>
+          <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{price('mealDinner', 'Restaurant dinner')}</Row>
+          <Row label="Café coffee" hint={COST_HINTS.coffee}>{price('coffee', 'Café coffee', true)}</Row>
+          <Row label="Beer in a bar (0.5 L)" hint={COST_HINTS.beerBar}>{price('beerBar', 'Beer in a bar', true)}</Row>
+          <div className="mt-3 mb-1 text-[12px] font-semibold">Supermarket</div>
+          {prices && ours && GROCERIES.map(([k, label]) => (
+            <Row key={k} label={label}>
+              <PriceEdit cityId={cityId} what={k} eur={prices.groceries[k]} ours={ours.groceries[k]} label={label} precise />
+            </Row>
+          ))}
+          <Row label="Groceries for a day" hint={COST_HINTS.groceryDay}>{price('groceryDay', 'Groceries for a day', true)}</Row>
+        </MoneyCurrency.Provider>
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ),
@@ -584,7 +595,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ...(airM ? [{ icon: '🌫', label: `Air in ${monthName}`, value: airBand(airM.pm25).short, tab: 'weather' as const, warn: checksIn('air').length > 0 }] : []),
     ...(water ? [{ icon: '💧', label: 'Tap water', value: TAP_WATER_LABELS[water.level].short, tab: 'health' as const }] : []),
     ...(health || vaccines.source === 'cdc' ? [{ icon: '💉', label: 'Vaccines', value: vaccineSummary, tab: 'health' as const }] : []),
-    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, input))} (${dayNote})`, tab: 'costs' as const, part: 'daily', warn: dayChecks.length > 0 }] : []),
+    ...(cost ? [{ icon: '💶', label: 'Daily cost', value: `${fmt(dailyCost(ds, cityId, { ...input, prices: seenPrices }))} (${dayNote})`, tab: 'costs' as const, part: 'daily', warn: dayChecks.length > 0 }] : []),
     ...(card ? [{ icon: '💳', label: 'Paying by card', value: CARD_LABELS[card.level].short, tab: 'costs' as const, part: 'paying', problem: moneyProblem }] : []),
     ...(mobile ? [{ icon: '📶', label: 'Mobile internet', value: `${mobile.short} (~${mobile.downMbps} Mbps)`, tab: 'daily' as const }] : []),
     ...(english ? [{ icon: '🗣', label: 'English', value: ENGLISH_LABELS[english.level].short, tab: 'daily' as const }] : []),

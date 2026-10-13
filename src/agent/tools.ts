@@ -6,7 +6,7 @@ import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, isTravelling, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
 import { changedItem, isEmptyItem, newItemId, noteId, parseItems, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
@@ -134,7 +134,8 @@ function dailyCosts(input: TripInput, id: string) {
   // None for a country without curated prices (only its capital, from open data): not 0.
   if (!costProfile(ds, ds.cities[id].iso2)) return 'no prices for this country yet'
   return {
-    this_trip: Math.round(dailyCost(ds, id, input)),
+    // (With the prices the user saw there, as the app shows it.)
+    this_trip: Math.round(dailyCost(ds, id, { ...input, prices: trip().seenPrices })),
     ...Object.fromEntries(BUDGETS.map((b) => [b, Math.round(dailyCost(ds, id, { prefs: stylePrefs(b, input.prefs) }))])),
   }
 }
@@ -244,11 +245,17 @@ function tripDetails(): ToolResult {
 // ---------------------------------------------------------------- My visit
 
 const ITEM_KINDS: ItemKind[] = ['stay', 'note', 'album', 'link']
-const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link' }
+const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link', price: 'price seen' }
+/** What a seen price is the price of (its id is `price:<city>:<what>`). */
+const priceOf = (i: TripItem) => PRICE_LABELS[i.id.split(':')[2] as PriceKey] ?? i.id.split(':')[2]
 /** Where an item belongs, by name: "Kraków", or "Kraków → Vienna" for a journey. */
 const itemPlace = (at: string) => at.split('>').map(cityName).join(' → ')
 /** An item in a few words: "stay Hostel Mleczarnia (Kraków)", "note (Kraków → Vienna)". */
-const itemText = (i: TripItem) => `${ITEM_NAMES[i.kind]}${i.kind !== 'note' && i.title ? ` ${i.title}` : ''} (${itemPlace(i.at)})`
+const itemText = (i: TripItem) =>
+  `${ITEM_NAMES[i.kind]}${i.kind === 'price' ? ` for ${priceOf(i)}` : i.kind !== 'note' && i.title ? ` ${i.title}` : ''} (${itemPlace(i.at)})`
+
+/** The order of kinds in a city's list: stays, notes, albums, links, then prices seen. */
+const kindRank = (k: ItemKind) => (k === 'price' ? ITEM_KINDS.length : ITEM_KINDS.indexOf(k))
 
 function visitItems(): ItemsHandle {
   if (!bound?.items) throw new ToolError('My visit isn\'t available here.')
@@ -265,12 +272,14 @@ function visit(args: Args): ToolResult {
   }
   const list = Object.values(visitItems().get())
     .filter((i) => !isEmptyItem(i) && (!only || i.at.split('>').includes(only)))
-    .sort((a, b) => order(a) - order(b) || a.at.localeCompare(b.at) || ITEM_KINDS.indexOf(a.kind) - ITEM_KINDS.indexOf(b.kind) || (a.from ?? '').localeCompare(b.from ?? ''))
+    .sort((a, b) => order(a) - order(b) || a.at.localeCompare(b.at) || kindRank(a.kind) - kindRank(b.kind) || (a.from ?? '').localeCompare(b.from ?? ''))
   if (!list.length) return { items: [], note: only ? `Nothing kept for ${cityName(only)} yet.` : 'Nothing kept in My visit yet.' }
   return {
     items: list.map((i) => ({
       id: i.id, where: itemPlace(i.at), kind: i.kind, title: i.title, address: i.address, check_in: i.from, check_out: i.to, url: i.url,
-      reference: i.ref, price: i.price, text: i.text, updated: new Date(i.updatedAt).toISOString().slice(0, 10),
+      reference: i.ref, price: i.price, text: i.text,
+      ...(i.kind === 'price' && { price_of: priceOf(i), price_seen: `${i.amount} ${i.currency}` }),
+      updated: new Date(i.updatedAt).toISOString().slice(0, 10),
     })),
   }
 }
@@ -288,6 +297,7 @@ function saveItem(args: Args): string {
   if (typeof args.id === 'string' && args.id) {
     old = all[args.id]
     if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
+    if (old.kind === 'price') throw new ToolError('A price seen is changed in the city panel\'s Costs tab, by the user; remove it to go back to ours.')
     if (args.kind && args.kind !== old.kind) throw new ToolError(`That's a ${ITEM_NAMES[old.kind]}: to make it a ${args.kind}, remove it and add one.`)
     patch = { id: old.id }
   } else {
@@ -581,7 +591,7 @@ function compareCities(args: Args): ToolResult {
         const a = ds.air.byCity[id]?.[m - 1]
         if (a) Object.assign(row, { pm25: a.pm25, air: airBand(a.pm25).short })
       }
-      if (f === 'daily_cost') row.daily_cost_eur = costProfile(ds, c.iso2) ? Math.round(dailyCost(ds, id, input)) : 'no prices'
+      if (f === 'daily_cost') row.daily_cost_eur = costProfile(ds, c.iso2) ? Math.round(dailyCost(ds, id, { ...input, prices: trip().seenPrices })) : 'no prices'
       if (f === 'english') row.english = ENGLISH_LABELS[englishLevel(ds, id)?.level ?? 0]?.short
       if (f === 'cards') row.cards = CARD_LABELS[cardLevel(ds, id)?.level ?? 0]?.short
       if (f === 'mobile_internet') row.mobile_internet = mobileView(id)
@@ -675,7 +685,7 @@ function viewDetails(ref: ViewRef): ToolResult {
       case 'cost': {
         const kind = ref.costKind ?? 'day'
         if (!costProfile(ds, iso2)) return { cost: 'no prices for this country yet' }
-        const eur = costOf(ds, cityId, kind, input)
+        const eur = costOf(ds, cityId, kind, { ...input, prices: trip().seenPrices })
         return kind === 'day' ? { daily_cost_eur: Math.round(eur), on: 'this trip’s choices' } : { [`${kind}_eur`]: Math.round(eur * 100) / 100 }
       }
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }

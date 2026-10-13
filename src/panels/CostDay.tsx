@@ -1,10 +1,11 @@
 import { Minus, Plus, RotateCcw } from 'lucide-react'
 import { Fragment } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { MEAL_HINTS, costProfile, dayChoices, dayCost, prefsDay, taxiEstimate, type DayChoices } from '../planner'
+import { MEAL_HINTS, cityPrices, costProfile, dayChoices, dayCost, prefsDay, taxiEstimate, type DayChoices, type GroceryKey, type PriceKey } from '../planner'
 import { useTrip } from '../store/trip'
 import { Badge, Named, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { PriceEdit } from './PriceEdit'
 import { Editable } from './ReadOnly'
 
 type Value = DayChoices[keyof DayChoices]
@@ -60,6 +61,20 @@ export function DaySwitch({ field: f, value, onChange }: { field: DayField; valu
 
 const ITEM: Record<keyof DayChoices, string> = { bed: 'bed', breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', coffees: 'coffee', beers: 'beer', taxis: 'taxi' }
 
+/** What a row's amount is the price of, at the choice made, and how many of it (coffees, rides); none for a skipped meal. */
+function rowPrice(key: keyof DayChoices, v: Value): [Exclude<PriceKey, GroceryKey | 'day'>, number] | null {
+  switch (key) {
+    case 'bed': return [v === 'dorm' ? 'dormBed' : 'privateRoom', 1]
+    case 'breakfast':
+    case 'lunch':
+    case 'dinner':
+      return v === 'diy' ? [key === 'breakfast' ? 'diyBreakfast' : 'diyMeal', 1] : v === 'local' ? ['mealLocal', 1] : v === 'restaurant' ? ['mealDinner', 1] : null
+    case 'coffees': return ['coffee', Number(v)]
+    case 'beers': return ['beerBar', Number(v)]
+    case 'taxis': return ['taxiRide', Number(v)]
+  }
+}
+
 /**
  * "Daily cost": one traveller's day in a city, item by item, from the preferences. Any item can be changed for this
  * city; the change is saved with the trip and counted in its total.
@@ -76,11 +91,14 @@ function Budget({ eur, over }: { eur: number | null; over: boolean }) {
 const OVER = 'text-danger'
 
 export function CostDay({ cityId }: { cityId: string }) {
-  const { input, setInput, plan } = useTrip()
+  const { input, setInput, plan, seenPrices } = useTrip()
   const { fmt } = useMoney()
   const choices = dayChoices(input, cityId)
-  const day = dayCost(ds, cityId, choices)
-  if (!day) return null
+  const day = dayCost(ds, cityId, choices, seenPrices)
+  // The prices, the user's where they saw one, and ours (for the resets).
+  const prices = cityPrices(ds, cityId, seenPrices)
+  const ours = cityPrices(ds, cityId)
+  if (!day || !prices || !ours) return null
   const base = prefsDay(input.prefs)
   const changed = !!input.cityCosts?.[cityId]
   const stop = plan?.stops.find((s) => s.cityId === cityId)
@@ -96,7 +114,10 @@ export function CostDay({ cityId }: { cityId: string }) {
   const transitEur = day.items.find((i) => i.key === 'transport')!.eur
   const transit = (
     <div key="transit" className="py-1.5">
-      <Named label="Public transport" hint="A day of getting around by bus, tram or metro: a day pass, or the single tickets you'd use." aside={<span className="font-medium tabular-nums">{fmt(transitEur, true)}</span>} />
+      <Named
+        label="Public transport" hint="A day of getting around by bus, tram or metro: a day pass, or the single tickets you'd use."
+        aside={<span className="font-medium"><PriceEdit cityId={cityId} what="localTransportDay" eur={transitEur} ours={ours.localTransportDay} label="Public transport, a day" precise /></span>}
+      />
     </div>
   )
 
@@ -109,12 +130,14 @@ export function CostDay({ cityId }: { cityId: string }) {
 
   return (
     <Section title="Daily cost" aside={costProfile(ds, ds.cities[cityId].iso2)?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined}>
-      <Editable>
+      {/* (The choices are the trip's, locked while it's read-only; the prices seen are My visit's, never locked.) */}
       <div className="mb-1 flex justify-end text-[12px]">
         {changed ? (
-          <button onClick={() => save(null)} className="flex items-center gap-1 font-medium text-accent hover:underline">
-            <RotateCcw size={12} /> Reset all to preferences
-          </button>
+          <Editable>
+            <button onClick={() => save(null)} className="flex items-center gap-1 font-medium text-accent hover:underline">
+              <RotateCcw size={12} /> Reset all to preferences
+            </button>
+          </Editable>
         ) : <span className="text-muted">Using your preferences</span>}
       </div>
       {DAY_FIELDS.map((f) => {
@@ -123,6 +146,7 @@ export function CostDay({ cityId }: { cityId: string }) {
         const set = (v: Value) => save({ ...choices, [f.key]: v })
         const eur = day.items.find((i) => i.key === ITEM[f.key])!.eur
         const invalid = f.key === 'bed' && over(eur, maxPerNight)
+        const [what, count] = rowPrice(f.key, value) ?? [null, 0]
         return (
           <Fragment key={f.key}>
             {f.key === 'taxis' && transit}
@@ -132,23 +156,27 @@ export function CostDay({ cityId }: { cityId: string }) {
                 label={f.key === 'bed' ? <>{f.label} <Budget eur={maxPerNight} over={invalid} /></> : f.label}
                 hint={f.hint?.(value)}
                 after={value !== base[f.key] && (
-                  <button onClick={() => set(base[f.key])} title="Reset to your preference" aria-label={`Reset ${f.label.toLowerCase()} to your preference`} className="ml-1 text-accent hover:opacity-70">
-                    <RotateCcw size={12} />
-                  </button>
+                  <Editable>
+                    <button onClick={() => set(base[f.key])} title="Reset to your preference" aria-label={`Reset ${f.label.toLowerCase()} to your preference`} className="ml-1 text-accent hover:opacity-70">
+                      <RotateCcw size={12} />
+                    </button>
+                  </Editable>
                 )}
                 aside={
                   <span className="flex items-center gap-3">
                     {/* No price for none of a counted item (0 coffees); "–" for a skipped meal. */}
                     {(eur || f.max === undefined) && (
                       <span className="font-medium tabular-nums">
-                        <span className={invalid ? OVER : undefined}>{eur ? fmt(eur, true) : '–'}</span>
+                        {what && count && prices[what] != null
+                          ? <PriceEdit cityId={cityId} what={what} eur={prices[what]!} ours={ours[what] ?? prices[what]!} count={count} label={f.label} precise className={invalid ? OVER : ''} />
+                          : <span className={invalid ? OVER : undefined}>{eur ? fmt(eur, true) : '–'}</span>}
                       </span>
                     )}
-                    {f.max !== undefined && <Counter value={Number(value)} max={f.max} label={f.label} onChange={(n) => set(n as Value)} />}
+                    {f.max !== undefined && <Editable><Counter value={Number(value)} max={f.max} label={f.label} onChange={(n) => set(n as Value)} /></Editable>}
                   </span>
                 }
               >
-                {f.options && <div className="mt-0.5"><DaySwitch field={f} value={value} onChange={set} /></div>}
+                {f.options && <div className="mt-0.5"><Editable><DaySwitch field={f} value={value} onChange={set} /></Editable></div>}
               </Named>
             </div>
           </Fragment>
@@ -157,16 +185,24 @@ export function CostDay({ cityId }: { cityId: string }) {
       <div className="mt-1.5 border-t border-line pt-1.5">
         <div className="flex items-baseline justify-between py-0.5 text-[13px]" title={overBy(day.total, dailyBudget)}>
           <span className="font-semibold">Per day <Budget eur={dailyBudget} over={dayOver} /></span>
-          <span className={`font-semibold tabular-nums ${dayOver ? OVER : ''}`}>{fmt(day.total)}</span>
+          <span className="font-semibold">
+            <PriceEdit cityId={cityId} what="day" eur={day.total} ours={day.sum} label="Per day" className={dayOver ? OVER : ''} />
+          </span>
         </div>
       </div>
       {stop && (
         <div className="flex items-baseline justify-between text-[13px]">
           <span className="text-muted">{stop.nights} night{stop.nights === 1 ? '' : 's'} here</span>
-          <span className="font-medium tabular-nums">{fmt(day.total * stop.nights)}</span>
+          <span className="font-medium">
+            <PriceEdit cityId={cityId} what="day" eur={day.total} ours={day.sum} count={stop.nights} per="a day" label={`${stop.nights} nights here`} />
+          </span>
         </div>
       )}
-      </Editable>
+      <p className="mt-1.5 text-[12px] text-muted">
+        {day.own
+          ? <>Per day is what a day here really costs you, used for this city; the items add up to {fmt(day.sum)}.</>
+          : 'Click a price to put in the one you saw or paid; it\'s then used for this city.'}
+      </p>
     </Section>
   )
 }

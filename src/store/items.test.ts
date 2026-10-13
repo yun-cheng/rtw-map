@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeItems, notesAsItems, parseItems, webUrl, type TripItem } from './itemsCore'
+import { mergeItems, notesAsItems, parseItems, priceId, seenPrices, webUrl, type TripItem } from './itemsCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -33,6 +33,22 @@ describe('items', () => {
     expect(parseItems({ entries: [{ id: 'x', kind: 'stay', at: 'krakow', title: 'gone', deleted: true, updatedAt: 1 }] })).toEqual([{ id: 'x', kind: 'stay', at: 'krakow', deleted: true, updatedAt: 1 }])
     expect(webUrl('photos.app.goo.gl/abc')).toBe('https://photos.app.goo.gl/abc')
     expect(webUrl('mailto:a@b.c')).toBe('')
+  })
+
+  it('keeps prices seen in a city, in the money they were seen in, and gives them in EUR', () => {
+    const price = (at: string, amount: unknown, currency: unknown) => ({ id: `price:${at}:mealLocal`, kind: 'price', at, amount, currency, updatedAt: 1 })
+    expect(parseItems({ entries: [price('skopje', 400, 'MKD')] })).toEqual([{ id: 'price:skopje:mealLocal', kind: 'price', at: 'skopje', amount: 400, currency: 'MKD', updatedAt: 1 }])
+    for (const bad of [price('skopje', -1, 'MKD'), price('skopje', '400', 'MKD'), price('skopje', 400, 'mkd'), price('skopje>ohrid', 400, 'MKD')]) {
+      expect(parseItems({ entries: [bad] })).toBeTypeOf('string')
+    }
+    const items = {
+      [priceId('skopje', 'mealLocal')]: { id: priceId('skopje', 'mealLocal'), kind: 'price' as const, at: 'skopje', amount: 400, currency: 'MKD', updatedAt: 1 },
+      [priceId('skopje', 'day')]: { id: priceId('skopje', 'day'), kind: 'price' as const, at: 'skopje', deleted: true as const, updatedAt: 2 },
+      [priceId('paris', 'coffee')]: { id: priceId('paris', 'coffee'), kind: 'price' as const, at: 'paris', amount: 3.5, currency: 'EUR', updatedAt: 1 },
+      [priceId('paris', 'beerBar')]: { id: priceId('paris', 'beerBar'), kind: 'price' as const, at: 'paris', amount: 9, currency: 'XXX', updatedAt: 1 },
+      'stay:1': stay('stay:1', 'Hostel', 1),
+    }
+    expect(seenPrices(items, { MKD: 61.5 })).toEqual({ skopje: { mealLocal: 400 / 61.5 }, paris: { coffee: 3.5 } })
   })
 
   it("moves the notes kept with a trip's data into items, never over one written or removed since", () => {
