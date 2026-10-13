@@ -640,7 +640,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
-              {!readOnly && <Button className="ml-auto" onClick={() => { if (!confirmRemove(city.name, stop.nights)) return; removeStop(stopIndex); select(null) }}>Remove</Button>}
+              {!readOnly && <Button className="ml-auto" onClick={async () => { if (!(await confirmRemove(city.name, stop.nights))) return; removeStop(stopIndex); select(null) }}>Remove</Button>}
             </>
           ) : plan && !readOnly && !city.auto ? (
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>

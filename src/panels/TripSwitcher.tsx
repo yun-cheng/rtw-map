@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useAccount } from '../agent/account'
 import { useSaved, type TripSummary } from '../store/saved'
 import { shareUrl } from '../store/shareLink'
+import { confirm } from '../ui/dialog'
 import { shortDate } from '../ui/format'
 
 const STATUS: Record<string, { text: string; className: string }> = {
@@ -122,10 +123,9 @@ export function TripSwitcher() {
                 {active && <button onClick={() => setEditing('share')} className="text-muted hover:text-ink">{active.share ? 'Shared…' : 'Share…'}</button>}
                 {active && (
                   <button
-                    onClick={() => {
-                      if (!window.confirm(`Delete "${active.name}"? This can't be undone.`)) return
+                    onClick={async () => {
                       close()
-                      void remove(active.id)
+                      if (await confirm(`Delete "${active.name}"?`, { message: "This can't be undone.", ok: 'Delete' })) void remove(active.id)
                     }}
                     className="text-muted hover:text-danger"
                   >

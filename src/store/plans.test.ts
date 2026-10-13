@@ -176,4 +176,21 @@ describe('editing a trip under way by hand', () => {
     state().setNights(0, first.nights + 1)
     expect(state().stops[0].nights).toBe(first.nights + 1)
   })
+
+  it("makes the edit once the app's dialog says yes, and not on no", async () => {
+    const [first, second] = state().plan!.stops
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date(`${second.arrive}T12:00`))
+    let say: (yes: boolean) => void = () => {}
+    onPastEdit(() => new Promise<boolean>((resolve) => { say = resolve }))
+    state().removeStop(0)
+    expect(stopIds()[0]).toBe(first.cityId)
+    say(false)
+    await Promise.resolve()
+    expect(stopIds()[0]).toBe(first.cityId)
+    state().removeStop(0)
+    say(true)
+    await Promise.resolve()
+    expect(stopIds()[0]).toBe(second.cityId)
+  })
 })

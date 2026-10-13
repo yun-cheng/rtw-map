@@ -4,12 +4,13 @@ import { useChat } from '../agent/chat'
 import { pastText } from '../agent/tools'
 import { daysBetween, localToday, travelDay, tripPhase } from '../planner'
 import { onPastEdit, useTrip } from '../store/trip'
+import { confirm } from '../ui/dialog'
 import { cityName } from '../ui/format'
 
 onPastEdit((changes) =>
   // (The assistant's own changes are checked by its tools.)
   useChat.getState().busy ||
-  window.confirm(`Your trip is under way, and this changes days that already happened: ${pastText(changes)}.\n\nChange them anyway?`))
+  confirm('Change days that already happened?', { message: `Your trip is under way, and this changes ${pastText(changes)}.`, ok: 'Change them' }))
 
 /** The trip's dates, nights and stops: "2026/09/01 – 2027/01/30 · 151 nights · 25 stops" (the Trip and Itinerary tabs). */
 export function TripSummary() {

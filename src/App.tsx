@@ -21,6 +21,7 @@ import { useUndoKeys } from './store/history'
 import { SHARED_TOKEN } from './store/shareLink'
 import { planMark, useTrip } from './store/trip'
 import { BottomSheet, type Snap } from './ui/BottomSheet'
+import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { useOnline } from './ui/useOnline'
 import { usePhone } from './ui/usePhone'
@@ -190,6 +191,7 @@ export default function App() {
   return (
     <div className="flex h-full flex-col">
       <SharedGone />
+      <DialogHost />
       <Notices>
         <UpdateNotice />
         <OutsideNotice />

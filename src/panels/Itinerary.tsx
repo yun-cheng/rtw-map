@@ -6,6 +6,7 @@ import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planne
 import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
+import { confirm } from '../ui/dialog'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
@@ -105,7 +106,7 @@ export function Itinerary() {
                   <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: these nights stay when the plan changes' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : 'text-muted opacity-0 group-hover:opacity-100'} hover:bg-panel`}>
                     {s.locked ? '🔒' : '🔓'}
                   </button>
-                  <button onClick={() => confirmRemove(city.name, s.nights) && removeStop(i)} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
+                  <button onClick={async () => { if (await confirmRemove(city.name, s.nights)) removeStop(i) }} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
                 </div>}
               </div>
               {leg && (
@@ -142,7 +143,7 @@ export function Itinerary() {
 
 /** Asks before a stop is taken out by hand. */
 export const confirmRemove = (name: string, nights: number) =>
-  window.confirm(`Remove ${name} (${nights} night${nights > 1 ? 's' : ''}) from the trip?`)
+  confirm(`Remove ${name} (${nights} night${nights > 1 ? 's' : ''}) from the trip?`, { ok: 'Remove' })
 
 /** Undo and redo of the trip's edits (store/history.ts); not while the assistant is changing it. */
 function UndoRedo() {

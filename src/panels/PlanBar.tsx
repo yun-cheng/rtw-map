@@ -3,6 +3,7 @@ import { dataset as ds } from '../data/dataset'
 import { evaluatePlan, type Plan } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type TripPlan } from '../store/trip'
 import { cityName, duration } from '../ui/format'
+import { confirm } from '../ui/dialog'
 import { useMoney } from '../ui/useMoney'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { ReadOnlyToggle } from './ReadOnly'
@@ -86,9 +87,9 @@ function PlanMenu({ plan, canDelete, onClose }: { plan: TripPlan; canDelete: boo
       </div>
       <button
         disabled={!canDelete}
-        onClick={() => {
-          if (confirm(`Delete ${plan.name}? This can't be undone.`)) deletePlan(plan.id)
+        onClick={async () => {
           onClose()
+          if (await confirm(`Delete ${plan.name}?`, { message: "This can't be undone.", ok: 'Delete' })) deletePlan(plan.id)
         }}
         title={canDelete ? undefined : 'A trip needs at least one plan'}
         className="mt-2 text-[12px] text-danger hover:underline disabled:text-muted disabled:no-underline"

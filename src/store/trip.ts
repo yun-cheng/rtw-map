@@ -97,9 +97,10 @@ const memory = (): Storage => {
   return { getItem: (k: string) => mem.get(k) ?? null, setItem: (k: string, v: string) => void mem.set(k, v), removeItem: (k: string) => void mem.delete(k) } as Storage
 }
 /** Asks the user before an edit by hand changes days that already happened on a trip under way (pastChanges); set
- *  by the app (panels/Travel.tsx). */
-let askPast: ((changes: PastChange[]) => boolean) | null = null
-export const onPastEdit = (ask: (changes: PastChange[]) => boolean) => { askPast = ask }
+ *  by the app (panels/Travel.tsx, with the app's dialog: the edit is made once they say yes). */
+type AskPast = (changes: PastChange[]) => boolean | Promise<boolean>
+let askPast: AskPast | null = null
+export const onPastEdit = (ask: AskPast) => { askPast = ask }
 /** The edits that can reach back into the trip's days so far. */
 const PAST_EDITS = ['setInput', 'setNights', 'removeStop', 'moveStop', 'reorderStops', 'addCity'] as const
 
@@ -134,7 +135,12 @@ export const useTrip = create<State>()(
           ;(copy.getState()[name] as (...a: unknown[]) => void)(...args)
           const after = copy.getState()
           const changes = pastChanges({ input: s.input, stops: s.plan.stops }, { input: after.input, stops: after.plan?.stops ?? [] }, today)
-          if (changes.length && !askPast(changes)) return
+          const run = () => (core[name] as (...a: unknown[]) => unknown)(...args)
+          if (changes.length) {
+            const yes = askPast(changes)
+            if (yes instanceof Promise) return void yes.then((ok) => ok && run())
+            if (!yes) return
+          }
         }
         return (core[name] as (...a: unknown[]) => unknown)(...args)
       }])) as Pick<TripCore, (typeof PAST_EDITS)[number]>
