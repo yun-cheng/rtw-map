@@ -16,12 +16,16 @@ export function Button({ variant = 'default', className = '', ...props }: Button
  * A card of related information in a drawer, on the drawer's darker background (wrap a drawer's sections in
  * `Sections`). The title is optional for a card that needs no heading.
  */
-export function Section({ title, children, aside }: { title?: string; children: ReactNode; aside?: ReactNode }) {
+/** A card with a title; `action`, a small button right after the title (e.g. Update with AI); `aside`, at the right. */
+export function Section({ title, children, aside, action }: { title?: string; children: ReactNode; aside?: ReactNode; action?: ReactNode }) {
   return (
     <section className="rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
       {(title || aside) && (
         <div className="mb-2 flex items-center justify-between gap-2">
-          <h3 className="text-[13px] font-semibold">{title}</h3>
+          <span className="flex min-w-0 items-center gap-2">
+            <h3 className="text-[13px] font-semibold">{title}</h3>
+            {action}
+          </span>
           {aside}
         </div>
       )}
@@ -35,7 +39,7 @@ export function Section({ title, children, aside }: { title?: string; children: 
  * and `onToggle` its parent decides (e.g. one card open at a time).
  */
 /** `locked`: its controls are disabled (a read-only trip); it still opens and closes. */
-export function Fold({ title, summary, open: shown, onToggle, locked, children }: { title: string; summary: ReactNode; open?: boolean; onToggle?: () => void; locked?: boolean; children: ReactNode }) {
+export function Fold({ title, summary, open: shown, onToggle, locked, action, children }: { title: string; summary: ReactNode; open?: boolean; onToggle?: () => void; locked?: boolean; action?: ReactNode; children: ReactNode }) {
   const [own, setOwn] = useState(false)
   const open = shown ?? own
   const setOpen = (v: boolean) => (onToggle ? onToggle() : setOwn(v))
@@ -54,13 +58,18 @@ export function Fold({ title, summary, open: shown, onToggle, locked, children }
   }, [open])
   return (
     <section ref={card} className="scroll-mt-3 rounded-xl bg-panel shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
-      <button onClick={() => { clicked.current = true; setOpen(!open) }} aria-expanded={open} className="flex w-full items-start gap-2 px-4 py-3 text-left">
-        <ChevronRight size={14} className={`mt-0.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
-        <span className="min-w-0 flex-1">
-          <span className="block text-[13px] font-semibold">{title}</span>
-          {!open && <span className="mt-0.5 block truncate text-[12px] text-muted">{summary}</span>}
-        </span>
-      </button>
+      {/* (`action` beside the title, not in the button that folds it.) */}
+      <div className="relative">
+        <button onClick={() => { clicked.current = true; setOpen(!open) }} aria-expanded={open} className="flex w-full items-start gap-2 px-4 py-3 text-left">
+          <ChevronRight size={14} className={`mt-0.5 shrink-0 text-muted transition-transform ${open ? 'rotate-90' : ''}`} />
+          <span className="min-w-0 flex-1">
+            <span className={`block text-[13px] font-semibold ${action ? 'pr-32' : ''}`}>{title}</span>
+            {!open && <span className="mt-0.5 block truncate text-[12px] text-muted">{summary}</span>}
+          </span>
+        </button>
+        {/* (Beside the title: the summary under it has the card's whole width.) */}
+        {action && <span className="absolute top-2.5 right-3">{action}</span>}
+      </div>
       {open && <fieldset disabled={locked} className="min-w-0 px-4 pb-3">{children}</fieldset>}
     </section>
   )

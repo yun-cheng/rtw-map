@@ -12,6 +12,7 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate } from '../ui/format'
 import { Section } from '../ui/kit'
+import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
 import { PostPreview } from './PostPreview'
 import { socialPost } from './socialPost'
@@ -73,6 +74,7 @@ function Stays({ cityId, shown, dates, title = 'Where I stay' }: { cityId: strin
   return (
     <Section
       title={title}
+      action={<AiHelp topic="stay" place={cityName(cityId)} />}
       aside={editing === null && <button onClick={() => setEditing(newItemId('stay'))} className={small}><Plus size={12} /> Add a stay</button>}
     >
       {stays.length === 0 && editing === null && (
@@ -205,7 +207,11 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
   const [editing, setEditing] = useState<string | null>(null)
   const { title, add, icon: Icon, empty } = LIST[kind]
   return (
-    <Section title={title} aside={editing === null && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}>
+    <Section
+      title={title}
+      action={<AiHelp topic={kind} place={cityName(cityId)} />}
+      aside={editing === null && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}
+    >
       {items.length === 0 && editing === null && <p className="text-[12px] text-muted">{empty}</p>}
       <ul className="flex flex-col gap-1">
         {items.map((i) => (

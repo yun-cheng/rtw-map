@@ -5,6 +5,7 @@ import { MEAL_HINTS, cityPrices, costProfile, dayChoices, dayCost, prefsDay, tax
 import { useTrip } from '../store/trip'
 import { Badge, Named, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
+import { AiHelp } from './AiHelp'
 import { PriceEdit } from './PriceEdit'
 import { Editable } from './ReadOnly'
 
@@ -129,7 +130,7 @@ export function CostDay({ cityId }: { cityId: string }) {
   }
 
   return (
-    <Section title="Daily cost" aside={costProfile(ds, ds.cities[cityId].iso2)?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined}>
+    <Section title="Daily cost" action={<AiHelp topic="dailyCost" place={ds.cities[cityId].name} />} aside={costProfile(ds, ds.cities[cityId].iso2)?.estimated ? <Badge tone="warn">estimated from price level</Badge> : undefined}>
       {/* (The choices are the trip's, locked while it's read-only; the prices seen are My visit's, never locked.) */}
       <div className="mb-1 flex justify-end text-[12px]">
         {changed ? (

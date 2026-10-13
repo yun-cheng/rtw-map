@@ -46,6 +46,24 @@ describe('assistant chat', () => {
     expect(lastReply().text).toBe('All set')
   })
 
+  it("puts a card's question and the app's answer in the chat, which the model then sees", async () => {
+    useChat.getState().preset('How do I update where I stay in Kraków with AI?', 'Send me your booking.')
+    expect(useChat.getState().messages).toEqual([
+      { role: 'user', text: 'How do I update where I stay in Kraków with AI?' },
+      { role: 'assistant', text: 'Send me your booking.', steps: [], changes: [] },
+    ])
+    const fetch = serve(reply('Saved it.'))
+    await useChat.getState().send('Hostel Mleczarnia, 4 to 7 May')
+    const sent = JSON.parse((fetch.mock.calls[0] as unknown as [string, { body: string }])[1].body).contents as Content[]
+    expect(sent.map((c) => c.role)).toEqual(['user', 'model', 'user'])
+    expect(sent[1].parts[0].text).toBe('Send me your booking.')
+    // Not while it's answering.
+    useChat.setState({ busy: true })
+    useChat.getState().preset('Another?', 'No.')
+    expect(useChat.getState().messages).toHaveLength(4)
+    useChat.setState({ busy: false })
+  })
+
   it("stops at once when today's limit is used up", async () => {
     const fetch = serve(outForToday)
     await useChat.getState().send('hello')

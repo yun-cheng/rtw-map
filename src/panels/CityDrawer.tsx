@@ -10,6 +10,7 @@ import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
 import { MoneyCurrency, useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
+import { AiHelp } from './AiHelp'
 import { AskButton } from './AskButton'
 import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
@@ -222,7 +223,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     ),
     day: cost && <MoneyCurrency.Provider value={priceCurrency}><CostDay cityId={cityId} /></MoneyCurrency.Provider>,
     stay: prices && ours && (
-      <Section title="Stay" aside={roughCosts}>
+      <Section title="Stay" action={<AiHelp topic="stayPrices" place={city.name} />} aside={roughCosts}>
         <MoneyCurrency.Provider value={priceCurrency}>
           <Row label="Hostel dorm bed">{price('dormBed', 'Hostel dorm bed')}</Row>
           <Row label="Private room">{price('privateRoom', 'Private room')}</Row>
@@ -238,7 +239,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <PriceLevel iso2={city.iso2} countryName={country.name} />
       </Section>
     ) : (
-      <Section title="Food & drink" aside={roughCosts}>
+      <Section title="Food & drink" action={<AiHelp topic="foodPrices" place={city.name} />} aside={roughCosts}>
         <MoneyCurrency.Provider value={priceCurrency}>
           <Row label="Local meal" hint={COST_HINTS.mealLocal}>{price('mealLocal', 'Local meal')}</Row>
           <Row label="Restaurant dinner" hint={COST_HINTS.mealDinner}>{price('mealDinner', 'Restaurant dinner')}</Row>
