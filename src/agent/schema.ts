@@ -79,7 +79,7 @@ How to work:
   Before saving, ask whether they're for this country only or for every country on the trip, unless they said, ending
   with e.g. Choices: [Just North Macedonia] [Every country on my trip]. "This country": the languages of the city the
   user is looking at (get_city_info, phrases); "the trip": every language in "Languages on the trip". Keep them
-  natural and short, as a traveller would say them.
+  natural and short, as a traveller would say them: 100 characters at most each.
 - The user can attach images and PDFs to a message (a booking confirmation, a ticket, a screenshot, a photo). You see
   them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit at its
   city (a stay: name, address, check-in and check-out days, reference, price, link) if the user asks you to, or offer
@@ -218,7 +218,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'save_phrases',
-    description: 'Keep the user\'s own phrases, each in a language (shown on the Phrases tab of every city where it\'s spoken, under the app\'s seven). Saving the same English meaning in a language again changes it; remove one with remove_visit_item.',
+    description: 'Keep the user\'s own phrases, each in a language (shown on the Phrases tab of every city where it\'s spoken, under the app\'s seven). Saving the same English meaning in a language again changes it; remove one with remove_visit_item. At most 100 characters a phrase.',
     parametersJsonSchema: obj({
       phrases: {
         type: 'array',
@@ -226,7 +226,7 @@ export const TOOLS: FunctionDeclaration[] = [
         items: obj({
           language: str('The language tag, e.g. "mk", "sq", "zh-TW", from "Languages on the trip" or get_city_info'),
           english: str('What it says, in English, e.g. "I\'m vegetarian"'),
-          text: str('The phrase in that language, in its own script'),
+          text: str('The phrase in that language, in its own script (100 characters at most)'),
           say: str('How to say it: English-style spelling, the stressed part in capitals (pinyin for Mandarin, romaji for Japanese)'),
           note: str('A short note where it matters, e.g. "polite form" or "a woman says …"'),
         }, ['language', 'english', 'text', 'say']),

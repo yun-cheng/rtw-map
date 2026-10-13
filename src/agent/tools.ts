@@ -4,6 +4,7 @@
 import { dataset as ds } from '../data/dataset'
 import { INTERESTS, makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
+import { SPEECH_CHARS } from '../data/speech'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
   groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
@@ -378,7 +379,7 @@ function setPrices(args: Args): string {
 }
 
 /** The user's own phrases, each in a language (My visit items: one per language and English meaning, so saving the
- *  same meaning again changes it). All checked before any is kept. */
+ *  same meaning again changes it), short enough to be read aloud. All checked before any is kept. */
 function savePhrases(args: Args): string {
   const items = visitItems()
   const list = Array.isArray(args.phrases) ? (args.phrases as Record<string, unknown>[]) : []
@@ -392,6 +393,7 @@ function savePhrases(args: Args): string {
     const english = short(p.english)
     const text = short(p.text)
     if (!english || !text) throw new ToolError('Each phrase needs what it says in English and the phrase itself (text).')
+    if (text.length > SPEECH_CHARS) throw new ToolError(`"${english}" in ${languageName(tag)} is too long (${text.length} characters): keep a phrase to ${SPEECH_CHARS} at most, as short as a traveller would say it.`)
     return { id: phraseId(tag, english), kind: 'phrase' as const, at: tag, title: english, text, say: short(p.say), tip: short(p.note) }
   })
   for (const patch of patches) items.put(patch)

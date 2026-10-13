@@ -304,6 +304,12 @@ describe('My visit tools', () => {
     expect(run('remove_visit_item', { id: 'phrase:pl:i-m-vegetarian' }).summary).toBe('Removed phrase "I\'m vegetarian" (Polish)')
   })
 
+  it('keeps phrases short enough to read aloud', () => {
+    const { run } = visit()
+    expect(run('save_phrases', { phrases: [{ language: 'pl', english: 'Too long', text: 'a'.repeat(101), say: 'x' }] }).result.error).toMatch(/too long \(101 characters\)/)
+    expect(run('save_phrases', { phrases: [{ language: 'pl', english: 'Fits', text: 'a'.repeat(100), say: 'x' }] }).ok).toBe(true)
+  })
+
   it("tells the model the trip's languages and who says the phrases", () => {
     const ctx = tripContext()
     expect(ctx).toMatch(/Languages on the trip \(tag: name, where\), for phrases: .*mk: Macedonian \(North Macedonia\)/)

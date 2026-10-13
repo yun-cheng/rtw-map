@@ -25,8 +25,8 @@ export function voiceOf(index: Pick<SpeechIndex, 'voices'>, tag: string, speaker
 
 /** MP3, small enough for a few words: about 6 kB a second. */
 export const SPEECH_FORMAT = 'audio-24khz-48kbitrate-mono-mp3'
-/** The longest phrase of the user's the Worker reads (a sentence or two). */
-export const SPEECH_CHARS = 200
+/** The longest phrase of the user's the Worker reads, and the assistant saves (a short sentence). */
+export const SPEECH_CHARS = 100
 
 export const speechEndpoint = (region: string) => `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`
 export const voicesEndpoint = (region: string) => `https://${region}.tts.speech.microsoft.com/cognitiveservices/voices/list`
