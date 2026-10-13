@@ -281,6 +281,34 @@ describe('My visit tools', () => {
     expect(run('save_visit_item', { id: 'price:krakow:coffee', title: 'x' }).result.error).toMatch(/set_prices_seen/)
   })
 
+  it("keeps the user's own phrases by language, by tag or name, and lists a city's with its languages", () => {
+    const { items, run } = visit()
+    const out = run('save_phrases', { phrases: [
+      { language: 'mk', english: "I'm vegetarian", text: 'Јас сум вегетаријанец', say: 'yas soom veh-geh-tah-ree-YAH-nets', note: 'a woman says вегетаријанка' },
+      { language: 'Albanian', english: "I'm vegetarian", text: 'Jam vegjetarian', say: 'yahm veh-jeh-tah-ree-AHN' },
+      { language: 'pl', english: "I'm vegetarian", text: 'Jestem wegetarianinem', say: 'YES-tem veh-geh-tah-ryah-NEE-nem' },
+    ] })
+    expect(out).toMatchObject({ ok: true, summary: 'Phrases kept: "I\'m vegetarian" in Macedonian, Albanian, Polish' })
+    expect(items.get()['phrase:mk:i-m-vegetarian']).toMatchObject({ kind: 'phrase', at: 'mk', title: "I'm vegetarian", text: 'Јас сум вегетаријанец', tip: 'a woman says вегетаријанка' })
+    // Saving the same meaning again changes it.
+    run('save_phrases', { phrases: [{ language: 'mk', english: "I'm vegetarian", text: 'Вегетаријанец сум', say: 'veh-geh-tah-ree-YAH-nets soom' }] })
+    expect(items.get()['phrase:mk:i-m-vegetarian']).toMatchObject({ text: 'Вегетаријанец сум' })
+    expect(items.get()['phrase:mk:i-m-vegetarian'].tip).toBeUndefined()
+    // Skopje's are Macedonian's and Albanian's, not Polish.
+    const skopje = run('get_visit', { city: 'skopje' }).result.items as { where: string; language: string }[]
+    expect(skopje.map((i) => i.where).sort()).toEqual(['Albanian', 'Macedonian'])
+    const error = (phrase: Record<string, unknown>) => run('save_phrases', { phrases: [phrase] }).result.error
+    expect(error({ language: 'klingon', english: 'Hi', text: 'nuqneH', say: 'NOOK-neh' })).toMatch(/no phrases in "klingon"/)
+    expect(error({ language: 'mk', english: 'Hi', say: 'zdravo' })).toMatch(/needs what it says/)
+    expect(run('save_visit_item', { id: 'phrase:pl:i-m-vegetarian', title: 'x' }).result.error).toMatch(/save_phrases/)
+    expect(run('remove_visit_item', { id: 'phrase:pl:i-m-vegetarian' }).summary).toBe('Removed phrase "I\'m vegetarian" (Polish)')
+  })
+
+  it("tells the model the trip's languages, for phrases", () => {
+    const ctx = tripContext()
+    expect(ctx).toMatch(/Languages on the trip \(tag: name, where\), for phrases: .*mk: Macedonian \(North Macedonia\)/)
+  })
+
   it('changes My visit on a read-only trip, which keeps only its plans as they are', () => {
     useTrip.getState().setReadOnly(true)
     const { run } = visit()

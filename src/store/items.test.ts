@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeItems, notesAsItems, parseItems, priceId, seenPrices, webUrl, type TripItem } from './itemsCore'
+import { isEmptyItem, mergeItems, notesAsItems, parseItems, phraseId, priceId, seenPrices, webUrl, type TripItem } from './itemsCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -49,6 +49,14 @@ describe('items', () => {
       'stay:1': stay('stay:1', 'Hostel', 1),
     }
     expect(seenPrices(items, { MKD: 61.5 })).toEqual({ skopje: { mealLocal: 400 / 61.5 }, paris: { coffee: 3.5 } })
+  })
+
+  it('keeps phrases by language, one per English meaning', () => {
+    expect(phraseId('zh-TW', "Where's the toilet?")).toBe('phrase:zh-TW:where-s-the-toilet')
+    const phrase = { id: phraseId('mk', 'Hi'), kind: 'phrase', at: 'mk', title: 'Hi', text: 'Здраво', say: 'ZDRAH-vo', tip: 'informal', updatedAt: 1 }
+    expect(parseItems({ entries: [phrase] })).toEqual([phrase])
+    expect(parseItems({ entries: [{ ...phrase, at: 'skopje>ohrid' }] })).toBeTypeOf('string')
+    expect(isEmptyItem({ ...phrase, kind: 'phrase', text: ' ' })).toBe(true)
   })
 
   it("moves the notes kept with a trip's data into items, never over one written or removed since", () => {

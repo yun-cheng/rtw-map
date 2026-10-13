@@ -7,7 +7,8 @@ import { useChat } from '../agent/chat'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 
-type Help = { ask: (place: string) => string; answer: (place: string) => string }
+/** `choices`: replies to click instead of typing (examples to start from). */
+type Help = { ask: (place: string) => string; answer: (place: string) => string; choices?: string[] }
 
 const HELP = {
   stay: {
@@ -41,6 +42,11 @@ const HELP = {
   foodPrices: {
     ask: (c) => `How do I update food and drink prices in ${c} with AI?`,
     answer: (c) => `**Attach a photo** of a menu, a receipt or a supermarket shelf (📎 below), or just tell me what you paid.\n\nI'll fill in the prices for ${c}. Any currency is fine.`,
+  },
+  phrases: {
+    ask: (c) => `How do I add my own phrases for ${c} with AI?`,
+    answer: (c) => `**Tell me the phrases you need**, e.g.:\n- *"I'm vegetarian"*\n- *"Where's the toilet?"*\n- *"The bill, please"*\n\nI'll translate them, with how to say them, for ${c} or for every country on your trip.`,
+    choices: ["I'm vegetarian", "Where's the toilet?", 'The bill, please'],
   },
   who: {
     ask: () => 'How do I update Who with AI?',
@@ -78,7 +84,8 @@ export function AiHelp({ topic, place = '', hidden }: { topic: AiTopic; place?: 
   if (SHARED_TOKEN || hidden) return null
   const open = () => {
     // (While the assistant is answering, it just opens: the question can wait.)
-    if (!busy) useChat.getState().preset(HELP[topic].ask(place), HELP[topic].answer(place))
+    const help: Help = HELP[topic]
+    if (!busy) useChat.getState().preset(help.ask(place), help.answer(place), help.choices)
     askAssistant()
   }
   return (

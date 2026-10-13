@@ -9,7 +9,7 @@ import {
   groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, newItemId, noteId, parseItems, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseId, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
@@ -179,6 +179,16 @@ function travellingText(): string[] {
   return [`The trip is under way: today is ${today}, day ${day} of ${of}${at !== null ? `, at ${cityName(plan.stops[at].cityId)}` : ''}. The days up to today are what happened: keep the stops begun by today where they are, with their nights, and the start date (tonight's stop may get more nights, or fewer if it still ends tomorrow or later). Plan and change only from tomorrow on; tools that touch the past are refused.`]
 }
 
+/** The languages spoken at these cities (the Phrases tab's), each with its tag and the countries: "mk: Macedonian
+ *  (North Macedonia)". */
+function tripLanguages(cityIds: string[]): string {
+  const where = new Map<string, Set<string>>()
+  for (const id of cityIds) {
+    for (const l of phrasesFor(ds, id)?.languages ?? []) where.set(l.tag, (where.get(l.tag) ?? new Set()).add(countryName(ds.cities[id].iso2)))
+  }
+  return [...where].map(([tag, countries]) => `${tag}: ${languageName(tag)} (${[...countries].join(', ')})`).join('; ')
+}
+
 export function tripContext(): string {
   const { input, plan } = trip()
   const passport = ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport
@@ -208,6 +218,8 @@ export function tripContext(): string {
       lines.push(`${i + 1}. ${cityName(s.cityId)}, ${countryName(ds.cities[s.cityId].iso2)}: ${shortDate(s.arrive)}–${shortDate(s.depart)}, ${s.nights} nights${s.locked ? ', locked' : ''}${travel}${checks.length ? `. Checks: ${checks.join('; ')}` : ''}`)
     })
     lines.push(`Cost estimate: €${Math.round(plan.cost.min)}–€${Math.round(plan.cost.max)} (≈€${Math.round(plan.cost.perDay)}/day).`)
+    const languages = tripLanguages(plan.stops.map((s) => s.cityId))
+    if (languages) lines.push(`Languages on the trip (tag: name, where), for phrases: ${languages}.`)
     if (plan.schengen.applies) lines.push(`Schengen: ${plan.schengen.maxInWindow} of ${plan.schengen.limit} days used in the worst 180-day window.`)
     const warnings = plan.warnings.filter((w) => w.severity !== 'info' && !w.cityId)
     if (warnings.length) lines.push(`Other problems:\n${warnings.slice(0, 15).map((w) => `- ${warningTitle(w, 'C')}`).join('\n')}`)
@@ -245,17 +257,21 @@ function tripDetails(): ToolResult {
 // ---------------------------------------------------------------- My visit
 
 const ITEM_KINDS: ItemKind[] = ['stay', 'note', 'album', 'link']
-const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link', price: 'price seen' }
+const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link', price: 'price seen', phrase: 'phrase' }
 /** What a seen price is the price of (its id is `price:<city>:<what>`). */
 const priceOf = (i: TripItem) => PRICE_LABELS[i.id.split(':')[2] as PriceKey] ?? i.id.split(':')[2]
 /** Where an item belongs, by name: "Kraków", or "Kraków → Vienna" for a journey. */
 const itemPlace = (at: string) => at.split('>').map(cityName).join(' → ')
-/** An item in a few words: "stay Hostel Mleczarnia (Kraków)", "note (Kraków → Vienna)". */
+/** A language's name ("Macedonian"), by its tag. */
+const languageName = (tag: string) => ds.phrases.languages[tag]?.name ?? tag
+/** Where an item belongs: its city or journey, or a phrase's language. */
+const placeOf = (i: TripItem) => (i.kind === 'phrase' ? languageName(i.at) : itemPlace(i.at))
+/** An item in a few words: "stay Hostel Mleczarnia (Kraków)", "note (Kraków → Vienna)", "phrase "Thank you" (Greek)". */
 const itemText = (i: TripItem) =>
-  `${ITEM_NAMES[i.kind]}${i.kind === 'price' ? ` for ${priceOf(i)}` : i.kind !== 'note' && i.title ? ` ${i.title}` : ''} (${itemPlace(i.at)})`
+  `${ITEM_NAMES[i.kind]}${i.kind === 'price' ? ` for ${priceOf(i)}` : i.kind === 'phrase' ? ` "${i.title}"` : i.kind !== 'note' && i.title ? ` ${i.title}` : ''} (${placeOf(i)})`
 
-/** The order of kinds in a city's list: stays, notes, albums, links, then prices seen. */
-const kindRank = (k: ItemKind) => (k === 'price' ? ITEM_KINDS.length : ITEM_KINDS.indexOf(k))
+/** The order of kinds in a city's list: stays, notes, albums, links, then prices seen and phrases. */
+const kindRank = (k: ItemKind) => (k === 'price' ? ITEM_KINDS.length : k === 'phrase' ? ITEM_KINDS.length + 1 : ITEM_KINDS.indexOf(k))
 
 function visitItems(): ItemsHandle {
   if (!bound?.items) throw new ToolError('My visit isn\'t available here.')
@@ -270,15 +286,18 @@ function visit(args: Args): ToolResult {
     const n = stops.indexOf(i.at.split('>')[0])
     return n < 0 ? stops.length : n
   }
+  // (A city's phrases: those in the languages spoken there.)
+  const spoken = only ? phrasesFor(ds, only)?.languages.map((l) => l.tag) ?? [] : []
   const list = Object.values(visitItems().get())
-    .filter((i) => !isEmptyItem(i) && (!only || i.at.split('>').includes(only)))
+    .filter((i) => !isEmptyItem(i) && (!only || (i.kind === 'phrase' ? spoken.includes(i.at) : i.at.split('>').includes(only))))
     .sort((a, b) => order(a) - order(b) || a.at.localeCompare(b.at) || kindRank(a.kind) - kindRank(b.kind) || (a.from ?? '').localeCompare(b.from ?? ''))
   if (!list.length) return { items: [], note: only ? `Nothing kept for ${cityName(only)} yet.` : 'Nothing kept in My visit yet.' }
   return {
     items: list.map((i) => ({
-      id: i.id, where: itemPlace(i.at), kind: i.kind, title: i.title, address: i.address, check_in: i.from, check_out: i.to, url: i.url,
+      id: i.id, where: placeOf(i), kind: i.kind, title: i.title, address: i.address, check_in: i.from, check_out: i.to, url: i.url,
       reference: i.ref, price: i.price, text: i.text,
       ...(i.kind === 'price' && { price_of: priceOf(i), price_seen: `${i.amount} ${i.currency}` }),
+      ...(i.kind === 'phrase' && { language: i.at, say: i.say, note: i.tip }),
       updated: new Date(i.updatedAt).toISOString().slice(0, 10),
     })),
   }
@@ -298,6 +317,7 @@ function saveItem(args: Args): string {
     old = all[args.id]
     if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
     if (old.kind === 'price') throw new ToolError('A price seen is changed with set_prices_seen.')
+    if (old.kind === 'phrase') throw new ToolError('A phrase is changed with save_phrases.')
     if (args.kind && args.kind !== old.kind) throw new ToolError(`That's a ${ITEM_NAMES[old.kind]}: to make it a ${args.kind}, remove it and add one.`)
     patch = { id: old.id }
   } else {
@@ -355,6 +375,29 @@ function setPrices(args: Args): string {
   for (const key of reset) items.remove(priceId(id, key))
   const said = [...set.map(([key, amount]) => `${PRICE_LABELS[key]} ${amount} ${currency}`), ...reset.map((key) => `${PRICE_LABELS[key]} back to the app's`)]
   return `Prices seen in ${cityName(id)}: ${said.join('; ')}`
+}
+
+/** The user's own phrases, each in a language (My visit items: one per language and English meaning, so saving the
+ *  same meaning again changes it). All checked before any is kept. */
+function savePhrases(args: Args): string {
+  const items = visitItems()
+  const list = Array.isArray(args.phrases) ? (args.phrases as Record<string, unknown>[]) : []
+  if (!list.length) throw new ToolError('Give the phrases to keep.')
+  const byName = new Map(Object.entries(ds.phrases.languages).map(([tag, l]) => [l.name.toLowerCase(), tag]))
+  const short = (v: unknown) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').slice(0, ITEM_LIMITS.shortChars) : '')
+  const patches = list.map((p) => {
+    const raw = short(p?.language)
+    const tag = ds.phrases.languages[raw] ? raw : byName.get(raw.toLowerCase())
+    if (!tag) throw new ToolError(`There are no phrases in "${raw}" in the app: use a language tag from the trip's languages (e.g. "mk").`)
+    const english = short(p.english)
+    const text = short(p.text)
+    if (!english || !text) throw new ToolError('Each phrase needs what it says in English and the phrase itself (text).')
+    return { id: phraseId(tag, english), kind: 'phrase' as const, at: tag, title: english, text, say: short(p.say), tip: short(p.note) }
+  })
+  for (const patch of patches) items.put(patch)
+  const said = new Map<string, string[]>()
+  for (const p of patches) said.set(p.title, [...(said.get(p.title) ?? []), languageName(p.at)])
+  return `Phrases kept: ${[...said].map(([english, langs]) => `"${english}" in ${langs.join(', ')}`).join('; ')}`
 }
 
 function removeItem(args: Args): string {
@@ -957,6 +1000,7 @@ function run(name: string, args: Args): string | ToolResult {
     case 'save_visit_item': return saveItem(args)
     case 'remove_visit_item': return removeItem(args)
     case 'set_prices_seen': return setPrices(args)
+    case 'save_phrases': return savePhrases(args)
     case 'update_settings': return updateSettings(args)
     case 'update_preferences': return updatePreferences(args)
     case 'new_plan': {

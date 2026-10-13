@@ -34,8 +34,9 @@ type ChatState = {
    *  `media`: files attached (uploaded already, agent/attach.ts). */
   send: (text: string, view?: ViewItem[], options?: { think?: boolean; plan?: 'new' | 'update'; media?: Attachment[] }) => Promise<void>
   /** Puts a question and the app's own answer to it in the chat (the "Update with AI" buttons: how the assistant can
-   *  help with a card), with no model call; the model sees them as part of the conversation. Not while it's busy. */
-  preset: (ask: string, answer: string) => void
+   *  help with a card), with no model call; the model sees them as part of the conversation. Not while it's busy.
+   *  `choices`: replies to click under the answer. */
+  preset: (ask: string, answer: string, choices?: string[]) => void
   /** Stops the reply under way after the model call or wait in progress; what it changed so far stays (and can be undone). */
   stop: () => void
   undo: (index: number) => void
@@ -132,10 +133,10 @@ export const useChat = create<ChatState>()(
         set({ busy: false, contents, messages: [...get().messages, reply] })
       },
 
-      preset: (ask, answer) => {
+      preset: (ask, answer, choices) => {
         if (get().busy) return
         set({
-          messages: [...get().messages, { role: 'user', text: ask }, { role: 'assistant', text: answer, steps: [], changes: [] }],
+          messages: [...get().messages, { role: 'user', text: ask }, { role: 'assistant', text: answer, steps: [], changes: [], ...(choices?.length && { choices }) }],
           contents: [...get().contents, { role: 'user', parts: [{ text: ask }] }, { role: 'model', parts: [{ text: answer }] }],
         })
       },

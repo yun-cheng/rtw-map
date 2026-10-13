@@ -73,6 +73,13 @@ How to work:
   set_prices_seen, in the money they were paid in; the app then uses them for that city instead of its own (its daily
   cost and the trip's total). Work out what each is per one: a booking's total over its nights is a night's price, a
   receipt's coffee for one cup. Set them only when the user asks or gives you prices to fill in; say what you set.
+- Each city's Phrases tab has seven everyday phrases per language. The user can add their own (save_phrases): you
+  translate them into each language, in its own script, with how to say it (English-style spelling, the stressed part
+  in capitals; pinyin for Mandarin, romaji for Japanese) and a short note where it matters (politeness, gender).
+  Before saving, ask whether they're for this country only or for every country on the trip, unless they said, ending
+  with e.g. Choices: [Just North Macedonia] [Every country on my trip]. "This country": the languages of the city the
+  user is looking at (get_city_info, phrases); "the trip": every language in "Languages on the trip". Keep them
+  natural and short, as a traveller would say them.
 - The user can attach images and PDFs to a message (a booking confirmation, a ticket, a screenshot, a photo). You see
   them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit at its
   city (a stay: name, address, check-in and check-out days, reference, price, link) if the user asks you to, or offer
@@ -177,7 +184,7 @@ export const TOOLS: FunctionDeclaration[] = [
   // ---- My visit
   {
     name: 'get_visit',
-    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), photo albums, links and notes, for each city or journey between two, each with its id.',
+    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), photo albums, links and notes, for each city or journey between two, prices the user saw, and their own phrases (by language), each with its id.',
     parametersJsonSchema: obj({ city: str('Only this city and the journeys to and from it (name or id); default: all') }),
   },
   {
@@ -210,8 +217,25 @@ export const TOOLS: FunctionDeclaration[] = [
     }, ['city']),
   },
   {
+    name: 'save_phrases',
+    description: 'Keep the user\'s own phrases, each in a language (shown on the Phrases tab of every city where it\'s spoken, under the app\'s seven). Saving the same English meaning in a language again changes it; remove one with remove_visit_item.',
+    parametersJsonSchema: obj({
+      phrases: {
+        type: 'array',
+        description: 'One entry per phrase and language',
+        items: obj({
+          language: str('The language tag, e.g. "mk", "sq", "zh-TW", from "Languages on the trip" or get_city_info'),
+          english: str('What it says, in English, e.g. "I\'m vegetarian"'),
+          text: str('The phrase in that language, in its own script'),
+          say: str('How to say it: English-style spelling, the stressed part in capitals (pinyin for Mandarin, romaji for Japanese)'),
+          note: str('A short note where it matters, e.g. "polite form" or "a woman says …"'),
+        }, ['language', 'english', 'text', 'say']),
+      },
+    }, ['phrases']),
+  },
+  {
     name: 'remove_visit_item',
-    description: 'Remove a stay, album, link or note from My visit, by its id from get_visit. Only when the user asks.',
+    description: 'Remove a stay, album, link, note, price seen or phrase from My visit, by its id from get_visit. Only when the user asks.',
     parametersJsonSchema: obj({ id: str('The item\'s id, from get_visit') }, ['id']),
   },
   // ---- change the setup
@@ -366,4 +390,4 @@ export const WRITE_TOOLS = new Set([
 ])
 
 /** Names of tools that change My visit (the user's own stays, albums, links and notes; not the trip's plans). */
-export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item', 'set_prices_seen'])
+export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item', 'set_prices_seen', 'save_phrases'])

@@ -18,6 +18,7 @@ import { Forecast, SubHead } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
+import { MyPhrases } from './MyPhrases'
 import { PriceEdit } from './PriceEdit'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
@@ -497,7 +498,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
       </Section>
     ),
     phrases: phrases && (
-      <Section title={lang ? `In ${lang.name}` : 'Phrases'}>
+      <Section title={lang ? `In ${lang.name}` : 'Phrases'} action={lang && <AiHelp topic="phrases" place={country.name} />}>
         {/* Where more than one language is spoken, a switch picks which one the phrases are in; the main one first. */}
         {phrases.languages.length > 1 && (
           <div className="mb-2">
@@ -518,6 +519,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             </div>
           )
         })}
+        {lang && <MyPhrases tag={lang.tag} />}
       </Section>
     ),
     people: (

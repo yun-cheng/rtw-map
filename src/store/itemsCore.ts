@@ -1,5 +1,5 @@
 // What the user keeps for a city or a journey (PLAN.md, Progress: My visit): where they stay, photo albums, links, their
-// notes, and prices they saw (which replace ours for that city).
+// notes, prices they saw (which replace ours for that city), and their own phrases in a language.
 // The trip's, not a plan's (kept by city, so switching plans or moving dates keeps them; a stay carries its own dates,
 // so two visits to a city each show theirs), private, and kept apart from the trip's data like the journal
 // (journalCore.ts): written on any device, offline too, and merged item by item, the latest edit of each winning.
@@ -7,20 +7,23 @@
 import type { PriceKey, SeenPrices } from '../planner/cost'
 import type { TripNotes } from './tripCore'
 
-export type ItemKind = 'note' | 'stay' | 'album' | 'link' | 'price'
+export type ItemKind = 'note' | 'stay' | 'album' | 'link' | 'price' | 'phrase'
 
 /** One thing kept for a city or a journey. A removed one is kept as `deleted` (so the removal wins over older copies). */
 export type TripItem = {
   id: string
   kind: ItemKind
-  /** Where it belongs: a city id, or a journey's `from>to`. */
+  /** Where it belongs: a city id, or a journey's `from>to`; a phrase's language tag ("mk", "zh-TW"). */
   at: string
-  /** A stay's name; an album's or a link's title. */
+  /** A stay's name; an album's or a link's title; what a phrase says, in English. */
   title?: string
   /** A stay's booking, the album, the link (http or https). */
   url?: string
-  /** A note (Markdown); a stay's own note (door code, wifi). */
+  /** A note (Markdown); a stay's own note (door code, wifi); a phrase in its language's script. */
   text?: string
+  /** A phrase: how to say it, and a note on using it ("polite: add …"). */
+  say?: string
+  tip?: string
   /** A stay's address. */
   address?: string
   /** A stay's check-in and check-out days (ISO). */
@@ -40,16 +43,21 @@ export type TripItem = {
 export type Items = Record<string, TripItem>
 
 export const ITEM_LIMITS = { textChars: 4000, shortChars: 200, urlChars: 2000, items: 2000, bytes: 1_500_000 }
-const SHORT = ['title', 'address', 'ref', 'price'] as const
-const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link', 'price']
+const SHORT = ['title', 'address', 'ref', 'price', 'say', 'tip'] as const
+const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link', 'price', 'phrase']
+/** A language tag, as the phrases data has them ("mk", "zh-TW"). */
+const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
 
 /** A note's id: one per city or journey. */
 export const noteId = (at: string) => `note:${at}`
 /** A seen price's id: one per city and what it's the price of. */
 export const priceId = (cityId: string, key: PriceKey) => `price:${cityId}:${key}`
+/** A phrase's id: one per language and what it says in English (saying it again changes it). */
+export const phraseId = (tag: string, english: string) =>
+  `phrase:${tag}:${english.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'phrase'}`
 /** An item with nothing in it (a note emptied, a stay with no name), as good as removed. */
 export const isEmptyItem = (i: TripItem | undefined) =>
-  !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : ![i.title, i.url, i.text, i.address, i.ref, i.price].some((v) => v?.trim()))
+  !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : i.kind === 'phrase' ? !i.text?.trim() : ![i.title, i.url, i.text, i.address, i.ref, i.price].some((v) => v?.trim()))
 
 /** The prices seen in each city, in EUR at these rates (units per EUR); one in money without a rate is left out. */
 export function seenPrices(items: Items, rates: Record<string, number>): SeenPrices {
@@ -97,6 +105,7 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
       if (!url || url.length > ITEM_LIMITS.urlChars) return 'Invalid link'
       item.url = url
     }
+    if (item.kind === 'phrase' && !LANGUAGE_TAG.test(item.at)) return 'Invalid phrase'
     if (item.kind === 'price') {
       if (item.at.includes('>')) return 'Invalid price'
       if (typeof x.amount !== 'number' || !Number.isFinite(x.amount) || x.amount < 0 || x.amount > 1e9) return 'Invalid price'

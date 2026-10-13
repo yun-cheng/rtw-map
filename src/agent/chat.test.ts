@@ -57,10 +57,12 @@ describe('assistant chat', () => {
     const sent = JSON.parse((fetch.mock.calls[0] as unknown as [string, { body: string }])[1].body).contents as Content[]
     expect(sent.map((c) => c.role)).toEqual(['user', 'model', 'user'])
     expect(sent[1].parts[0].text).toBe('Send me your booking.')
+    useChat.getState().preset('Phrases?', 'Tell me.', ["I'm vegetarian"])
+    expect(useChat.getState().messages.at(-1)).toMatchObject({ role: 'assistant', choices: ["I'm vegetarian"] })
     // Not while it's answering.
     useChat.setState({ busy: true })
     useChat.getState().preset('Another?', 'No.')
-    expect(useChat.getState().messages).toHaveLength(4)
+    expect(useChat.getState().messages).toHaveLength(6)
     useChat.setState({ busy: false })
   })
 
