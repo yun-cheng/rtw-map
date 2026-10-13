@@ -4,6 +4,8 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { useItems } from '../store/items'
+import { isPhrase, withoutPhrases, type TripItem } from '../store/itemsCore'
+import { usePhrases } from '../store/phrases'
 import { useTrip } from '../store/trip'
 import { useAccount, type Usage } from './account'
 import { NO_SPENT, runAssistant, type ChatMessage, type Content, type ModelCall, type SavedChat, type Spent } from './engine'
@@ -81,14 +83,22 @@ const callModel: ModelCall = async (contents, context, think, signal, onSpent, m
   return data.content as Content
 }
 
-/** The open trip's My visit, for the assistant's tools. */
+/** The open trip's My visit with the user's phrases (the account's, for every trip), for the assistant's tools. */
 const items: ItemsHandle = {
   get: () => {
     const { books, key } = useItems.getState()
-    return books[key]?.entries ?? {}
+    const phrases = usePhrases.getState()
+    return { ...withoutPhrases(books[key]?.entries ?? {}), ...phrases.books[phrases.key]?.entries }
   },
-  put: (patch) => useItems.getState().put(patch),
-  remove: (id) => useItems.getState().remove(id),
+  put: (patch) => (isPhrase(patch.id) ? usePhrases : useItems).getState().put(patch),
+  remove: (id) => (isPhrase(id) ? usePhrases : useItems).getState().remove(id),
+}
+
+/** Items as they were before a reply, put back: the trip's, and the user's phrases. */
+function restoreItems(was: Record<string, TripItem | null>) {
+  const [phrases, rest] = [true, false].map((p) => Object.fromEntries(Object.entries(was).filter(([id]) => isPhrase(id) === p)))
+  if (Object.keys(rest).length) useItems.getState().restore(rest)
+  if (Object.keys(phrases).length) usePhrases.getState().restore(phrases)
 }
 
 /** Stops the reply under way (one at a time). */
@@ -153,7 +163,7 @@ export const useChat = create<ChatState>()(
         // (A read-only trip keeps its plans as they are; My visit can still change.)
         if (msg.before && useTrip.getState().readOnly) return
         if (msg.before) useTrip.getState().restore(msg.before)
-        if (msg.itemsBefore) useItems.getState().restore(msg.itemsBefore)
+        if (msg.itemsBefore) restoreItems(msg.itemsBefore)
         set({
           note: `The user pressed Undo: ${msg.before && msg.itemsBefore ? 'the trip and My visit are' : msg.before ? 'the trip is' : 'My visit is'} back to how it was before your previous changes.`,
           messages: get().messages.map((m, i) => (i === index ? { ...m, undone: true } : m)),

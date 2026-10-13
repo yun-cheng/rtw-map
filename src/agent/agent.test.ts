@@ -304,10 +304,18 @@ describe('My visit tools', () => {
     expect(run('remove_visit_item', { id: 'phrase:pl:i-m-vegetarian' }).summary).toBe('Removed phrase "I\'m vegetarian" (Polish)')
   })
 
-  it('keeps phrases short enough to read aloud', () => {
-    const { run } = visit()
-    expect(run('save_phrases', { phrases: [{ language: 'pl', english: 'Too long', text: 'a'.repeat(101), say: 'x' }] }).result.error).toMatch(/too long \(101 characters\)/)
-    expect(run('save_phrases', { phrases: [{ language: 'pl', english: 'Fits', text: 'a'.repeat(100), say: 'x' }] }).ok).toBe(true)
+  it('keeps phrases short, and at most 50 in all', () => {
+    // 49 already there (one removed, which doesn't count).
+    const kept = Object.fromEntries(Array.from({ length: 50 }, (_, i) => [`phrase:pl:p${i}`, { id: `phrase:pl:p${i}`, kind: 'phrase' as const, at: 'pl', title: `p${i}`, text: 'Tak', updatedAt: 1, ...(i === 0 && { deleted: true }) }]))
+    const { items, run } = visit(kept)
+    const phrase = (english: string, text = 'Dziękuję') => ({ language: 'pl', english, text, say: 'jen-KOO-yeh' })
+    expect(run('save_phrases', { phrases: [phrase('Too long', 'a'.repeat(101))] }).result.error).toMatch(/too long \(101 characters\)/)
+    // One more makes 50; changing one already there adds none.
+    expect(run('save_phrases', { phrases: [phrase('Thanks'), phrase('p1')] }).ok).toBe(true)
+    // A 51st isn't kept, nor anything saved with it.
+    const out = run('save_phrases', { phrases: [phrase('p2', 'Nie'), phrase('Hello', 'Cześć')] })
+    expect(out.result.error).toMatch(/at most 50 .* they have 50, and these would add 1/)
+    expect(items.get()['phrase:pl:p2'].text).toBe('Tak')
   })
 
   it("tells the model the trip's languages and who says the phrases", () => {

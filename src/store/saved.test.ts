@@ -20,22 +20,32 @@ const { useJournal } = await import('./journal')
 const { mergeJournal } = await import('./journalCore')
 const { useItems } = await import('./items')
 const { mergeItems } = await import('./itemsCore')
+const { usePhrases } = await import('./phrases')
 
 type Call = { method: string; url: string; body: { data?: { input?: { wishes?: string }; notes?: unknown }; entries?: { text?: string; id?: string }[] } | null }
 let calls: Call[] = []
+/** The requests for the user's phrases (the account's), apart from the trip's. */
+let phraseCalls: Call[] = []
 /** The server: one trip, "t1", whose saved data is what was last sent to it, and its journal (one day written on
  *  another device). */
 function server({ offline = false, notes }: { offline?: boolean; notes?: Record<string, Record<string, string>> } = {}) {
   let saved: unknown = { input: useTrip.getState().input, stops: [], ...(notes && { notes }) }
   let items: Record<string, { id: string; kind: 'stay'; at: string; title?: string; updatedAt: number }> = { 'stay:l': { id: 'stay:l', kind: 'stay', at: 'krakow', title: 'from the laptop', updatedAt: 1 } }
   let journal: Record<string, { date: string; highlight: string; text: string; updatedAt: number }> = { '2027-05-01': { date: '2027-05-01', highlight: '', text: 'on the laptop', updatedAt: 1 } }
+  let phrases: Record<string, { id: string; kind: 'phrase'; at: string; title: string; text: string; updatedAt: number }> = { 'phrase:pl:thanks': { id: 'phrase:pl:thanks', kind: 'phrase', at: 'pl', title: 'Thanks', text: 'Dzięki', updatedAt: 1 } }
   calls = []
+  phraseCalls = []
   vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
     const method = init?.method ?? 'GET'
     const body = init?.body ? JSON.parse(String(init.body)) : null
-    calls.push({ method, url, body })
+    ;(url === '/api/phrases' ? phraseCalls : calls).push({ method, url, body })
     if (offline) throw new TypeError('Failed to fetch')
     const json = (v: unknown) => new Response(JSON.stringify(v), { status: 200 })
+    if (url === '/api/phrases' && method === 'GET') return json({ phrases })
+    if (url === '/api/phrases' && method === 'PUT') {
+      phrases = mergeItems(phrases, body.entries) as typeof phrases
+      return json({ phrases })
+    }
     const summary = { id: 't1', name: 'My trip', startDate: null, endDate: null, stops: 0, updated: Date.now() }
     if (url === '/api/trips' && method === 'GET') return json({ trips: [summary], lastId: 't1' })
     if (url === '/api/trips/t1' && method === 'PUT') {
@@ -62,6 +72,7 @@ beforeEach(() => {
   useSaved.setState({ trips: [], activeId: null, status: 'idle', error: null })
   useJournal.getState().clear()
   useItems.getState().clear()
+  usePhrases.getState().clear()
 })
 afterEach(() => vi.unstubAllGlobals())
 
@@ -143,5 +154,23 @@ describe('saved trips, offline', () => {
     useTrip.getState().setInput({ wishes: 'slow' })
     await vi.waitFor(() => expect(calls.some((c) => c.method === 'PUT' && c.url === '/api/trips/t1' && c.body?.data?.input?.wishes === 'slow')).toBe(true), { timeout: 3000 })
     expect(calls.findLast((c) => c.url === '/api/trips/t1' && c.method === 'PUT')?.body?.data).not.toHaveProperty('notes')
+  })
+
+  it("keeps the user's phrases with the account: those written signed out go to it at sign-in, with the account's", async () => {
+    server()
+    usePhrases.getState().put({ id: 'phrase:mk:thanks', kind: 'phrase', at: 'mk', title: 'Thanks', text: 'Благодарам' })
+    await new Promise((r) => setTimeout(r, 1700))
+    expect(phraseCalls).toEqual([])
+
+    useAccount.setState({ loaded: true, user: { sub: 'u1', name: 'U' } })
+    await vi.waitFor(() => expect(usePhrases.getState().books.account?.pending).toEqual([]))
+    expect(phraseCalls.map((c) => c.method)).toEqual(['GET', 'PUT'])
+    expect(phraseCalls[1].body?.entries?.map((e) => e.id)).toEqual(['phrase:mk:thanks'])
+    expect(Object.keys(usePhrases.getState().books.account.entries).sort()).toEqual(['phrase:mk:thanks', 'phrase:pl:thanks'])
+    // Not the trip's.
+    expect(calls.some((c) => c.url.endsWith('/items'))).toBe(false)
+    // Signed out: forgotten on this browser.
+    useAccount.setState({ user: null })
+    expect(usePhrases.getState().books).toEqual({})
   })
 })

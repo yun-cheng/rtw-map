@@ -10,7 +10,7 @@ import {
   groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseId, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
@@ -378,8 +378,9 @@ function setPrices(args: Args): string {
   return `Prices seen in ${cityName(id)}: ${said.join('; ')}`
 }
 
-/** The user's own phrases, each in a language (My visit items: one per language and English meaning, so saving the
- *  same meaning again changes it), short enough to be read aloud. All checked before any is kept. */
+/** The user's own phrases, each in a language (the account's, for every trip, seen with My visit's items: one per
+ *  language and English meaning, so saving the same meaning again changes it): short enough to be read aloud, and at
+ *  most ITEM_LIMITS.phrases in all. All checked before any is kept. */
 function savePhrases(args: Args): string {
   const items = visitItems()
   const list = Array.isArray(args.phrases) ? (args.phrases as Record<string, unknown>[]) : []
@@ -396,6 +397,12 @@ function savePhrases(args: Args): string {
     if (text.length > SPEECH_CHARS) throw new ToolError(`"${english}" in ${languageName(tag)} is too long (${text.length} characters): keep a phrase to ${SPEECH_CHARS} at most, as short as a traveller would say it.`)
     return { id: phraseId(tag, english), kind: 'phrase' as const, at: tag, title: english, text, say: short(p.say), tip: short(p.note) }
   })
+  const kept = items.get()
+  const added = new Set(patches.map((p) => p.id).filter((id) => !kept[id] || kept[id].deleted)).size
+  const had = phraseCount(kept)
+  if (had + added > ITEM_LIMITS.phrases) {
+    throw new ToolError(`The user can keep at most ${ITEM_LIMITS.phrases} of their own phrases in all (one per language and meaning, for every trip): they have ${had}, and these would add ${added}. Nothing was saved: tell the user, and ask which to remove first (get_visit lists them), or save fewer.`)
+  }
   for (const patch of patches) items.put(patch)
   const said = new Map<string, string[]>()
   for (const p of patches) said.set(p.title, [...(said.get(p.title) ?? []), languageName(p.at)])

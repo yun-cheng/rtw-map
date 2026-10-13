@@ -42,7 +42,17 @@ export type TripItem = {
 }
 export type Items = Record<string, TripItem>
 
-export const ITEM_LIMITS = { textChars: 4000, shortChars: 200, urlChars: 2000, items: 2000, bytes: 1_500_000 }
+export const ITEM_LIMITS = { textChars: 4000, shortChars: 200, urlChars: 2000, items: 2000, bytes: 1_500_000, phrases: 50 }
+/** The user's own phrases (not removed). They're the account's, not a trip's (phrases.ts), though the assistant's
+ *  tools see them with the trip's items. */
+export const phraseCount = (items: Items) => Object.values(items).filter((i) => i.kind === 'phrase' && !i.deleted).length
+/** Whether an item is one of the user's phrases, by its id (`phrase:<tag>:<meaning>`). */
+export const isPhrase = (id: string) => id.startsWith('phrase:')
+/** The phrases kept with each trip before they were the account's, gathered (the latest edit of each wins). */
+export const phrasesOf = (trips: Items[]): Items =>
+  trips.reduce<Items>((all, items) => mergeItems(all, Object.values(items).filter((i) => isPhrase(i.id))), {})
+/** The trip's items without phrases (trips kept them before phrases were the account's: those are left out). */
+export const withoutPhrases = (items: Items): Items => Object.fromEntries(Object.entries(items).filter(([id]) => !isPhrase(id)))
 const SHORT = ['title', 'address', 'ref', 'price', 'say', 'tip'] as const
 const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link', 'price', 'phrase']
 /** A language tag, as the phrases data has them ("mk", "zh-TW"). */

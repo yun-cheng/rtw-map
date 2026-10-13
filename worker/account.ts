@@ -1,13 +1,13 @@
 // One Durable Object per signed-in Google account (keyed by its account ID). It holds that user's saved trips
-// (SQLite), the assistant's runs on them (runs.ts), today's assistant usage and phrases read aloud, the other apps
-// allowed to read and change the trips (oauth.ts) and those apps' changes (changes.ts). A Durable Object handles one
-// request at a time, so nothing can race. The rules are plain functions in limits.ts, trips.ts, runs.ts and
-// changes.ts.
+// (SQLite), the assistant's runs on them (runs.ts), the user's own phrases (for every trip), today's assistant usage
+// and phrases read aloud, the other apps allowed to read and change the trips (oauth.ts) and those apps' changes
+// (changes.ts). A Durable Object handles one request at a time, so nothing can race. The rules are plain functions
+// in limits.ts, trips.ts, runs.ts and changes.ts.
 import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView } from './changes'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
-import { ITEM_LIMITS, mergeItems, type Items, type TripItem } from '../src/store/itemsCore'
+import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
 import type { Grant, NewGrant } from './oauth'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
@@ -163,7 +163,13 @@ export class Account extends DurableObject {
   async tripTexts(id: string, extra: 'items' | 'journal' | null): Promise<{ data: string | null; extra: string | null; rev: number } | null> {
     const r = this.row(id)
     if (!r) return null
-    return { data: r.data, extra: extra && JSON.stringify(this.kept(id, extra)), rev: r.rev }
+    return { data: r.data, extra: extra && JSON.stringify(extra === 'items' ? await this.visitItems(id) : this.kept(id, extra)), rev: r.rev }
+  }
+
+  /** A trip's items with the user's phrases, as the assistant's tools see them (null if there's no such trip). */
+  private async visitItems(id: string): Promise<Items | null> {
+    const items = this.kept<Items>(id, 'items')
+    return items && { ...withoutPhrases(items), ...(await this.phrases()) }
   }
 
   /** A trip's journal or items (null if there's no such trip). */
@@ -189,10 +195,45 @@ export class Account extends DurableObject {
   async saveItems(id: string, entries: TripItem[]): Promise<Items | null | string> {
     const items = this.kept<Items>(id, 'items')
     if (!items) return null
-    const merged = mergeItems(items, entries)
+    // (Phrases are the account's: those from the assistant's runs, or a page from before, go there.)
+    const phrases = entries.filter((i) => isPhrase(i.id))
+    if (phrases.length) {
+      const saved = await this.savePhrases(phrases)
+      if (typeof saved === 'string') return saved
+    }
+    const rest = entries.filter((i) => !isPhrase(i.id))
+    if (!rest.length) return items
+    const merged = mergeItems(items, rest)
     const text = JSON.stringify(merged)
     if (Object.keys(merged).length > ITEM_LIMITS.items || text.length > ITEM_LIMITS.bytes) return "This trip's stays, links and notes are too many to save"
     this.ctx.storage.sql.exec('UPDATE trips SET items = ? WHERE id = ?', text, id)
+    return merged
+  }
+
+  // ---------------------------------------------------------------- the user's own phrases (for every trip)
+
+  /** The user's phrases. The first time, those kept with the trips before (each trip's own), gathered (the trips'
+   *  copies are left as they are, and left out from then on). */
+  private async phrases(): Promise<Items> {
+    const kept = await this.ctx.storage.get<Items>('phrases')
+    if (kept) return kept
+    const all = phrasesOf(this.ctx.storage.sql.exec<{ items: string }>('SELECT items FROM trips WHERE items IS NOT NULL').toArray().map((r) => JSON.parse(r.items) as Items))
+    await this.ctx.storage.put('phrases', all)
+    return all
+  }
+
+  async getPhrases(): Promise<Items> {
+    return this.phrases()
+  }
+
+  /** Phrases changed on a device or by the assistant, merged as items are: answers with all of them, or why not
+   *  (more than ITEM_LIMITS.phrases; only more are refused, so removing some always works). */
+  async savePhrases(entries: TripItem[]): Promise<Items | string> {
+    const kept = await this.phrases()
+    const merged = mergeItems(kept, entries.filter((i) => isPhrase(i.id) && i.kind === 'phrase'))
+    const count = phraseCount(merged)
+    if (count > ITEM_LIMITS.phrases && count > phraseCount(kept)) return `You can keep at most ${ITEM_LIMITS.phrases} of your own phrases: remove some first`
+    await this.ctx.storage.put('phrases', merged)
     return merged
   }
 
@@ -334,7 +375,7 @@ export class Account extends DurableObject {
     const r = this.run(id)
     const trip = r && this.row(r.trip_id)
     if (!r || !trip) return null
-    const items = JSON.stringify(this.kept<Items>(r.trip_id, 'items'))
+    const items = JSON.stringify(await this.visitItems(r.trip_id))
     return `{"status":${JSON.stringify(r.status)},"created":${r.created},"request":${r.request},"data":${trip.data ?? 'null'},"chat":${trip.chat ?? 'null'},"items":${items}}`
   }
 

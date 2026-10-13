@@ -9,7 +9,6 @@ import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
 import { appClip, canRead, clipUrl, userClip } from '../offline/phrases'
 import { phraseAs, type PhraseKey } from '../planner'
-import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 
 const hasDeviceSpeech = typeof window !== 'undefined' && 'speechSynthesis' in window
@@ -88,7 +87,7 @@ export function Speak({ tag, text, phrase }: { tag: string; text: string; phrase
   const voices = useDeviceVoices()
   const [busy, setBusy] = useState(false)
   const clip = phrase ? clipUrl(tag, phrase, speaker) : undefined
-  const server = !phrase && canRead(tag) && !!user && !SHARED_TOKEN
+  const server = !phrase && canRead(tag) && !!user
   const device = deviceVoice(tag, voices)
   if (!clip && !server && !device) return null
 

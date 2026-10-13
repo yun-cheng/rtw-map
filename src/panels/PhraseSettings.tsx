@@ -6,8 +6,7 @@ import { useAccount } from '../agent/account'
 import { CLIP_BYTES, clipsOf, speech, useSavedPhrases } from '../offline/phrases'
 import { dataset as ds } from '../data/dataset'
 import { phrasesFor, type Speaker } from '../planner'
-import { useItems } from '../store/items'
-import { SHARED_TOKEN } from '../store/shareLink'
+import { useMyPhrases } from '../store/phrases'
 import { useTrip } from '../store/trip'
 import { Button, Segmented } from '../ui/kit'
 
@@ -20,16 +19,14 @@ export function PhraseSettings() {
   const plan = useTrip((s) => s.plan)
   const user = useAccount((s) => s.user)
   const { clips, bytes, progress, problem, count, save, removeAll } = useSavedPhrases()
-  const book = useItems((s) => s.books[s.key])
+  const mine = useMyPhrases()
   useEffect(() => count(), [count])
 
   // The trip's languages that have clips, and every language that has.
   const tripTags = [...new Set(plan?.stops.flatMap((s) => phrasesFor(ds, s.cityId)?.languages.map((l) => l.tag) ?? []) ?? [])].filter((t) => speech.clips[t])
   const allTags = Object.keys(speech.clips)
-  // The user's own phrases (read by Azure through the account: signed in, not on someone else's trip).
-  const own = user && !SHARED_TOKEN
-    ? Object.values(book?.entries ?? {}).filter((i) => i.kind === 'phrase' && !i.deleted && i.text?.trim()).map((i) => ({ tag: i.at, text: i.text! }))
-    : []
+  // The user's own phrases (read by Azure through the account: signed in).
+  const own = user ? mine.map((i) => ({ tag: i.at, text: i.text! })) : []
   const tripOwn = own.filter((p) => tripTags.includes(p.tag))
   const estimate = (tags: string[], extra: number) => size((clipsOf(tags, speaker).length + extra) * CLIP_BYTES)
   const who = speaker === 'female' ? 'a woman' : 'a man'

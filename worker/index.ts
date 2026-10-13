@@ -14,6 +14,7 @@
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
 //   POST /api/speech               a phrase of the user's read aloud by Azure (speech.ts): the MP3; 10 a day
+//   GET|PUT /api/phrases           the user's own phrases (for every trip): all of them, or those changed on a device
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
 //   POST /api/runs/:id/stop        stop it
@@ -283,6 +284,21 @@ async function items(request: Request, env: Env, id: string): Promise<Response> 
   const saved = await account(env, user).saveItems(id, entries)
   if (typeof saved === 'string') return json({ error: saved }, 413)
   return saved ? json({ items: saved }) : json({ error: 'Trip not found' }, 404)
+}
+
+/** The user's own phrases, the account's (for every trip): all of them (GET), or those changed on a device added
+ *  (PUT, answering with all of them, merged). */
+async function phrases(request: Request, env: Env): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  if (request.method === 'GET') return json({ phrases: await store.getPhrases() })
+  if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  const entries = parseItems(await request.json().catch(() => null))
+  if (typeof entries === 'string') return json({ error: entries }, 400)
+  const saved = await store.savePhrases(entries)
+  return typeof saved === 'string' ? json({ error: saved }, 413) : json({ phrases: saved })
 }
 
 /** Other apps' changes to a trip (changes.ts): the trip's rev and the changes since the rev the page has (GET), or
@@ -558,6 +574,10 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (runPath) {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return runs(request, env, runPath[1], runPath[2])
+  }
+  if (pathname === '/api/phrases') {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return phrases(request, env)
   }
   if (request.method === 'GET' && pathname === '/api/session') return json(await session(request, env))
   if (request.method !== 'POST') return json({ error: 'Not found' }, 404)

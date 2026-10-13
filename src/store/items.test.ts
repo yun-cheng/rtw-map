@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isEmptyItem, mergeItems, notesAsItems, parseItems, phraseId, priceId, seenPrices, webUrl, type TripItem } from './itemsCore'
+import { isEmptyItem, mergeItems, notesAsItems, parseItems, phraseId, phrasesOf, priceId, seenPrices, webUrl, withoutPhrases, type TripItem } from './itemsCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -85,4 +85,17 @@ describe('items', () => {
     expect(book.entries['stay:1']).not.toHaveProperty('title')
     expect(book.pending).toEqual(['stay:1', 'note:krakow'])
   })
+
+  it("gathers the phrases trips kept before they were the account's, and leaves them out of the trips' items", () => {
+    const phrase = (tag: string, text: string, updatedAt: number): TripItem => ({ id: phraseId(tag, 'Thanks'), kind: 'phrase', at: tag, title: 'Thanks', text, updatedAt })
+    const stay: TripItem = { id: 'stay:1', kind: 'stay', at: 'krakow', title: 'Hostel', updatedAt: 1 }
+    const one = { [stay.id]: stay, 'phrase:pl:thanks': phrase('pl', 'Dzięki', 1) }
+    const two = { 'phrase:pl:thanks': phrase('pl', 'Dziękuję', 2), 'phrase:mk:thanks': phrase('mk', 'Благодарам', 1) }
+    const all = phrasesOf([one, two])
+    expect(Object.keys(all).sort()).toEqual(['phrase:mk:thanks', 'phrase:pl:thanks'])
+    // The latest edit of the same phrase.
+    expect(all['phrase:pl:thanks'].text).toBe('Dziękuję')
+    expect(withoutPhrases(one)).toEqual({ [stay.id]: stay })
+  })
 })
+

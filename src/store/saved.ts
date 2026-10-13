@@ -17,6 +17,7 @@ import type { TripInput } from '../planner'
 import type { Book, BookState } from './book'
 import { setItemsSync, useItems, type Items } from './items'
 import { setJournalSync, useJournal, type Journal } from './journal'
+import { ACCOUNT, setPhrasesSync, usePhrases } from './phrases'
 import { localNotes, newTripInput, useTrip, type TripData } from './trip'
 import { SHARED_TOKEN } from './shareLink'
 import { tripData as saveable } from './tripCore'
@@ -307,6 +308,60 @@ const journalSync = bookSync(useJournal, 'journal')
 const itemsSync = bookSync(useItems, 'items')
 setJournalSync(journalSync.soon)
 setItemsSync(itemsSync.soon)
+
+/** Sends the user's phrases changed on this device (the account's, for every trip), a moment after a change: the
+ *  server answers with all of them, merged. */
+const phrasesSync = (() => {
+  const DELAY_MS = 1500
+  let timer: ReturnType<typeof setTimeout> | undefined
+  let sending = false
+  const pending = () => {
+    const book = usePhrases.getState().books[ACCOUNT]
+    return usePhrases.getState().key === ACCOUNT && book ? book.pending.map((k) => book.entries[k]).filter(Boolean) : []
+  }
+  async function send() {
+    clearTimeout(timer)
+    timer = undefined
+    const entries = pending()
+    if (!entries.length || sending || !useAccount.getState().user || useAccount.getState().offline) return
+    sending = true
+    try {
+      const answer = (await call('PUT', '/api/phrases', { entries })) as { phrases: Items }
+      usePhrases.getState().sent(ACCOUNT, entries, answer.phrases)
+    } catch (e) {
+      if (!(e instanceof Offline)) usePhrases.setState({ problem: (e as Error).message })
+      return
+    } finally {
+      sending = false
+    }
+    if (pending().length) timer = setTimeout(() => void send(), DELAY_MS)
+  }
+  return {
+    send,
+    soon: () => {
+      clearTimeout(timer)
+      timer = setTimeout(() => void send(), DELAY_MS)
+    },
+    /** Signed in: the phrases kept on this browser signed out go to the account, and the account's are fetched. */
+    load: async () => {
+      if (usePhrases.getState().key !== ACCOUNT) usePhrases.getState().adopt(ACCOUNT)
+      try {
+        const { phrases } = (await call('GET', '/api/phrases')) as { phrases: Items }
+        usePhrases.getState().open(ACCOUNT, phrases)
+        await send()
+      } catch (e) {
+        if (!(e instanceof Offline)) usePhrases.setState({ problem: (e as Error).message })
+      }
+    },
+    /** The page is closing: what's waiting, sent anyway. */
+    last: () => {
+      const entries = pending()
+      if (!timer || !entries.length) return
+      void fetch('/api/phrases', { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }) })
+    },
+  }
+})()
+setPhrasesSync(phrasesSync.soon)
 // Notes this browser kept with its trip before items: into the trip's items.
 if (!SHARED_TOKEN) useItems.getState().takeNotes(localNotes)
 
@@ -325,11 +380,13 @@ if (typeof window !== 'undefined') {
     void flush()
     void journalSync.send()
     void itemsSync.send()
+    void phrasesSync.send()
   })
   window.addEventListener('pagehide', () => {
     // The journal's and items' last changes, if not sent yet.
     journalSync.last()
     itemsSync.last()
+    phrasesSync.last()
     const id = useSaved.getState().activeId
     if (!id || !dirty) return
     void fetch(`/api/trips/${id}`, {
@@ -381,6 +438,8 @@ async function follow(tripId: string, run: Run) {
       const trip = await call('GET', `/api/trips/${tripId}`)
       if (useSaved.getState().activeId !== tripId) break
       show(tripId, trip.data, trip.chat, true, { journal: trip.journal, items: trip.items }, trip.rev)
+      // (And the user's phrases, which it may have changed.)
+      void phrasesSync.load()
       // It died before saving its reply (the runner stopped answering): keep the question, with the error and Try
       // again, in the chat (saved as usual).
       const last = useChat.getState().messages.at(-1)
@@ -439,6 +498,7 @@ setServerRuns({
 /** After sign-in: list the trips and open one. The trip planned before signing in is added to the account first. */
 async function signedIn() {
   useSaved.setState({ status: 'loading', error: null })
+  void phrasesSync.load()
   try {
     const { trips, lastId } = (await call('GET', '/api/trips')) as { trips: TripSummary[]; lastId: string | null }
     useSaved.setState({ trips })
@@ -482,6 +542,7 @@ function signedOut() {
   applying = false
   useJournal.getState().clear()
   useItems.getState().clear()
+  usePhrases.getState().clear()
 }
 
 useAccount.subscribe((s, prev) => {
