@@ -716,6 +716,7 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
   notes: [], // the user's own notes, which the assistant doesn't see
   transport: ['public_transport', 'taxi_apps', 'connections'],
   weather: ['weather', 'air_quality'],
+  holidays: [], // loaded with the tab, not in get_city_info
   costs: ['currency', 'daily_cost_eur', 'prices_eur', 'cards'],
   daily: ['english', 'mobile_internet'],
   phrases: ['phrases'], // not in the summary: only when the tab is open

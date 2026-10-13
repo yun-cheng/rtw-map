@@ -13,7 +13,7 @@ import { createTripStore, evalOptions, loadTrip, newTripInput, planFor, planId, 
 export { MAX_PLANS, legKey, newTripInput, nextPlanName, tripPlans, type TripData, type TripNotes, type TripPlan } from './tripCore'
 
 export type Selection = { type: 'city'; id: string } | { type: 'leg'; index: number } | null
-export type CityTab = 'overview' | 'notes' | 'transport' | 'weather' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
+export type CityTab = 'overview' | 'notes' | 'transport' | 'weather' | 'holidays' | 'costs' | 'daily' | 'phrases' | 'health' | 'safety' | 'entry'
 export type MapLayer = 'none' | 'climate' | 'air' | 'cost' | 'mobile' | 'nearby' | 'schengen' | 'visa'
 export const MAP_LAYERS: MapLayer[] = ['none', 'climate', 'air', 'cost', 'mobile', 'nearby', 'schengen', 'visa']
 /** The kinds of place the Nearby map view can show. */

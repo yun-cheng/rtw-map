@@ -1,10 +1,10 @@
 // The city panel's tabs, their icons and the sections each one shows (or its sub-tabs); shared with the plan's checks
 // (Checks.tsx), which open the tab a check is about.
-import { BedDouble, CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
+import { BedDouble, CalendarDays, CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
 import type { CityTab } from '../store/trip'
 
 export type SectionKey =
-  | 'around' | 'gettingThere' | 'weather' | 'air' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people' | 'phrases'
+  | 'around' | 'gettingThere' | 'weather' | 'air' | 'holidays' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people' | 'phrases'
   | 'vaccines' | 'health' | 'medical' | 'safety' | 'visa'
 
 /** A sub-tab of a city panel tab, and the sections it shows. */
@@ -17,6 +17,7 @@ export const TABS: { key: CityTab; label: string; icon: LucideIcon; sections: Se
   { key: 'notes', label: 'My visit', icon: BedDouble, sections: [] },
   { key: 'transport', label: 'Transport', icon: TramFront, sections: ['around', 'gettingThere'] },
   { key: 'weather', label: 'Weather', icon: CloudSun, sections: ['weather', 'air'] },
+  { key: 'holidays', label: 'Holidays', icon: CalendarDays, sections: ['holidays'] },
   {
     key: 'costs', label: 'Costs', icon: CircleDollarSign, sections: [],
     parts: [

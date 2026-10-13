@@ -18,6 +18,7 @@ import { Forecast, SubHead } from './Forecast'
 import { confirmRemove } from './Itinerary'
 import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
+import { Holidays } from './Holidays'
 import { MyPhrases } from './MyPhrases'
 import { Speak } from '../ui/Speak'
 import { PriceEdit } from './PriceEdit'
@@ -427,6 +428,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
       </Section>
     ),
+    holidays: <Holidays iso2={city.iso2} countryName={country.name} stay={stop && { arrive: stop.arrive, depart: stop.depart }} />,
     safety: adv && (
       <Section title="Travel advice">
         <div className="flex flex-wrap gap-1.5">
