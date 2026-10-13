@@ -222,7 +222,7 @@ The `data/` folder is kept in a private **Cloudflare R2** bucket instead of git,
 
 Seed data is hand-made and can't be rebuilt, so it gets dated copies; generated data is rebuilt by the scripts.
 
-Files go up and down 16 at a time (a full pull of the thousand-odd files takes about 15 s).
+Files go up and down 16 at a time (a full pull of the thousand-odd files takes about 15 s). The GitHub workflows keep `data/` between runs (`actions/cache`, restoring the newest copy from any run), so their pull downloads only what changed in R2 since; R2 stays the source of truth.
 
 Setup (once):
 1. In the Cloudflare dashboard, create an R2 bucket (private, the default).

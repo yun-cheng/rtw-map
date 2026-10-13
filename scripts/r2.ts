@@ -123,6 +123,7 @@ async function pull() {
   const remote = await listRemote()
   if (!remote.size) throw new Error(`The bucket ${R2_BUCKET} has no files under ${PREFIX}; run "npm run data:push" first.`)
   const pathOf = (key: string) => join(DATA, key.slice(PREFIX.length))
+  // (Only what's missing or different here: in CI, data/ is kept between runs, see .github/workflows.)
   const changed = [...remote].filter(([key, etag]) => !existsSync(pathOf(key)) || md5(readFileSync(pathOf(key))) !== etag).map(([key]) => key)
   await each(changed, async (key) => {
     const body = Buffer.from(await (await call(objectUrl(key))).arrayBuffer())

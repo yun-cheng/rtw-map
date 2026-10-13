@@ -28,6 +28,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The data from the last run (any job's), so the pull below downloads only what changed in R2 since.
+      - uses: actions/cache@v4
+        with:
+          path: data
+          key: r2-data-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}
+          restore-keys: r2-data-
       - run: npm run data:pull
       - run: npm run data:refresh
       - run: npm test
