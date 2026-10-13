@@ -5,7 +5,7 @@ import { isNewMessage } from './chat'
 import { mediaAllowed, mediaToken, uploadFile } from './media'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, SPEECH_DAILY, spend, spentOf, takeSpeech, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
-import { parseSpeechRequest } from './speech'
+import { parseSpeechRequest, speech, type ClipStore } from './speech'
 import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
 import { clipName, SPEECH_CHARS, spokenText, ssml } from '../src/data/speech'
 
@@ -348,6 +348,41 @@ describe('phrases read aloud', () => {
     expect(takeSpeech({ day: '2026-10-13', n: SPEECH_DAILY - 1 }, '2026-10-13')).toEqual({ day: '2026-10-13', n: SPEECH_DAILY })
     expect(takeSpeech({ day: '2026-10-13', n: SPEECH_DAILY }, '2026-10-13')).toBeNull()
     expect(takeSpeech({ day: '2026-10-12', n: SPEECH_DAILY }, '2026-10-13')).toEqual({ day: '2026-10-13', n: 1 })
+  })
+
+  it('reads a phrase once: the same one asked for again, by anyone, is kept and doesn\'t count', async () => {
+    const kept = new Map<string, ArrayBuffer>()
+    const store: ClipStore = {
+      get: async (k) => (kept.has(k) ? { arrayBuffer: async () => kept.get(k)! } : null),
+      put: async (k, body) => kept.set(k, body),
+    }
+    let used = 0
+    let azure = 0
+    let fails = false
+    const deps = {
+      key: 'k', region: 'eastasia', store, usedUp: 'Used up',
+      take: async () => used < 2 && ++used > 0,
+      giveBack: async () => void used--,
+      fetcher: (async () => (++azure, fails ? new Response('busy', { status: 500 }) : new Response(new Uint8Array([1, 2, 3])))) as unknown as typeof fetch,
+    }
+    // (The real index: Albanian has a voice.)
+    const ask = (text: string) => speech({ lang: 'sq', text }, deps)
+    expect((await ask('Faleminderit')).headers.get('Content-Type')).toBe('audio/mpeg')
+    expect([used, azure, kept.size]).toEqual([1, 1, 1])
+    // Asked for again: from the store, not Azure, and not counted.
+    expect(new Uint8Array(await (await ask(' Faleminderit ')).arrayBuffer())).toEqual(new Uint8Array([1, 2, 3]))
+    expect([used, azure]).toEqual([1, 1])
+    // Azure failing doesn't count; once the day's are used up, only phrases kept before play.
+    fails = true
+    expect((await ask('Mirëdita')).status).toBe(502)
+    expect(used).toBe(1)
+    fails = false
+    expect((await ask('Mirëdita')).status).toBe(200)
+    expect(await (await ask('Natën e mirë')).json()).toEqual({ error: 'Used up', daily: true })
+    expect((await ask('Faleminderit')).status).toBe(200)
+    // Too long or no voice: refused before anything's counted.
+    expect((await ask('a'.repeat(SPEECH_CHARS + 1))).status).toBe(400)
+    expect(azure).toBe(3)
   })
 
   it('sends Azure the text escaped, and names a clip by its voice and text', async () => {

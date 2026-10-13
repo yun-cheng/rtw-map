@@ -59,6 +59,8 @@ type Env = {
   /** Azure AI Speech, which reads the user's phrases aloud: its key (a secret) and region ("westeurope"). */
   AZURE_SPEECH_KEY?: string
   AZURE_SPEECH_REGION?: string
+  /** The user's phrases Azure has read, kept by voice and text for anyone asking for the same (an R2 bucket). */
+  SPEECH_CLIPS?: R2Bucket
 }
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -195,8 +197,8 @@ async function media(request: Request, env: Env): Promise<Response> {
   return json({ attachment: await attachment(user.sub, name, uploaded, env.SESSION_SECRET) }, 201)
 }
 
-/** A phrase of the user's read aloud ({ lang, text }): the MP3. SPEECH_DAILY a day per account (counted when Azure
- *  reads it; `daily` in the error when they're used up). */
+/** A phrase of the user's read aloud ({ lang, text }): the MP3. SPEECH_DAILY new ones a day per account (counted when
+ *  Azure reads one; one read before, by anyone, is kept and doesn't count; `daily` in the error when they're used up). */
 async function readAloud(request: Request, env: Env): Promise<Response> {
   const user = await currentUser(request, env)
   if (!user) return signInFirst()
@@ -204,12 +206,14 @@ async function readAloud(request: Request, env: Env): Promise<Response> {
   if (!(await env.SPEECH_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Too many phrases at once: wait a minute.' }, 429)
   const day = today()
   const store = account(env, user)
-  if (!(await store.takeSpeech(day))) {
-    return json({ error: `You've had ${SPEECH_DAILY} of your phrases read aloud today, the most for a day: the rest can be read tomorrow.`, daily: true }, 429)
-  }
-  const res = await speech(await request.json().catch(() => null), env.AZURE_SPEECH_KEY, env.AZURE_SPEECH_REGION)
-  if (!res.ok) await store.giveBackSpeech(day)
-  return res
+  return speech(await request.json().catch(() => null), {
+    key: env.AZURE_SPEECH_KEY,
+    region: env.AZURE_SPEECH_REGION,
+    store: env.SPEECH_CLIPS,
+    take: () => store.takeSpeech(day),
+    giveBack: () => store.giveBackSpeech(day),
+    usedUp: `You've had ${SPEECH_DAILY} new phrases of yours read aloud today, the most for a day: the rest can be read tomorrow.`,
+  })
 }
 
 async function trips(request: Request, env: Env, id: string | undefined): Promise<Response> {
