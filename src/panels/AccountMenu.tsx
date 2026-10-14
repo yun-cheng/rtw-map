@@ -1,11 +1,11 @@
 import { ChevronRight, LogOut } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { allowanceNote, renderGoogleButton, useAccount } from '../agent/account'
+import { renderGoogleButton, times, useAccount } from '../agent/account'
 import { useTheme } from '../ui/theme'
 import { AccountLimits } from './AccountLimits'
 import { AiApps } from './AiApps'
 
-/** Top-right account control: "Sign in" when signed out; the user's picture with a menu (name, usage, sign out) when signed in. */
+/** Top-right account control: "Sign in" when signed out; the user's picture with a menu (name, sign out) when signed in. */
 export function AccountMenu() {
   const { loaded, clientId, user, load } = useAccount()
   const [open, setOpen] = useState(false)
@@ -67,7 +67,8 @@ export function AccountMenu() {
 }
 
 /**
- * The signed-in account: picture and name, today's assistant use as a bar, then AI apps, Assistant limits (admins) and
+ * The signed-in account: picture and name, and its assistant allowance if it's more than the usual one (today's use
+ * is in the Assistant tab), then AI apps, Assistant limits (admins) and
  * Sign out as full-width rows. In the top bar's account menu (`menu`) and, as it is, in a phone's settings panel
  * (`top`: the padding above it, none under the card's own heading). `onApps` and `onLimits` open their dialogs;
  * `onSignOut` runs before signing out (e.g. to close the menu).
@@ -77,7 +78,7 @@ export function AccountDetails({ menu, top = 'pt-3', onApps, onLimits, onSignOut
 }) {
   const { user, admin, usage, signOut } = useAccount()
   if (!user) return null
-  const low = !!usage && usage.remaining <= 15
+  const multiple = usage?.multiple
   const role = menu ? 'menuitem' : undefined
   return (
     <div className="text-[13px]">
@@ -89,20 +90,9 @@ export function AccountDetails({ menu, top = 'pt-3', onApps, onLimits, onSignOut
           <div className="min-w-0">
             <p className="truncate text-[14px] font-semibold">{user.name}</p>
             <p className="text-[12px] text-muted">Signed in with Google</p>
+            {multiple !== undefined && multiple > 1 && <p className="text-[12px] text-accent">{times(multiple)} AI usage</p>}
           </div>
         </div>
-        {usage && (
-          <div className="mt-3">
-            <div className="flex items-baseline justify-between text-[12px]">
-              <span className="text-muted">Assistant today</span>
-              <span className={low ? 'font-semibold text-warn' : 'font-medium'}>{usage.remaining}% left</span>
-            </div>
-            <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line">
-              <div className={`h-full rounded-full ${low ? 'bg-warn' : 'bg-accent'}`} style={{ width: `${usage.remaining}%` }} />
-            </div>
-            {allowanceNote(usage) && <p className="mt-1 text-[11px] text-muted">{allowanceNote(usage)}</p>}
-          </div>
-        )}
       </div>
       <div className="mt-3 border-t border-line">
         <button role={role} onClick={onApps} className="flex w-full items-center justify-between border-b border-line px-4 py-2.5 text-left font-medium hover:bg-canvas">

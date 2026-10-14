@@ -191,16 +191,73 @@ function SignIn() {
   )
 }
 
-function UsageLine({ usage }: { usage: Usage }) {
-  const low = usage.remaining <= 15
+/** Today's assistant use at or above this (percent) is shown as nearly used up. */
+const HIGH_PERCENT = 85
+
+/** "3 hr 20 min", "45 min" from now (`now`) to the time `iso`. */
+function until(iso: string, now: number) {
+  const min = Math.max(1, Math.ceil((new Date(iso).getTime() - now) / 60_000))
+  const h = Math.floor(min / 60)
+  return h ? `${h} hr ${min % 60} min` : `${min} min`
+}
+
+/** A ring filled with how much of today's assistant allowance is used, which opens what this chat has used (`spent`
+ *  and `ms`, its replies' time) and today's use, with when it resets (the account's allowance, if not the usual one,
+ *  is in the account menu); closed by a click elsewhere or Escape. */
+function UsageButton({ usage, spent, ms }: { usage: Usage | null; spent: Spent; ms?: number }) {
+  /** When it was opened (for the time to the reset), or null: closed. */
+  const [openedAt, setOpenedAt] = useState<number | null>(null)
+  const open = openedAt !== null
+  const setOpen = (on: boolean) => setOpenedAt(on ? Date.now() : null)
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!open) return
+    const onDown = (e: PointerEvent) => !box.current?.contains(e.target as Node) && setOpen(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false)
+    window.addEventListener('pointerdown', onDown)
+    window.addEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('pointerdown', onDown)
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+  const used = 100 - (usage?.remaining ?? 100)
+  const high = used >= HIGH_PERCENT
+  const R = 7
+  const around = 2 * Math.PI * R
   return (
-    <span
-      className={low ? 'font-semibold text-warn' : 'text-muted'}
-      title={`Counted by how much the assistant reads and writes: a quick question uses little, Plan with AI or Think harder much more. Resets at ${resetTime(usage.resetsAt)} (midnight UTC).`}
-    >
-      {usage.remaining}% of today's assistant use left
-      {allowanceNote(usage) && usage.multiple !== 0 && <> · {allowanceNote(usage)}</>}
-    </span>
+    <div ref={box} className="relative">
+      <button
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+        aria-label={usage ? `Assistant use: ${used}% of today's limit used` : 'Assistant use'}
+        title="Assistant use"
+        className="flex h-7 w-7 items-center justify-center rounded-full hover:bg-canvas"
+      >
+        <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden className="-rotate-90">
+          <circle cx="9" cy="9" r={R} fill="none" strokeWidth="2.5" className="stroke-line" />
+          <circle cx="9" cy="9" r={R} fill="none" strokeWidth="2.5" strokeLinecap="round" strokeDasharray={around} strokeDashoffset={around * (1 - used / 100)} className={high ? 'stroke-warn' : 'stroke-accent'} />
+        </svg>
+      </button>
+      {open && (
+        <div role="dialog" aria-label="Assistant use" className="absolute top-full right-0 z-30 mt-1 w-72 rounded-lg border border-line bg-panel p-3 text-[12px] shadow-lg">
+          <p className="font-semibold">This chat</p>
+          {spent.calls > 0 ? <SpentLine spent={spent} ms={ms} /> : <p className="text-[11px] text-muted">Nothing used yet.</p>}
+          {usage && (
+            <>
+              <div className="mt-2.5 flex items-baseline justify-between gap-2">
+                <p className="font-semibold">Today limit</p>
+                <p className={high ? 'font-semibold text-warn' : 'text-muted'}>{used}% used</p>
+              </div>
+              <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-line">
+                <div className={`h-full rounded-full ${high ? 'bg-warn' : 'bg-accent'}`} style={{ width: `${used}%` }} />
+              </div>
+              <p className="mt-1 text-[11px] text-muted">Resets in {until(usage.resetsAt, openedAt)}</p>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -296,14 +353,11 @@ function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-x-3 gap-y-0.5 border-b border-line py-1 pr-4 pl-2 text-[12px]">
+      <div className="flex items-center border-b border-line py-1 pr-2 pl-2 text-[12px]">
         <button onClick={() => setChatsOpen(true)} title="This trip's chats with the assistant" className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-medium text-muted hover:bg-canvas hover:text-ink">
           <MessagesSquare size={15} /> Chats
         </button>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3">
-          {total.calls > 0 && <SpentLine spent={total} ms={totalMs} label="This chat: " />}
-          {usage && <UsageLine usage={usage} />}
-        </div>
+        <div className="ml-auto"><UsageButton usage={usage} spent={total} ms={totalMs} /></div>
       </div>
       <ChatList open={chatsOpen} onClose={closeChats} />
       {raised && (

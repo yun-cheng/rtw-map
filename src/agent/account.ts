@@ -13,8 +13,11 @@ export function allowanceNote(usage: Usage | null): string | null {
   const m = usage?.multiple
   if (m === undefined || m === 1) return null
   if (m === 0) return 'Assistant turned off for this account'
-  return `${Number.isInteger(m) ? m : m.toFixed(1)}× the usual allowance`
+  return `${times(m)} the usual allowance`
 }
+
+/** An allowance multiple as "5×" (or "1.5×"). */
+export const times = (m: number) => `${Number.isInteger(m) ? m : m.toFixed(1)}×`
 
 const seenKey = (sub: string) => `rtw-map-allowance:${sub}`
 
