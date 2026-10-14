@@ -1,8 +1,8 @@
 // Cloudflare Worker for the site: serves the built app (dist/) as static files, and /api/* from worker/index.ts
 // (the trip assistant, which calls Gemini). Build first: npm run data:pull && npm run build
 // Secrets (not in this file): GEMINI_API_KEY, SESSION_SECRET, ADMIN_EMAILS (who may edit the assistant's
-// per-account limits, comma-separated) and AZURE_SPEECH_KEY (reads the user's phrases aloud), set with
-// `wrangler secret put <name>`.
+// per-account limits, comma-separated), AZURE_SPEECH_KEY (reads the user's phrases aloud) and VAPID_PRIVATE_KEY
+// (signs notifications, scripts/vapid-keys.ts), set with `wrangler secret put <name>`.
 // Local development: npm run dev:api (reads .env.local) next to npm run dev, which forwards /api to it.
 {
   "$schema": "node_modules/wrangler/config-schema.json",
@@ -22,7 +22,10 @@
     // OAuth client ID for "Sign in with Google" (public, not a secret).
     "GOOGLE_CLIENT_ID": "1006259365129-beetumg7v2gv10r49f218m2hqlcg6n7m.apps.googleusercontent.com",
     // Azure AI Speech's region (its key is a secret): reads the user's phrases aloud.
-    "AZURE_SPEECH_REGION": "eastasia"
+    "AZURE_SPEECH_REGION": "eastasia",
+    // The site's key for notifications when the assistant finishes (worker/push.ts; public; the private half is the
+    // secret VAPID_PRIVATE_KEY), made by scripts/vapid-keys.ts.
+    "VAPID_PUBLIC_KEY": "BPudGWLtomlcWG_YbXove1xRbran2oQPyeEcetFhtfC-FfxxEDHj3OE_LTuGYZSUOQdWs4A78U8f7YgKyQ8cNzs"
   },
   // Per-user data (worker/account.ts): saved trips and assistant usage, one Durable Object per Google account.
   "durable_objects": {

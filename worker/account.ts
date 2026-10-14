@@ -1,8 +1,9 @@
 // One Durable Object per signed-in Google account (keyed by its account ID). It holds that user's saved trips
 // (SQLite) and their version history (versions.ts), the assistant's runs on them (runs.ts), the user's own phrases
 // (for every trip), today's assistant usage and phrases read aloud, the other apps allowed to read and change the
-// trips (oauth.ts) and those apps' changes (changes.ts). A Durable Object handles one request at a time, so nothing
-// can race. The rules are plain functions in limits.ts, trips.ts, runs.ts, changes.ts and versions.ts.
+// trips (oauth.ts) and those apps' changes (changes.ts), and the browsers told when a run ends (push.ts). A Durable
+// Object handles one request at a time, so nothing can race. The rules are plain functions in limits.ts, trips.ts,
+// runs.ts, changes.ts, versions.ts and push.ts.
 import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView } from './changes'
 import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
@@ -11,6 +12,7 @@ import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus }
 import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
 import type { Grant, NewGrant } from './oauth'
+import { PUSH_LIMITS, type PushTarget } from './push'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 import { ASKED_CHARS, joinsLatest, RESTORE_SAME, VERSION_PAGE, type VersionBy } from './versions'
 
@@ -77,6 +79,8 @@ export class Account extends DurableObject {
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS grants (
       id TEXT PRIMARY KEY, client TEXT NOT NULL, redirect TEXT NOT NULL, scope TEXT NOT NULL, status TEXT NOT NULL,
       gen INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, used INTEGER NOT NULL)`)
+    // The browsers that get a notification when a run ends (push.ts): their push subscriptions.
+    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS push (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL)')
     // On the settings instance only: which account and trip each public link opens.
     ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
   }
@@ -502,9 +506,29 @@ export class Account extends DurableObject {
     return { who: 'assistant', run: r.id, asked: (JSON.parse(r.request) as RunRequest).text.trim().slice(0, ASKED_CHARS) }
   }
 
+  /** For the notice at a run's end: its trip, and the browsers to tell. */
+  async runNotice(id: string): Promise<{ trip: { id: string; name: string }; targets: PushTarget[] } | null> {
+    const r = this.ctx.storage.sql.exec<{ id: string; name: string }>('SELECT trips.id, trips.name FROM runs JOIN trips ON trips.id = runs.trip_id WHERE runs.id = ?', id).toArray()[0]
+    if (!r) return null
+    return { trip: { id: r.id, name: r.name }, targets: this.ctx.storage.sql.exec<PushTarget>('SELECT endpoint, p256dh, auth FROM push').toArray() }
+  }
+
   /** A run that couldn't be started (the runner wasn't reachable). */
   async failRun(id: string, error: string): Promise<void> {
     this.ctx.storage.sql.exec("UPDATE runs SET status = 'failed', error = ?, updated = ? WHERE id = ?", error, Date.now(), id)
+  }
+
+  // ---------------------------------------------------------------- notifications (push.ts)
+
+  /** Keeps a browser's push subscription (again: its keys may have changed); the oldest go past PUSH_LIMITS.kept. */
+  async addPush(target: PushTarget): Promise<void> {
+    this.ctx.storage.sql.exec('INSERT OR REPLACE INTO push (endpoint, p256dh, auth, created) VALUES (?, ?, ?, ?)', target.endpoint, target.p256dh, target.auth, Date.now())
+    this.ctx.storage.sql.exec('DELETE FROM push WHERE endpoint NOT IN (SELECT endpoint FROM push ORDER BY created DESC LIMIT ?)', PUSH_LIMITS.kept)
+  }
+
+  /** Forgets subscriptions the browsers no longer have. */
+  async removePush(endpoints: string[]): Promise<void> {
+    for (const e of endpoints) this.ctx.storage.sql.exec('DELETE FROM push WHERE endpoint = ?', e)
   }
 
   // ---------------------------------------------------------------- other apps' changes (changes.ts)

@@ -21,6 +21,7 @@
 //   POST /api/runs                 answer a message on the server, so it finishes with the page closed (runs.ts)
 //   GET  /api/runs/:id[?since=N]   how a run is going, and the trip if it changed since version N
 //   POST /api/runs/:id/stop        stop it
+//   GET|PUT /api/push              the key for notifications, or keep a browser's subscription (push.ts)
 //   /internal/runs/…               the runner's side of a run (with the RUNNER_SECRET)
 //   GET|PUT /api/admin/limits      other daily limits for particular accounts, by email (admins only)
 //   GET  /api/connections          the other apps allowed to read (and change) the trips (oauth.ts)
@@ -37,6 +38,7 @@ import { Account, BUSY } from './account'
 import { CHANGED_ELSEWHERE } from './changes'
 import { handleMcp } from './mcp'
 import { bearer, CORS, oauth, type OAuthContext } from './oauth'
+import { doneNotice, parsePushTarget, sendPush } from './push'
 import { parseRunEnd, parseRunStart, RUN_LIMITS, runView } from './runs'
 import { speech } from './speech'
 import { isShareToken, parseTripPatch } from './trips'
@@ -65,6 +67,9 @@ type Env = {
   AZURE_SPEECH_REGION?: string
   /** The user's phrases Azure has read, kept by voice and text for anyone asking for the same (an R2 bucket). */
   SPEECH_CLIPS?: R2Bucket
+  /** The site's key for notifications (push.ts): the public half, and the private one (a secret). */
+  VAPID_PUBLIC_KEY?: string
+  VAPID_PRIVATE_KEY?: string
 }
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -432,7 +437,7 @@ function sameSecret(a: string, b: string): boolean {
 }
 
 /** The runner's side of a run: its input, model calls, progress and end. Only with the shared secret. */
-async function internal(request: Request, env: Env, sub: string, id: string, action: string | undefined): Promise<Response> {
+async function internal(request: Request, env: Env, ctx: ExecutionContext, sub: string, id: string, action: string | undefined): Promise<Response> {
   const auth = request.headers.get('Authorization') ?? ''
   if (!env.RUNNER_SECRET || !sameSecret(auth, `Bearer ${env.RUNNER_SECRET}`)) return json({ error: 'Not allowed' }, 403)
   const store = account(env, { sub })
@@ -459,9 +464,36 @@ async function internal(request: Request, env: Env, sub: string, id: string, act
   if (action === 'finish') {
     const end = parseRunEnd(body)
     if (typeof end === 'string') return json({ error: end }, 400)
-    return (await store.finishRun(id, patch, reply ?? 'null', end.status, end.error, items)) ? json({ ok: true }) : json({ error: 'Run not found' }, 404)
+    if (!(await store.finishRun(id, patch, reply ?? 'null', end.status, end.error, items))) return json({ error: 'Run not found' }, 404)
+    // (Stopped: the user is there.)
+    if (end.status !== 'stopped') ctx.waitUntil(notifyDone(env, store, id, body?.reply, new URL(request.url).origin))
+    return json({ ok: true })
   }
   return json({ error: 'Not found' }, 404)
+}
+
+/** Tells the account's browsers that a run has ended (push.ts); forgets those that are gone. */
+async function notifyDone(env: Env, store: ReturnType<typeof account>, id: string, reply: unknown, origin: string) {
+  if (!env.VAPID_PUBLIC_KEY || !env.VAPID_PRIVATE_KEY) return
+  const to = await store.runNotice(id)
+  if (!to?.targets.length) return
+  const notice = doneNotice(reply as { text?: unknown; error?: unknown } | null, to.trip)
+  const vapid = { publicKey: env.VAPID_PUBLIC_KEY, privateKey: env.VAPID_PRIVATE_KEY, subject: origin }
+  const sent = await Promise.all(to.targets.map((t) => sendPush(t, notice, vapid)))
+  const gone = to.targets.filter((_, i) => sent[i] === 'gone').map((t) => t.endpoint)
+  if (gone.length) await store.removePush(gone)
+}
+
+/** The key for notifications (null: not set up), or a browser's subscription kept. */
+async function push(request: Request, env: Env): Promise<Response> {
+  if (request.method === 'GET') return json({ key: env.VAPID_PUBLIC_KEY ?? null })
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
+  const target = parsePushTarget(((await request.json().catch(() => null)) as { subscription?: unknown } | null)?.subscription)
+  if (typeof target === 'string') return json({ error: target }, 400)
+  await account(env, user).addPush(target)
+  return json({ ok: true })
 }
 
 /** The account limits, for admins: the default and the accounts listed with their own daily limit. */
@@ -631,6 +663,10 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return runs(request, env, runPath[1], runPath[2])
   }
+  if (pathname === '/api/push') {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return push(request, env)
+  }
   if (pathname === '/api/phrases') {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return phrases(request, env)
@@ -649,12 +685,12 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(request.url)
     if (pathname.startsWith('/api/')) return api(request, env, pathname)
     if (pathname === '/mcp' || pathname.startsWith('/oauth/') || pathname.startsWith('/.well-known/oauth-')) return outside(request, env, pathname)
     const internalPath = pathname.match(/^\/internal\/runs\/(\w{1,64})\/([\w-]{1,64})(?:\/(chat|progress|finish))?$/)
-    if (internalPath) return internal(request, env, internalPath[1], internalPath[2], internalPath[3])
+    if (internalPath) return internal(request, env, ctx, internalPath[1], internalPath[2], internalPath[3])
     return env.ASSETS.fetch(request)
   },
 } satisfies ExportedHandler<Env>
