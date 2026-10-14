@@ -1,5 +1,6 @@
-// What the user keeps for a city or a journey (PLAN.md, Progress: My visit): where they stay, photo albums, links, their
-// notes, prices they saw (which replace ours for that city), and their own phrases in a language.
+// What the user keeps for a city or a journey (PLAN.md, Progress: My visit): where they stay, their tickets (a flight,
+// train, bus or ferry booked for a journey), photo albums, links, their notes, prices they saw (which replace ours for
+// that city), and their own phrases in a language.
 // The trip's, not a plan's (kept by city, so switching plans or moving dates keeps them; a stay carries its own dates,
 // so two visits to a city each show theirs), private, and kept apart from the trip's data like the journal
 // (journalCore.ts): written on any device, offline too, and merged item by item, the latest edit of each winning.
@@ -7,7 +8,10 @@
 import type { PriceKey, SeenPrices } from '../planner/cost'
 import type { TripNotes } from './tripCore'
 
-export type ItemKind = 'note' | 'stay' | 'album' | 'link' | 'price' | 'phrase'
+export type ItemKind = 'note' | 'stay' | 'ticket' | 'album' | 'link' | 'price' | 'phrase'
+/** How a ticket travels. */
+export type TicketMode = 'flight' | 'train' | 'bus' | 'ferry' | 'other'
+export const TICKET_MODES: TicketMode[] = ['flight', 'train', 'bus', 'ferry', 'other']
 
 /** One thing kept for a city or a journey. A removed one is kept as `deleted` (so the removal wins over older copies). */
 export type TripItem = {
@@ -15,23 +19,30 @@ export type TripItem = {
   kind: ItemKind
   /** Where it belongs: a city id, or a journey's `from>to`; a phrase's language tag ("mk", "zh-TW"). */
   at: string
-  /** A stay's name; an album's or a link's title; what a phrase says, in English. */
+  /** A stay's name; a ticket's carrier and number ("LOT LO 335"); an album's or a link's title; what a phrase says,
+   *  in English. */
   title?: string
-  /** A stay's booking, the album, the link (http or https). */
+  /** A stay's or a ticket's booking, the album, the link (http or https). */
   url?: string
-  /** A note (Markdown); a stay's own note (door code, wifi); a phrase in its language's script. */
+  /** A note (Markdown); a stay's or a ticket's own note (door code, wifi; seat, baggage); a phrase in its language's
+   *  script. */
   text?: string
   /** A phrase: how to say it, and a note on using it ("polite: add …"). */
   say?: string
   tip?: string
   /** A stay's address. */
   address?: string
-  /** A stay's check-in and check-out days (ISO). */
+  /** A stay's check-in and check-out days (ISO); a ticket's departure and arrival, each in its place's own time
+   *  (YYYY-MM-DDTHH:MM, or the day alone). */
   from?: string
   to?: string
-  /** A stay's booking reference. */
+  /** A ticket's way of travel, and where it leaves from and arrives (the airport, station or port). */
+  mode?: TicketMode
+  fromPlace?: string
+  toPlace?: string
+  /** A stay's or a ticket's booking reference. */
   ref?: string
-  /** A stay's price, as written ("€84, paid"). */
+  /** A stay's or a ticket's price, as written ("€84, paid"). */
   price?: string
   /** A price seen in the city (`price:<city>:<what>`, see PriceKey), in the money it was seen in. */
   amount?: number
@@ -53,8 +64,11 @@ export const phrasesOf = (trips: Items[]): Items =>
   trips.reduce<Items>((all, items) => mergeItems(all, Object.values(items).filter((i) => isPhrase(i.id))), {})
 /** The trip's items without phrases (trips kept them before phrases were the account's: those are left out). */
 export const withoutPhrases = (items: Items): Items => Object.fromEntries(Object.entries(items).filter(([id]) => !isPhrase(id)))
-const SHORT = ['title', 'address', 'ref', 'price', 'say', 'tip'] as const
-const KINDS: ItemKind[] = ['note', 'stay', 'album', 'link', 'price', 'phrase']
+const SHORT = ['title', 'address', 'fromPlace', 'toPlace', 'ref', 'price', 'say', 'tip'] as const
+const KINDS: ItemKind[] = ['note', 'stay', 'ticket', 'album', 'link', 'price', 'phrase']
+/** A day; a ticket's times may have the time of day too. */
+const DAY = /^\d{4}-\d{2}-\d{2}$/
+const DAY_TIME = /^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/
 /** A language tag, as the phrases data has them ("mk", "zh-TW"). */
 const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
 
@@ -67,7 +81,7 @@ export const phraseId = (tag: string, english: string) =>
   `phrase:${tag}:${english.toLowerCase().normalize('NFKD').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80) || 'phrase'}`
 /** An item with nothing in it (a note emptied, a stay with no name), as good as removed. */
 export const isEmptyItem = (i: TripItem | undefined) =>
-  !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : i.kind === 'phrase' ? !i.text?.trim() : ![i.title, i.url, i.text, i.address, i.ref, i.price].some((v) => v?.trim()))
+  !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : i.kind === 'phrase' ? !i.text?.trim() : ![i.title, i.url, i.text, i.address, i.fromPlace, i.toPlace, i.ref, i.price].some((v) => v?.trim()))
 
 /** The prices seen in each city, in EUR at these rates (units per EUR); one in money without a rate is left out. */
 export function seenPrices(items: Items, rates: Record<string, number>): SeenPrices {
@@ -116,6 +130,12 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
       item.url = url
     }
     if (item.kind === 'phrase' && !LANGUAGE_TAG.test(item.at)) return 'Invalid phrase'
+    // (A ticket is for a journey.)
+    if (item.kind === 'ticket') {
+      if (!item.at.includes('>')) return 'Invalid ticket'
+      if (x.mode !== undefined && !TICKET_MODES.includes(x.mode as TicketMode)) return 'Invalid ticket'
+      if (x.mode) item.mode = x.mode as TicketMode
+    }
     if (item.kind === 'price') {
       if (item.at.includes('>')) return 'Invalid price'
       if (typeof x.amount !== 'number' || !Number.isFinite(x.amount) || x.amount < 0 || x.amount > 1e9) return 'Invalid price'
@@ -125,7 +145,7 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
     }
     for (const k of ['from', 'to'] as const) {
       if (x[k] === undefined || x[k] === '') continue
-      if (typeof x[k] !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(x[k] as string)) return 'Invalid date'
+      if (typeof x[k] !== 'string' || !(item.kind === 'ticket' ? DAY_TIME : DAY).test(x[k] as string)) return 'Invalid date'
       item[k] = x[k] as string
     }
     items.push(item)

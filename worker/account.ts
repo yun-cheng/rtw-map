@@ -221,7 +221,7 @@ export class Account extends DurableObject {
     if (!rest.length) return items
     const merged = mergeItems(items, rest)
     const text = JSON.stringify(merged)
-    if (Object.keys(merged).length > ITEM_LIMITS.items || text.length > ITEM_LIMITS.bytes) return "This trip's stays, links and notes are too many to save"
+    if (Object.keys(merged).length > ITEM_LIMITS.items || text.length > ITEM_LIMITS.bytes) return "This trip's stays, tickets, links and notes are too many to save"
     this.ctx.storage.sql.exec('UPDATE trips SET items = ? WHERE id = ?', text, id)
     return merged
   }

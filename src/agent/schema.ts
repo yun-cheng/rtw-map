@@ -66,7 +66,9 @@ How to work:
   Only on that last line, nothing after it. Leave it out for open questions (dates, names) and plain answers.
 - My visit, in each city's panel, is the user's own: where they stay (with check-in and check-out days, address,
   booking reference, price, link and a note such as the door code), photo albums, links (tours, tickets, restaurants)
-  and a note per city or journey. get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the
+  and a note per city or journey; and in each journey's panel, their tickets (a flight, train, bus or ferry: carrier
+  and number, departure and arrival times, where from and to, booking reference, price, link, a note such as the
+  seat). get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the
   user asks, e.g. "save this booking" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
   is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
 - Prices the user saw or paid in a city (on a receipt, a menu, a booking, or just told) are kept with
@@ -82,9 +84,10 @@ How to work:
   natural and short, as a traveller would say them: 100 characters at most each. The user's phrases are theirs, for
   every trip, 50 at most in all (one per language and meaning).
 - The user can attach images and PDFs to a message (a booking confirmation, a ticket, a screenshot, a photo). You see
-  them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit at its
-  city (a stay: name, address, check-in and check-out days, reference, price, link) if the user asks you to, or offer
-  to. Leave out card numbers, passport numbers and the like.
+  them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit if the
+  user asks you to, or offer to: a stay at its city (name, address, check-in and check-out days, reference, price,
+  link), a ticket on its journey between two cities (one per flight or train; a connection is a ticket for each part,
+  on the same journey). Leave out card numbers, passport numbers and the like.
 - Visa, entry and safety rules change: give the app's information and tell the user to confirm with official sources.
 - You can't book anything. Keep answers short and practical.
 - Reply in English, the app's language, unless the user's latest message is written in another language: then
@@ -185,25 +188,30 @@ export const TOOLS: FunctionDeclaration[] = [
   // ---- My visit
   {
     name: 'get_visit',
-    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), photo albums, links and notes, for each city or journey between two, prices the user saw, and their own phrases (by language), each with its id.',
+    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), their tickets for the journeys between two cities (flight, train, bus or ferry: carrier and number, departure and arrival, from and to where, reference, price), photo albums, links and notes, for each city or journey between two, prices the user saw, and their own phrases (by language), each with its id.',
     parametersJsonSchema: obj({ city: str('Only this city and the journeys to and from it (name or id); default: all') }),
   },
   {
     name: 'save_visit_item',
-    description: 'Add a stay, photo album, link or note to a city\'s My visit, or change one (its id from get_visit). Give only the fields to set ("" empties one). A city has one note, and a journey between two cities one note (and nothing else).',
+    description: 'Add a stay, ticket, photo album, link or note to My visit, or change one (its id from get_visit). Give only the fields to set ("" empties one). A stay, album or link is a city\'s; a ticket (a flight, train, bus or ferry booked) is a journey\'s, from city to journey_to, one per flight or train. A city has one note, and a journey between two cities one note.',
     parametersJsonSchema: obj({
       id: str('The item to change, from get_visit; leave out to add one'),
-      kind: str('What to add', { enum: ['stay', 'album', 'link', 'note'] }),
-      city: { ...CITY, description: 'The city it belongs to (to add one): any city in the app, usually a stop of the trip' },
-      journey_to: { ...CITY, description: 'For a note on the journey from city to this city, instead of on the city' },
-      title: str('A stay\'s name (the hotel, hostel or flat); an album\'s or a link\'s title'),
-      url: str('A stay\'s booking link; the album\'s or the link\'s web address'),
+      kind: str('What to add', { enum: ['stay', 'ticket', 'album', 'link', 'note'] }),
+      city: { ...CITY, description: 'The city it belongs to (to add one): any city in the app, usually a stop of the trip; for a ticket or a journey\'s note, the city the journey leaves from' },
+      journey_to: { ...CITY, description: 'For a ticket or a note on the journey from city to this city: the city it goes to (the nearest city in the app to the airport or station)' },
+      title: str('A stay\'s name (the hotel, hostel or flat); a ticket\'s carrier and number, e.g. "LOT LO 335" or "ÖBB Railjet 73"; an album\'s or a link\'s title'),
+      url: str('A stay\'s or ticket\'s booking link; the album\'s or the link\'s web address'),
       address: str('A stay\'s address'),
       check_in: str('A stay\'s check-in day, YYYY-MM-DD'),
       check_out: str('A stay\'s check-out day, YYYY-MM-DD'),
-      reference: str('A stay\'s booking reference'),
-      price: str('A stay\'s price as the user would write it, e.g. "€84, paid" or "NT$3,200, pay at the hotel"'),
-      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s own note (door code, wifi, how to get in)'),
+      mode: str('A ticket\'s way of travel', { enum: ['flight', 'train', 'bus', 'ferry', 'other'] }),
+      departs: str('A ticket\'s departure, in the local time where it leaves, YYYY-MM-DDTHH:MM (or YYYY-MM-DD without a time)'),
+      arrives: str('A ticket\'s arrival, in the local time where it arrives, YYYY-MM-DDTHH:MM (or YYYY-MM-DD without a time)'),
+      from_place: str('Where a ticket leaves from: the airport (with its code and terminal), station or port, e.g. "Kraków Airport (KRK), T1"'),
+      to_place: str('Where a ticket arrives: the airport, station or port'),
+      reference: str('A stay\'s or ticket\'s booking reference'),
+      price: str('A stay\'s or ticket\'s price as the user would write it, e.g. "€84, paid" or "NT$3,200, pay at the hotel"'),
+      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s or ticket\'s own note (door code, wifi, how to get in; seat, baggage)'),
       append: { type: 'boolean', description: 'Add text to the end of the note instead of replacing it' },
     }),
   },
@@ -236,7 +244,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'remove_visit_item',
-    description: 'Remove a stay, album, link, note, price seen or phrase from My visit, by its id from get_visit. Only when the user asks.',
+    description: 'Remove a stay, ticket, album, link, note, price seen or phrase from My visit, by its id from get_visit. Only when the user asks.',
     parametersJsonSchema: obj({ id: str('The item\'s id, from get_visit') }, ['id']),
   },
   // ---- change the setup
@@ -390,5 +398,5 @@ export const WRITE_TOOLS = new Set([
   'add_stop', 'remove_stop', 'set_nights', 'set_locked', 'move_stop', 'reorder_stops',
 ])
 
-/** Names of tools that change My visit (the user's own stays, albums, links and notes; not the trip's plans). */
+/** Names of tools that change My visit (the user's own stays, tickets, albums, links and notes; not the trip's plans). */
 export const ITEM_TOOLS = new Set(['save_visit_item', 'remove_visit_item', 'set_prices_seen', 'save_phrases'])

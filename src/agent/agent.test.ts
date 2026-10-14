@@ -278,7 +278,7 @@ describe('My visit tools', () => {
   it('refuses what My visit can\'t keep', () => {
     const { run } = visit()
     const error = (args: Record<string, unknown>) => run('save_visit_item', args).result.error
-    expect(error({ kind: 'stay', city: 'Kraków', journey_to: 'Warsaw', title: 'Bus' })).toMatch(/journey keeps only a note/)
+    expect(error({ kind: 'stay', city: 'Kraków', journey_to: 'Warsaw', title: 'Bus' })).toMatch(/journey keeps tickets and a note/)
     expect(error({ kind: 'stay', city: 'Kraków', title: 'X', check_in: 'May 4' })).toMatch(/check_in must be a day/)
     expect(error({ kind: 'stay', city: 'Kraków', title: 'X', check_in: '2026-05-07', check_out: '2026-05-04' })).toMatch(/after check_in/)
     expect(error({ kind: 'link', city: 'Kraków', url: 'javascript:alert(1)' })).toMatch(/web address/)

@@ -10,7 +10,7 @@ import {
   groceryDay, isTravelling, prefsDay, PRICE_LABELS, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
@@ -257,8 +257,8 @@ function tripDetails(): ToolResult {
 
 // ---------------------------------------------------------------- My visit
 
-const ITEM_KINDS: ItemKind[] = ['stay', 'note', 'album', 'link']
-const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', note: 'note', album: 'photo album', link: 'link', price: 'price seen', phrase: 'phrase' }
+const ITEM_KINDS: ItemKind[] = ['stay', 'ticket', 'note', 'album', 'link']
+const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', ticket: 'ticket', note: 'note', album: 'photo album', link: 'link', price: 'price seen', phrase: 'phrase' }
 /** What a seen price is the price of (its id is `price:<city>:<what>`). */
 const priceOf = (i: TripItem) => PRICE_LABELS[i.id.split(':')[2] as PriceKey] ?? i.id.split(':')[2]
 /** Where an item belongs, by name: "Kraków", or "Kraków → Vienna" for a journey. */
@@ -295,8 +295,11 @@ function visit(args: Args): ToolResult {
   if (!list.length) return { items: [], note: only ? `Nothing kept for ${cityName(only)} yet.` : 'Nothing kept in My visit yet.' }
   return {
     items: list.map((i) => ({
-      id: i.id, where: placeOf(i), kind: i.kind, title: i.title, address: i.address, check_in: i.from, check_out: i.to, url: i.url,
-      reference: i.ref, price: i.price, text: i.text,
+      id: i.id, where: placeOf(i), kind: i.kind, title: i.title, address: i.address,
+      ...(i.kind === 'ticket'
+        ? { mode: i.mode, departs: i.from, arrives: i.to, from_place: i.fromPlace, to_place: i.toPlace }
+        : { check_in: i.from, check_out: i.to }),
+      url: i.url, reference: i.ref, price: i.price, text: i.text,
       ...(i.kind === 'price' && { price_of: priceOf(i), price_seen: `${i.amount} ${i.currency}` }),
       ...(i.kind === 'phrase' && { language: i.at, say: i.say, note: i.tip }),
       updated: new Date(i.updatedAt).toISOString().slice(0, 10),
@@ -304,10 +307,25 @@ function visit(args: Args): ToolResult {
   }
 }
 
-/** The tool's arguments and the item's fields they set. */
-const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'ref' | 'price' | 'text'][] = [
-  ['title', 'title'], ['url', 'url'], ['address', 'address'], ['check_in', 'from'], ['check_out', 'to'], ['reference', 'ref'], ['price', 'price'], ['text', 'text'],
+/** The tool's arguments and the item's fields they set (a ticket's times are `from` and `to` too). */
+const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'fromPlace' | 'toPlace' | 'ref' | 'price' | 'text'][] = [
+  ['title', 'title'], ['url', 'url'], ['address', 'address'], ['check_in', 'from'], ['check_out', 'to'], ['departs', 'from'], ['arrives', 'to'],
+  ['from_place', 'fromPlace'], ['to_place', 'toPlace'], ['reference', 'ref'], ['price', 'price'], ['text', 'text'],
 ]
+/** A ticket's departure or arrival: a day, with its time or not. */
+const isDayTime = (v: string) => /^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/.test(v) && !Number.isNaN(Date.parse(v.slice(0, 10)))
+
+/** A stay or ticket kept already that `args` would add again: at the same place, starting the same day, with the same
+ *  booking reference, or the same name if neither has one. */
+function sameBooking(all: Items, kind: ItemKind, at: string, args: Args): TripItem | undefined {
+  const text = (v: unknown) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').toLowerCase() : '')
+  const day = text(kind === 'ticket' ? args.departs : args.check_in).slice(0, 10)
+  const ref = text(args.reference)
+  const title = text(args.title)
+  if (!day || (!ref && !title)) return undefined
+  return Object.values(all).find((i) => i.kind === kind && i.at === at && !isEmptyItem(i) && i.from?.slice(0, 10) === day &&
+    (ref || text(i.ref) ? text(i.ref) === ref : text(i.title) === title))
+}
 
 function saveItem(args: Args): string {
   const items = visitItems()
@@ -323,12 +341,15 @@ function saveItem(args: Args): string {
     patch = { id: old.id }
   } else {
     const kind = args.kind as ItemKind
-    if (!ITEM_KINDS.includes(kind)) throw new ToolError('Give the kind to add: stay, album, link or note.')
+    if (!ITEM_KINDS.includes(kind)) throw new ToolError('Give the kind to add: stay, ticket, album, link or note.')
     const from = cityId(args.city)
     const at = args.journey_to ? `${from}>${cityId(args.journey_to)}` : from
-    if (at.includes('>') && kind !== 'note') throw new ToolError('A journey keeps only a note: put a stay, album or link on a city.')
-    // (A city or journey has one note: adding one changes it.)
-    const id = kind === 'note' ? noteId(at) : newItemId(kind)
+    if (at.includes('>') && kind !== 'note' && kind !== 'ticket') throw new ToolError('A journey keeps tickets and a note: put a stay, album or link on a city.')
+    if (kind === 'ticket' && !at.includes('>')) throw new ToolError('A ticket is for a journey: give the city it leaves from (city) and the one it goes to (journey_to).')
+    if (from === at.split('>')[1]) throw new ToolError('A journey goes from one city to another.')
+    // (A city or journey has one note: adding one changes it. A booking kept already, the same reference or name on
+    // the same day, is changed too: saved again from the same email, say.)
+    const id = kind === 'note' ? noteId(at) : (kind === 'stay' || kind === 'ticket') ? sameBooking(all, kind, at, args)?.id ?? newItemId(kind) : newItemId(kind)
     old = all[id]?.deleted ? undefined : all[id]
     patch = { id, kind, at }
   }
@@ -338,8 +359,22 @@ function saveItem(args: Args): string {
     patch[key] = key === 'text' ? v.trim() : v.trim().replace(/\s+/g, ' ')
   }
   if (args.append === true && old?.text && patch.text) patch.text = `${old.text.trimEnd()}\n\n${patch.text}`
-  for (const key of ['from', 'to'] as const) if (patch[key] && !isDate(patch[key])) throw new ToolError(`${key === 'from' ? 'check_in' : 'check_out'} must be a day, YYYY-MM-DD.`)
-  if (patch.from && patch.to && patch.to < patch.from) throw new ToolError('check_out must be after check_in.')
+  const ticket = (patch.kind ?? old?.kind) === 'ticket'
+  const [fromArg, toArg] = ticket ? ['departs', 'arrives'] : ['check_in', 'check_out']
+  // (A stay's days are check_in and check_out, a ticket's departs and arrives: the other pair isn't for it.)
+  for (const arg of ticket ? ['check_in', 'check_out', 'address'] : ['departs', 'arrives', 'mode', 'from_place', 'to_place']) {
+    if (typeof args[arg] === 'string' && args[arg]) throw new ToolError(`${arg} isn't for a ${ticket ? 'ticket' : ITEM_NAMES[(patch.kind ?? old?.kind)!]}.`)
+  }
+  for (const key of ['from', 'to'] as const) {
+    if (patch[key] && !(ticket ? isDayTime(patch[key]) : isDate(patch[key]))) throw new ToolError(`${key === 'from' ? fromArg : toArg} must be ${ticket ? 'a day and time, YYYY-MM-DDTHH:MM (or the day alone)' : 'a day, YYYY-MM-DD'}.`)
+  }
+  if (ticket && typeof args.mode === 'string') {
+    if (!TICKET_MODES.includes(args.mode as TicketMode)) throw new ToolError(`mode must be one of ${TICKET_MODES.join(', ')}.`)
+    patch.mode = args.mode as TicketMode
+  }
+  // (A ticket's times are each in their place's own time, so only the days can be compared.)
+  const [start, end] = [patch.from ?? old?.from, patch.to ?? old?.to].map((d) => (ticket ? d?.slice(0, 10) : d))
+  if (start && end && end < start) throw new ToolError(`${toArg} must be after ${fromArg}.`)
   if (patch.url) {
     patch.url = webUrl(patch.url)
     if (!patch.url) throw new ToolError('url must be a web address (http or https).')

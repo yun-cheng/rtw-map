@@ -11,6 +11,7 @@ import { useJournal } from '../store/journal'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
 import { JournalMark, JournalView } from './Journal'
 import { NoteMark } from './Notes'
+import { TicketMark } from './Tickets'
 import { VisitMarks } from './Visit'
 import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
@@ -123,6 +124,7 @@ export function Itinerary() {
                       {leg.hops.length > 1 && <span className="truncate">· via {leg.hops.slice(0, -1).map((h) => cityName(h.to)).join(', ')}</span>}
                       {leg.overnight && <Badge>night</Badge>}
                       {leg.estimated && <span title="Estimated from road distance">≈</span>}
+                      <TicketMark at={legKey(leg.from, leg.to)} />
                       <NoteMark at={legKey(leg.from, leg.to)} />
                     </>
                   ) : (

@@ -17,6 +17,7 @@ import { fetchForecast, savedNote, sky, type CityForecast } from './Forecast'
 import { JourneyLinks } from './JourneyLinks'
 import { TodayEntry } from './Journal'
 import { NoteBox } from './Notes'
+import { Tickets } from './Tickets'
 import { TonightStay } from './Visit'
 
 /** "today", "tomorrow" or "in 3 days". */
@@ -87,7 +88,8 @@ export function Today() {
 
       <Sections>
         {journey && <JourneyCard journey={journey} today={today} />}
-        {/* The journey's own note (the ticket, the bus time…), when written: from the journey panel. */}
+        {/* The journey's tickets and its own note (the bus time…), when there are: from the journey panel. */}
+        {journey && <Tickets key={`t${legKey(journey.leg.from, journey.leg.to)}`} at={legKey(journey.leg.from, journey.leg.to)} date={journey.date} hideEmpty />}
         {journey && <JourneyNote key={legKey(journey.leg.from, journey.leg.to)} at={legKey(journey.leg.from, journey.leg.to)} />}
         {stop && <TonightStay stop={stop} today={today} />}
         {stop && (

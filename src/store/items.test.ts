@@ -27,6 +27,13 @@ describe('items', () => {
     expect(ok).toEqual([{ id: 'stay:1', kind: 'stay', at: 'krakow', title: 't'.repeat(200), url: 'https://booking.com/x', from: '2027-05-01', updatedAt: 50 }])
     expect(parseItems({ entries: [{ id: 'link:1', kind: 'link', at: 'krakow', url: 'javascript:alert(1)', updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseItems({ entries: [{ id: 'x', kind: 'ticket', at: 'krakow', updatedAt: 1 }] })).toBeTypeOf('string')
+    // A ticket: a journey's, its times with the time of day; only a ticket's.
+    const ticket = { id: 'ticket:1', kind: 'ticket', at: 'krakow>tirana', title: 'LO 335', mode: 'flight', from: '2027-05-04T07:35', to: '2027-05-04', fromPlace: 'KRK', updatedAt: 1 }
+    expect(parseItems({ entries: [ticket] })).toEqual([ticket])
+    expect(parseItems({ entries: [{ ...ticket, mode: 'rocket' }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...ticket, from: '2027-05-04T25:00' }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...ticket, kind: 'stay', at: 'krakow' }] })).toBeTypeOf('string')
+    expect(isEmptyItem({ id: 'x', kind: 'ticket', at: 'a>b', fromPlace: 'KRK', updatedAt: 1 })).toBe(false)
     expect(parseItems({ entries: [{ id: 'x', kind: 'note', at: 'a>b>c', updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseItems({ entries: [{ id: 'x', kind: 'stay', at: 'krakow', from: 'May 1', updatedAt: 1 }] })).toBeTypeOf('string')
     // A removal keeps nothing but where it was.

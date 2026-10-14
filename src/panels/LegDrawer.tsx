@@ -6,6 +6,7 @@ import { useMoney } from '../ui/useMoney'
 import { AskButton } from './AskButton'
 import { JourneyLinks } from './JourneyLinks'
 import { NoteBox } from './Notes'
+import { Tickets } from './Tickets'
 
 export function LegDrawer({ index }: { index: number }) {
   const { plan, select } = useTrip()
@@ -67,6 +68,7 @@ export function LegDrawer({ index }: { index: number }) {
           </ol>
         </Section>
       )}
+      <Tickets key={`t${legKey(leg.from, leg.to)}`} at={legKey(leg.from, leg.to)} date={date} />
       <NoteBox key={legKey(leg.from, leg.to)} at={legKey(leg.from, leg.to)} placeholder="Anything to remember about this journey: your ticket, the bus time, where it leaves from…" />
       </Sections>
     </div>

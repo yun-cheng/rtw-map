@@ -2,7 +2,7 @@
 // their notes, in the city panel's "My visit" tab; tonight's stay on Today; a stop's stay and album by it in the
 // itinerary, and its album in the journal. Kept per city for the trip (whichever plan), also on a read-only trip, and
 // private (never in a shared trip). A stay carries its dates, so two visits to a city each show theirs. A link to a
-// social post can show the post (PostPreview.tsx).
+// social post can show the post (PostPreview.tsx). A journey's tickets are in Tickets.tsx.
 import { BedDouble, Camera, Check, ExternalLink, Link2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { localToday, type ScheduledStop } from '../planner'
@@ -12,6 +12,7 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate } from '../ui/format'
 import { Section } from '../ui/kit'
+import { external, host } from '../ui/links'
 import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
 import { PostPreview } from './PostPreview'
@@ -24,13 +25,6 @@ const stayCovers = (stay: TripItem, stop: Pick<ScheduledStop, 'arrive' | 'depart
 const stayOn = (stay: TripItem, date: string) => (!stay.from || stay.from <= date) && (!stay.to || date < stay.to)
 
 const byDate = (a: TripItem, b: TripItem) => (a.from ?? '').localeCompare(b.from ?? '')
-const host = (url: string) => {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '')
-  } catch {
-    return url
-  }
-}
 /** A link's name when it has no title: the post's network ("Instagram post"), or the site. */
 const linkName = (url: string) => {
   const post = socialPost(url)
@@ -39,9 +33,8 @@ const linkName = (url: string) => {
 const mapUrl = (stay: TripItem) =>
   `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([stay.title, stay.address, cityName(stay.at)].filter(Boolean).join(', '))}`
 
-const field = 'w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]'
-const small = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
-const external = { target: '_blank', rel: 'noopener noreferrer' } as const
+export const field = 'w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]'
+export const small = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
 
 /** The city panel's "My visit" tab: stays, photo albums, links and notes. */
 export function VisitTab({ cityId }: { cityId: string }) {
@@ -169,7 +162,7 @@ function StayEditor({ id, cityId, dates, onDone, autoFocus }: { id: string; city
 }
 
 /** A link field: kept as typed while typing, saved once it's a web address (https:// added when missing). */
-function UrlInput({ value, onChange, label, autoFocus }: { value: string; onChange: (url: string) => void; label: string; autoFocus?: boolean }) {
+export function UrlInput({ value, onChange, label, autoFocus }: { value: string; onChange: (url: string) => void; label: string; autoFocus?: boolean }) {
   const [typed, setTyped] = useState(value)
   const bad = typed.trim() !== '' && !webUrl(typed)
   return (
@@ -188,7 +181,7 @@ function UrlInput({ value, onChange, label, autoFocus }: { value: string; onChan
   )
 }
 
-function EditorButtons({ onDone, onRemove, what }: { onDone: () => void; onRemove?: () => void; what: string }) {
+export function EditorButtons({ onDone, onRemove, what }: { onDone: () => void; onRemove?: () => void; what: string }) {
   return (
     <div className="flex items-center justify-between">
       {onRemove ? <button onClick={onRemove} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-danger hover:bg-danger/10"><Trash2 size={12} /> Remove this {what}</button> : <span />}
