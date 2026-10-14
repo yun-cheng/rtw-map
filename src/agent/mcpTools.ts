@@ -1,8 +1,9 @@
 // The trip's tools for other apps' AI assistants (the MCP server, worker/mcp.ts): the trip assistant's tools
-// (schema.ts), each told which trip to use, and what only they have: the list of trips, My visit, the journal, and
-// their own changes, to undo. They run on the runner (runner/tool.ts), which has the app's city data; list_trips,
-// get_changes and undo in the Worker. The tools that change a trip need the user's leave (the scope trips:write).
-import { TOOLS, WRITE_TOOLS, type FunctionDeclaration } from './schema'
+// (schema.ts), each told which trip to use, and what only they have: the list of trips, the journal, and their own
+// changes, to undo. They run on the runner (runner/tool.ts), which has the app's city data; list_trips, get_changes
+// and undo in the Worker. The tools that change a trip or its My visit (bookings read from the user's email, say) need
+// the user's leave (the scope trips:write).
+import { ITEM_TOOLS, TOOLS, WRITE_TOOLS, type FunctionDeclaration } from './schema'
 
 type Schema = FunctionDeclaration['parametersJsonSchema']
 export type McpTool = { name: string; title: string; description: string; inputSchema: Schema; annotations: Record<string, boolean | string> }
@@ -13,6 +14,14 @@ app's data on cities: weather, costs, visas, safety, health, transport and the r
 to see the trips; the other tools use the trip opened last in the app unless given \`trip\`. The app only knows the
 cities that find_cities returns: don't add others. Prices are in EUR and temperatures in °C. Visa, entry and safety
 rules change: tell the user to confirm with official sources.
+
+My visit is the user's own, kept with the trip (get_visit): where they stay in each city, their tickets for the
+journeys between cities (flights, trains, buses, ferries), links, notes and prices they paid. To import bookings
+(from the user's email, say, with another tool of yours), save each with save_visit_item: a hotel or flat as a stay
+at its city, each flight or train as a ticket on the journey from city to journey_to (the nearest cities in the app
+to the airports or stations; one ticket per flight, so a connection is two). Check get_visit first and change a
+booking already there (by its id) instead of adding it again. Keep times as the booking gives them, in each place's
+local time. Leave out card numbers, passport numbers and the like. My visit can change on a read-only trip too.
 
 Changing a trip (if the user allowed this app to): each change is saved at once in the user's account and shows in
 the app, where the user can undo it; undo takes back this app's latest change. Changes apply to the trip's active
@@ -34,6 +43,7 @@ export const RUNNER_TOOLS: Record<string, { trip: boolean; extra?: 'items' | 'jo
   get_trip: { trip: true }, find_cities: { trip: false }, get_city_info: { trip: false }, compare_cities: { trip: false },
   get_route: { trip: false }, get_options: { trip: false }, get_visit: { trip: true, extra: 'items' }, get_journal: { trip: true, extra: 'journal' },
   ...Object.fromEntries([...WRITE_TOOLS].map((name) => [name, { trip: true, write: true }])),
+  ...Object.fromEntries([...ITEM_TOOLS].map((name) => [name, { trip: true, extra: 'items', write: true }])),
 }
 
 const TITLES: Record<string, string> = {
@@ -44,16 +54,17 @@ const TITLES: Record<string, string> = {
   set_country_mode: 'Set a country\'s mode', set_itinerary: 'Set the whole itinerary', add_stop: 'Add a stop', remove_stop: 'Remove a stop',
   set_nights: 'Set nights', set_locked: 'Lock or unlock a stop', move_stop: 'Move a stop', reorder_stops: 'Reorder stops',
   new_plan: 'New plan', switch_plan: 'Switch plan', rename_plan: 'Rename plan', delete_plan: 'Delete plan',
+  save_visit_item: 'Save to My visit', remove_visit_item: 'Remove from My visit', set_prices_seen: 'Set prices seen', save_phrases: 'Save phrases',
 }
 const DESCRIPTIONS: Record<string, string> = {
   get_trip: 'A trip in full: its description (dates, preferences, wishes, plans, where it is today if under way), settings, regions, every stop with dates and nights, legs between stops, cost and all warnings.',
 }
 /** Changes that take something away (each can still be undone). */
-const DESTRUCTIVE = new Set(['remove_stop', 'delete_plan', 'set_itinerary', 'update_region'])
+const DESTRUCTIVE = new Set(['remove_stop', 'delete_plan', 'set_itinerary', 'update_region', 'remove_visit_item'])
 
 const tool = (name: string, description: string, inputSchema: Schema): McpTool => ({
   name, title: TITLES[name], description, inputSchema,
-  annotations: WRITE_TOOLS.has(name) || name === 'undo'
+  annotations: WRITE_TOOLS.has(name) || ITEM_TOOLS.has(name) || name === 'undo'
     ? { readOnlyHint: false, destructiveHint: DESTRUCTIVE.has(name), idempotentHint: false, openWorldHint: false }
     : { readOnlyHint: true, destructiveHint: false, openWorldHint: false },
 })
@@ -69,7 +80,7 @@ export const MCP_TOOLS: McpTool[] = [
   tool('get_changes', 'The changes AI apps made to a trip with these tools (the latest few of the last two weeks), newest first: id, which app, what changed, when, and whether it was undone.', {
     type: 'object', properties: { trip: TRIP }, required: [],
   }),
-  tool('undo', 'Undo a change made with these tools, putting back the trip as it was before it: by default this app\'s latest change to the trip; with `change`, that change and every later one still on. Refused if the trip was changed in other ways since (in the app): then change it back with the other tools.', {
+  tool('undo', 'Undo a change made with these tools, putting back the trip (or its My visit) as it was before it: by default this app\'s latest change to the trip; with `change`, that change and every later one still on. Refused if the trip was changed in other ways since (in the app): then change it back with the other tools.', {
     type: 'object', properties: { trip: TRIP, change: { type: 'string', description: 'The id of the change to undo (from a change\'s result or get_changes)' } }, required: [],
   }),
 ]

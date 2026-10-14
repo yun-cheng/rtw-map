@@ -212,6 +212,7 @@ describe('the MCP server', () => {
   function server(scope = 'trips:read') {
     const sent: string[] = []
     const saves: unknown[][] = []
+    const itemSaves: unknown[][] = []
     const undos: unknown[][] = []
     let refuse: string | null = null
     const ctx: McpContext = {
@@ -222,11 +223,16 @@ describe('the MCP server', () => {
         sent.push(body)
         const { name } = JSON.parse(body) as { name: string }
         if (name === 'add_stop') return { ok: true, result: { trip: 'Balkans', done: 'Added Kotor (3 nights)', description: 'Dates: …' }, data: { input: {}, stops: [] }, changes: ['Added Kotor (3 nights)'] }
+        if (name === 'save_visit_item') return { ok: true, result: { trip: 'Balkans', done: 'Added ticket LOT LO 335 (Kraków → Tirana)' }, items: [{ id: 'ticket:1', kind: 'ticket', at: 'krakow>tirana', updatedAt: 1 }], changes: ['Added ticket LOT LO 335 (Kraków → Tirana)'] }
         return { ok: true, result: { done: true } }
       },
       saveChange: async (...args) => {
         saves.push(args)
         return refuse ?? { change: change('c1', args[3].summary) }
+      },
+      saveItemChange: async (...args) => {
+        itemSaves.push(args)
+        return refuse ?? { change: change('c2', args[2].summary) }
       },
       changes: async () => [change('c1', ['Added Kotor (3 nights)'])],
       undo: async (...args) => {
@@ -240,7 +246,7 @@ describe('the MCP server', () => {
       const res = await handleMcp(new Request(`${ORIGIN}/mcp`, { method: 'POST', body }), ctx)
       return { status: res.status, body: res.status === 202 ? null : await res.json() as { result?: Record<string, unknown>; error?: { code: number } } }
     }
-    return { rpc, sent, saves, undos, refuse: (why: string) => void (refuse = why) }
+    return { rpc, sent, saves, itemSaves, undos, refuse: (why: string) => void (refuse = why) }
   }
   const textOf = (r: { result?: Record<string, unknown> }) => JSON.parse((r.result!.content as { text: string }[])[0].text)
 
@@ -274,6 +280,7 @@ describe('the MCP server', () => {
     const { rpc, sent } = server()
     const names = ((await rpc('tools/list')).body!.result!.tools as { name: string }[]).map((t) => t.name)
     expect(names).not.toContain('add_stop')
+    expect(names).not.toContain('save_visit_item')
     expect(names).not.toContain('undo')
     const refused = (await rpc('tools/call', { name: 'add_stop', arguments: { city: 'Kotor' } })).body!
     expect(refused.result).toMatchObject({ isError: true })
@@ -307,5 +314,18 @@ describe('the MCP server', () => {
     expect(undos[1]).toEqual(['a1', 'c9'])
     const list = textOf((await rpc('tools/call', { name: 'get_changes', arguments: {} })).body!)
     expect(list.changes[0]).toMatchObject({ id: 'c1', app: 'Claude', changes: ['Added Kotor (3 nights)'], when: '2026-10-12 10:00 UTC' })
+  })
+
+  it('saves a change to My visit (a booking from the user\'s email, say) as the items it changed', async () => {
+    const { rpc, saves, itemSaves, refuse } = server('trips:read trips:write')
+    const tools = (await rpc('tools/list')).body?.result?.tools as { name: string; annotations: Record<string, boolean>; inputSchema: { properties: Record<string, unknown> } }[]
+    expect(tools.find((t) => t.name === 'save_visit_item')?.inputSchema.properties).toHaveProperty('departs')
+    expect(tools.find((t) => t.name === 'remove_visit_item')?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true })
+    const done = textOf((await rpc('tools/call', { name: 'save_visit_item', arguments: { trip: 'Balkans', kind: 'ticket', city: 'Kraków', journey_to: 'Tirana' } })).body!)
+    expect(itemSaves[0]).toEqual(['a1', [{ id: 'ticket:1', kind: 'ticket', at: 'krakow>tirana', updatedAt: 1 }], { tool: 'save_visit_item', summary: ['Added ticket LOT LO 335 (Kraków → Tirana)'] }])
+    expect(saves).toHaveLength(0)
+    expect(done).toMatchObject({ trip: 'Balkans', changes: ['Added ticket LOT LO 335 (Kraków → Tirana)'], change_id: 'c2' })
+    refuse('The app\'s own assistant is working on this trip right now: try again when it has finished.')
+    expect(textOf((await rpc('tools/call', { name: 'save_visit_item', arguments: { kind: 'ticket' } })).body!).error).toMatch(/^Not changed: /)
   })
 })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MCP_TOOLS, RUNNER_TOOLS } from '../src/agent/mcpTools'
-import { WRITE_TOOLS } from '../src/agent/schema'
+import { ITEM_TOOLS, WRITE_TOOLS } from '../src/agent/schema'
 import { dataset as ds } from '../src/data/dataset'
 import { draftStops, testCaseInput } from '../src/data/testCase'
 import type { Items } from '../src/store/itemsCore'
@@ -26,12 +26,13 @@ const call = (name: string, args: Record<string, unknown> = {}, extra: unknown =
 describe('tools for other apps (MCP)', () => {
   it('offers the assistant\'s tools, each marked whether it changes the trip', () => {
     for (const t of MCP_TOOLS) {
-      expect(t.annotations.readOnlyHint).toBe(!WRITE_TOOLS.has(t.name) && t.name !== 'undo')
+      expect(t.annotations.readOnlyHint).toBe(!WRITE_TOOLS.has(t.name) && !ITEM_TOOLS.has(t.name) && t.name !== 'undo')
       expect(t.inputSchema.type).toBe('object')
       expect(t.title).toBeTruthy()
     }
     expect(MCP_TOOLS.map((t) => t.name).sort()).toEqual(['list_trips', 'get_changes', 'undo', ...Object.keys(RUNNER_TOOLS)].sort())
     for (const name of WRITE_TOOLS) expect(RUNNER_TOOLS[name]).toEqual({ trip: true, write: true })
+    for (const name of ITEM_TOOLS) expect(RUNNER_TOOLS[name]).toEqual({ trip: true, extra: 'items', write: true })
     expect(parseToolCall({ name: 'undo', args: {} })).toBeNull()
     expect(parseToolCall({ name: 'get_trip', args: [] })).toBeNull()
   })
@@ -79,6 +80,32 @@ describe('tools for other apps (MCP)', () => {
     const one = call('get_visit', { city: ds.cities[second].name }, items).result.items as unknown[]
     expect(one).toHaveLength(2)
     expect(call('get_visit', {}, null).result).toMatchObject({ items: [], note: expect.stringMatching(/Nothing/) })
+  })
+
+  it('saves a booking to My visit: the items changed, not the trip', () => {
+    const [first, second] = createTripStore(savedTrip()).getState().stops.map((s) => s.cityId)
+    const [from, to] = [ds.cities[first].name, ds.cities[second].name]
+    const ticket = { kind: 'ticket', city: from, journey_to: to, title: 'LOT LO 335', mode: 'flight', departs: '2027-05-04T07:35', arrives: '2027-05-04T09:10', from_place: 'KRK T1', reference: 'X7Y8Z9' }
+    const out = call('save_visit_item', ticket, {})
+    expect(out).toMatchObject({ ok: true, changes: [`Added ticket LOT LO 335 (${from} → ${to})`] })
+    expect(out.data).toBeUndefined()
+    expect(out.items).toEqual([expect.objectContaining({ kind: 'ticket', at: `${first}>${second}`, title: 'LOT LO 335', mode: 'flight', from: '2027-05-04T07:35', to: '2027-05-04T09:10', fromPlace: 'KRK T1', ref: 'X7Y8Z9' })])
+    // Listed with its times; saved again as it is, no change.
+    const items = { [out.items![0].id]: out.items![0] }
+    expect(call('get_visit', {}, items).result.items).toEqual([expect.objectContaining({ kind: 'ticket', departs: '2027-05-04T07:35', arrives: '2027-05-04T09:10', from_place: 'KRK T1' })])
+    const again = call('save_visit_item', { id: out.items![0].id, title: 'LOT LO 335', reference: 'X7Y8Z9' }, items)
+    expect(again).toMatchObject({ ok: true, result: { done: expect.stringMatching(/no change/) } })
+    expect(again.items).toBeUndefined()
+    // Added again (the same reference, the same day): that one, changed.
+    expect(call('save_visit_item', ticket, items).result.done).toMatch(/no change/)
+    expect(call('save_visit_item', { ...ticket, text: 'Seat 12A' }, items).items).toEqual([expect.objectContaining({ id: out.items![0].id, text: 'Seat 12A' })])
+    expect(call('save_visit_item', { ...ticket, reference: 'OTHER1' }, items).items![0].id).not.toBe(out.items![0].id)
+    // A ticket is a journey's, with times; a stay a city's, with days.
+    expect(call('save_visit_item', { ...ticket, journey_to: undefined }, {}).result.error).toMatch(/for a journey/)
+    expect(call('save_visit_item', { ...ticket, departs: '4 May 07:35' }, {}).result.error).toMatch(/departs must be/)
+    expect(call('save_visit_item', { ...ticket, arrives: '2027-05-03T23:00' }, {}).result.error).toMatch(/arrives must be after departs/)
+    expect(call('save_visit_item', { ...ticket, mode: 'rocket' }, {}).result.error).toMatch(/mode must be/)
+    expect(call('save_visit_item', { kind: 'stay', city: from, title: 'Hostel', departs: '2027-05-04' }, {}).result.error).toMatch(/departs isn't for a stay/)
   })
 
   it('reads the journal: the latest days, or those asked for', () => {

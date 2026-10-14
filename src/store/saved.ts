@@ -7,8 +7,9 @@
 // reload keeps the mark) and sent when the server can be reached again, before the trip is reloaded from it.
 // The trip's journal and the cities' items (stays, albums, links, notes) are sent on their own (store/journal.ts,
 // items.ts): merged entry by entry on the server, also while the assistant works on the trip.
-// Other apps' AI assistants (worker/mcp.ts) change trips on the server: the page checks for that when it comes back
-// into view and every little while, puts their changes on screen and lists them with Undo (useOutside). Each save
+// Other apps' AI assistants (worker/mcp.ts) change trips and their My visit on the server: the page checks for that
+// when it comes back into view and every little while, puts their changes on screen and lists them with Undo
+// (useOutside). Each save
 // says which version of the trip (`rev`) it's from, so a save from before such a change is refused, not overwriting it.
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useAccount } from '../agent/account'
@@ -654,11 +655,13 @@ async function checkOutside(force = false) {
       checking = false
       return void (await flush())
     }
-    const trip = (await call('GET', `/api/trips/${id}`)) as { data: TripData | null; rev: number }
+    const trip = (await call('GET', `/api/trips/${id}`)) as { data: TripData | null; rev: number; items?: Items | null }
     if (useSaved.getState().activeId !== id || dirty || useChat.getState().busy) return
     applying = true
     useTrip.getState().openTrip(trip.data, true)
     applying = false
+    // (My visit too: an app's change may be to that. Those changed here and not sent yet stay.)
+    useItems.getState().open(id, trip.items)
     const from = useOutside.getState().from ?? at ?? null
     if (from !== null) useOutside.setState({ from })
     seen(id, trip.rev)

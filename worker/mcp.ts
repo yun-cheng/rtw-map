@@ -2,8 +2,9 @@
 // Gemini CLI), connected with oauth.ts, read and change the user's trips with the trip assistant's own tools
 // (src/agent/mcpTools.ts). Streamable HTTP without sessions or streams: each POST is one JSON-RPC message, answered
 // with JSON. The tools that need the app's city data run on the runner (runner/tool.ts: the Worker has too little CPU
-// for them); list_trips, get_changes and undo are answered here. A change is saved with the trip from before it, so
-// it can be undone (changes.ts), by the app or by the user in the app.
+// for them); list_trips, get_changes and undo are answered here. A change is saved with the trip from before it (or,
+// to My visit, the items it changed as they were), so it can be undone (changes.ts), by the app or by the user in the
+// app.
 import { MCP_INSTRUCTIONS, MCP_TOOLS, RUNNER_TOOLS } from '../src/agent/mcpTools'
 import type { ChangeView } from './changes'
 import { canWrite, CORS } from './oauth'
@@ -19,10 +20,13 @@ export type McpContext = {
   listTrips: () => Promise<{ trips: TripSummary[]; lastId: string | null }>
   /** A trip as stored (JSON text) and its rev, with its items or journal if asked. */
   tripTexts: (id: string, extra: 'items' | 'journal' | null) => Promise<{ data: string | null; extra: string | null; rev: number } | null>
-  /** Runs a tool call (JSON text) on the runner: a change also answers with the trip after it and what changed. */
-  runTool: (body: string) => Promise<{ ok: boolean; result: unknown; data?: unknown; changes?: string[] }>
+  /** Runs a tool call (JSON text) on the runner: a change also answers with the trip after it (or the My visit items
+   *  it changed) and what changed. */
+  runTool: (body: string) => Promise<{ ok: boolean; result: unknown; data?: unknown; items?: unknown; changes?: string[] }>
   /** Saves a change made on the trip at rev `base` (or why it can't be). */
   saveChange: (tripId: string, base: number, data: unknown, change: { tool: string; summary: string[] }) => Promise<{ change: ChangeView } | string>
+  /** Saves a change to the trip's My visit: the items changed (or why it can't be). */
+  saveItemChange: (tripId: string, items: unknown, change: { tool: string; summary: string[] }) => Promise<{ change: ChangeView } | string>
   /** The changes made to a trip by apps, newest first. */
   changes: (tripId: string) => Promise<ChangeView[]>
   /** Undoes a change (by id), or this app's latest. */
@@ -65,7 +69,7 @@ async function answer(method: string, params: Record<string, unknown>, ctx: McpC
         result: {
           protocolVersion: VERSIONS.includes(asked) ? asked : VERSIONS[0],
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: 'rtw-map', title: 'rtw-map trips', version: '1.1.0' },
+          serverInfo: { name: 'rtw-map', title: 'rtw-map trips', version: '1.2.0' },
           instructions: MCP_INSTRUCTIONS,
         },
       }
@@ -125,6 +129,11 @@ async function callTool(params: Record<string, unknown>, ctx: McpContext): Promi
   const body = `{"name":${JSON.stringify(name)},"args":${JSON.stringify(args)},"trip":${trip ? JSON.stringify({ id: trip.id, name: trip.name }) : 'null'},` +
     `"data":${texts?.data ?? 'null'},"extra":${texts?.extra ?? 'null'}}`
   const out = await ctx.runTool(body)
+  if (out.ok && out.items && trip) {
+    const saved = await ctx.saveItemChange(trip.id, out.items, { tool: name, summary: out.changes ?? [] })
+    if (typeof saved === 'string') return failed(`Not changed: ${saved}`)
+    return text({ ...(out.result as object), changes: saved.change.summary, change_id: saved.change.id, undo: 'The user sees this change in the app and can undo it there; or call undo.' })
+  }
   if (!out.ok || !out.data || !trip || !texts) return text(out.result, !out.ok)
   // A change: saved (refused if the trip changed meanwhile, or the app's own assistant is working on it).
   const saved = await ctx.saveChange(trip.id, texts.rev, out.data, { tool: name, summary: out.changes ?? [] })

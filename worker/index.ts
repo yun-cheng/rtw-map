@@ -597,6 +597,12 @@ async function outside(request: Request, env: Env, pathname: string): Promise<Re
       if (typeof patch === 'string') return patch
       return (await store.saveChange(tripId, base, patch.data!, { grant: who.grant, app: who.app, ...change })) ?? 'Trip not found'
     },
+    saveItemChange: async (tripId, items, change) => {
+      // The runner's items, checked as ones from the browser.
+      const entries = parseItems({ entries: items })
+      if (typeof entries === 'string') return entries
+      return (await store.saveItemChange(tripId, entries, { grant: who.grant, app: who.app, ...change })) ?? 'Trip not found'
+    },
     changes: async (tripId) => (await store.listChanges(tripId))?.changes ?? [],
     undo: async (tripId, change) => (await store.undoChange(tripId, change ? { id: change } : { grant: who.grant }, { who: 'app', app: who.app })) ?? 'Trip not found',
   })

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
-import { joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord } from './changes'
+import { itemsUndo, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ItemsChange } from './changes'
 import { isNewMessage } from './chat'
 import { CHAT_LIMITS, chatSummary, hasMessages } from './chats'
 import { mediaAllowed, mediaToken, uploadFile } from './media'
@@ -273,6 +273,24 @@ describe('other apps\' changes and undo', () => {
     const after = [{ ...changes[0], revAfter: 5 }, { ...changes[1], undone: true }]
     expect(latestOf(after, 'claude')?.id).toBe('a')
     expect((undoSet(after, after[0], 5) as ChangeRecord[]).map((x) => x.id)).toEqual(['a'])
+  })
+
+  it('undoes changes to My visit: each item as before the first of them, while none was changed since', () => {
+    const ticket = { id: 't', kind: 'ticket' as const, at: 'krakow>tirana', title: 'LO 335', updatedAt: 10 }
+    const changes: ItemsChange[] = [
+      // Added the ticket, then changed it; changed a stay that was there.
+      { before: { t: null }, after: { t: 10 } },
+      { before: { t: ticket, s: { id: 's', kind: 'stay' as const, at: 'krakow', title: 'Hostel', updatedAt: 5 } }, after: { t: 20, s: 20 } },
+    ]
+    const now = { t: { ...ticket, title: 'LO 336', updatedAt: 20 }, s: { id: 's', kind: 'stay' as const, at: 'krakow', title: 'Hotel', updatedAt: 20 } }
+    expect(itemsUndo(changes, now, 30)).toEqual([
+      { id: 't', kind: 'ticket', at: 'krakow>tirana', updatedAt: 30, deleted: true },
+      { id: 's', kind: 'stay', at: 'krakow', title: 'Hostel', updatedAt: 30 },
+    ])
+    // Only the later one: the ticket as the first left it.
+    expect(itemsUndo(changes.slice(1), now, 30)).toContainEqual({ ...ticket, updatedAt: 30 })
+    // The stay changed in the app since.
+    expect(itemsUndo(changes, { ...now, s: { ...now.s, updatedAt: 25 } }, 30)).toMatch(/changed after that/)
   })
 
   it('refuses a save from the page made before another app\'s change', () => {
