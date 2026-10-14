@@ -1,11 +1,13 @@
-import { Redo2, Undo2 } from 'lucide-react'
+import { History, Redo2, Undo2 } from 'lucide-react'
 import { useState } from 'react'
 import { useChat } from '../agent/chat'
 import { dataset as ds } from '../data/dataset'
 import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planner'
 import { REDO_KEYS, UNDO_KEYS, useHistory } from '../store/history'
+import { useSaved } from '../store/saved'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
+import { useVersionHistory } from '../store/versions'
 import { confirm } from '../ui/dialog'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named, Segmented } from '../ui/kit'
@@ -145,9 +147,11 @@ export function Itinerary() {
 export const confirmRemove = (name: string, nights: number) =>
   confirm(`Remove ${name} (${nights} night${nights > 1 ? 's' : ''}) from the trip?`, { ok: 'Remove' })
 
-/** Undo and redo of the trip's edits (store/history.ts); not while the assistant is changing it. */
+/** Undo and redo of the trip's edits (store/history.ts), not while the assistant is changing it; and the saved trip's
+ *  version history (VersionHistory.tsx), signed in. */
 function UndoRedo() {
   const { past, future, undo, redo } = useHistory()
+  const saved = useSaved((s) => !!s.activeId)
   // A read-only trip doesn't change (store/tripCore.ts), not even back.
   const working = useChat((s) => s.busy)
   const readOnly = useTrip((s) => s.readOnly)
@@ -157,6 +161,9 @@ function UndoRedo() {
     <>
       <button className={btn} onClick={undo} disabled={busy || !past.length} title={`Undo (${UNDO_KEYS})`} aria-label="Undo"><Undo2 size={16} /></button>
       <button className={btn} onClick={redo} disabled={busy || !future.length} title={`Redo (${REDO_KEYS})`} aria-label="Redo"><Redo2 size={16} /></button>
+      {saved && !SHARED_TOKEN && (
+        <button className={btn} onClick={() => useVersionHistory.setState({ open: true })} title="Version history" aria-label="Version history"><History size={16} /></button>
+      )}
     </>
   )
 }

@@ -663,6 +663,26 @@ export async function undoOutside() {
   }
 }
 
+/** Puts the open trip back as it was after one of its versions (worker/versions.ts), as a new version: edits made here
+ *  are saved first, then the trip as restored is put on screen. Answers with what went wrong, if anything. */
+export async function restoreVersion(versionId: string): Promise<string | null> {
+  const id = useSaved.getState().activeId
+  if (!id) return 'No trip is open.'
+  await flush()
+  try {
+    await call('POST', `/api/trips/${id}/versions/${versionId}/restore`)
+    const trip = (await call('GET', `/api/trips/${id}`)) as { data: TripData | null; rev: number }
+    if (useSaved.getState().activeId !== id) return null
+    applying = true
+    useTrip.getState().openTrip(trip.data, true)
+    applying = false
+    seen(id, trip.rev)
+    return null
+  } catch (e) {
+    return (e as Error).message
+  }
+}
+
 if (typeof window !== 'undefined' && !SHARED_TOKEN) {
   const check = () => {
     if (document.visibilityState === 'visible') void checkOutside()

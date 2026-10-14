@@ -10,6 +10,7 @@ import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
 import { PlanBar } from './panels/PlanBar'
 import { SettingsPanel } from './panels/SettingsPanel'
+import { VersionHistory } from './panels/VersionHistory'
 import { SetupPanel } from './panels/SetupPanel'
 import { SharedGone } from './panels/SharedTrip'
 import { Timeline } from './panels/Timeline'
@@ -198,6 +199,7 @@ export default function App() {
       {!phone && <Header onSettings={() => setSettings(true)} />}
       {/* (From the gear over the map on a phone, in the top bar on a computer.) */}
       <SettingsPanel open={settings} onClose={() => setSettings(false)} />
+      <VersionHistory />
       <div className="flex min-h-0 flex-1">
         {!phone && sidebar.hidden && (
           // The folded panel: a strip to open it again, on any tab (the panel stays mounted, so nothing is lost).

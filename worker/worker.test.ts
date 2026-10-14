@@ -7,6 +7,7 @@ import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, 
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
 import { parseSpeechRequest, speech, type ClipStore } from './speech'
 import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TRIP_LIMITS } from './trips'
+import { joinsLatest, SESSION_MS, type VersionBy } from './versions'
 import { clipName, SPEECH_CHARS, spokenText, ssml } from '../src/data/speech'
 
 const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
@@ -279,6 +280,33 @@ describe('other apps\' changes and undo', () => {
     expect(overwrites(4, null)).toBe(false)
     // (A page from before revs saves as it did.)
     expect(overwrites(undefined, 5)).toBe(false)
+  })
+})
+
+describe('version history', () => {
+  const you: VersionBy = { who: 'you' }
+  const run = (id: string): VersionBy => ({ who: 'assistant', run: id, asked: 'Add Japan' })
+  const at = 1_000_000
+
+  it("keeps the user's edits close together as one version, and starts another after a pause", () => {
+    expect(joinsLatest({ by: you, updated: at }, you, at + SESSION_MS)).toBe(true)
+    expect(joinsLatest({ by: you, updated: at }, you, at + SESSION_MS + 1)).toBe(false)
+    expect(joinsLatest(null, you, at)).toBe(false)
+  })
+
+  it("makes each run of the assistant a version of its own, apart from the user's edits around it", () => {
+    expect(joinsLatest({ by: run('a'), updated: at }, run('a'), at + 60_000)).toBe(true)
+    expect(joinsLatest({ by: run('a'), updated: at }, run('b'), at + 60_000)).toBe(false)
+    expect(joinsLatest({ by: you, updated: at }, run('a'), at + 1)).toBe(false)
+    expect(joinsLatest({ by: run('a'), updated: at }, you, at + 1)).toBe(false)
+  })
+
+  it("keeps each app's changes apart, and a restore and the trip from before the history as versions of their own", () => {
+    expect(joinsLatest({ by: { who: 'app', app: 'Claude' }, updated: at }, { who: 'app', app: 'Claude' }, at + 1)).toBe(true)
+    expect(joinsLatest({ by: { who: 'app', app: 'Claude' }, updated: at }, { who: 'app', app: 'ChatGPT' }, at + 1)).toBe(false)
+    expect(joinsLatest({ by: { who: 'restore', from: at - 5 }, updated: at }, you, at + 1)).toBe(false)
+    expect(joinsLatest({ by: you, updated: at }, { who: 'restore', from: at - 5 }, at + 1)).toBe(false)
+    expect(joinsLatest({ by: { who: 'earlier' }, updated: at }, you, at + 1)).toBe(false)
   })
 })
 

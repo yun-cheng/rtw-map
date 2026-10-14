@@ -10,6 +10,8 @@
 //   PUT  /api/trips/:id/items      add the stays, albums, links and notes changed on a device (merged item by item)
 //   GET  /api/trips/:id/changes[?since=REV]  the trip's rev, and other apps' changes to it (changes.ts)
 //   POST /api/trips/:id/changes/:change/undo  undo one (and the later ones)
+//   GET  /api/trips/:id/versions[?before=T]  the trip's version history, newest first, a page at a time (versions.ts)
+//   POST /api/trips/:id/versions/:version/restore  put the trip back as it was after that version
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
@@ -314,8 +316,27 @@ async function tripChanges(request: Request, env: Env, id: string, change: strin
   }
   if (request.method !== 'POST' || !change) return json({ error: 'Not found' }, 404)
   if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
-  const out = await store.undoChange(id, { id: change })
+  const out = await store.undoChange(id, { id: change }, { who: 'you' })
   if (!out) return json({ error: 'Trip not found' }, 404)
+  return typeof out === 'string' ? json({ error: out }, 409) : json(out)
+}
+
+/** A trip's version history (versions.ts): a page of its versions, newest first, from before `before` (GET), or the
+ *  trip put back as it was after one of them (POST …/restore), answering with the trip's summary. */
+async function tripVersions(request: Request, env: Env, id: string, version: string | undefined): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  if (request.method === 'GET' && !version) {
+    const before = Number(new URL(request.url).searchParams.get('before') ?? NaN)
+    const list = await store.listVersions(id, Number.isInteger(before) ? before : undefined)
+    return list ? new Response(list, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) : json({ error: 'Trip not found' }, 404)
+  }
+  if (request.method !== 'POST' || !version) return json({ error: 'Not found' }, 404)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  const out = await store.restoreVersion(id, version)
+  if (!out) return json({ error: 'Trip not found' }, 404)
+  if (out === BUSY) return json({ error: out, busy: true }, 409)
   return typeof out === 'string' ? json({ error: out }, 409) : json(out)
 }
 
@@ -520,7 +541,7 @@ async function outside(request: Request, env: Env, pathname: string): Promise<Re
       return (await store.saveChange(tripId, base, patch.data!, { grant: who.grant, app: who.app, ...change })) ?? 'Trip not found'
     },
     changes: async (tripId) => (await store.listChanges(tripId))?.changes ?? [],
-    undo: async (tripId, change) => (await store.undoChange(tripId, change ? { id: change } : { grant: who.grant })) ?? 'Trip not found',
+    undo: async (tripId, change) => (await store.undoChange(tripId, change ? { id: change } : { grant: who.grant }, { who: 'app', app: who.app })) ?? 'Trip not found',
   })
 }
 
@@ -550,6 +571,11 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (changesPath) {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return tripChanges(request, env, changesPath[1], changesPath[2])
+  }
+  const versionsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/versions(?:\/([\w-]{1,64})\/restore)?$/)
+  if (versionsPath) {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return tripVersions(request, env, versionsPath[1], versionsPath[2])
   }
   const itemsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/items$/)
   if (itemsPath) {
