@@ -146,22 +146,27 @@ export default function App() {
   // (Half open on Today, the phone's first screen on a trip under way.)
   const [leftSnap, setLeftSnap] = useState<Snap>(plan && tab !== 'today' ? 'peek' : 'half')
   const [drawerSnap, setDrawerSnap] = useState<Snap>('half')
-  // "Ask AI" in a city or journey panel: on a phone the left panel's sheet comes up over it, on the Assistant (it goes
-  // back to where it was when closed, or when another city is picked); elsewhere the left panel opens beside it.
-  const askRequest = useTrip((s) => s.askRequest)
+  // "Ask AI" in a city or journey panel, and "Make changes" in a stop's: on a phone the left panel's sheet comes up
+  // over it, on the Assistant or the Itinerary (it goes back to where it was when closed, or when another city is
+  // picked); elsewhere the left panel opens beside it.
+  const besideRequest = useTrip((s) => s.besideRequest)
   const [asking, setAsking] = useState(false)
   const [snapBefore, setSnapBefore] = useState<Snap>('peek')
   useEffect(() => {
-    if (!askRequest) return
+    if (!besideRequest) return
+    const ask = useTrip.getState().panel === 'assistant'
     if (phone) {
       setAsking(true)
       setSnapBefore(leftSnap)
-      setLeftSnap('full')
+      setLeftSnap(ask ? 'full' : 'half')
     } else sidebar.showBeside()
-    // Ready to type once it has slid in.
-    const id = setTimeout(() => document.querySelector<HTMLElement>('[data-assistant-input]')?.focus(), 350)
+    // Once it has slid in: ready to type, or the stop in view (Itinerary marks the open city's).
+    const id = setTimeout(() => {
+      if (ask) document.querySelector<HTMLElement>('[data-assistant-input]')?.focus()
+      else document.querySelector('[data-selected-stop]')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+    }, 350)
     return () => clearTimeout(id)
-  }, [askRequest]) // (only on a new request)
+  }, [besideRequest]) // (only on a new request)
   const stopAsking = () => {
     setAsking(false)
     setLeftSnap(snapBefore)

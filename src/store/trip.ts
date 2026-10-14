@@ -47,8 +47,9 @@ type State = TripCore & {
    *  view: for a country in a region's card, the region. */
   hovered: { countries: string[]; focus: string[] }
   fitRequest: number
-  /** Counts "Ask AI" presses in a city or journey panel: the app shows the Assistant beside it (see App). */
-  askRequest: number
+  /** Counts "Ask AI" presses in a city or journey panel, and "Make changes" in a stop's: the app shows the left panel
+   *  beside it, on the tab they open (see App). */
+  besideRequest: number
   /** Base map labels also give a place's name in its own script where that isn't Latin ("Athens" over "Αθήνα"). */
   localNames: boolean
   /** Country to compare price levels with; null = guess from the display currency. */
@@ -81,6 +82,8 @@ type State = TripCore & {
   setHovered: (countries: string[], focus?: string[]) => void
   /** Opens the Assistant about the open city or journey panel ("Ask AI"). */
   askAssistant: () => void
+  /** Opens the Itinerary at the open city's stop, to change its nights, lock or remove it there ("Make changes"). */
+  editInItinerary: () => void
   setCurrency: (c: string) => void
   setTempUnit: (u: TempUnit) => void
   setTempFeels: (feels: boolean) => void
@@ -166,7 +169,7 @@ export const useTrip = create<State>()(
         addAs: 'must',
         hovered: { countries: [], focus: [] },
         fitRequest: 0,
-        askRequest: 0,
+        besideRequest: 0,
         currency: 'USD',
         tempUnit: 'C',
         tempFeels: true,
@@ -224,7 +227,8 @@ export const useTrip = create<State>()(
           const mode = group.countries.find((c) => c.iso2 === iso2)!.mode === 'excluded' ? addAs : 'excluded'
           setInput({ groups: input.groups.map((g) => (g === group ? { ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? { ...c, mode } : c)) } : g)) })
         },
-        askAssistant: () => set({ panel: 'assistant', askRequest: get().askRequest + 1 }),
+        askAssistant: () => set({ panel: 'assistant', besideRequest: get().besideRequest + 1 }),
+        editInItinerary: () => set({ panel: 'itinerary', besideRequest: get().besideRequest + 1 }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
         // The checks read temperatures as shown, so they follow the setting.

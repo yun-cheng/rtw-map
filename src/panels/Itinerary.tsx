@@ -69,9 +69,13 @@ export function Itinerary() {
           const isSel = selected?.type === 'city' && selected.id === s.cityId
           const day = tripDay(input.startDate, s.arrive)
           const time = travelling ? stopTime(s, today) : 'ahead'
+          // Lock and remove show on pointing at the stop, and always on the open city's (a phone can't point: Make changes
+          // in its panel opens it here).
+          const hidden = isSel ? '' : 'opacity-0 group-hover:opacity-100'
           return (
             <li key={s.cityId}>
               <div
+                data-selected-stop={isSel || undefined}
                 draggable={!readOnly}
                 onDragStart={() => setDrag(i)}
                 onDragOver={(e) => { e.preventDefault(); setOver(i) }}
@@ -99,10 +103,10 @@ export function Itinerary() {
                   <StepBtn onClick={() => setNights(i, s.nights - 1)} disabled={s.nights <= 1} label="One night less">−</StepBtn>
                   <span className="w-7 text-center text-[13px] font-semibold tabular-nums" title="Nights">{s.nights}</span>
                   <StepBtn onClick={() => setNights(i, s.nights + 1)} label="One night more">+</StepBtn>
-                  <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: these nights stay when the plan changes' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : 'text-muted opacity-0 group-hover:opacity-100'} hover:bg-panel`}>
+                  <button onClick={() => toggleLock(i)} title={s.locked ? 'Locked: these nights stay when the plan changes' : 'Lock nights'} className={`ml-0.5 h-6 w-6 rounded text-[12px] ${s.locked ? 'text-ink' : `text-muted ${hidden}`} hover:bg-panel`}>
                     {s.locked ? '🔒' : '🔓'}
                   </button>
-                  <button onClick={async () => { if (await confirmRemove(city.name, s.nights)) removeStop(i) }} title="Remove stop" className="h-6 w-6 rounded text-[12px] text-muted opacity-0 group-hover:opacity-100 hover:bg-panel hover:text-danger">✕</button>
+                  <button onClick={async () => { if (await confirmRemove(city.name, s.nights)) removeStop(i) }} title="Remove stop" className={`h-6 w-6 rounded text-[12px] text-muted ${hidden} hover:bg-panel hover:text-danger`}>✕</button>
                 </div>}
               </div>
               {leg && (

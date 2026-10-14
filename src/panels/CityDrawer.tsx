@@ -15,7 +15,6 @@ import { AskButton } from './AskButton'
 import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
 import { Forecast, SubHead } from './Forecast'
-import { confirmRemove } from './Itinerary'
 import { VisitTab } from './Visit'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { Holidays } from './Holidays'
@@ -57,7 +56,7 @@ const GROCERIES: [GroceryKey, string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, removeStop, cityTab, cityPart, setCityTab, layer, layerMonth, readOnly } = useTrip()
+  const { plan, input, select, addCity, editInItinerary, cityTab, cityPart, setCityTab, layer, layerMonth, readOnly } = useTrip()
   const { currency, fmt } = useMoney()
   const { range } = useTemp()
   // Temperatures as they feel or as measured: one setting for the whole app.
@@ -646,11 +645,21 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           <AskButton />
           <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
-        <div className="mt-2 flex items-center gap-2">
+        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
-              {!readOnly && <Button className="ml-auto" onClick={async () => { if (!(await confirmRemove(city.name, stop.nights))) return; removeStop(stopIndex); select(null) }}>Remove</Button>}
+              {/* (Its nights, lock and removal are the Itinerary's, opened beside this at the stop: next to them here.) */}
+              {!readOnly && (
+                // (Styled as Ask AI, above.)
+                <button
+                  onClick={editInItinerary}
+                  title="Change its nights, lock or remove it in the Itinerary"
+                  className="flex h-7 shrink-0 items-center rounded-full border border-accent/50 px-2.5 text-[12px] font-medium text-accent hover:bg-accent-soft"
+                >
+                  Make changes
+                </button>
+              )}
             </>
           ) : plan && !readOnly && !city.auto ? (
             <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
