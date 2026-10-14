@@ -101,6 +101,20 @@ function restoreItems(was: Record<string, TripItem | null>) {
   if (Object.keys(phrases).length) usePhrases.getState().restore(phrases)
 }
 
+/** A chat as set aside among the trip's past chats (worker/chats.ts): without its replies' trips from before (Undo, which
+ *  would put the trip back to how it was then, losing everything since), and without a note of an Undo for the model. */
+export function setAside(chat: SavedChat): SavedChat {
+  return {
+    ...chat,
+    note: null,
+    messages: chat.messages.map((m) => {
+      if (m.role !== 'assistant' || !(m.before || m.itemsBefore)) return m
+      const { before, itemsBefore: _, ...rest } = m
+      return before ? { ...rest, changedTrip: true } : rest
+    }),
+  }
+}
+
 /** Stops the reply under way (one at a time). */
 let controller: AbortController | null = null
 
@@ -133,7 +147,7 @@ export const useChat = create<ChatState>()(
         controller = new AbortController()
         const { contents: history, note } = get()
         const startedAt = Date.now()
-        const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
+        const asked: ChatMessage = { role: 'user', text: text.trim(), at: startedAt, ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
         set({ busy: true, note: null, spent: NO_SPENT, startedAt, messages: [...get().messages, asked] })
         const { reply, contents } = await runAssistant({
           trip: useTrip, items, view, history, note, text, media, think, plan: options.plan, callModel, signal: controller.signal, startedAt,
@@ -146,7 +160,7 @@ export const useChat = create<ChatState>()(
       preset: (ask, answer, choices) => {
         if (get().busy) return
         set({
-          messages: [...get().messages, { role: 'user', text: ask }, { role: 'assistant', text: answer, steps: [], changes: [], ...(choices?.length && { choices }) }],
+          messages: [...get().messages, { role: 'user', text: ask, at: Date.now() }, { role: 'assistant', text: answer, steps: [], changes: [], ...(choices?.length && { choices }) }],
           contents: [...get().contents, { role: 'user', parts: [{ text: ask }] }, { role: 'model', parts: [{ text: answer }] }],
         })
       },

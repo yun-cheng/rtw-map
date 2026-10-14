@@ -82,7 +82,7 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   const unsent = () => [...items.changed].map((id) => items.get()[id])
   const controller = new AbortController()
   const question: ChatMessage = {
-    role: 'user', text: request.text, ...(request.view.length && { view: request.view.map((v) => v.label) }), ...(request.media?.length && { media: request.media }),
+    role: 'user', text: request.text, at: input.created, ...(request.view.length && { view: request.view.map((v) => v.label) }), ...(request.media?.length && { media: request.media }),
   }
 
   /** Tells the Worker the run is still going (with the reply so far, and the trip when it changed); stops the run

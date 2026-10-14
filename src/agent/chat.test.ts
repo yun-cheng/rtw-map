@@ -4,7 +4,7 @@ import { draftStops, testCaseInput } from '../data/testCase'
 import { useItems } from '../store/items'
 import { useTrip } from '../store/trip'
 import { createTripStore } from '../store/tripCore'
-import { splitChoices, useChat } from './chat'
+import { setAside, splitChoices, useChat, type ChatMessage } from './chat'
 import { runAssistant, type Content } from './engine'
 import { planChanges } from './tools'
 
@@ -49,7 +49,7 @@ describe('assistant chat', () => {
   it("puts a card's question and the app's answer in the chat, which the model then sees", async () => {
     useChat.getState().preset('How do I update where I stay in Kraków with AI?', 'Send me your booking.')
     expect(useChat.getState().messages).toEqual([
-      { role: 'user', text: 'How do I update where I stay in Kraków with AI?' },
+      { role: 'user', text: 'How do I update where I stay in Kraków with AI?', at: expect.any(Number) },
       { role: 'assistant', text: 'Send me your booking.', steps: [], changes: [] },
     ])
     const fetch = serve(reply('Saved it.'))
@@ -365,4 +365,20 @@ describe('the assistant loop on a trip of its own (as on the server)', () => {
     expect(ordered.result.error).toMatch(/In this order/)
     expect(ordered.after.stops).toEqual(ordered.before.stops)
   }, 30_000)
+})
+
+describe('past chats', () => {
+  it('sets a chat aside without Undo, still saying what each reply changed', () => {
+    const before = createTripStore({ input: testCaseInput(ds, 'US'), stops: [] }).getState()
+    const messages: ChatMessage[] = [
+      { role: 'user', text: 'Add Kraków', at: 1 },
+      { role: 'assistant', text: 'Added', steps: [], changes: ['Added Kraków'], before: { input: before.input, stops: before.stops } as never },
+      { role: 'assistant', text: 'Saved the link', steps: [], changes: ['Added a link'], itemsBefore: { a: null } },
+    ]
+    const aside = setAside({ messages, contents: [], note: 'The user pressed Undo' })
+    expect(aside.note).toBeNull()
+    expect(aside.messages[0]).toBe(messages[0])
+    expect(aside.messages[1]).toEqual({ role: 'assistant', text: 'Added', steps: [], changes: ['Added Kraków'], changedTrip: true })
+    expect(aside.messages[2]).toEqual({ role: 'assistant', text: 'Saved the link', steps: [], changes: ['Added a link'] })
+  })
 })

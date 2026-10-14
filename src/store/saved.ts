@@ -12,7 +12,8 @@
 // says which version of the trip (`rev`) it's from, so a save from before such a change is refused, not overwriting it.
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { useAccount } from '../agent/account'
-import { NO_SPENT, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
+import { NO_SPENT, setAside, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
+import type { ChatSummary } from '../../worker/chats'
 import type { TripInput } from '../planner'
 import type { Book, BookState } from './book'
 import { setItemsSync, useItems, type Items } from './items'
@@ -396,6 +397,35 @@ if (typeof window !== 'undefined') {
   })
 }
 
+// ---------------------------------------------------------------- past chats (worker/chats.ts)
+
+/** The open trip's past chats, the latest first. */
+export async function listChats(): Promise<ChatSummary[]> {
+  const id = useSaved.getState().activeId
+  if (!id) return []
+  return ((await call('GET', `/api/trips/${id}/chats`)) as { chats: ChatSummary[] }).chats
+}
+
+/** Opens one of the open trip's past chats (`open`: its id), or a new chat (null), setting the chat on screen aside:
+ *  the past chats then, or what went wrong. */
+export async function switchChat(open: string | null): Promise<ChatSummary[] | string> {
+  const id = useSaved.getState().activeId
+  if (!id) return 'Sign in to keep your chats.'
+  if (useChat.getState().busy) return 'Wait for the assistant to finish, or stop it.'
+  // (The trip's edits first: the chat goes with them.)
+  await flush()
+  try {
+    const out = (await call('POST', `/api/trips/${id}/chats`, { chat: setAside(chatData()), open })) as { chat: SavedChat | null; chats: ChatSummary[] }
+    if (useSaved.getState().activeId !== id) return out.chats
+    applying = true
+    useChat.getState().load(out.chat)
+    applying = false
+    return out.chats
+  } catch (e) {
+    return e instanceof Offline ? 'You\'re offline: your chats are there when you\'re back.' : (e as Error).message
+  }
+}
+
 // ---------------------------------------------------------------- the assistant's runs on the server (worker/runs.ts)
 
 type Run = { id: string; text: string; created: number; status: 'running' | 'done' | 'stopped' | 'failed'; version: number; error: string | null; reply: { spent?: Spent } | null }
@@ -467,7 +497,7 @@ setServerRuns({
     timer = undefined
     dirty = false
     const chat = chatData()
-    const asked: ChatMessage = { role: 'user', text: text.trim(), ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
+    const asked: ChatMessage = { role: 'user', text: text.trim(), at: Date.now(), ...(view.length && { view: view.map((v) => v.label) }), ...(media.length && { media }) }
     useChat.setState({ busy: true, note: null, spent: NO_SPENT, startedAt: Date.now(), messages: [...chat.messages, asked] })
     const { currency, tempUnit, tempFeels, speaker } = useTrip.getState()
     const res = await fetch('/api/runs', {

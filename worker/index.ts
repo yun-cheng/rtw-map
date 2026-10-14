@@ -12,6 +12,7 @@
 //   POST /api/trips/:id/changes/:change/undo  undo one (and the later ones)
 //   GET  /api/trips/:id/versions[?before=T]  the trip's version history, newest first, a page at a time (versions.ts)
 //   POST /api/trips/:id/versions/:version/restore  put the trip back as it was after that version
+//   GET|POST /api/trips/:id/chats  the trip's past chats, or open one of them (or a new one), setting the open one aside
 //   GET  /api/shared/:token        a shared trip, read-only, for anyone with the link (no sign-in)
 //   POST /api/chat                 forward the assistant conversation to Gemini (at most $1 a day per account)
 //   POST /api/media                upload a file attached to a message (an image, a PDF) to Gemini (media.ts)
@@ -340,6 +341,30 @@ async function tripVersions(request: Request, env: Env, id: string, version: str
   return typeof out === 'string' ? json({ error: out }, 409) : json(out)
 }
 
+/** A trip's past chats (chats.ts): the list, latest first (GET), or another one opened (POST { chat, open }: the open
+ *  chat as on screen, set aside; `open` a past one's id, or null for a new chat), answering with the chat now open and
+ *  the list. */
+async function tripChats(request: Request, env: Env, id: string): Promise<Response> {
+  const user = await currentUser(request, env)
+  if (!user) return signInFirst()
+  const store = account(env, user)
+  if (request.method === 'GET') {
+    const list = await store.listChats(id)
+    return list ? json({ chats: list }) : json({ error: 'Trip not found' }, 404)
+  }
+  if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
+  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  const body = (await request.json().catch(() => null)) as { chat?: unknown; open?: unknown } | null
+  const open = body?.open ?? null
+  if (open !== null && (typeof open !== 'string' || !/^[\w-]{1,64}$/.test(open))) return json({ error: 'Invalid request' }, 400)
+  const patch = parseTripPatch({ chat: body?.chat ?? null })
+  if (typeof patch === 'string') return json({ error: patch }, 400)
+  const out = await store.switchChat(id, patch.chat!, open)
+  if (!out) return json({ error: 'Trip not found' }, 404)
+  if (out === BUSY) return json({ error: out, busy: true }, 409)
+  return typeof out === 'string' ? json({ error: out }, 404) : json(out)
+}
+
 // ---------------------------------------------------------------- the assistant's runs (runs.ts)
 
 /** Starts a run: saves the trip and chat as on screen, adds the run, and hands it to the runner. */
@@ -576,6 +601,11 @@ async function api(request: Request, env: Env, pathname: string): Promise<Respon
   if (versionsPath) {
     if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
     return tripVersions(request, env, versionsPath[1], versionsPath[2])
+  }
+  const chatsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/chats$/)
+  if (chatsPath) {
+    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+    return tripChats(request, env, chatsPath[1])
   }
   const itemsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/items$/)
   if (itemsPath) {

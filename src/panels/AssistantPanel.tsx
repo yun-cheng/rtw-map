@@ -1,14 +1,16 @@
-import { FileText, Paperclip, X } from 'lucide-react'
-import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { FileText, MessagesSquare, Paperclip, X } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { attach } from '../agent/attach'
 import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
 import { MEDIA_LIMITS, type Attachment } from '../agent/media'
 import { viewItems, type ViewItem } from '../agent/view'
+import { switchChat } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
 import { useOnline } from '../ui/useOnline'
 import { useTheme } from '../ui/theme'
+import { ChatList } from './ChatList'
 
 const EXAMPLES = [
   'Plan 3 weeks in the Balkans in May, I like food and hiking',
@@ -139,7 +141,7 @@ function AssistantMessage({ msg, index, canUndo, onChoose, onRetry }: {
       {msg.changes.length > 0 && (
         <div className={`mt-2 rounded-md border px-2.5 py-2 ${msg.undone ? 'border-line text-muted' : 'border-accent/40 bg-accent-soft'}`}>
           <div className="mb-1 flex items-center justify-between">
-            <span className="text-[11px] font-semibold tracking-wider uppercase">{msg.undone ? 'Undone' : msg.before ? 'Changed your trip' : 'Changed My visit'}</span>
+            <span className="text-[11px] font-semibold tracking-wider uppercase">{msg.undone ? 'Undone' : msg.before || msg.changedTrip ? 'Changed your trip' : 'Changed My visit'}</span>
             {canUndo && !msg.undone && <Button variant="ghost" className="!px-1.5 !py-0.5 text-[12px]" onClick={() => undo(index)}>↶ Undo</Button>}
           </div>
           <ul className={`list-disc pl-4 text-[12px] ${msg.undone ? 'line-through' : ''}`}>
@@ -230,7 +232,15 @@ function Chat() {
     }
   }, [sub, multiple, seen])
   const raised = !!sub && multiple > 1 && multiple > seen
-  const { messages, busy, think, spent, startedAt, send, stop, retry, setThink, clear } = useChat()
+  const { messages, busy, think, spent, startedAt, send, stop, retry, setThink } = useChat()
+  // The trip's other chats (ChatList), and New chat, which sets this one aside there.
+  const [chatsOpen, setChatsOpen] = useState(false)
+  const closeChats = useCallback(() => setChatsOpen(false), [])
+  const [newChatError, setNewChatError] = useState<string | null>(null)
+  const newChat = async () => {
+    const out = await switchChat(null)
+    setNewChatError(typeof out === 'string' ? out : null)
+  }
   const [draft, setDraft] = useState('')
   const list = useRef<HTMLDivElement>(null)
   const view = useViewItems()
@@ -238,11 +248,12 @@ function Chat() {
   const [hidden, setHidden] = useState<Set<string>>(() => new Set())
   const shared = view.filter((v) => !hidden.has(v.key))
   // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after);
-  // on a read-only trip, only for one that changed just My visit.
+  // on a read-only trip, only for one that changed just My visit; not in a chat set aside and opened again (its
+  // replies keep no trip from before, chat.ts setAside).
   const readOnly = useTrip((s) => s.readOnly)
   const lastIndex = messages.findLastIndex((m) => m.role === 'assistant' && m.changes.length > 0)
   const last = messages[lastIndex]
-  const lastChange = readOnly && last?.role === 'assistant' && last.before ? -1 : lastIndex
+  const lastChange = (readOnly && last?.role === 'assistant' && last.before) || (last?.role === 'assistant' && !last.before && !last.itemsBefore) ? -1 : lastIndex
   // What this chat has used, the reply under way included, and how long its replies took.
   const total = [...messages.map((m) => (m.role === 'assistant' && m.spent) || NO_SPENT), busy ? spent : NO_SPENT]
     .reduce((a, b) => ({ calls: a.calls + b.calls, input: a.input + b.input, cached: a.cached + b.cached, output: a.output + b.output, usd: a.usd + b.usd }), NO_SPENT)
@@ -285,12 +296,16 @@ function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      {(usage || total.calls > 0) && (
-        <div className="flex items-center gap-3 border-b border-line px-4 py-1.5 text-[12px]">
+      <div className="flex items-center gap-x-3 gap-y-0.5 border-b border-line py-1 pr-4 pl-2 text-[12px]">
+        <button onClick={() => setChatsOpen(true)} title="This trip's chats with the assistant" className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-medium text-muted hover:bg-canvas hover:text-ink">
+          <MessagesSquare size={15} /> Chats
+        </button>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-3">
           {total.calls > 0 && <SpentLine spent={total} ms={totalMs} label="This chat: " />}
-          {usage && <span className="ml-auto"><UsageLine usage={usage} /></span>}
+          {usage && <UsageLine usage={usage} />}
         </div>
-      )}
+      </div>
+      <ChatList open={chatsOpen} onClose={closeChats} />
       {raised && (
         <div className="flex items-start gap-2 border-b border-line bg-accent-soft px-4 py-2 text-[12px]">
           <p className="flex-1">🎉 Your daily assistant allowance was raised to <b>{allowanceNote(usage)}</b>: more room for Plan with AI and long changes.</p>
@@ -379,6 +394,7 @@ function Chat() {
           </div>
         )}
         {attachError && <p className="mb-1.5 text-[12px] text-danger">{attachError}</p>}
+        {newChatError && <p className="mb-1.5 text-[12px] text-danger">{newChatError}</p>}
         <textarea
           data-assistant-input
           value={draft}
@@ -430,7 +446,7 @@ function Chat() {
           <label className="flex items-center gap-1.5" title="Slower and a little more expensive, better for complex requests">
             <input type="checkbox" checked={think} onChange={(e) => setThink(e.target.checked)} /> Think harder
           </label>
-          {messages.length > 0 && <button onClick={clear} disabled={busy} className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
+          {messages.length > 0 && <button onClick={() => void newChat()} disabled={busy} title="Start a new chat: this one is kept in Chats" className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
           {busy
             ? <Button className="ml-auto" onClick={stop}>■ Stop</Button>
             : <Button variant="primary" className="ml-auto" disabled={(!draft.trim() && !attached.length) || uploading > 0 || outOfAllowance || !online} onClick={() => submit()}>Send</Button>}

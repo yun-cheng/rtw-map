@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
 import { joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord } from './changes'
 import { isNewMessage } from './chat'
+import { CHAT_LIMITS, chatSummary, hasMessages } from './chats'
 import { mediaAllowed, mediaToken, uploadFile } from './media'
 import { canCall, costOf, current, DAILY_USD, dailyUsdFor, MESSAGE_RESERVE_USD, parseAccountLimits, resetsAt, SPEECH_DAILY, spend, spentOf, takeSpeech, today, usageOf } from './limits'
 import { isStale, parseRunEnd, parseRunStart, RUN_STALE_MS, runView } from './runs'
@@ -307,6 +308,25 @@ describe('version history', () => {
     expect(joinsLatest({ by: { who: 'restore', from: at - 5 }, updated: at }, you, at + 1)).toBe(false)
     expect(joinsLatest({ by: you, updated: at }, { who: 'restore', from: at - 5 }, at + 1)).toBe(false)
     expect(joinsLatest({ by: { who: 'earlier' }, updated: at }, you, at + 1)).toBe(false)
+  })
+})
+
+describe('past chats', () => {
+  it('sums a chat up by its first question and the time of its last', () => {
+    const chat = { messages: [
+      { role: 'user', text: '  Is 3 nights\n in Kraków enough? ', at: 1000 },
+      { role: 'assistant', text: 'Yes', steps: [], changes: [] },
+      { role: 'user', text: 'And Vienna?', at: 5000 },
+      { role: 'assistant', text: 'Two', steps: [], changes: [] },
+    ] }
+    expect(chatSummary(chat, 'c1', 9)).toEqual({ id: 'c1', title: 'Is 3 nights in Kraków enough?', updated: 5000, messages: 4 })
+    expect(chatSummary({ messages: [{ role: 'user', text: 'x'.repeat(500) }] }, 'c2', 9)).toMatchObject({ title: 'x'.repeat(CHAT_LIMITS.titleChars), updated: 9 })
+  })
+
+  it('keeps only chats with messages', () => {
+    expect(hasMessages({ messages: [{ role: 'user', text: 'Hi' }] })).toBe(true)
+    expect(hasMessages({ messages: [] })).toBe(false)
+    expect(hasMessages(null)).toBe(false)
   })
 })
 

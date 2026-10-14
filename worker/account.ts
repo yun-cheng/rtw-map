@@ -5,6 +5,7 @@
 // can race. The rules are plain functions in limits.ts, trips.ts, runs.ts, changes.ts and versions.ts.
 import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView } from './changes'
+import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
@@ -19,6 +20,7 @@ type ChangeRow = {
   id: string; trip_id: string; grant_id: string | null; app: string; tool: string; summary: string
   rev_before: number; rev_after: number; created: number; undone: number
 }
+type ChatRow = { id: string; title: string; updated: number; messages: number }
 type VersionRow = { id: string; by: string; rev: number; started: number; updated: number; data: string | null }
 type RunRow = {
   id: string; trip_id: string; status: RunStatus; request: string; email: string | null; reply: string | null
@@ -67,6 +69,10 @@ export class Account extends DurableObject {
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS versions (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, by TEXT NOT NULL, data TEXT, rev INTEGER NOT NULL, started INTEGER NOT NULL, updated INTEGER NOT NULL)`)
     ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS versions_trip ON versions (trip_id, started)')
+    // Each trip's past chats (chats.ts), apart from the open one (the trip's `chat`).
+    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS chats (
+      id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, title TEXT NOT NULL, updated INTEGER NOT NULL, messages INTEGER NOT NULL, chat TEXT NOT NULL)`)
+    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS chats_trip ON chats (trip_id, updated)')
     // Apps allowed to read the trips (oauth.ts): pending from the user's yes until the app takes its first tokens.
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS grants (
       id TEXT PRIMARY KEY, client TEXT NOT NULL, redirect TEXT NOT NULL, scope TEXT NOT NULL, status TEXT NOT NULL,
@@ -335,6 +341,7 @@ export class Account extends DurableObject {
     this.ctx.storage.sql.exec('DELETE FROM runs WHERE trip_id = ?', id)
     this.ctx.storage.sql.exec('DELETE FROM changes WHERE trip_id = ?', id)
     this.ctx.storage.sql.exec('DELETE FROM versions WHERE trip_id = ?', id)
+    this.ctx.storage.sql.exec('DELETE FROM chats WHERE trip_id = ?', id)
     if ((await this.ctx.storage.get<string>('lastTripId')) === id) await this.ctx.storage.delete('lastTripId')
     return existed
   }
@@ -360,6 +367,39 @@ export class Account extends DurableObject {
   async sharedTrip(id: string, token: string): Promise<{ name: string; data: unknown } | null> {
     const r = this.row(id)
     return r && r.share === token ? { name: r.name, data: publicTripData(r.data) } : null
+  }
+
+  // ---------------------------------------------------------------- past chats (chats.ts)
+
+  /** A trip's past chats, the latest first (null: no such trip). */
+  listChats(tripId: string): ChatSummary[] | null {
+    if (!this.row(tripId)) return null
+    return this.ctx.storage.sql.exec<ChatRow>('SELECT id, title, updated, messages FROM chats WHERE trip_id = ? ORDER BY updated DESC', tripId).toArray()
+      .map((c) => ({ id: c.id, title: c.title, updated: c.updated, messages: c.messages }))
+  }
+
+  /** Sets a chat (JSON text) aside among the trip's past chats, if it has messages; the oldest beyond CHAT_LIMITS.kept
+   *  go. */
+  private keepChat(tripId: string, chat: string, now: number) {
+    const parsed = JSON.parse(chat) as unknown
+    if (!hasMessages(parsed)) return
+    const s = chatSummary(parsed, crypto.randomUUID(), now)
+    this.ctx.storage.sql.exec('INSERT INTO chats (id, trip_id, title, updated, messages, chat) VALUES (?, ?, ?, ?, ?, ?)', s.id, tripId, s.title, s.updated, s.messages, chat)
+    this.ctx.storage.sql.exec('DELETE FROM chats WHERE trip_id = ? AND id NOT IN (SELECT id FROM chats WHERE trip_id = ? ORDER BY updated DESC LIMIT ?)', tripId, tripId, CHAT_LIMITS.kept)
+  }
+
+  /** Opens another chat on a trip (`open`: a past one's id, or null for a new one), setting the open chat (`chat`, as
+   *  on screen, JSON text) aside: the chat now open and the past chats. Refused while the assistant works on the trip. */
+  switchChat(tripId: string, chat: string, open: string | null): { chat: unknown; chats: ChatSummary[] } | string | null {
+    if (!this.row(tripId)) return null
+    if (this.activeRun(tripId)) return BUSY
+    const opened = open === null ? null : this.ctx.storage.sql.exec<{ chat: string }>('SELECT chat FROM chats WHERE id = ? AND trip_id = ?', open, tripId).toArray()[0]
+    if (opened === undefined) return 'That chat is no longer kept.'
+    if (open) this.ctx.storage.sql.exec('DELETE FROM chats WHERE id = ?', open)
+    const now = Date.now()
+    this.keepChat(tripId, chat, now)
+    this.ctx.storage.sql.exec('UPDATE trips SET chat = ?, updated = ? WHERE id = ?', opened?.chat ?? null, now, tripId)
+    return { chat: opened ? JSON.parse(opened.chat) : null, chats: this.listChats(tripId)! }
   }
 
   // ---------------------------------------------------------------- the assistant's runs (runs.ts)

@@ -25,13 +25,15 @@ export const addSpent = (a: Spent, b: Partial<Spent>): Spent => ({
   calls: a.calls + 1, input: a.input + (b.input ?? 0), cached: a.cached + (b.cached ?? 0), output: a.output + (b.output ?? 0), usd: a.usd + (b.usd ?? 0),
 })
 export type ChatMessage =
-  /** `view`: the labels of what the user shared from the screen with this message; `media`: the files attached. */
-  | { role: 'user'; text: string; view?: string[]; media?: Attachment[] }
+  /** `view`: the labels of what the user shared from the screen with this message; `media`: the files attached; `at`:
+   *  when it was asked (ms since 1970; not kept before past chats were). */
+  | { role: 'user'; text: string; view?: string[]; media?: Attachment[]; at?: number }
   /** `choices`: short replies shown as buttons (the model's, or Continue when the user stopped it); `think`: whether
    *  this reply thought harder, so a clicked choice or a retry continues the same way; `spent`: what it used; `ms`:
    *  how long it took, from when the user asked; `itemsBefore`: the My visit items it changed, as they were (null:
-   *  not there), for Undo. */
-  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; itemsBefore?: Record<string, TripItem | null>; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent; ms?: number }
+   *  not there), for Undo; `changedTrip`: it changed the trip, once `before` is dropped (a chat set aside keeps no
+   *  Undo, store/pastChats.ts). */
+  | { role: 'assistant'; text: string; steps: ToolStep[]; changes: string[]; before?: TripSnapshot; itemsBefore?: Record<string, TripItem | null>; changedTrip?: boolean; undone?: boolean; error?: string; choices?: string[]; think?: boolean; plan?: 'new' | 'update'; spent?: Spent; ms?: number }
 export type AssistantMessage = Extract<ChatMessage, { role: 'assistant' }>
 
 /** The part of the chat saved with each trip. */
