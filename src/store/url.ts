@@ -2,7 +2,8 @@
 //   ?panel=itinerary&city=krakow&tab=weather&layer=climate&month=7&map=5.20/50.061/19.937
 // (or leg=3 for an open journey; part=prices for a sub-tab of the city panel tab; kind=atm for the Nearby layer; temp=low for the Weather layer by night temperatures; show=nights for the Route view numbered by nights; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
 // weather and air layers show each place at the time of the trip).
-// The address is replaced, not pushed, so moving around doesn't fill the browser's history.
+// Going somewhere (another panel, city or journey) is a step in the browser's history, so Back (and a phone's back
+// gesture) returns from it; the rest (a city's tabs, the map moving, its view and month) replaces the address.
 import { dataset as ds } from '../data/dataset'
 import { COST_KINDS, isTravelling, localToday, type CostKind } from '../planner'
 import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
@@ -26,8 +27,9 @@ export function parseMapView(s: string | null): MapView | null {
 
 const formatMapView = (v: MapView) => `${v.zoom.toFixed(2)}/${v.center[1].toFixed(3)}/${v.center[0].toFixed(3)}`
 
-/** Reads the address into the app's state; anything unknown or invalid is ignored. */
-export function readUrl(search = window.location.search) {
+/** Reads the address into the app's state; anything unknown or invalid is ignored (`back`: going back or forward, only
+ *  where it was, the panel, city or journey and tab: the map, its view and month stay as they are). */
+export function readUrl(search = window.location.search, back = false) {
   const q = new URLSearchParams(search)
   const state = useTrip.getState()
   const patch: Partial<ReturnType<typeof useTrip.getState>> = {}
@@ -52,6 +54,8 @@ export function readUrl(search = window.location.search) {
     const part = q.get('part')
     if (part) patch.cityPart = { ...state.cityPart, [tab]: part }
   }
+
+  if (back) return useTrip.setState(patch)
 
   const layer = q.get('layer') as MapLayer
   if (MAP_LAYERS.includes(layer)) patch.layer = layer
@@ -88,9 +92,30 @@ export function buildSearch(s: ReturnType<typeof useTrip.getState>, view: MapVie
   return `?${q.toString().replaceAll('%2F', '/')}`
 }
 
-function writeUrl() {
+// (A step already taken in this task: changes made with it, such as a city opened on a tab, are part of it.)
+let stepped = false
+// (Changes the app makes itself, not the user going somewhere: no step.)
+let quiet = false
+
+/** Runs `change` without making it a step in the history (the app setting itself up, not the user going somewhere). */
+export function quietly(change: () => void) {
+  quiet = true
+  try {
+    change()
+  } finally {
+    quiet = false
+  }
+}
+
+/** Puts the current state in the address: as a new step in the history (`step`), else in place of the current one. */
+function writeUrl(step = false) {
   const search = buildSearch(useTrip.getState(), mapView)
-  if (search !== window.location.search) history.replaceState(history.state, '', `${window.location.pathname}${search}${window.location.hash}`)
+  if (search === window.location.search) return
+  const url = `${window.location.pathname}${search}${window.location.hash}`
+  if (!step || stepped || quiet) return history.replaceState(history.state, '', url)
+  history.pushState(null, '', url)
+  stepped = true
+  setTimeout(() => (stepped = false))
 }
 
 /** Called by the map when it stops moving. */
@@ -99,11 +124,21 @@ export function setMapView(view: MapView) {
   writeUrl()
 }
 
-/** Reads the address once at start-up, then keeps it up to date. */
+/** Reads the address once at start-up, then keeps it up to date, and goes back or forward with the browser. */
 export function syncUrl() {
   readUrl()
   writeUrl()
+  let restoring = false
   useTrip.subscribe((s, prev) => {
-    if (s.panel !== prev.panel || s.selected !== prev.selected || s.cityTab !== prev.cityTab || s.cityPart !== prev.cityPart || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.costKind !== prev.costKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl()
+    if (restoring) return
+    const step = s.panel !== prev.panel || s.selected !== prev.selected
+    if (step || s.cityTab !== prev.cityTab || s.cityPart !== prev.cityPart || s.layer !== prev.layer || s.layerMonth !== prev.layerMonth || s.nearbyKind !== prev.nearbyKind || s.costKind !== prev.costKind || s.weatherBy !== prev.weatherBy || s.routeBy !== prev.routeBy) writeUrl(step)
+  })
+  window.addEventListener('popstate', () => {
+    restoring = true
+    readUrl(window.location.search, true)
+    restoring = false
+    // (With the map as it is now.)
+    writeUrl()
   })
 }

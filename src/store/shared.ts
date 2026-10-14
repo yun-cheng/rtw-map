@@ -2,6 +2,7 @@
 import { create } from 'zustand'
 import { SHARED_TOKEN } from './shareLink'
 import { useTrip, type TripData } from './trip'
+import { quietly } from './url'
 
 type Shared = { name: string | null; status: 'loading' | 'ok' | 'gone' }
 
@@ -14,9 +15,12 @@ export async function openShared() {
     const res = await fetch(`/api/shared/${SHARED_TOKEN}`)
     if (!res.ok) throw new Error(String(res.status))
     const { name, data } = (await res.json()) as { name: string; data: TripData | null }
-    useTrip.getState().openTrip(data && { ...data, readOnly: true })
-    // Its itinerary is all the page shows (App.tsx).
-    useTrip.getState().setPanel('itinerary')
+    // (Setting the page up: no step for Back to undo.)
+    quietly(() => {
+      useTrip.getState().openTrip(data && { ...data, readOnly: true })
+      // Its itinerary is all the page shows (App.tsx).
+      useTrip.getState().setPanel('itinerary')
+    })
     useShared.setState({ name, status: 'ok' })
     document.title = `${name} · rtw-map`
   } catch {
