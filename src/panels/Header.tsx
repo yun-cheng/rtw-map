@@ -9,9 +9,10 @@ import { ThemeMenu } from './ThemeMenu'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
+import { UndoRedo } from './UndoRedo'
 
-/** The top bar on a computer: the trip, its dates, the display settings at hand, the account, and the gear for all
- *  the settings (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
+/** The top bar on a computer: the trip, its dates, Undo, Redo and the version history, the display settings at hand,
+ *  the account, and the gear for all the settings (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
   const { currency } = useMoney()
@@ -28,6 +29,7 @@ export function Header({ onSettings }: { onSettings: () => void }) {
           <span>{shortDate(input.startDate)} – {shortDate(input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
         </div>
       )}
+      <UndoRedo />
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <OfflinePill className="mr-1.5 h-7" />
         <select

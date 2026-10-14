@@ -1,7 +1,7 @@
 // The open trip's version history, like a shared document's (worker/versions.ts, store/versions.ts): its versions,
 // newest first, each with when, by whom (you, the trip assistant with what it was asked, another app) and what
 // changed, the trip's stops then on a click, and Restore to go back to it (as a new version, so that can be undone
-// too). In a panel from the right, opened by the clock beside Undo and Redo in the Itinerary; signed-in trips only (the
+// too). In a panel from the right, opened by the clock beside Undo and Redo (UndoRedo.tsx); signed-in trips only (the
 // server keeps the history).
 import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'

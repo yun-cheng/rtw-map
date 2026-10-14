@@ -1,10 +1,11 @@
-// Undo and redo for the trip on screen (the Itinerary tab's buttons, ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y): each edit to the
+// Undo and redo for the trip on screen (the top bar's buttons, ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y): each edit to the
 // active plan's setup or stops is a step (by hand anywhere: the Itinerary or Trip tab, the map, a city's panel), and
 // each of the assistant's replies is one step as a whole. Kept for the open plan while the page is open; opening
-// another trip or plan starts afresh.
+// another trip or plan starts afresh. Each undo or redo says what it did (`notice`, shown by UndoNotice.tsx).
 import { useEffect } from 'react'
 import { create } from 'zustand'
 import { useChat } from '../agent/chat'
+import { describeChanges } from '../agent/tools'
 import type { Stop, TripInput } from '../planner'
 import { useSaved } from './saved'
 import { useTrip } from './trip'
@@ -14,9 +15,13 @@ const MAX_STEPS = 100
 /** Changes this close together are one step (a slider dragged, quick clicks on a nights button). */
 const MERGE_MS = 600
 
+/** What the latest undo or redo did: the edit it took back or made again, in words (none: nothing it can name). */
+export type UndoNotice = { redo: boolean; changes: string[]; id: number }
+
 type History = {
   past: Step[]
   future: Step[]
+  notice: UndoNotice | null
   undo: () => void
   redo: () => void
 }
@@ -34,7 +39,11 @@ const go = (from: 'past' | 'future') => {
   const step = h[from].at(-1)
   if (!step || useChat.getState().busy || useTrip.getState().readOnly) return
   const to = from === 'past' ? 'future' : 'past'
-  useHistory.setState({ [from]: h[from].slice(0, -1), [to]: [...h[to], now()] } as Partial<History>)
+  const current = now()
+  // (The edit as it was made: from the step to now for an undo, from now to the step for a redo.)
+  const changes = from === 'past' ? describeChanges(step, current) : describeChanges(current, step)
+  const notice = { redo: from === 'future', changes, id: (h.notice?.id ?? 0) + 1 }
+  useHistory.setState({ [from]: h[from].slice(0, -1), [to]: [...h[to], current], notice } as Partial<History>)
   moving = true
   useTrip.getState().restore(step)
   moving = false
@@ -44,6 +53,7 @@ const go = (from: 'past' | 'future') => {
 export const useHistory = create<History>()(() => ({
   past: [],
   future: [],
+  notice: null,
   undo: () => go('past'),
   redo: () => go('future'),
 }))
@@ -53,7 +63,7 @@ const push = (step: Step) => {
   last = Date.now()
 }
 const clear = () => {
-  useHistory.setState({ past: [], future: [] })
+  useHistory.setState({ past: [], future: [], notice: null })
   last = 0
 }
 

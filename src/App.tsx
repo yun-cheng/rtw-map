@@ -10,6 +10,7 @@ import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
 import { PlanBar } from './panels/PlanBar'
 import { SettingsPanel } from './panels/SettingsPanel'
+import { UndoNotice } from './panels/UndoRedo'
 import { VersionHistory } from './panels/VersionHistory'
 import { SetupPanel } from './panels/SetupPanel'
 import { SharedGone } from './panels/SharedTrip'
@@ -271,6 +272,7 @@ export default function App() {
               >
                 <Settings size={18} />
               </button>
+              <UndoNotice className="absolute top-2 right-12 left-2 z-40" />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while a city's is open. */}
               <BottomSheet
                 snap={leftSnap} onSnap={setLeftSnap} onClose={asking ? stopAsking : undefined} label={TAB_LABELS[tab]}
@@ -284,11 +286,15 @@ export default function App() {
                 </BottomSheet>
               )}
             </>
-          ) : selected && (
-            <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-canvas shadow-xl" style={{ width: DRAWER_WIDTH }}>
-              {drawer}
-            </div>
-          )}
+          ) : <>
+            {/* (Centred in the map left uncovered by a city or journey panel.) */}
+            <UndoNotice className="absolute top-3 left-3 z-30" style={{ right: (selected ? DRAWER_WIDTH : 0) + 12 }} />
+            {selected && (
+              <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-canvas shadow-xl" style={{ width: DRAWER_WIDTH }}>
+                {drawer}
+              </div>
+            )}
+          </>}
         </main>
       </div>
       {!phone && <Timeline />}
