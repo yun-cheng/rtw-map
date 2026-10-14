@@ -1,14 +1,16 @@
-import { FileText, MessagesSquare, Paperclip, X } from 'lucide-react'
+import { Bell, FileText, MessagesSquare, Paperclip, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { attach } from '../agent/attach'
 import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
 import { MEDIA_LIMITS, type Attachment } from '../agent/media'
+import { askToNotify, useNotify } from '../agent/notify'
 import { viewItems, type ViewItem } from '../agent/view'
 import { switchChat } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { Button } from '../ui/kit'
 import { useOnline } from '../ui/useOnline'
+import { usePhone } from '../ui/usePhone'
 import { useTheme } from '../ui/theme'
 import { ChatList } from './ChatList'
 
@@ -193,6 +195,32 @@ function SignIn() {
 
 /** Today's assistant use at or above this (percent) is shown as nearly used up. */
 const HIGH_PERCENT = 85
+
+/** While the assistant works: asks to notify the user when it's done (the browser asks for their permission), until
+ *  they've answered; then, this time, that it will. */
+function NotifyAsk() {
+  const permission = useNotify((s) => s.permission)
+  const phone = usePhone()
+  const [answered, setAnswered] = useState(false)
+  if (permission === 'default') {
+    return (
+      <button
+        onClick={() => void askToNotify().then(() => setAnswered(true))}
+        className="mt-0.5 flex items-center gap-1 text-[11px] text-accent hover:underline"
+        title="A notification when the assistant finishes, while you're in another app or with the app closed"
+      >
+        <Bell size={11} /> {phone ? 'Notify my phone when it\'s done' : 'Notify me when it\'s done'}
+      </button>
+    )
+  }
+  if (!answered) return null
+  return (
+    <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted">
+      <Bell size={11} />
+      {permission === 'granted' ? 'You\'ll get a notification when it\'s done.' : 'Notifications are blocked: allow them in the browser\'s settings for this site.'}
+    </p>
+  )
+}
 
 /** "3 hr 20 min", "45 min" from now (`now`) to the time `iso`. */
 function until(iso: string, now: number) {
@@ -409,6 +437,7 @@ function Chat() {
                 <div className="flex-1">
                   <p className="text-[13px] text-muted">{think ? 'Thinking it through…' : 'Working on it…'}</p>
                   <RunningLine spent={spent} startedAt={startedAt} />
+                  <NotifyAsk />
                 </div>
                 <Button variant="ghost" className="!py-0.5 text-[12px]" onClick={stop}>■ Stop</Button>
               </div>

@@ -118,3 +118,27 @@ async function refreshed(req: Request, e: FetchEvent) {
   e.waitUntil(fresh.catch(() => {}))
   return cached
 }
+
+// The assistant's notification when it has finished (worker/push.ts, sent with the app closed too; or the page's own,
+// src/agent/notify.ts): not while the app is in front (the user sees the reply); a click brings the app to the front,
+// at that trip's chat.
+self.addEventListener('push', (e) => {
+  const n = (e.data?.json() ?? null) as { title?: string; body?: string; tag?: string; tripId?: string } | null
+  if (!n?.title) return
+  e.waitUntil((async () => {
+    const open = await self.clients.matchAll({ type: 'window' })
+    if (open.some((c) => c.focused)) return
+    await self.registration.showNotification(n.title!, { body: n.body, tag: n.tag, icon: '/icons/icon-192.png', data: { tripId: n.tripId } })
+  })())
+})
+
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const tripId = (e.notification.data as { tripId?: string } | null)?.tripId
+  e.waitUntil((async () => {
+    const [open] = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    if (!open) return void (await self.clients.openWindow('/?panel=assistant'))
+    await open.focus()
+    open.postMessage({ type: 'open-trip', tripId })
+  })())
+})

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { startDoneNotice } from './agent/notify'
 import { startOfflineMap } from './offline/download'
 import { registerServiceWorker } from './pwa'
 import { openShared } from './store/shared'
@@ -11,6 +12,7 @@ syncUrl()
 void openShared()
 registerServiceWorker()
 startOfflineMap()
+startDoneNotice()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
