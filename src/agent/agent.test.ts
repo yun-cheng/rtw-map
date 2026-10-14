@@ -4,7 +4,7 @@ import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
-import { bindTrip, describeChanges, describeItemChanges, itemsBefore, itemsHandle, runTool, snapshot, toolContext, tripContext, withTrip } from './tools'
+import { bindTrip, changeList, describeChanges, planChanges, describeItemChanges, itemsBefore, itemsHandle, runTool, snapshot, toolContext, tripContext, withTrip } from './tools'
 import { viewItems, viewText } from './view'
 
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
@@ -123,6 +123,35 @@ describe('assistant tools', () => {
     expect(runTool('update_settings', { wishes: 'A beach week in July' }).ok).toBe(true)
     expect(tripContext()).toContain('"A beach week in July"')
     expect(describeChanges(before, snapshot())).toContain('Wishes updated')
+  })
+
+  it('groups the changes by what they are about, to review them', () => {
+    const before = snapshot()
+    const [first, second] = before.stops
+    useTrip.getState().setInput({ endDate: '2027-09-29', pace: 'chill', startCityId: 'tirana' })
+    useTrip.getState().setStops([{ ...first, nights: first.nights + 1 }, ...before.stops.slice(2)])
+    const groups = Object.fromEntries(['Dates', 'Places', 'Stops', 'Preferences'].map((g) => [g, changeList(before, snapshot()).filter((c) => c.group === g).map((c) => c.text)]))
+    expect(groups).toEqual({
+      Dates: [`Dates: ${before.input.startDate} – ${before.input.endDate} → ${before.input.startDate} – 2027-09-29`],
+      Places: ['Start city: Tirana'],
+      Stops: [`${ds.cities[first.cityId].name}: ${first.nights} → ${first.nights + 1} nights`, `Removed ${ds.cities[second.cityId].name}`],
+      Preferences: [`Pace: ${before.input.pace} → chill`],
+    })
+  })
+
+  it("says which city's daily cost changed, and how", () => {
+    useTrip.getState().setInput({ prefs: { ...useTrip.getState().input.prefs, dinner: 'local', coffees: 0 } })
+    const before = snapshot()
+    useTrip.getState().setInput({ cityCosts: { krakow: { dinner: 'restaurant', coffees: 2 } } })
+    const changed = snapshot()
+    expect(describeChanges(before, changed)).toEqual(["Kraków's daily cost: dinner local meal → restaurant, café coffees 0 → 2"])
+    // (Back to the preferences.)
+    useTrip.getState().setInput({ cityCosts: {} })
+    expect(describeChanges(changed, snapshot())).toEqual(["Kraków's daily cost: dinner restaurant → local meal, café coffees 2 → 0"])
+    // (Not a change for Update plan: the plan's stops don't follow a city's costs.)
+    const { input, stops, plan } = useTrip.getState()
+    useTrip.getState().setInput({ planned: { ...input, cityCosts: { krakow: { bed: 'private' } } }, plannedStops: stops })
+    expect(planChanges({ ...useTrip.getState(), plan })).toEqual([])
   })
 
   it('lists a new travel style once, not each preference it resets', () => {

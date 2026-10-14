@@ -7,7 +7,7 @@ import { REGIONS } from '../data/regions'
 import { SPEECH_CHARS } from '../data/speech'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, isTravelling, PRICE_LABELS, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  groceryDay, isTravelling, prefsDay, PRICE_LABELS, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
 import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, type ItemKind, type Items, type TripItem } from '../store/itemsCore'
@@ -1166,6 +1166,9 @@ const PREF_NAMES: Record<keyof TravelPrefs, string> = {
   avoidHot: 'Avoid hot months', avoidRain: 'Avoid rainy months',
   dailyBudget: 'Daily budget (EUR)',
 }
+/** A city's daily cost choices (TripInput.cityCosts), as change lists name them. */
+const DAY_NAMES: Record<keyof DayChoices, string> = { bed: 'bed', breakfast: 'breakfast', lunch: 'lunch', dinner: 'dinner', coffees: 'café coffees', beers: 'beers in a bar', taxis: 'taxi rides' }
+const dayValue = (v: unknown) => ({ dorm: 'dorm', private: 'private room', diy: 'DIY', local: 'local meal', restaurant: 'restaurant', skip: 'skip' } as Record<string, string>)[String(v)] ?? String(v)
 const prefValue = (v: unknown) => (v === null ? 'no limit' : v === true ? 'yes' : v === false ? 'no' : String(v).replace('_', ' '))
 
 function updatePreferences(args: Args): string {
@@ -1212,15 +1215,25 @@ export const snapshot = (): TripSnapshot => {
   return structuredClone({ input: s.input, stops: s.stops, plans: tripPlans(s), activePlanId: s.activePlanId })
 }
 
+/** What a change is about, to list changes in groups (the Review changes dialog), in this order. `Costs`: a city's own
+ *  daily cost choices, which change the trip's cost and budget checks but not its stops (so they aren't a change to
+ *  update the plan for). */
+export const CHANGE_GROUPS = ['Dates', 'Places', 'Stops', 'Preferences', 'Costs', 'Plans'] as const
+export type ChangeGroup = (typeof CHANGE_GROUPS)[number]
+export type Change = { group: ChangeGroup; text: string }
+
 /** What changed since the plan was made or the assistant last changed it: the setup, the user's own edits to the
  *  stops (nights, locks, added, removed, moved), and whether the nights still fill the dates. What Update plan
  *  sends to the assistant. */
-export function planChanges(s: { input: TripInput; stops: Stop[]; plan: { assignedNights: number; totalNights: number } | null }): string[] {
+export const planChanges = (s: Parameters<typeof planChangeList>[0]): string[] => planChangeList(s).map((c) => c.text)
+
+/** planChanges, each with its group (not a city's own daily costs: the plan doesn't follow those). */
+export function planChangeList(s: { input: TripInput; stops: Stop[]; plan: { assignedNights: number; totalNights: number } | null }): Change[] {
   if (!s.stops.length) return []
-  const out = s.input.planned ? setupChanges(s.input.planned, s.input) : []
-  if (s.input.plannedStops) out.push(...describeChanges({ input: s.input, stops: s.input.plannedStops }, { input: s.input, stops: s.stops }))
+  const out = s.input.planned ? changeList({ input: s.input.planned, stops: [] }, { input: s.input, stops: [] }).filter((c) => c.group !== 'Costs') : []
+  if (s.input.plannedStops) out.push(...changeList({ input: s.input, stops: s.input.plannedStops }, { input: s.input, stops: s.stops }))
   const diff = s.plan ? s.plan.totalNights - s.plan.assignedNights : 0
-  if (diff) out.push(diff > 0 ? `${diff} night${diff > 1 ? 's' : ''} not assigned` : `${-diff} night${diff < -1 ? 's' : ''} over the dates`)
+  if (diff) out.push({ group: 'Stops', text: diff > 0 ? `${diff} night${diff > 1 ? 's' : ''} not assigned` : `${-diff} night${diff < -1 ? 's' : ''} over the dates` })
   return out
 }
 
@@ -1229,74 +1242,84 @@ export const setupChanges = (planned: TripInput, now: TripInput): string[] =>
   describeChanges({ input: planned, stops: [] }, { input: now, stops: [] })
 
 /** Plain-language list of differences between two versions of the trip. */
-export function describeChanges(before: TripSnapshot, after: TripSnapshot): string[] {
-  const out: string[] = []
+export const describeChanges = (before: TripSnapshot, after: TripSnapshot): string[] => changeList(before, after).map((c) => c.text)
+
+/** describeChanges, each with its group. */
+export function changeList(before: TripSnapshot, after: TripSnapshot): Change[] {
+  const out: Change[] = []
+  const add = (group: ChangeGroup, text: string) => out.push({ group, text })
   // The trip's plans: added, removed, renamed, and which one is active.
   const name = (snap: TripSnapshot, id?: string) => snap.plans?.find((p) => p.id === id)?.name ?? 'Plan A'
   for (const p of after.plans ?? []) {
     const old = before.plans?.find((x) => x.id === p.id)
-    if (!old && before.plans) out.push(`Added plan ${p.name}`)
-    else if (old && old.name !== p.name) out.push(`Renamed plan ${old.name} to ${p.name}`)
+    if (!old && before.plans) add('Plans', `Added plan ${p.name}`)
+    else if (old && old.name !== p.name) add('Plans', `Renamed plan ${old.name} to ${p.name}`)
   }
-  for (const p of before.plans ?? []) if (after.plans && !after.plans.some((x) => x.id === p.id)) out.push(`Deleted plan ${p.name}`)
+  for (const p of before.plans ?? []) if (after.plans && !after.plans.some((x) => x.id === p.id)) add('Plans', `Deleted plan ${p.name}`)
   if (before.activePlanId !== after.activePlanId) {
     // Another plan is shown: comparing its setup and stops with the previous plan's would only list their differences.
-    out.push(`Switched to ${name(after, after.activePlanId)}`)
+    add('Plans', `Switched to ${name(after, after.activePlanId)}`)
     return out
   }
   const a = before.input
   const b = after.input
-  if (a.startDate !== b.startDate || a.endDate !== b.endDate) out.push(`Dates: ${a.startDate} – ${a.endDate} → ${b.startDate} – ${b.endDate}`)
-  if (a.pace !== b.pace) out.push(`Pace: ${a.pace} → ${b.pace}`)
-  if (a.budget !== b.budget) out.push(`Travel style: ${a.budget} → ${b.budget}`)
-  if (a.passport !== b.passport) out.push(`Passport: ${a.passport} → ${b.passport}`)
-  if (a.interests.join() !== b.interests.join()) out.push(`Interests: ${b.interests.join(', ') || 'none'}`)
+  if (a.startDate !== b.startDate || a.endDate !== b.endDate) add('Dates', `Dates: ${a.startDate} – ${a.endDate} → ${b.startDate} – ${b.endDate}`)
+  if (a.pace !== b.pace) add('Preferences', `Pace: ${a.pace} → ${b.pace}`)
+  if (a.budget !== b.budget) add('Preferences', `Travel style: ${a.budget} → ${b.budget}`)
+  if (a.passport !== b.passport) add('Preferences', `Passport: ${a.passport} → ${b.passport}`)
+  if (a.interests.join() !== b.interests.join()) add('Preferences', `Interests: ${b.interests.join(', ') || 'none'}`)
   if (JSON.stringify(a.flex ?? null) !== JSON.stringify(b.flex ?? null)) {
-    out.push(b.flex ? `Flexible dates: ${b.flex.start} – ${b.flex.end}, ± ${b.flex.startDays} / ${b.flex.endDays} days` : 'Exact dates')
+    add('Dates', b.flex ? `Flexible dates: ${b.flex.start} – ${b.flex.end}, ± ${b.flex.startDays} / ${b.flex.endDays} days` : 'Exact dates')
   }
-  if ((a.wishes ?? '') !== (b.wishes ?? '')) out.push('Wishes updated')
-  if (a.schengenDaysBefore !== b.schengenDaysBefore) out.push(`Schengen days used before: ${b.schengenDaysBefore}`)
-  if (JSON.stringify(a.cityCosts ?? {}) !== JSON.stringify(b.cityCosts ?? {})) out.push('Daily costs of single cities')
-  if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null)) out.push(`Number of stops: ${stopsText(b)}`)
+  if ((a.wishes ?? '') !== (b.wishes ?? '')) add('Preferences', 'Wishes updated')
+  if (a.schengenDaysBefore !== b.schengenDaysBefore) add('Preferences', `Schengen days used before: ${b.schengenDaysBefore}`)
+  // A city's own daily choices: each one that changed, from the same preferences (a change to those is listed apart).
+  for (const id of new Set([...Object.keys(a.cityCosts ?? {}), ...Object.keys(b.cityCosts ?? {})])) {
+    const day = (input: TripInput): DayChoices => ({ ...prefsDay(b.prefs), ...input.cityCosts?.[id] })
+    const [was, now] = [day(a), day(b)]
+    const diffs = (Object.keys(DAY_NAMES) as (keyof DayChoices)[]).filter((k) => was[k] !== now[k]).map((k) => `${DAY_NAMES[k]} ${dayValue(was[k])} → ${dayValue(now[k])}`)
+    if (diffs.length) add('Costs', `${cityName(id)}'s daily cost: ${diffs.join(', ')}`)
+  }
+  if ((a.minStops ?? null) !== (b.minStops ?? null) || (a.maxStops ?? null) !== (b.maxStops ?? null)) add('Preferences', `Number of stops: ${stopsText(b)}`)
   // A new travel style resets its own preferences; those aren't listed one by one.
   const styleKeys = a.budget !== b.budget ? Object.keys(STYLES[0].prefs) : []
   for (const { key } of PREF_ARGS) {
     if (styleKeys.includes(key)) continue
     const [was, now] = [a.prefs[key], b.prefs[key]]
-    if (was !== now) out.push(`${PREF_NAMES[key]}: ${prefValue(was)} → ${prefValue(now)}`)
+    if (was !== now) add('Preferences', `${PREF_NAMES[key]}: ${prefValue(was)} → ${prefValue(now)}`)
   }
-  if (a.prefs.tempBreaks.join() !== b.prefs.tempBreaks.join()) out.push(`${PREF_NAMES.tempBreaks}: ${breaksText(b.prefs.tempBreaks)}`)
-  if (a.prefs.homeCityId !== b.prefs.homeCityId) out.push(`Home city: ${b.prefs.homeCityId ? cityName(b.prefs.homeCityId) : 'none'}`)
-  if (a.startCityId !== b.startCityId) out.push(`Start city: ${b.startCityId ? cityName(b.startCityId) : 'any'}`)
-  if (a.endCityId !== b.endCityId) out.push(`End city: ${b.endCityId ? cityName(b.endCityId) : 'any'}`)
-  if (a.keepGroupOrder !== b.keepGroupOrder) out.push(`Visit regions in order: ${b.keepGroupOrder ? 'yes' : 'no'}`)
+  if (a.prefs.tempBreaks.join() !== b.prefs.tempBreaks.join()) add('Preferences', `${PREF_NAMES.tempBreaks}: ${breaksText(b.prefs.tempBreaks)}`)
+  if (a.prefs.homeCityId !== b.prefs.homeCityId) add('Places', `Home city: ${b.prefs.homeCityId ? cityName(b.prefs.homeCityId) : 'none'}`)
+  if (a.startCityId !== b.startCityId) add('Places', `Start city: ${b.startCityId ? cityName(b.startCityId) : 'any'}`)
+  if (a.endCityId !== b.endCityId) add('Places', `End city: ${b.endCityId ? cityName(b.endCityId) : 'any'}`)
+  if (a.keepGroupOrder !== b.keepGroupOrder) add('Places', `Visit regions in order: ${b.keepGroupOrder ? 'yes' : 'no'}`)
   for (const g of b.groups) {
     const old = a.groups.find((x) => x.id === g.id)
-    if (!old) { out.push(`Added region ${g.name}`); continue }
-    if (!sameDays(old, g)) out.push(`${g.name}: ${daysText(g)}`)
+    if (!old) { add('Places', `Added region ${g.name}`); continue }
+    if (!sameDays(old, g)) add('Places', `${g.name}: ${daysText(g)}`)
     for (const c of g.countries) {
       const was = old.countries.find((x) => x.iso2 === c.iso2)
-      if (was && was.mode !== c.mode) out.push(`${countryName(c.iso2)}: ${was.mode} → ${c.mode}`)
-      if (was && !sameDays(was, c)) out.push(`${countryName(c.iso2)}: ${daysText(c)}`)
+      if (was && was.mode !== c.mode) add('Places', `${countryName(c.iso2)}: ${was.mode} → ${c.mode}`)
+      if (was && !sameDays(was, c)) add('Places', `${countryName(c.iso2)}: ${daysText(c)}`)
     }
   }
-  for (const g of a.groups) if (!b.groups.some((x) => x.id === g.id)) out.push(`Removed region ${g.name}`)
+  for (const g of a.groups) if (!b.groups.some((x) => x.id === g.id)) add('Places', `Removed region ${g.name}`)
 
   const nights = (stops: Stop[]) => new Map(stops.map((s) => [s.cityId, s]))
   const was = nights(before.stops)
   const now = nights(after.stops)
   if (!before.stops.length && after.stops.length) {
-    out.push(`New itinerary: ${after.stops.length} stops`)
+    add('Stops', `New itinerary: ${after.stops.length} stops`)
     return out
   }
   for (const s of after.stops) {
     const old = was.get(s.cityId)
-    if (!old) out.push(`Added ${cityName(s.cityId)} (${s.nights} nights)`)
-    else if (old.nights !== s.nights) out.push(`${cityName(s.cityId)}: ${old.nights} → ${s.nights} nights`)
-    else if (old.locked !== s.locked) out.push(`${cityName(s.cityId)} ${s.locked ? 'locked' : 'unlocked'}`)
+    if (!old) add('Stops', `Added ${cityName(s.cityId)} (${s.nights} nights)`)
+    else if (old.nights !== s.nights) add('Stops', `${cityName(s.cityId)}: ${old.nights} → ${s.nights} nights`)
+    else if (old.locked !== s.locked) add('Stops', `${cityName(s.cityId)} ${s.locked ? 'locked' : 'unlocked'}`)
   }
-  for (const s of before.stops) if (!now.has(s.cityId)) out.push(`Removed ${cityName(s.cityId)}`)
+  for (const s of before.stops) if (!now.has(s.cityId)) add('Stops', `Removed ${cityName(s.cityId)}`)
   const order = (stops: Stop[]) => stops.map((s) => s.cityId).filter((id) => was.has(id) && now.has(id)).join()
-  if (order(before.stops) !== order(after.stops)) out.push('Changed the order of stops')
+  if (order(before.stops) !== order(after.stops)) add('Stops', 'Changed the order of stops')
   return out
 }
