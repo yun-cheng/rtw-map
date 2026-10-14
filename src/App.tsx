@@ -252,7 +252,8 @@ export default function App() {
           <MapView editing={editing} />
           <MapControls editing={editing} />
           {!plan && !phone && !picking && (
-            <div className="pointer-events-none absolute inset-x-0 bottom-6 flex justify-center">
+            // (Centred in the map left uncovered by a city or journey panel, clear of the map's buttons at its right.)
+            <div className="pointer-events-none absolute left-12 bottom-6 flex justify-center" style={{ right: (selected ? DRAWER_WIDTH : 0) + 48 }}>
               <div className="rounded-lg border border-line bg-panel/95 px-4 py-2 text-[13px] shadow-sm">
                 Add regions or countries on the left and press <b>Plan with AI</b>. Click any city on the map for details.
               </div>

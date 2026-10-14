@@ -2,7 +2,7 @@ import type { FeatureCollection, Point } from 'geojson'
 import * as maplibregl from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMouseEvent, Map as MlMap, PointLike } from 'maplibre-gl'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
@@ -137,6 +137,13 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     mapRef.current = map
     setShown(map)
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right')
+    // Where you are: the browser asks to share your location the first time, then the map moves there at the zoom it's
+    // at (a trip's map, not a street map) and shows you as a dot (above the zoom buttons; on a phone, where those go,
+    // the only button).
+    const geolocate = new maplibregl.GeolocateControl({ positionOptions: { enableHighAccuracy: true }, zoomToUserAccuracy: false })
+    // (To the middle of the part of the map nothing covers: the control passes these to its flyTo, read as it moves.)
+    Object.defineProperty(geolocate.options, 'fitBoundsOptions', { get: () => ({ offset: uncoveredOffset(map) }) })
+    map.addControl(geolocate, 'bottom-right')
     // The map's credits start folded into their ⓘ button, which shows them: MapLibre opens them once, when its sources
     // first say what to credit (some time after loading), so fold them the moment that happens.
     const credits = map.getContainer().querySelector('.maplibregl-ctrl-attrib')
@@ -488,18 +495,17 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     if (!shape) return
     const timer = setTimeout(() => {
       const { width, height } = map.getContainer().getBoundingClientRect()
-      // What covers the map: the legend along the top, and a phone's bottom sheet or the city panel at the right.
-      const cover = { top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: useTrip.getState().selected ? DRAWER_WIDTH : 0, bottom: 0 }) }
+      const cover = coverOf(map)
       const margin = 40
       const fit = map.cameraForBounds(box!, { padding: { top: cover.top + margin, bottom: cover.bottom + margin, left: margin, right: cover.right + margin } })?.zoom ?? map.getZoom()
       const zoom = Math.min(map.getZoom(), Math.max(FOCUS_ZOOM.min, Math.min(FOCUS_ZOOM.max, fit)))
       // Shown in part (too big to fit): around its cities in the app, else the middle of its land.
       const center = (zoom > fit + 0.01 && citiesCentre(hovered)) || shape.centre
       // The middle of the part of the map nothing covers, where it goes; no move when it's about there already.
-      const mid = { x: (width - cover.right) / 2, y: (height + cover.top - cover.bottom) / 2 }
+      const offset = uncoveredOffset(map)
       const p = map.project(center)
-      if (Math.abs(map.getZoom() - zoom) < 0.5 && Math.hypot(p.x - mid.x, p.y - mid.y) < 40) return
-      map.easeTo({ center, zoom, offset: [mid.x - width / 2, mid.y - height / 2], duration: 700 })
+      if (Math.abs(map.getZoom() - zoom) < 0.5 && Math.hypot(p.x - width / 2 - offset[0], p.y - height / 2 - offset[1]) < 40) return
+      map.easeTo({ center, zoom, offset, duration: 700 })
     }, 350)
     return () => clearTimeout(timer)
   }, [focus])
@@ -516,7 +522,9 @@ export function MapView({ editing = false }: { editing?: boolean }) {
 
   return (
     <>
-      <div ref={container} className="h-full w-full" />
+      {/* (--panel-cover: how much of the map's right side a city or journey panel covers; the map's buttons and credits
+          keep left of it, see index.css.) */}
+      <div ref={container} className="h-full w-full" style={{ '--panel-cover': selected ? `${DRAWER_WIDTH}px` : '0px' } as CSSProperties} />
       {shown && <OffscreenCity map={shown} node={node} />}
     </>
   )
@@ -567,6 +575,15 @@ function citiesCentre(countries: string[]): [number, number] | null {
 
 /** How much of the map a phone's bottom sheet covers (BottomSheet sets --sheet-height on the map's parent). */
 const sheetHeight = (map: MlMap) => parseFloat(map.getContainer().parentElement?.style.getPropertyValue('--sheet-height') || '0') || 0
+
+/** What covers the map: the legend along the top, and a phone's bottom sheet or the city or journey panel at the right. */
+const coverOf = (map: MlMap) =>
+  ({ top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: useTrip.getState().selected ? DRAWER_WIDTH : 0, bottom: 0 }) })
+/** From the map's middle to the middle of the part nothing covers, in pixels (a camera move's offset). */
+function uncoveredOffset(map: MlMap): [number, number] {
+  const cover = coverOf(map)
+  return [-cover.right / 2, (cover.top - cover.bottom) / 2]
+}
 
 const empty = (): FC => ({ type: 'FeatureCollection', features: [] })
 const point = (coordinates: number[], properties: Record<string, unknown>) => ({
