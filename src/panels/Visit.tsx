@@ -66,15 +66,16 @@ function useVisitDates(cityId: string): Pick<TripItem, 'from' | 'to'> {
   return visit ? { from: visit.arrive, to: visit.depart } : {}
 }
 
-/** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`). */
-function Stays({ cityId, shown, dates, title = 'Where I stay' }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: string }) {
+/** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`); `ai`: with
+ *  Update with AI (not on Today). */
+function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: string; ai?: boolean }) {
   const all = useItemsAt(cityId, 'stay')
   const stays = (shown ? all.filter(shown) : [...all]).sort(byDate)
   const [editing, setEditing] = useState<string | null>(null)
   return (
     <Section
       title={title}
-      action={<AiHelp topic="stay" place={cityName(cityId)} />}
+      action={ai && <AiHelp topic="stay" place={cityName(cityId)} />}
       aside={editing === null && <button onClick={() => setEditing(newItemId('stay'))} className={small}><Plus size={12} /> Add a stay</button>}
     >
       {stays.length === 0 && editing === null && (
@@ -209,7 +210,6 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
   return (
     <Section
       title={title}
-      action={<AiHelp topic={kind} place={cityName(cityId)} />}
       aside={editing === null && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}
     >
       {items.length === 0 && editing === null && <p className="text-[12px] text-muted">{empty}</p>}
@@ -262,7 +262,7 @@ function LinkEditor({ id, cityId, kind, onDone, autoFocus }: { id: string; cityI
 /** Today's card: where tonight is spent (the stop's stays for tonight), or a way to add it (with the stop's dates). */
 export function TonightStay({ stop, today }: { stop: ScheduledStop; today: string }) {
   if (SHARED_TOKEN) return null
-  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" />
+  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" ai={false} />
 }
 
 /** A stop's marks in the itinerary: its stay (the name on hover) and its photo albums (each opens). */

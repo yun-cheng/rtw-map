@@ -5,9 +5,7 @@ import { lazy, Suspense, useState } from 'react'
 import { noteId, useItems, useNote } from '../store/items'
 import { ITEM_LIMITS } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
-import { cityName } from '../ui/format'
 import { Section } from '../ui/kit'
-import { AiHelp } from './AiHelp'
 import { toggleTask } from './noteText'
 
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
@@ -30,9 +28,6 @@ export function NoteBox({ at, placeholder, tall, title = 'My notes' }: { at: str
   return (
     <Section
       title={title}
-      action={at.includes('>')
-        ? <AiHelp topic="journeyNote" place={`from ${at.split('>').map(cityName).join(' to ')}`} />
-        : <AiHelp topic="note" place={cityName(at)} />}
       aside={
         <span className="flex items-center gap-2 text-[11px] text-muted">
           Only you see these

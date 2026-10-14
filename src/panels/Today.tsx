@@ -1,13 +1,14 @@
 // The Today tab, while the trip is under way (PLAN.md §14.3): where you are, the day's or next journey, the weather
-// today and tomorrow, tonight's stay, today's journal entry, this stop's checks, the days left and the assistant. The app opens on it then (store/url.ts).
-import { ChevronRight, Sparkles } from 'lucide-react'
+// today and tomorrow, tonight's stay, today's journal entry, this stop's checks and the days left. The app opens on it
+// then (store/url.ts).
+import { ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, SCHENGEN_LIMIT, schengenApplies, schengenUsed, travelDay, type Leg } from '../planner'
 import { useNote } from '../store/items'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, cityName, dayDate, duration, flag } from '../ui/format'
-import { Button, Named, Section, Sections } from '../ui/kit'
+import { Named, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CheckNotes, legWarnings, stopWarnings } from './Checks'
@@ -28,7 +29,7 @@ function fromToday(today: string, iso: string) {
 type Journey = { leg: Leg; date: string; index?: number; home?: boolean }
 
 export function Today() {
-  const { plan, input, select, askAssistant } = useTrip()
+  const { plan, input, select } = useTrip()
   const today = localToday()
   if (!plan || !isTravelling(input, today)) return null
   const { day, of, at } = travelDay(input, plan.stops, today)
@@ -106,14 +107,6 @@ export function Today() {
           </Section>
         )}
         <DaysLeft today={today} />
-        <Section>
-          <div className="flex items-center gap-3">
-            <p className="flex-1 text-[12px] text-muted">
-              The assistant knows where you are today, and changes only what's ahead: "rain tomorrow, swap the next two stops?"
-            </p>
-            <Button variant="primary" onClick={askAssistant}><Sparkles size={14} /> Ask AI</Button>
-          </div>
-        </Section>
       </Sections>
     </div>
   )
