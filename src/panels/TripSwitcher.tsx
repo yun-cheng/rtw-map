@@ -4,6 +4,7 @@ import { useSaved, type TripSummary } from '../store/saved'
 import { shareUrl } from '../store/shareLink'
 import { confirm } from '../ui/dialog'
 import { shortDate } from '../ui/format'
+import { useOnline } from '../ui/useOnline'
 
 const STATUS: Record<string, { text: string; className: string }> = {
   saving: { text: 'Saving…', className: 'text-muted' },
@@ -25,6 +26,7 @@ export function TripSwitcher() {
   const user = useAccount((s) => s.user)
   const loaded = useAccount((s) => s.loaded)
   const offline = useAccount((s) => s.offline)
+  const online = useOnline()
   const { trips, activeId, status, error, open: openTrip, create, rename, remove } = useSaved()
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState<'new' | 'rename' | 'share' | null>(null)
@@ -46,7 +48,8 @@ export function TripSwitcher() {
 
   if (!loaded) return null
   // Offline from the start: the account's trip as kept on this device (not knowing yet whether still signed in).
-  if (!user && offline && activeId) return <span className="shrink-0 text-[12px] text-muted" title={OFFLINE_TIP}>{status === 'offline' ? STATUS.offline.text : 'Offline'}</span>
+  // (With no connection the top bar's Offline says so: only how the trip is saved here.)
+  if (!user && offline && activeId) return <span className="shrink-0 text-[12px] text-muted" title={OFFLINE_TIP}>{online ? (status === 'offline' ? STATUS.offline.text : 'Offline') : 'Saved on this device'}</span>
   if (!user) {
     return <span className="shrink-0 text-[12px] text-muted" title="Sign in (top right) to save trips to your account, keep several and use them on any device">Saved in this browser only</span>
   }
@@ -62,7 +65,7 @@ export function TripSwitcher() {
     else if (editing === 'rename' && activeId) void rename(activeId, n)
     close()
   }
-  const s = STATUS[status]
+  const s = status === 'offline' && !online ? { ...STATUS.offline, text: 'Saved on this device' } : STATUS[status]
 
   return (
     <div ref={box} className="relative flex shrink-0 items-center gap-2">

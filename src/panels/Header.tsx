@@ -2,6 +2,7 @@ import { Settings } from 'lucide-react'
 import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
 import { shortDate } from '../ui/format'
+import { OfflinePill } from '../ui/OfflinePill'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
 import { ThemeMenu } from './ThemeMenu'
@@ -10,7 +11,7 @@ import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
 
 /** The top bar on a computer: the trip, its dates, the display settings at hand, the account, and the gear for all
- *  the settings (`onSettings`: the settings panel, as on a phone, with the offline map). */
+ *  the settings (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
   const { currency } = useMoney()
@@ -28,6 +29,7 @@ export function Header({ onSettings }: { onSettings: () => void }) {
         </div>
       )}
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
+        <OfflinePill className="mr-1.5 h-7" />
         <select
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}

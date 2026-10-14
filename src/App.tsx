@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, CloudOff, ListOrdered, Map as MapIcon, MapPin, Settings, Sparkles, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, MapPin, Settings, Sparkles, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { MapControls } from './map/MapControls'
 import { BOTH_PANELS_MIN_WIDTH, DRAWER_WIDTH, SIDEBAR_WIDTH } from './ui/layout'
@@ -23,7 +23,7 @@ import { planMark, useTrip } from './store/trip'
 import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
-import { useOnline } from './ui/useOnline'
+import { OfflinePill } from './ui/OfflinePill'
 import { usePhone } from './ui/usePhone'
 
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', today: 'Today', assistant: 'Assistant' }
@@ -137,7 +137,6 @@ export default function App() {
   const tab: Tab = SHARED_TOKEN ? 'itinerary' : !plan && panel !== 'assistant' ? 'setup' : tabs.includes(panel) ? panel : 'itinerary'
   const sidebar = useSidebar(!!selected, () => select(null))
   const phone = usePhone()
-  const online = useOnline()
   const picking = useTrip((s) => s.picking)
   // The trip's setup is showing: the map shows its countries instead of its route (MapView).
   const editing = tab === 'setup' && (phone ? !selected : !sidebar.hidden)
@@ -261,12 +260,8 @@ export default function App() {
           )}
           {phone ? (
             <>
-              {/* (Under the settings button, clear of the map's legend; on a computer, the save status in the top bar says so.) */}
-              {!online && (
-                <span className="absolute top-13 right-2 z-10 flex h-8 items-center gap-1.5 rounded-lg border border-line bg-panel px-2.5 text-[12px] text-muted shadow-sm" title="No connection: the trip, the cities and the map you've seen work offline">
-                  <CloudOff size={14} /> Offline
-                </span>
-              )}
+              {/* (Under the settings button, clear of the map's legend; on a computer, in the top bar.) */}
+              <OfflinePill className="absolute top-13 right-2 z-10 h-8 shadow-sm" />
               <button
                 onClick={() => setSettings(true)}
                 aria-label="Settings"
