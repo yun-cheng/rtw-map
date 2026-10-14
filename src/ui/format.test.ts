@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, rome2rioUrl, flightsUrl, warningTitle, weatherKind } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -117,5 +117,22 @@ describe('transitUrl', () => {
     expect(Object.fromEntries(url.searchParams)).toEqual({
       api: '1', origin: 'Tirana, Albania', destination: `${ds.cities.shkoder.name}, Albania`, travelmode: 'transit',
     })
+  })
+})
+
+describe('rome2rioUrl', () => {
+  it('names both cities with their country, words joined by hyphens', () => {
+    expect(rome2rioUrl('tirana', 'shkoder')).toBe(
+      `https://www.rome2rio.com/map/Tirana-Albania/${encodeURIComponent(`${ds.cities.shkoder.name}-Albania`)}`,
+    )
+  })
+})
+
+describe('flightsUrl', () => {
+  it('searches Google Flights between the cities, on the day when given', () => {
+    const q = (url: string) => new URL(url).searchParams.get('q')
+    expect(flightsUrl('tirana', 'shkoder', '2027-05-10')).toMatch(/^https:\/\/www\.google\.com\/travel\/flights\?q=/)
+    expect(q(flightsUrl('tirana', 'shkoder', '2027-05-10'))).toBe(`Flights from Tirana, Albania to ${ds.cities.shkoder.name}, Albania on 2027-05-10`)
+    expect(q(flightsUrl('tirana', 'shkoder'))).toBe(`Flights from Tirana, Albania to ${ds.cities.shkoder.name}, Albania`)
   })
 })

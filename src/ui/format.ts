@@ -52,13 +52,26 @@ export const MODE_COLOR: Record<string, string> = { train: '#7c3aed', bus: '#d97
 
 export const cityName = (id: string) => ds.cities[id]?.name ?? id
 
+/** A city by name and country, for other sites' searches ("Kraków, Poland": a name alone can find a namesake elsewhere). */
+const place = (id: string) => {
+  const c = ds.cities[id]
+  return c ? `${c.name}, ${ds.countries[c.iso2]?.name ?? c.iso2}` : id
+}
+
 /** Google Maps directions between two cities by public transport (in the Maps app on a phone), e.g. Kraków, Poland → Wrocław, Poland. */
 export function transitUrl(from: string, to: string) {
-  const place = (id: string) => {
-    const c = ds.cities[id]
-    return c ? `${c.name}, ${ds.countries[c.iso2]?.name ?? c.iso2}` : id
-  }
   return `https://www.google.com/maps/dir/?${new URLSearchParams({ api: '1', origin: place(from), destination: place(to), travelmode: 'transit' })}`
+}
+
+/** Rome2Rio's map of every way between two cities (bus, train, ferry, flight, car), e.g. rome2rio.com/map/Kraków-Poland/Wrocław-Poland. */
+export function rome2rioUrl(from: string, to: string) {
+  const slug = (id: string) => encodeURIComponent(place(id).replace(/[\s,]+/g, '-'))
+  return `https://www.rome2rio.com/map/${slug(from)}/${slug(to)}`
+}
+
+/** Google Flights between two cities (from their nearby airports), on a day if given. */
+export function flightsUrl(from: string, to: string, date?: string) {
+  return `https://www.google.com/travel/flights?${new URLSearchParams({ q: `Flights from ${place(from)} to ${place(to)}${date ? ` on ${date}` : ''}` })}`
 }
 
 /** ISO country code → flag emoji. */

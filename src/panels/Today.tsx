@@ -6,13 +6,14 @@ import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, SCHENGEN_LIMIT, schengenApplies, schengenUsed, travelDay, type Leg } from '../planner'
 import { useNote } from '../store/items'
 import { legKey, useTrip } from '../store/trip'
-import { MODE_ICON, cityName, dayDate, duration, flag, transitUrl } from '../ui/format'
+import { MODE_ICON, cityName, dayDate, duration, flag } from '../ui/format'
 import { Button, Named, Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CheckNotes, legWarnings, stopWarnings } from './Checks'
 import { tabOf, type SectionKey } from './cityTabs'
 import { fetchForecast, savedNote, sky, type CityForecast } from './Forecast'
+import { JourneyLinks } from './JourneyLinks'
 import { TodayEntry } from './Journal'
 import { NoteBox } from './Notes'
 import { TonightStay } from './Visit'
@@ -159,7 +160,7 @@ function JourneyCard({ journey: { leg, date, index, home }, today }: { journey: 
       {checks.length > 0 && <div className="mt-2"><CheckNotes warnings={checks} cityId={leg.to} /></div>}
       <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[13px]">
         {index !== undefined && <button onClick={() => select({ type: 'leg', index })} className="text-accent hover:underline">Details and notes</button>}
-        <a href={transitUrl(leg.from, leg.to)} target="_blank" rel="noreferrer" className="text-accent hover:underline">Directions on Google Maps ↗</a>
+        <JourneyLinks leg={leg} date={date} />
       </div>
       {soon && !(home && plan?.home.back === leg) && (
         <div className="mt-3 border-t border-line pt-2">
