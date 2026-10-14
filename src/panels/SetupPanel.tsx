@@ -5,12 +5,12 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, plannedIn, dayRangeText, daysBetween, isTravelling, localToday, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
-import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
+import { useTrip } from '../store/trip'
 import { PrefsCards } from './PrefsCards'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { Editable } from './ReadOnly'
 import { TripSummary } from './Travel'
-import { ChangesLine, usePlanUpdate } from './UpdatePlan'
+import { ReviewChanges, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
 
@@ -28,27 +28,16 @@ const planned = (iso2: string) => plannedIn(ds).has(iso2)
 
 export function SetupPanel() {
   const s = useTrip()
-  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, addPlan, readOnly } = s
-  const plans = tripPlans(s)
-  const planName = plans.find((p) => p.id === s.activePlanId)?.name ?? 'This plan'
+  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, readOnly } = s
   // Nothing stays highlighted on the map once the tab closes.
   useEffect(() => () => setHovered([]), [setHovered])
   const { user, loaded } = useAccount()
   const busy = useChat((s) => s.busy)
   const canPlan = input.groups.length > 0 && daysBetween(input.startDate, input.endDate) > 0
-  // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`), made with its usual
-  // tools (so the app's rules still hold), thinking harder, since fitting several wishes into a trip takes planning.
-  // On a trip under way, only what comes after today is planned again.
   const travelling = stops.length > 0 && isTravelling(input, localToday())
-  const planWithAi = () => {
-    const wishes = input.wishes?.trim()
-    const what = travelling ? 'Replan my trip from tomorrow on (keep the days so far as they were)' : 'Plan my trip from scratch'
-    void useChat.getState().send(`${what}, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
-    setPanel('assistant')
-  }
   // What changed since the plan was made or updated (the setup, edits by hand): the assistant can update the plan for
   // just that, keeping the rest and the user's own edits.
-  const { changes, update: updatePlan } = usePlanUpdate()
+  const { changes, askReplan } = usePlanUpdate()
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
   const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
@@ -214,31 +203,16 @@ export function SetupPanel() {
           <p className="text-center text-[12px] text-muted">Read-only: make the trip editable (the lock above) to change or replan it.</p>
         ) : user || !loaded ? (
           <>
-            {changes.length > 0 && !busy && <div className="mb-2"><ChangesLine changes={changes} /></div>}
-            <div className="flex gap-2">
-              {changes.length > 0 && !busy && (
-                <Button variant="primary" className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan} onClick={updatePlan}
-                  title="The assistant changes the plan for just these changes, keeping the rest and your own edits">
-                  ✨ Update plan
-                </Button>
-              )}
+            {/* What changed since the plan, to update it for (or replan, ticked there); else replanning on its own. */}
+            {changes.length > 0 && !busy ? (
+              <ReviewChanges canUpdate={!!user && canPlan} why={!user ? 'Sign in to update the plan with AI.' : !input.groups.length ? 'Add regions or countries to visit first.' : 'Pick an end date after the start date first.'} className="w-full" />
+            ) : (
               <Button
-                variant={changes.length && !busy ? undefined : 'primary'} className="flex-1 py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={planWithAi}
+                variant="primary" className="w-full py-2 text-[14px]" disabled={!user || !canPlan || busy} onClick={() => void askReplan()}
                 title="The assistant plans the trip from scratch, to your wishes, preferences and interests"
               >
-                {busy ? 'Planning…' : stops.length ? `${changes.length ? '' : '✨ '}Replan from ${travelling ? 'tomorrow' : 'scratch'}` : '✨ Plan with AI'}
+                {busy ? 'Planning…' : stops.length ? `✨ Replan from ${travelling ? 'tomorrow' : 'scratch'}` : '✨ Plan with AI'}
               </Button>
-            </div>
-            {/* What a new plan replaces, and how to keep it. */}
-            {stops.length > 0 && !busy && (
-              <p className="mt-1.5 text-center text-[12px] text-muted">
-                {travelling ? <>Keeps the days so far; {changes.length ? 'either changes' : 'replaces'} the rest of {planName}.</> : <>{changes.length ? 'Either changes' : 'Replaces'} {planName}'s {stops.length} stop{stops.length === 1 ? '' : 's'}.</>}{' '}
-                {plans.length < MAX_PLANS && (
-                  <>
-                    <button onClick={() => addPlan()} className="font-medium text-accent hover:underline">Copy it first</button> to keep it.
-                  </>
-                )}
-              </p>
             )}
           </>
         ) : (
