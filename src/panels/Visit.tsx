@@ -14,6 +14,7 @@ import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
 import { cityName, dayDate, flag, shortDate } from '../ui/format'
 import { AiMark } from '../ui/AiMark'
+import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
 import { AiHelp } from './AiHelp'
@@ -41,10 +42,10 @@ const mapUrl = (stay: TripItem) =>
 export const field = 'w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]'
 export const small = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
 
-/** The city panel's "My visit" tab: stays, photo albums, links and notes. */
+/** The city panel's "My visit" tab: stays, photo albums, links and notes (on a shared trip's page, those its owner made
+ *  public, read-only). */
 export function VisitTab({ cityId }: { cityId: string }) {
   const dates = useVisitDates(cityId)
-  if (SHARED_TOKEN) return null
   return (
     <>
       <Stays cityId={cityId} dates={dates} />
@@ -67,15 +68,17 @@ function useVisitDates(cityId: string): Pick<TripItem, 'from' | 'to'> {
 /** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`); `ai`: with
  *  Update with AI (not on Today); `brief`: one stop of many in My trip (added to from its top), only its title
  *  without any. */
-function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true, brief }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean }) {
+function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I stay', ai = true, brief }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean }) {
   const all = useItemsAt(cityId, 'stay')
   const stays = (shown ? all.filter(shown) : [...all]).sort(byDate)
   const [editing, setEditing] = useState<string | null>(null)
+  // (A shared trip's page: only those there are, read-only.)
+  if (SHARED_TOKEN && !stays.length) return null
   return (
     <Section
       title={title}
       action={ai && <AiHelp topic="stay" place={cityName(cityId)} />}
-      aside={editing === null && !brief && <button onClick={() => setEditing(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => setEditing(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || stays.length > 0 || editing !== null) && <>
@@ -102,7 +105,7 @@ function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
       <div className="flex items-start gap-2">
         <BedDouble size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 font-medium">{stay.title || 'A stay'}<AiMark on={stay.ai} /></div>
+          <div className="flex items-center gap-1.5 font-medium">{stay.title || 'A stay'}<AiMark on={stay.ai} /><PublicMark on={stay.public} /></div>
           {(stay.from || stay.to) && (
             <div className="text-[12px] text-muted">
               {stay.from ? dayDate(stay.from) : '…'} → {stay.to ? dayDate(stay.to) : '…'}
@@ -110,7 +113,7 @@ function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
             </div>
           )}
         </div>
-        <button onClick={onEdit} className={small} aria-label="Change this stay"><Pencil size={12} /> Edit</button>
+        {!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label="Change this stay"><Pencil size={12} /> Edit</button>}
       </div>
       <div className="mt-1.5 flex flex-col gap-1 pl-[23px] text-[12px]">
         {stay.address && (
@@ -166,7 +169,10 @@ function StayEditor({ id, cityId, dates, onDone, autoFocus }: { id: string; city
         <span className="text-[11px] text-muted">Note</span>
         <textarea value={value('text')} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="Door code, wifi, check-in from 14:00…" className={`${field} resize-y`} />
       </label>
-      <EditorButtons onDone={done} onRemove={stay && !stay.deleted ? () => { remove(id); onDone() } : undefined} what="stay" />
+      <EditorButtons
+        onDone={done} onRemove={stay && !stay.deleted ? () => { remove(id); onDone() } : undefined} what="stay"
+        visibility={<PublicToggle on={!!(stay && !stay.deleted && stay.public)} onChange={(on) => save({ public: on || undefined })} of="booking" />}
+      />
     </div>
   )
 }
@@ -191,11 +197,15 @@ export function UrlInput({ value, onChange, label, autoFocus }: { value: string;
   )
 }
 
-export function EditorButtons({ onDone, onRemove, what }: { onDone: () => void; onRemove?: () => void; what: string }) {
+/** An editor's Remove and Done, and its Public/Private switch (`visibility`). */
+export function EditorButtons({ onDone, onRemove, what, visibility }: { onDone: () => void; onRemove?: () => void; what: string; visibility?: ReactNode }) {
   return (
     <div className="flex items-center justify-between">
       {onRemove ? <button onClick={onRemove} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] text-danger hover:bg-danger/10"><Trash2 size={12} /> Remove this {what}</button> : <span />}
-      <button onClick={onDone} className={small}><Check size={12} /> Done</button>
+      <span className="flex items-center gap-1">
+        {visibility}
+        <button onClick={onDone} className={small}><Check size={12} /> Done</button>
+      </span>
     </div>
   )
 }
@@ -210,10 +220,11 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
   const items = useItemsAt(cityId, kind)
   const [editing, setEditing] = useState<string | null>(null)
   const { title, add, icon: Icon, empty } = LIST[kind]
+  if (SHARED_TOKEN && !items.length) return null
   return (
     <Section
       title={title}
-      aside={editing === null && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}
+      aside={editing === null && !SHARED_TOKEN && <button onClick={() => setEditing(newItemId(kind))} className={small}><Plus size={12} /> {add}</button>}
     >
       {items.length === 0 && editing === null && <p className="text-[12px] text-muted">{empty}</p>}
       <ul className="flex flex-col gap-1">
@@ -227,7 +238,8 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
                     ? <a href={i.url} {...external} className="flex min-w-0 flex-1 items-center gap-1 text-accent hover:underline"><span className="truncate">{i.title || linkName(i.url)}</span><ExternalLink size={11} className="shrink-0" /></a>
                     : <span className="min-w-0 flex-1 truncate">{i.title}</span>}
                   <AiMark on={i.ai} />
-                  <button onClick={() => setEditing(i.id)} className={small} aria-label={`Change ${i.title || 'this link'}`}><Pencil size={12} /></button>
+                  <PublicMark on={i.public} />
+                  {!SHARED_TOKEN && <button onClick={() => setEditing(i.id)} className={small} aria-label={`Change ${i.title || 'this link'}`}><Pencil size={12} /></button>}
                 </div>
                 {kind === 'link' && i.url && <PostPreview url={i.url} />}
               </>
@@ -258,7 +270,10 @@ function LinkEditor({ id, cityId, kind, onDone, autoFocus }: { id: string; cityI
         <span className="text-[11px] text-muted">Title</span>
         <input value={live?.title ?? ''} onChange={(e) => save({ title: e.target.value })} maxLength={ITEM_LIMITS.shortChars} placeholder={LIST[kind].placeholder} className={field} />
       </label>
-      <EditorButtons onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what={kind === 'album' ? 'album' : 'link'} />
+      <EditorButtons
+        onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what={kind === 'album' ? 'album' : 'link'}
+        visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} />}
+      />
     </div>
   )
 }
@@ -278,7 +293,7 @@ export function AllStays() {
   const items = useAllItems()
   // A new one, written at the top until it's done (not under its stop).
   const [adding, setAdding] = useState<string | null>(null)
-  if (!plan || SHARED_TOKEN) return null
+  if (!plan) return null
   const stays = Object.values(items).filter((i) => i.kind === 'stay' && !isEmptyItem(i) && i.id !== adding)
   const stops = plan.stops.filter((s) => s.nights > 0)
   const booked = stops.filter((stop) => stays.some((s) => s.at === stop.cityId && stayCovers(s, stop)))
@@ -289,7 +304,7 @@ export function AllStays() {
     <Sections>
       <Section
         title={stays.length ? `Stays for ${booked.length} of ${stops.length} stops` : 'No stays yet'}
-        aside={adding === null && <span className="flex items-center gap-1"><PhotoFill what="stay" className={small} /><button onClick={() => setAdding(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+        aside={adding === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="stay" className={small} /><button onClick={() => setAdding(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {adding !== null
           ? <NewStay id={adding} stops={stops} first={stops.find((s) => s.depart > today) ?? stops[0] ?? null} onDone={() => setAdding(null)} />
@@ -343,7 +358,6 @@ function NewStay({ id, stops, first, onDone }: { id: string; stops: ScheduledSto
 /** A stop's marks in the itinerary: its stay (the name on hover) and its photo albums (each opens). */
 export function VisitMarks({ stop }: { stop: ScheduledStop }) {
   const items = useAllItems()
-  if (SHARED_TOKEN) return null
   const stays = stayNames(items, stop)
   const albums = albumsAt(items, stop.cityId)
   return (
@@ -365,7 +379,7 @@ const albumsAt = (items: Items, cityId: string) => Object.values(items).filter((
 /** A city's photo albums as links ("Photos ↗"), e.g. in the journal. */
 export function AlbumLinks({ cityId }: { cityId: string }) {
   const albums = useItemsAt(cityId, 'album').filter((a) => a.url)
-  if (!albums.length || SHARED_TOKEN) return null
+  if (!albums.length) return null
   return (
     <>
       {albums.map((a) => (

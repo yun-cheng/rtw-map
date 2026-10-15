@@ -6,6 +6,7 @@ import { noteId, useItem, useItems, useNote } from '../store/items'
 import { ITEM_LIMITS } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { AiMark } from '../ui/AiMark'
+import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
 
@@ -16,23 +17,33 @@ const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
  * Markdown: shown formatted (tasks can be ticked there), and as text to write while editing (an empty note is always
  * being written).
  */
-export function NoteBox({ at, placeholder, tall, title = 'My notes' }: { at: string; placeholder: string; tall?: boolean; title?: string }) {
+export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' : 'My notes' }: { at: string; placeholder: string; tall?: boolean; title?: string }) {
   const note = useNote(at)
   const item = useItem(noteId(at))
   const put = useItems((s) => s.put)
   const remove = useItems((s) => s.remove)
   const setNote = (text: string) => (text.trim() ? put({ id: noteId(at), kind: 'note', at, text }) : remove(noteId(at)))
   const [editing, setEditing] = useState(false)
-  // Someone else's shared trip: its notes are the owner's own, and aren't in it.
-  if (SHARED_TOKEN) return null
+  // Someone else's shared trip: the note only if its owner made it public, read-only.
+  if (SHARED_TOKEN) {
+    if (!note.trim()) return null
+    return (
+      <Section title={title}>
+        <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{note}</p>}>
+          <NoteMarkdown text={note} onToggle={() => {}} />
+        </Suspense>
+      </Section>
+    )
+  }
   const writing = editing || !note.trim()
   const button = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
   return (
     <Section
       title={title}
-      action={<AiMark on={item?.ai} />}
+      action={<><AiMark on={item?.ai} /><PublicMark on={item?.public} /></>}
       aside={
         <span className="flex items-center gap-2 text-[11px] text-muted">
+          {note.trim() && editing && <PublicToggle on={!!item?.public} onChange={(on) => put({ id: noteId(at), public: on || undefined })} />}
           {note.trim() && (editing
             ? <button onClick={() => setEditing(false)} className={button}><Check size={12} /> Done</button>
             : <button onClick={() => setEditing(true)} className={button}><Pencil size={12} /> Edit</button>)}

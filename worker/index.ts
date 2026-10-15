@@ -532,7 +532,8 @@ async function share(request: Request, env: Env, id: string): Promise<Response> 
   return json({ error: 'Not found' }, 404)
 }
 
-/** A shared trip, for anyone with its link: read-only, without the owner's notes, wishes and chat. */
+/** A shared trip, for anyone with its link: read-only, without the owner's wishes and chat, and only the stays, tickets,
+ *  links, notes and journal days they made public (their safe details). */
 async function shared(request: Request, env: Env, token: string): Promise<Response> {
   const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown'
   if (!(await env.SAVE_LIMIT.limit({ key: `shared:${ip}` })).success) return json({ error: 'Too many requests: wait a moment.' }, 429)

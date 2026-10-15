@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeJournal, parseEntries, type DayEntry } from './journalCore'
+import { mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -26,6 +26,13 @@ describe('journal', () => {
     expect(parseEntries({ entries: [{ date: 'May 1', highlight: '', text: '', updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', rating: 9, updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseEntries({})).toBeTypeOf('string')
+  })
+
+  it('shows on the shared link only the days made public', () => {
+    const day = (date: string, extra: Partial<DayEntry> = {}): DayEntry => ({ date, highlight: 'h', text: 't', updatedAt: 1, ...extra })
+    expect(parseEntries({ entries: [{ ...day('2027-05-01'), public: true }, { ...day('2027-05-02'), public: 'yes' }] })).toEqual([{ ...day('2027-05-01'), public: true }, day('2027-05-02')])
+    const journal = { '2027-05-01': day('2027-05-01', { public: true }), '2027-05-02': day('2027-05-02'), '2027-05-03': day('2027-05-03', { highlight: '', text: '', public: true }) }
+    expect(publicJournal(journal)).toEqual({ '2027-05-01': journal['2027-05-01'] })
   })
 
   it('keeps days changed on this device until the server has them, and a day changed while sending', () => {

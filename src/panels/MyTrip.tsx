@@ -3,7 +3,7 @@
 // same as in the city's and journey's panels, Today and the Itinerary, gathered.
 import { ChevronsRight, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_TABS, useRightPanel } from '../ui/rightPanel'
+import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useMyTripTabs, useRightPanel } from '../ui/rightPanel'
 import { JournalView } from './Journal'
 import { Receipts } from './Receipts'
 import { AllTickets } from './Tickets'
@@ -13,11 +13,14 @@ import { AllStays } from './Visit'
  *  sheet's header). `onHide` folds it away (closes the sheet). `over`: a city's or journey's panel open in its place, under its tabs
  *  (a tab closes it: `onLeave`); the open tab stays mounted under it, so nothing being written is lost. */
 export function MyTripPanel({ peek, onHide, over, onLeave }: { peek?: boolean; onHide?: () => void; over?: ReactNode; onLeave?: () => void }) {
-  const { tab, setTab } = useRightPanel()
+  const tabs = useMyTripTabs()
+  const picked = useRightPanel((s) => s.tab)
+  const setTab = useRightPanel((s) => s.setTab)
+  const tab = tabs.includes(picked) ? picked : tabs[0]
   return (
     <>
-      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line bg-panel px-2" role="tablist" aria-label="My trip">
-        {MY_TRIP_TABS.map((t) => {
+      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line bg-panel px-2" role="tablist" aria-label={MY_TRIP_NAME}>
+        {tabs.map((t) => {
           const Icon = MY_TRIP_ICONS[t]
           return (
             <button
@@ -30,7 +33,7 @@ export function MyTripPanel({ peek, onHide, over, onLeave }: { peek?: boolean; o
           )
         })}
         {onHide && (
-          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={peek ? 'Close My trip' : 'Hide My trip'} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={`${peek ? 'Close' : 'Hide'} ${MY_TRIP_NAME}`} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
             {peek ? <X size={18} /> : <ChevronsRight size={16} />}
           </button>
         )}

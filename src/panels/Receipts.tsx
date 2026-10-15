@@ -12,6 +12,7 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { bookingName, cityName, dayDate, paid, shortDate } from '../ui/format'
 import { AiMark } from '../ui/AiMark'
+import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { nightStop } from './Journal'
@@ -35,7 +36,7 @@ export function Receipts() {
   const { fmt } = useMoney()
   // The one open to change; a new one stays at the top while it's written (not under its day).
   const [editing, setEditing] = useState<{ id: string; added?: true } | null>(null)
-  if (!plan || SHARED_TOKEN) return null
+  if (!plan) return null
   const receipts = Object.values(items).filter((i) => i.kind === 'receipt' && !i.deleted)
   const kept = receipts.filter((r) => !isEmptyItem(r))
   const listed = receipts.filter((r) => !(editing?.added && editing.id === r.id))
@@ -51,7 +52,7 @@ export function Receipts() {
     <Sections>
       <Section
         title={kept.length ? 'Spent so far' : 'No receipts yet'}
-        aside={editing === null && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setEditing({ id: newItemId('receipt'), added: true })} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+        aside={editing === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setEditing({ id: newItemId('receipt'), added: true })} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {/* (Just its title while there are none.) */}
         {(kept.length > 0 || editing?.added) && <>
@@ -83,8 +84,9 @@ function ReceiptRow({ receipt: r, onEdit }: { receipt: TripItem; onEdit: () => v
       <div className="flex items-center gap-2">
         <span className="min-w-0 flex-1 truncate">{r.title || 'A receipt'}</span>
         <AiMark on={r.ai} />
+        <PublicMark on={r.public} />
         {r.amount !== undefined && <span className="shrink-0 font-medium tabular-nums">{paid(r.amount, r.currency)}</span>}
-        <button onClick={onEdit} className={small} aria-label={`Change ${r.title || 'this receipt'}`}><Pencil size={12} /></button>
+        {!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label={`Change ${r.title || 'this receipt'}`}><Pencil size={12} /></button>}
       </div>
       <ReceiptFor bookings={r.bookings} />
       {r.text && <p className="whitespace-pre-wrap text-[12px] text-muted">{r.text}</p>}
@@ -191,7 +193,10 @@ function ReceiptEditor({ id, onDone, autoFocus }: { id: string; onDone: () => vo
         <span className="text-[11px] text-muted">Note</span>
         <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="What was in it, who paid…" className={`${field} resize-y`} />
       </label>
-      <EditorButtons onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="receipt" />
+      <EditorButtons
+        onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="receipt"
+        visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} of="receipt" />}
+      />
     </div>
   )
 }

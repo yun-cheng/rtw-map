@@ -9,8 +9,8 @@ import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, itemsUndo, 
 import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
-import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
-import { JOURNAL_LIMITS, mergeJournal, type DayEntry, type Journal } from '../src/store/journalCore'
+import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, publicItems, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
+import { JOURNAL_LIMITS, mergeJournal, publicJournal, type DayEntry, type Journal } from '../src/store/journalCore'
 import type { Grant, NewGrant } from './oauth'
 import { PUSH_LIMITS, type PushTarget } from './push'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
@@ -371,10 +371,12 @@ export class Account extends DurableObject {
     return token
   }
 
-  /** A trip as its public link shows it, if the link is still on (the token is the trip's own). */
-  async sharedTrip(id: string, token: string): Promise<{ name: string; data: unknown } | null> {
+  /** A trip as its public link shows it, if the link is still on (the token is the trip's own): with the items and
+   *  journal days the user made public. */
+  async sharedTrip(id: string, token: string): Promise<{ name: string; data: unknown; items: Items; journal: Journal } | null> {
     const r = this.row(id)
-    return r && r.share === token ? { name: r.name, data: publicTripData(r.data) } : null
+    if (!r || r.share !== token) return null
+    return { name: r.name, data: publicTripData(r.data), items: publicItems(this.kept<Items>(id, 'items') ?? {}), journal: publicJournal(this.kept<Journal>(id, 'journal') ?? {}) }
   }
 
   // ---------------------------------------------------------------- past chats (chats.ts)

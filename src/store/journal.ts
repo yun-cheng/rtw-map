@@ -5,6 +5,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
 import { isEmptyEntry, mergeJournal, type DayEntry, type Journal } from './journalCore'
+import { SHARED_TOKEN } from './shareLink'
 
 export { isEmptyEntry, type DayEntry, type Journal } from './journalCore'
 export { LOCAL } from './book'
@@ -51,9 +52,16 @@ export const useJournal = create<JournalState>()(
 )
 
 const NO_DAYS: Journal = {}
+/** On a shared trip's page, the days its owner made public (shared.ts): shown read-only, never kept on this device or
+ *  sent anywhere. */
+export const useSharedJournal = create<{ entries: Journal }>(() => ({ entries: NO_DAYS }))
 
-/** The open trip's journal. */
-export const useJournalEntries = (): Journal => useJournal((s) => s.books[s.key]?.entries ?? NO_DAYS)
+/** The open trip's journal (a shared trip's public days on its page). */
+export const useJournalEntries = (): Journal => {
+  const own = useJournal((s) => s.books[s.key]?.entries ?? NO_DAYS)
+  const shared = useSharedJournal((s) => s.entries)
+  return SHARED_TOKEN ? shared : own
+}
 
 /** The open trip's day, if written. */
 export const useDayEntry = (date: string): DayEntry | undefined => {

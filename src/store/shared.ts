@@ -1,6 +1,9 @@
-// The shared trip this page shows (its link: shareLink.ts): loaded once, read-only.
+// The shared trip this page shows (its link: shareLink.ts): loaded once, read-only, with what its owner made public of
+// what they keep (items.ts, journal.ts).
 import { create } from 'zustand'
 import { SHARED_TOKEN } from './shareLink'
+import { useSharedItems, type Items } from './items'
+import { useSharedJournal, type Journal } from './journal'
 import { useTrip, type TripData } from './trip'
 import { quietly } from './url'
 
@@ -14,7 +17,10 @@ export async function openShared() {
   try {
     const res = await fetch(`/api/shared/${SHARED_TOKEN}`)
     if (!res.ok) throw new Error(String(res.status))
-    const { name, data } = (await res.json()) as { name: string; data: TripData | null }
+    const { name, data, items, journal } = (await res.json()) as { name: string; data: TripData | null; items?: Items; journal?: Journal }
+    // (With the stays, tickets, links, notes and journal days its owner made public: read-only, kept only on this page.)
+    useSharedItems.setState({ entries: items ?? {} })
+    useSharedJournal.setState({ entries: journal ?? {} })
     // (Setting the page up: no step for Back to undo.)
     quietly(() => {
       useTrip.getState().openTrip(data && { ...data, readOnly: true })

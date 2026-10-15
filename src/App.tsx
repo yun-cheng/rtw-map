@@ -27,7 +27,7 @@ import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { OfflinePill } from './ui/OfflinePill'
-import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_TABS, useHasRightPanel, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
+import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useHasRightPanel, useMyTripTabs, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
 import { usePhone } from './ui/usePhone'
 
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', today: 'Today', assistant: 'Assistant' }
@@ -142,6 +142,7 @@ export default function App() {
   // My trip, the right panel: beside the map on a computer (a city or journey panel then opens in its place), a sheet
   // on a phone.
   const hasRight = useHasRightPanel()
+  const myTripTabs = useMyTripTabs()
   const right = useRightPanel()
   const rightBeside = useRightPanelBeside()
   const rightSheet = useRightPanel((s) => s.sheet)
@@ -292,7 +293,7 @@ export default function App() {
               {hasRight && (
                 <button
                   onClick={() => { setRightSheet(!rightSheet); setRightSnap('half') }}
-                  aria-label="My trip: stays, tickets, receipts and journal"
+                  aria-label={`${MY_TRIP_NAME}: stays, tickets, receipts and journal`}
                   className="absolute top-13 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
                 >
                   <Wallet size={18} />
@@ -308,7 +309,7 @@ export default function App() {
               </BottomSheet>
               {hasRight && rightSheet && (
                 // My trip's sheet: under a city's or journey's while that's open.
-                <BottomSheet snap={rightSnap} onSnap={setRightSnap} onClose={() => setRightSheet(false)} label="My trip" hidden={!!selected} className="z-20 bg-panel">
+                <BottomSheet snap={rightSnap} onSnap={setRightSnap} onClose={() => setRightSheet(false)} label={MY_TRIP_NAME} hidden={!!selected} className="z-20 bg-panel">
                   <MyTripPanel peek onHide={() => setRightSheet(false)} />
                 </BottomSheet>
               )}
@@ -336,17 +337,17 @@ export default function App() {
           // Folded: a strip to open it again, on any tab.
           <div className="flex w-10 shrink-0 flex-col items-center gap-1 border-l border-line bg-panel pt-1.5">
             <button
-              onClick={() => { setTip(null); right.show() }} aria-label="Show My trip" {...tipFor('Show My trip', 'top')}
+              onClick={() => { setTip(null); right.show() }} aria-label={`Show ${MY_TRIP_NAME}`} {...tipFor(`Show ${MY_TRIP_NAME}`, 'top')}
               className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink"
             >
               <ChevronsLeft size={16} />
             </button>
             <div className="my-0.5 h-px w-6 bg-line" />
-            {MY_TRIP_TABS.map((t) => {
+            {myTripTabs.map((t) => {
               const Icon = MY_TRIP_ICONS[t]
               return (
                 <button
-                  key={t} onClick={() => { setTip(null); right.show(t) }} aria-label={`My trip: ${MY_TRIP_LABELS[t]}`} {...tipFor(MY_TRIP_LABELS[t], 'top')}
+                  key={t} onClick={() => { setTip(null); right.show(t) }} aria-label={`${MY_TRIP_NAME}: ${MY_TRIP_LABELS[t]}`} {...tipFor(MY_TRIP_LABELS[t], 'top')}
                   className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink"
                 >
                   <Icon size={16} />

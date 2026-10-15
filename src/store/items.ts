@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
+import { SHARED_TOKEN } from './shareLink'
 import { changedItem, mergeItems, noteId, notesAsItems, removedItem, type Items, type TripItem } from './itemsCore'
 import type { TripNotes } from './tripCore'
 
@@ -68,11 +69,19 @@ export const useItems = create<ItemsState>()(
   ),
 )
 
-/** The open trip's items for a city or a journey (none removed or empty), in the order added. */
-export const useItemsAt = (at: string, kind?: TripItem['kind']): TripItem[] => {
-  const entries = useItems((s) => s.books[s.key]?.entries ?? NO_ITEMS)
-  return itemsAt(entries, at, kind)
+/** On a shared trip's page, the items its owner made public (shared.ts): shown read-only, never kept on this device or
+ *  sent anywhere (the hooks below read these there instead of the visitor's own). */
+export const useSharedItems = create<{ entries: Items }>(() => ({ entries: NO_ITEMS }))
+
+/** The open trip's items (a shared trip's public ones on its page). */
+const useEntries = () => {
+  const own = useItems((s) => s.books[s.key]?.entries ?? NO_ITEMS)
+  const shared = useSharedItems((s) => s.entries)
+  return SHARED_TOKEN ? shared : own
 }
+
+/** The open trip's items for a city or a journey (none removed or empty), in the order added. */
+export const useItemsAt = (at: string, kind?: TripItem['kind']): TripItem[] => itemsAt(useEntries(), at, kind)
 const cache = new WeakMap<Items, Map<string, TripItem[]>>()
 /** (The same array for the same items, so a selector using it doesn't render again for nothing.) */
 export function itemsAt(entries: Items, at: string, kind?: TripItem['kind']): TripItem[] {
@@ -88,13 +97,13 @@ export function itemsAt(entries: Items, at: string, kind?: TripItem['kind']): Tr
 }
 
 /** The open trip's item, if any (and not removed). */
-export const useItem = (id: string): TripItem | undefined => useItems((s) => {
-  const i = s.books[s.key]?.entries[id]
+export const useItem = (id: string): TripItem | undefined => {
+  const i = useEntries()[id]
   return i?.deleted ? undefined : i
-})
+}
 
 /** The note on a city or a journey ('' if none). */
 export const useNote = (at: string) => useItem(noteId(at))?.text ?? ''
 
 /** The open trip's items, all of them. */
-export const useAllItems = () => useItems((s) => s.books[s.key]?.entries ?? NO_ITEMS)
+export const useAllItems = useEntries

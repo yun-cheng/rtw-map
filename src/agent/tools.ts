@@ -306,6 +306,7 @@ function visit(args: Args): ToolResult {
       url: i.url, reference: i.ref, price: i.price, text: i.text,
       ...(i.kind === 'price' && { price_of: priceOf(i), price_seen: `${i.amount} ${i.currency}` }),
       ...(i.kind === 'phrase' && { language: i.at, say: i.say, note: i.tip }),
+      ...(i.public && { on_shared_link: true }),
       updated: new Date(i.updatedAt).toISOString().slice(0, 10),
     })),
   }

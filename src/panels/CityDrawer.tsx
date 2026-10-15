@@ -16,6 +16,7 @@ import { CheckNotes, checkSection, checkTab } from './Checks'
 import { CostDay } from './CostDay'
 import { Forecast, SubHead } from './Forecast'
 import { VisitTab } from './Visit'
+import { isEmptyItem, useAllItems } from '../store/items'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { Holidays } from './Holidays'
 import { MyPhrases } from './MyPhrases'
@@ -615,8 +616,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     Number(!!b.problem) - Number(!!a.problem) || Number(!!b.warn) - Number(!!a.warn) ||
     (a.problem ? PROBLEM_ORDER.indexOf(a.tab) - PROBLEM_ORDER.indexOf(b.tab) : tabRank(a.tab) - tabRank(b.tab)))
 
-  // (Someone else's shared trip has none of the owner's own stays, links and notes.)
-  const tabs = SHARED_TOKEN ? TABS.filter((t) => t.key !== 'notes') : TABS
+  // (On someone else's shared trip, the owner's own stays, links and notes only if they made some public.)
+  const visit = Object.values(useAllItems()).some((i) => i.at === cityId && !isEmptyItem(i))
+  // (Named neutrally there: it's the owner's visit.)
+  const tabs = !SHARED_TOKEN ? TABS : TABS.filter((t) => t.key !== 'notes' || visit).map((t) => (t.key === 'notes' ? { ...t, label: 'Visit' } : t))
   const tabInfo = tabs.find((t) => t.key === cityTab) ?? tabs[0]
   const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
   // Keep the open tab in view when the tab bar scrolls sideways (only the bar: scrollIntoView would also scroll the

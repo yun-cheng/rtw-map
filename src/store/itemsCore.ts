@@ -54,6 +54,8 @@ export type TripItem = {
   bookings?: string[]
   /** Filled in, all or in part, by an AI assistant (the app's, or another app's): kept when the user changes it after. */
   ai?: true
+  /** Shown on the trip's shared link (SHAREABLE kinds; only their PUBLIC_FIELDS); private otherwise. */
+  public?: true
   /** When last changed (ms), on the device that changed it: the latest wins. */
   updatedAt: number
   deleted?: true
@@ -85,6 +87,29 @@ const LANGUAGE_TAG = /^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/
 export const NO_PLACE = '_trip'
 /** The kinds that can be at NO_PLACE. */
 const UNPLACED: ItemKind[] = ['ticket', 'stay', 'receipt']
+
+/** The kinds the user can show on the trip's shared link, and what of each it shows: never a booking's reference,
+ *  price, link, address or own note (those can let someone change or cancel a booking, or find where they sleep), nor
+ *  a receipt's note. */
+export const SHAREABLE: ItemKind[] = ['stay', 'ticket', 'album', 'link', 'note', 'receipt']
+const PUBLIC_FIELDS: Partial<Record<ItemKind, (keyof TripItem)[]>> = {
+  stay: ['title', 'from', 'to'],
+  ticket: ['title', 'mode', 'from', 'to', 'fromPlace', 'toPlace'],
+  album: ['title', 'url'],
+  link: ['title', 'url'],
+  note: ['text'],
+  receipt: ['title', 'amount', 'currency', 'from', 'bookings'],
+}
+/** The items the user made public, as the shared link shows them (their public fields only). */
+export function publicItems(items: Items): Items {
+  return Object.fromEntries(Object.values(items)
+    .filter((i) => i.public && !isEmptyItem(i) && PUBLIC_FIELDS[i.kind])
+    .map((i) => {
+      const shown: TripItem = { id: i.id, kind: i.kind, at: i.at, updatedAt: i.updatedAt, public: true }
+      for (const k of PUBLIC_FIELDS[i.kind]!) if (i[k] !== undefined) (shown as Record<string, unknown>)[k] = i[k]
+      return [i.id, shown]
+    }))
+}
 
 /** A note's id: one per city or journey. */
 export const noteId = (at: string) => `note:${at}`
@@ -163,6 +188,7 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
       if (x.currency !== undefined) item.currency = x.currency as string
     }
     if (x.ai === true) item.ai = true
+    if (x.public === true && SHAREABLE.includes(item.kind)) item.public = true
     if (item.kind === 'receipt' && x.bookings !== undefined) {
       const ids = x.bookings
       if (!Array.isArray(ids) || ids.length > ITEM_LIMITS.bookings || ids.some((b) => typeof b !== 'string' || !/^(stay|ticket):[\w-]{1,40}$/.test(b))) return 'Invalid receipt'

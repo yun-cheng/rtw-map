@@ -14,6 +14,8 @@ export type DayEntry = {
   /** A few lines, plain text. */
   text: string
   rating?: 1 | 2 | 3 | 4 | 5
+  /** Shown on the trip's shared link; private otherwise. */
+  public?: true
   /** When last changed (ms), on the device that changed it: the latest wins. */
   updatedAt: number
 }
@@ -41,11 +43,16 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
       highlight: x.highlight.slice(0, JOURNAL_LIMITS.highlightChars),
       text: x.text.slice(0, JOURNAL_LIMITS.textChars),
       ...(rating ? { rating: rating as DayEntry['rating'] } : {}),
+      ...(x.public === true && { public: true as const }),
       updatedAt: Math.min(x.updatedAt, now),
     })
   }
   return entries
 }
+
+/** The days the user made public, as the shared link shows them. */
+export const publicJournal = (journal: Journal): Journal =>
+  Object.fromEntries(Object.values(journal).filter((e) => e.public && !isEmptyEntry(e)).map((e) => [e.date, e]))
 
 /** The journal with these entries in: each day's latest edit wins (a tie keeps what's there). */
 export function mergeJournal(journal: Journal, entries: DayEntry[]): Journal {

@@ -25,8 +25,8 @@ export function Itinerary() {
   // On a trip under way, the stops already left are faded and today's is marked.
   const today = localToday()
   const travelling = isTravelling(input, today)
-  // From the trip's first day on, each stop's days written (the journal, in My trip); never on a shared trip.
-  const started = !SHARED_TOKEN && !!input.startDate && today >= input.startDate
+  // From the trip's first day on, each stop's days written (the journal; on a shared trip, its public days).
+  const started = !!input.startDate && today >= input.startDate
 
   return (
     <div className="flex min-h-full flex-col">

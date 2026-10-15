@@ -12,6 +12,7 @@ import { legKey, useTrip } from '../store/trip'
 import { localToday } from '../planner'
 import { cityName, dayDate, shortDate } from '../ui/format'
 import { AiMark } from '../ui/AiMark'
+import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
 import { PhotoFill } from './PhotoFill'
@@ -47,14 +48,15 @@ function when(t: TripItem) {
  *  `hideEmpty`: nothing without any (on Today); `brief`: one journey of many in My trip (added to from its top), only
  *  its title without any;
  *  `hidden`: one not to show (being added in My trip). */
-export function Tickets({ at, date, hideEmpty, title = 'My tickets', brief, hidden }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; hidden?: string }) {
+export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' : 'My tickets', brief, hidden }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; hidden?: string }) {
   const tickets = useItemsAt(at, 'ticket').filter((t) => t.id !== hidden).sort(byDeparture)
   const [editing, setEditing] = useState<string | null>(null)
-  if (SHARED_TOKEN || (hideEmpty && !tickets.length)) return null
+  // (A shared trip's page: only those there are, read-only.)
+  if ((SHARED_TOKEN || hideEmpty) && !tickets.length) return null
   return (
     <Section
       title={title}
-      aside={editing === null && !brief && <button onClick={() => setEditing(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => setEditing(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || tickets.length > 0 || editing !== null) && <>
@@ -81,10 +83,10 @@ function TicketCard({ ticket: t, onEdit }: { ticket: TripItem; onEdit: () => voi
       <div className="flex items-start gap-2">
         <ModeIcon mode={t.mode} size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}<AiMark on={t.ai} /></div>
+          <div className="flex items-center gap-1.5 font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}<AiMark on={t.ai} /><PublicMark on={t.public} /></div>
           {when(t) && <div className="text-[12px] text-muted">{when(t)}</div>}
         </div>
-        <button onClick={onEdit} className={small} aria-label="Change this ticket"><Pencil size={12} /> Edit</button>
+        {!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label="Change this ticket"><Pencil size={12} /> Edit</button>}
       </div>
       <div className="mt-1.5 flex flex-col gap-1 pl-[23px] text-[12px]">
         {places && <div>{places}</div>}
@@ -164,7 +166,10 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
         <span className="text-[11px] text-muted">Note</span>
         <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="Seat, baggage, terminal, check-in closes…" className={`${field} resize-y`} />
       </label>
-      <EditorButtons onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="ticket" />
+      <EditorButtons
+        onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="ticket"
+        visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} of="booking" />}
+      />
     </div>
   )
 }
@@ -177,7 +182,7 @@ export function AllTickets() {
   const items = useAllItems()
   // A new one, written at the top until it's done (not under its journey).
   const [adding, setAdding] = useState<string | null>(null)
-  if (!plan || SHARED_TOKEN) return null
+  if (!plan) return null
   const tickets = Object.values(items).filter((i) => i.kind === 'ticket' && !isEmptyItem(i) && i.id !== adding)
   const legs = plan.legs.map((l, index) => ({ at: legKey(l.from, l.to), index, date: plan.stops[index].depart }))
   const booked = legs.filter((l) => tickets.some((t) => t.at === l.at))
@@ -187,7 +192,7 @@ export function AllTickets() {
     <Sections>
       <Section
         title={tickets.length ? `${tickets.length} ticket${tickets.length === 1 ? '' : 's'} for ${booked.length} of ${legs.length} journeys` : 'No tickets yet'}
-        aside={adding === null && <span className="flex items-center gap-1"><PhotoFill what="ticket" className={small} /><button onClick={() => setAdding(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+        aside={adding === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="ticket" className={small} /><button onClick={() => setAdding(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {adding !== null
           ? <NewTicket id={adding} legs={legs} first={legs.find((l) => l.date >= today) ?? legs[0] ?? NO_LEG} onDone={() => setAdding(null)} />
@@ -241,7 +246,7 @@ function NewTicket({ id, legs, first, onDone }: { id: string; legs: Leg[]; first
 /** A journey's mark in the itinerary when it has tickets: what they are on hover. */
 export function TicketMark({ at }: { at: string }) {
   const tickets = useItemsAt(at, 'ticket').filter((t) => !isEmptyItem(t))
-  if (SHARED_TOKEN || !tickets.length) return null
+  if (!tickets.length) return null
   const said = [...tickets].sort(byDeparture).map((t) => [t.title || (t.mode ? MODES[t.mode] : 'A ticket'), when(t)].filter(Boolean).join(', ')).join('; ')
   return <span title={said} aria-label={`Booked: ${said}`} className="shrink-0 text-muted"><ModeIcon mode={tickets[0].mode} size={12} /></span>
 }

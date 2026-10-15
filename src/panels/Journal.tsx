@@ -5,6 +5,8 @@ import { BookOpen, Check, ChevronRight, Plus, Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
 import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
+import { SHARED_TOKEN } from '../store/shareLink'
+import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { JOURNAL_LIMITS } from '../store/journalCore'
 import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
@@ -53,7 +55,10 @@ export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boole
       />
       <div className="flex items-center justify-between gap-2">
         <Stars value={entry?.rating} onChange={(rating) => save({ rating: rating === entry?.rating ? undefined : rating })} />
-        <SaveState date={date} />
+        <span className="flex min-w-0 items-center gap-1">
+          <SaveState date={date} />
+          {!isEmptyEntry(entry) && <PublicToggle on={!!entry?.public} onChange={(on) => save({ public: on || undefined })} />}
+        </span>
       </div>
     </div>
   )
@@ -148,7 +153,7 @@ export function JournalView() {
     <Sections>
       <Section
         title={written ? `${written} of ${all.length} day${all.length === 1 ? '' : 's'} written` : 'No days written yet'}
-        aside={adding === null && (
+        aside={adding === null && !SHARED_TOKEN && (
           <button onClick={() => setAdding(last)} className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Plus size={12} /> Add</button>
         )}
       >
@@ -200,14 +205,15 @@ function DayRow({ date, day, open, onToggle }: { date: string; day: number; open
         <span className="min-w-0 flex-1">
           {e ? (
             <>
-              <span className="block truncate text-[13px] font-medium">{lead || '—'}</span>
+              <span className="flex items-center gap-1.5 text-[13px] font-medium"><span className="truncate">{lead || '—'}</span><PublicMark on={e.public} /></span>
               {e.highlight.trim() && e.text.trim() && <span className="block truncate text-[12px] text-muted">{firstLine(e.text)}</span>}
             </>
           ) : <span className="text-[13px] text-muted">Not written</span>}
         </span>
         {e?.rating && <span className="pt-1"><Stars value={e.rating} small /></span>}
       </button>
-      {open && <div className="px-2 pt-1 pb-3"><DayEditor date={date} autoFocus={!e} /></div>}
+      {/* (On a shared trip's page, the day as written.) */}
+      {open && <div className="px-2 pt-1 pb-3">{SHARED_TOKEN ? e?.text && <p className="text-[13px] whitespace-pre-wrap">{e.text}</p> : <DayEditor date={date} autoFocus={!e} />}</div>}
     </li>
   )
 }

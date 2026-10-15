@@ -4,11 +4,15 @@
 import { BedDouble, BookOpen, Receipt, Ticket, type LucideIcon } from 'lucide-react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { useSharedItems } from '../store/items'
+import { useSharedJournal } from '../store/journal'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { isPhone, usePhone } from './usePhone'
 
 export type MyTripTab = 'stays' | 'tickets' | 'receipts' | 'daily'
+/** The panel's name: the user's own, or neutral on a shared trip's page (it's its owner's). */
+export const MY_TRIP_NAME = SHARED_TOKEN ? 'Trip details' : 'My trip'
 export const MY_TRIP_TABS: MyTripTab[] = ['stays', 'tickets', 'receipts', 'daily']
 export const MY_TRIP_LABELS: Record<MyTripTab, string> = { tickets: 'Tickets', stays: 'Stays', daily: 'Daily', receipts: 'Receipts' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
@@ -47,8 +51,17 @@ export const useRightPanel = create<RightPanel>()(
   ),
 )
 
-/** Whether there's a My trip panel: on the user's own trip (My visit and the journal are private), once it's planned. */
-export const useHasRightPanel = () => useTrip((s) => !!s.plan) && !SHARED_TOKEN
+/** Whether there's a My trip panel: once the trip is planned; on a shared trip's page, if its owner made anything in it
+ *  public. */
+export function useHasRightPanel() {
+  const plan = useTrip((s) => !!s.plan)
+  const shared = useSharedItems((s) => s.entries)
+  const days = useSharedJournal((s) => s.entries)
+  return plan && (!SHARED_TOKEN || Object.keys(shared).length + Object.keys(days).length > 0)
+}
+
+/** Its tabs. */
+export const useMyTripTabs = (): MyTripTab[] => MY_TRIP_TABS
 
 /** Whether My trip is open beside the map now (on a computer). */
 export function useRightPanelBeside() {
@@ -69,5 +82,6 @@ export function useDrawerOverMap() {
 /** The same, read once (outside React: the map's camera moves). */
 export const drawerOverMap = () => {
   const { selected, plan } = useTrip.getState()
-  return !!selected && !(plan && !SHARED_TOKEN && useRightPanel.getState().open && !isPhone())
+  const shared = Object.keys(useSharedItems.getState().entries).length + Object.keys(useSharedJournal.getState().entries).length > 0
+  return !!selected && !(plan && (!SHARED_TOKEN || shared) && useRightPanel.getState().open && !isPhone())
 }
