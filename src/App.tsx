@@ -147,7 +147,13 @@ export default function App() {
   const rightBeside = useRightPanelBeside()
   const rightSheet = useRightPanel((s) => s.sheet)
   const setRightSheet = right.setSheet
-  const [rightSnap, setRightSnap] = useState<Snap>('half')
+  // (Its sheet opens full, however it's opened: the button, or a link to one of its tabs.)
+  const [rightSnap, setRightSnap] = useState<Snap>('full')
+  const [rightWasOpen, setRightWasOpen] = useState(rightSheet)
+  if (rightSheet !== rightWasOpen) {
+    setRightWasOpen(rightSheet)
+    if (rightSheet) setRightSnap('full')
+  }
   // (On a narrow window, My trip open folds the left panel away, like a city's panel.)
   const sidebar = useSidebar(!!selected || rightBeside, () => { select(null); right.hide() })
   const phone = usePhone()
@@ -292,7 +298,7 @@ export default function App() {
               </button>
               {hasRight && (
                 <button
-                  onClick={() => { setRightSheet(!rightSheet); setRightSnap('half') }}
+                  onClick={() => setRightSheet(!rightSheet)}
                   aria-label={`${MY_TRIP_NAME}: stays, tickets, receipts and journal`}
                   className="absolute top-13 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
                 >
