@@ -1,14 +1,14 @@
-// The trip's journal (PLAN.md §14.4, store/journal.ts): a day's highlight, its story (Markdown, styled as it's typed)
-// and a rating, written from Today or any day so far in My trip's Daily (MyTrip.tsx). Saved on this device as it's
-// typed, and sent to the account when there's a connection; also on a read-only trip (the journal isn't the plan); on
-// a shared trip's page, only the days made public, read-only.
-import { BookOpen, Check, ChevronRight, Plus, Star } from 'lucide-react'
+// The trip's journal (PLAN.md §14.4, store/journal.ts): a day's highlight, its story (Markdown, styled as it's typed),
+// how it was (a face) and tags, written from Today or any day so far in My trip's Daily (MyTrip.tsx). Saved on this
+// device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal isn't
+// the plan); on a shared trip's page, only the days made public, read-only.
+import { BookOpen, Check, ChevronRight, Plus, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
 import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
-import { JOURNAL_LIMITS } from '../store/journalCore'
+import { cleanTag, cleanTags, JOURNAL_LIMITS } from '../store/journalCore'
 import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate, flag, shortDate } from '../ui/format'
@@ -36,7 +36,12 @@ export function useOpenJournal() {
   }
 }
 
-/** A day's entry, as it's written: its highlight, its story and a rating (1–5, again to clear). */
+/** How a day was, from 1 (awful) to 5 (great). */
+const MOODS = [
+  { face: '😣', label: 'Awful' }, { face: '🙁', label: 'Bad' }, { face: '😐', label: 'Okay' }, { face: '🙂', label: 'Good' }, { face: '😄', label: 'Great' },
+] as const
+
+/** A day's entry, as it's written: its highlight, its story, how it was (again to clear) and tags. */
 export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boolean }) {
   const entry = useJournal((s) => s.books[s.key]?.entries[date])
   const write = useJournal((s) => s.write)
@@ -56,8 +61,9 @@ export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boole
           placeholder="How was the day? Where you went, who you met, what you ate…" label="The day"
         />
       </Suspense>
+      <Tags tags={entry?.tags ?? []} onChange={(tags) => save({ tags: tags.length ? tags : undefined })} />
       <div className="flex items-center justify-between gap-2">
-        <Stars value={entry?.rating} onChange={(rating) => save({ rating: rating === entry?.rating ? undefined : rating })} />
+        <Mood value={entry?.rating} onChange={(rating) => save({ rating: rating === entry?.rating ? undefined : rating })} />
         <span className="flex min-w-0 items-center gap-1">
           <SaveState date={date} />
           {!isEmptyEntry(entry) && <PublicToggle on={!!entry?.public} onChange={(on) => save({ public: on || undefined })} />}
@@ -67,18 +73,74 @@ export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boole
   )
 }
 
-function Stars({ value, onChange, small }: { value?: number; onChange?: (n: 1 | 2 | 3 | 4 | 5) => void; small?: boolean }) {
-  const size = small ? 11 : 18
+/** How the day was, a face of five to pick (or, `small`, the one picked). */
+function Mood({ value, onChange, small }: { value?: number; onChange?: (n: 1 | 2 | 3 | 4 | 5) => void; small?: boolean }) {
+  if (!onChange) {
+    const mood = value ? MOODS[value - 1] : null
+    return mood && <span title={mood.label} aria-label={`The day was ${mood.label.toLowerCase()}`} className={small ? 'text-[13px] leading-none' : 'text-[18px]'}>{mood.face}</span>
+  }
   return (
-    <span className="flex items-center" role={onChange ? 'radiogroup' : undefined} aria-label={onChange ? 'How was the day' : `${value} of 5`}>
-      {([1, 2, 3, 4, 5] as const).map((n) => {
-        const star = <Star size={size} className={n <= (value ?? 0) ? 'fill-warn text-warn' : 'text-line'} />
-        return onChange
-          ? <button key={n} role="radio" aria-checked={value === n} aria-label={`${n} of 5`} onClick={() => onChange(n)} className="rounded p-0.5 hover:bg-canvas">{star}</button>
-          : <span key={n} aria-hidden>{star}</span>
+    <span className="flex items-center gap-0.5" role="radiogroup" aria-label="How was the day">
+      {MOODS.map((m, i) => {
+        const n = (i + 1) as 1 | 2 | 3 | 4 | 5
+        const on = value === n
+        return (
+          <button
+            key={n} role="radio" aria-checked={on} aria-label={m.label} title={m.label} onClick={() => onChange(n)}
+            className={`rounded-full px-1 py-0.5 text-[18px] leading-none transition ${on ? 'bg-accent-soft' : value ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'opacity-70 hover:opacity-100'}`}
+          >
+            {m.face}
+          </button>
+        )
       })}
     </span>
   )
+}
+
+/** A day's tags: each removable, one added on Enter or a comma (from those on other days, as it's typed). */
+function Tags({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) => void }) {
+  const [draft, setDraft] = useState('')
+  const all = useJournalTags()
+  const add = (text: string) => {
+    setDraft('')
+    // (A tag used before, as it was written there.)
+    const tag = cleanTag(text)
+    const known = all.find((t) => t.toLowerCase() === tag.toLowerCase())
+    if (tag) onChange(cleanTags([...tags, known ?? tag]))
+  }
+  const full = tags.length >= JOURNAL_LIMITS.tags
+  return (
+    <div className="flex flex-wrap items-center gap-1 rounded-md border border-line bg-panel px-1.5 py-1 focus-within:border-accent">
+      {tags.map((t) => (
+        <span key={t} className="flex items-center gap-0.5 rounded-full bg-accent-soft py-0.5 pr-0.5 pl-2 text-[12px] text-accent">
+          #{t}
+          <button onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove the tag ${t}`} className="rounded-full p-0.5 hover:bg-panel"><X size={11} /></button>
+        </span>
+      ))}
+      {!full && (
+        <input
+          value={draft} list="journal-tags" maxLength={JOURNAL_LIMITS.tagChars + 1} aria-label="Add a tag"
+          placeholder={tags.length ? 'Add a tag' : 'Tags: hike, food, friends…'}
+          onChange={(e) => (e.target.value.endsWith(',') ? add(e.target.value.slice(0, -1)) : setDraft(e.target.value))}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && draft.trim()) { e.preventDefault(); add(draft) }
+            if (e.key === 'Backspace' && !draft && tags.length) onChange(tags.slice(0, -1))
+          }}
+          onBlur={() => draft.trim() && add(draft)}
+          className="min-w-24 flex-1 bg-transparent px-1 py-0.5 text-[12px] outline-none max-md:!text-[16px]"
+        />
+      )}
+      <datalist id="journal-tags">{all.filter((t) => !tags.includes(t)).map((t) => <option key={t} value={t} />)}</datalist>
+    </div>
+  )
+}
+
+/** The tags on the journal's days, the most used first. */
+function useJournalTags(): string[] {
+  const entries = useJournalEntries()
+  const count = new Map<string, number>()
+  for (const e of Object.values(entries)) for (const t of e.tags ?? []) count.set(t, (count.get(t) ?? 0) + 1)
+  return [...count.keys()].sort((a, b) => count.get(b)! - count.get(a)! || a.localeCompare(b))
 }
 
 /** Where the day's entry is: saved to the account, being sent, kept on this device until there's a connection, or in
@@ -115,8 +177,8 @@ export function TodayEntry({ today }: { today: string }) {
   )
 }
 
-/** The journal, My trip's Daily: the days of the trip so far that are written, newest first, under the stop where
- *  their night was, each opening to change it; and one to add (today first). */
+/** The journal, My trip's Daily: the days of the trip so far that are written (or those with a tag), newest first,
+ *  under the stop where their night was, each opening to change it; and one to add (today first). */
 export function JournalView() {
   const { plan, input, select } = useTrip()
   const entries = useJournalEntries()
@@ -124,6 +186,8 @@ export function JournalView() {
   const [open, setOpen] = useState<string | null>(null)
   // The day being added, written at the top until it's done.
   const [adding, setAdding] = useState<string | null>(null)
+  // The tag the days are shown by (picked on a day).
+  const [tag, setTag] = useState<string | null>(null)
   const today = localToday()
 
   // Brought to a stop's days (from its mark in the stops).
@@ -140,7 +204,8 @@ export function JournalView() {
   const last = today < input.endDate ? today : input.endDate
   const all: string[] = []
   for (let d = last; d >= input.startDate; d = addDays(d, -1)) all.push(d)
-  const days = all.filter((d) => !isEmptyEntry(entries[d]) && d !== adding)
+  const tagged = (d: string) => !tag || !!entries[d]?.tags?.some((t) => t.toLowerCase() === tag.toLowerCase())
+  const days = all.filter((d) => !isEmptyEntry(entries[d]) && d !== adding && tagged(d))
   // Consecutive days at the same stop, together.
   const groups: { stop: ScheduledStop | null; days: string[] }[] = []
   for (const d of days) {
@@ -155,7 +220,14 @@ export function JournalView() {
   return (
     <Sections>
       <Section
-        title={written ? `${written} of ${all.length} day${all.length === 1 ? '' : 's'} written` : 'No days written yet'}
+        title={tag
+          ? <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-0.5 rounded-full bg-accent-soft py-0.5 pr-0.5 pl-2 text-[12px] font-normal text-accent">
+                #{tag}<button onClick={() => setTag(null)} aria-label="Show every day" className="rounded-full p-0.5 hover:bg-panel"><X size={11} /></button>
+              </span>
+              {days.length} day{days.length === 1 ? '' : 's'}
+            </span>
+          : written ? `${written} of ${all.length} day${all.length === 1 ? '' : 's'} written` : 'No days written yet'}
         aside={adding === null && !SHARED_TOKEN && (
           <button onClick={() => setAdding(last)} className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Plus size={12} /> Add</button>
         )}
@@ -188,7 +260,7 @@ export function JournalView() {
           >
             <ol className="-mx-2">
               {g.days.map((d) => (
-                <DayRow key={d} date={d} day={tripDay(input.startDate, d)} open={open === d} onToggle={() => setOpen(open === d ? null : d)} />
+                <DayRow key={d} date={d} day={tripDay(input.startDate, d)} open={open === d} onToggle={() => setOpen(open === d ? null : d)} onTag={setTag} />
               ))}
             </ol>
           </Section>
@@ -198,7 +270,7 @@ export function JournalView() {
   )
 }
 
-function DayRow({ date, day, open, onToggle }: { date: string; day: number; open: boolean; onToggle: () => void }) {
+function DayRow({ date, day, open, onToggle, onTag }: { date: string; day: number; open: boolean; onToggle: () => void; onTag: (tag: string) => void }) {
   const e = useDayEntry(date)
   // Its highlight (or first line) and, under it, the rest as plain text, line by line, cut with "…" after three.
   const lines = e ? plainLines(e.text) : []
@@ -216,8 +288,14 @@ function DayRow({ date, day, open, onToggle }: { date: string; day: number; open
             </>
           ) : <span className="text-[13px] text-muted">Not written</span>}
         </span>
-        {e?.rating && <span className="pt-1"><Stars value={e.rating} small /></span>}
+        {e?.rating && <span className="pt-0.5"><Mood value={e.rating} small /></span>}
       </button>
+      {/* (A tag shows the days with it.) */}
+      {(!open || SHARED_TOKEN) && !!e?.tags?.length && (
+        <div className="-mt-1 flex flex-wrap gap-1 pr-2 pb-1.5 pl-[5.5rem]">
+          {e.tags.map((t) => <button key={t} onClick={() => onTag(t)} className="rounded-full px-1.5 text-[11px] text-accent hover:bg-accent-soft">#{t}</button>)}
+        </div>
+      )}
       {/* (On a shared trip's page, the day as written.) */}
       {open && (
         <div className="px-2 pt-1 pb-3">

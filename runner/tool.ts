@@ -72,7 +72,7 @@ function journal(entries: Journal | null, args: Record<string, unknown>): ToolRe
   const shown = days.slice(-(from || to ? MOST_DAYS : LATEST_DAYS))
   if (!shown.length) return { days: [], note: from || to ? 'Nothing written for those days.' : 'Nothing written in the journal yet.' }
   return {
-    days: shown.map((e) => ({ date: e.date, city: e.cityId && cityName(e.cityId), highlight: e.highlight || undefined, text: e.text || undefined, rating: e.rating })),
+    days: shown.map((e) => ({ date: e.date, city: e.cityId && cityName(e.cityId), highlight: e.highlight || undefined, text: e.text || undefined, rating: e.rating, tags: e.tags })),
     ...(days.length > shown.length && { earlier: `${days.length - shown.length} earlier days not shown: ask with from and to.` }),
   }
 }

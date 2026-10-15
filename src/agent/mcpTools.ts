@@ -77,7 +77,7 @@ export const MCP_TOOLS: McpTool[] = [
   ...TOOLS.filter((t) => RUNNER_TOOLS[t.name]).map((t) => tool(t.name, DESCRIPTIONS[t.name] ?? t.description, {
     ...t.parametersJsonSchema, properties: { ...t.parametersJsonSchema.properties, trip: TRIP },
   })),
-  tool('get_journal', 'The trip\'s journal: what the user wrote about each day of the trip (the day\'s highlight, a few lines, a rating 1–5) and where they spent the night. Without from and to: the latest 60 days written.', {
+  tool('get_journal', 'The trip\'s journal: what the user wrote about each day of the trip (the day\'s highlight, a few lines in Markdown, how the day was from 1 awful to 5 great, tags) and where they spent the night. Without from and to: the latest 60 days written.', {
     type: 'object', properties: { trip: TRIP, from: DAY('First day'), to: DAY('Last day') }, required: [],
   }),
   tool('get_changes', 'The changes AI apps made to a trip with these tools (the latest few of the last two weeks), newest first: id, which app, what changed, when, and whether it was undone.', {

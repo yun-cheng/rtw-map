@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
+import { isEmptyEntry, mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -26,6 +26,15 @@ describe('journal', () => {
     expect(parseEntries({ entries: [{ date: 'May 1', highlight: '', text: '', updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', rating: 9, updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseEntries({})).toBeTypeOf('string')
+  })
+
+  it('keeps a day\'s tags clean: no "#", each once whatever its case, within the limits', () => {
+    const tags = ['#Hike', ' food  market ', 'hike', '', 'x'.repeat(50), ...Array.from({ length: 12 }, (_, i) => `t${i}`)]
+    const [e] = parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', tags, updatedAt: 1 }] }) as DayEntry[]
+    expect(e.tags).toEqual(['Hike', 'food market', 'x'.repeat(32), ...Array.from({ length: 9 }, (_, i) => `t${i}`)])
+    expect(isEmptyEntry(e)).toBe(false)
+    expect((parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', tags: [' # '], updatedAt: 1 }] }) as DayEntry[])[0]).not.toHaveProperty('tags')
+    expect(parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', tags: [3], updatedAt: 1 }] })).toBeTypeOf('string')
   })
 
   it('shows on the shared link only the days made public', () => {
