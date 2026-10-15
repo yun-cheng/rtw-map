@@ -1,7 +1,7 @@
 // The trip's journal (PLAN.md §14.4, store/journal.ts): a day's highlight, its story (Markdown, styled as it's typed),
-// how it was (a face) and tags, written from Today or any day so far in My trip's Daily (MyTrip.tsx). Saved on this
-// device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal isn't
-// the plan); on a shared trip's page, only the days made public, read-only.
+// how it was (a face) and tags, written from Today or any day so far in My trip's Journal tab (MyTrip.tsx). Saved on
+// this device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal
+// isn't the plan); on a shared trip's page, only the days made public, read-only.
 import { BookOpen, Check, ChevronRight, Plus, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
@@ -25,7 +25,7 @@ const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
 
-/** Opens the journal, My trip's Daily (closing a city's or journey's panel open in its place), at a stop's days
+/** Opens the journal, My trip's Journal tab (closing a city's or journey's panel open in its place), at a stop's days
  *  (`focus`: its first day). */
 export function useOpenJournal() {
   const setView = useJournal((s) => s.setView)
@@ -177,7 +177,7 @@ export function TodayEntry({ today }: { today: string }) {
   )
 }
 
-/** The journal, My trip's Daily: the days of the trip so far that are written (or those with a tag), newest first,
+/** The journal, My trip's Journal tab: the days of the trip so far that are written (or those with a tag), newest first,
  *  under the stop where their night was, each opening to change it; and one to add (today first). */
 export function JournalView() {
   const { plan, input, select } = useTrip()
