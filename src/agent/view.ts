@@ -6,7 +6,7 @@ import { dataset as ds } from '../data/dataset'
 import { likelyMonth, stayMonth, type CostKind } from '../planner'
 import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
 import type { ViewItem } from './shared'
-import { MONTHS, shortDate } from '../ui/format'
+import { MONTHS, dateRange } from '../ui/format'
 import { COST_LABELS } from '../map/scales'
 
 export { viewText, type ViewItem, type ViewRef } from './shared'
@@ -59,7 +59,7 @@ export function viewItems(): ViewItem[] {
     const i = plan?.stops.findIndex((s) => s.cityId === c.id) ?? -1
     const stop = i >= 0 ? plan!.stops[i] : null
     const where = stop
-      ? `It is stop ${i + 1} of the trip: ${shortDate(stop.arrive)} – ${shortDate(stop.depart)}, ${stop.nights} nights (mostly ${MONTH_NAMES[stayMonth(stop) - 1]}).`
+      ? `It is stop ${i + 1} of the trip: ${dateRange(stop.arrive, stop.depart)}, ${stop.nights} nights (mostly ${MONTH_NAMES[stayMonth(stop) - 1]}).`
       : `It is not in the trip; if added, they'd likely be there around ${MONTH_NAMES[likelyMonth(ds, plan, input, c.id) - 1]}.`
     items.push({
       key: `city:${c.id}:${cityTab}`,

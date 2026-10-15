@@ -12,7 +12,7 @@ import { ITEM_LIMITS, NO_PLACE } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
-import { cityName, dayDate, flag, shortDate } from '../ui/format'
+import { cityName, dateRange, dayDate, dayDateNoYear, flag } from '../ui/format'
 import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
@@ -108,7 +108,8 @@ function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
           <div className="flex items-center gap-1.5 font-medium">{stay.title || 'A stay'}<AiMark on={stay.ai} /><PublicMark on={stay.public} /></div>
           {(stay.from || stay.to) && (
             <div className="text-[12px] text-muted">
-              {stay.from ? dayDate(stay.from) : '…'} → {stay.to ? dayDate(stay.to) : '…'}
+              {/* (The year once, when both are in it.) */}
+              {stay.from ? (stay.to?.slice(0, 4) === stay.from.slice(0, 4) ? dayDateNoYear(stay.from) : dayDate(stay.from)) : '…'} → {stay.to ? dayDate(stay.to) : '…'}
               {nights !== null && nights > 0 && ` · ${nights} night${nights === 1 ? '' : 's'}`}
             </div>
           )}
@@ -328,7 +329,7 @@ export function AllStays() {
   )
 }
 
-const stopDates = (stop: ScheduledStop) => `${shortDate(stop.arrive)} – ${shortDate(stop.depart)}, ${stop.nights} night${stop.nights === 1 ? '' : 's'}`
+const stopDates = (stop: ScheduledStop) => `${dateRange(stop.arrive, stop.depart)}, ${stop.nights} night${stop.nights === 1 ? '' : 's'}`
 
 /** A stay added in My trip: its stop picked (or none: null), then written as anywhere else. A stop changed moves it
  *  there (with that stop's dates, unless others were given). */

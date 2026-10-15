@@ -3,7 +3,7 @@ import { useAccount } from '../agent/account'
 import { useSaved, type TripSummary } from '../store/saved'
 import { shareUrl } from '../store/shareLink'
 import { confirm } from '../ui/dialog'
-import { shortDate } from '../ui/format'
+import { dateRange } from '../ui/format'
 import { useOnline } from '../ui/useOnline'
 
 const STATUS: Record<string, { text: string; className: string }> = {
@@ -17,7 +17,7 @@ const OFFLINE_TIP = "No connection: your changes are kept on this device and sav
 
 
 const tripLine = (t: TripSummary) =>
-  [t.startDate && t.endDate ? `${shortDate(t.startDate)} – ${shortDate(t.endDate)} ${t.endDate.slice(0, 4)}` : null, t.stops ? `${t.stops} stops` : 'not planned yet']
+  [t.startDate && t.endDate ? dateRange(t.startDate, t.endDate) : null, t.stops ? `${t.stops} stops` : 'not planned yet']
     .filter(Boolean).join(' · ')
 
 /** Header control for the user's saved trips: the open trip's name, save status, and a menu to switch, add, rename,

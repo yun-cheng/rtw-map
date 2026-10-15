@@ -4,7 +4,7 @@ import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planne
 import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
 import { confirm } from '../ui/dialog'
-import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
+import { MODE_ICON, STOP_COLOR, cityName, dateRange, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
@@ -84,7 +84,7 @@ export function Itinerary() {
                 </span>
                 <div className={`min-w-0 flex-1 ${time === 'done' ? 'opacity-55' : ''}`} title={time === 'done' ? 'Done: you were here' : undefined}>
                   <div className="flex items-center gap-1.5 font-medium">{time === 'now' && <Badge tone="ok">Now</Badge>}<span className="truncate">{flag(city.iso2)} {city.name}</span><CheckMark warnings={stopWarnings(plan.warnings, s.cityId)} /><NoteMark at={s.cityId} /><VisitMarks stop={s} />{time !== 'ahead' && started && <JournalMark stop={s} />}</div>
-                  <div className="text-[11px] text-muted">{shortDate(s.arrive)} – {shortDate(s.depart)}</div>
+                  <div className="text-[11px] text-muted">{dateRange(s.arrive, s.depart)}</div>
                 </div>
                 {readOnly ? (
                   <span className="pr-1 text-[13px] font-semibold tabular-nums" title="Nights">{s.nights}</span>

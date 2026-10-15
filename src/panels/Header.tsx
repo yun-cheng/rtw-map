@@ -1,7 +1,7 @@
 import { Settings } from 'lucide-react'
 import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
-import { shortDate } from '../ui/format'
+import { dateRange } from '../ui/format'
 import { OfflinePill } from '../ui/OfflinePill'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
@@ -26,7 +26,7 @@ export function Header({ onSettings }: { onSettings: () => void }) {
       {SHARED_TOKEN ? <SharedTitle /> : <TripSwitcher />}
       {plan && (
         <div className="flex min-w-0 items-center gap-4 overflow-hidden text-[13px] whitespace-nowrap">
-          <span>{shortDate(input.startDate)} – {shortDate(input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
+          <span>{dateRange(input.startDate, input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
         </div>
       )}
       <UndoRedo />

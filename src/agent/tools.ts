@@ -12,7 +12,7 @@ import {
 import type { CityTab } from '../store/trip'
 import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
-import { rainShare, warningTitle } from '../ui/format'
+import { dateRange, rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
 import type { ViewItem, ViewRef } from './shared'
 
@@ -119,7 +119,6 @@ function stopIndex(ref: unknown): number {
 }
 
 const monthName = (m: number) => new Date(2000, m - 1).toLocaleString('en', { month: 'short' })
-const shortDate = (iso: string) => `${Number(iso.slice(8))} ${monthName(Number(iso.slice(5, 7)))}`
 
 // ---------------------------------------------------------------- describing the trip
 
@@ -216,7 +215,7 @@ export function tripContext(): string {
       // What doesn't fit there (the preferences: budget, weather, travel days…), so it's plain where to adjust.
       const checks = plan.warnings.filter((w) => w.cityId === s.cityId && w.severity !== 'info').map((w) => warningTitle(w, 'C'))
         .map((t) => (t.startsWith(`${cityName(s.cityId)}: `) ? t.slice(cityName(s.cityId).length + 2) : t))
-      lines.push(`${i + 1}. ${cityName(s.cityId)}, ${countryName(ds.cities[s.cityId].iso2)}: ${shortDate(s.arrive)}–${shortDate(s.depart)}, ${s.nights} nights${s.locked ? ', locked' : ''}${travel}${checks.length ? `. Checks: ${checks.join('; ')}` : ''}`)
+      lines.push(`${i + 1}. ${cityName(s.cityId)}, ${countryName(ds.cities[s.cityId].iso2)}: ${dateRange(s.arrive, s.depart)}, ${s.nights} nights${s.locked ? ', locked' : ''}${travel}${checks.length ? `. Checks: ${checks.join('; ')}` : ''}`)
     })
     lines.push(`Cost estimate: €${Math.round(plan.cost.min)}–€${Math.round(plan.cost.max)} (≈€${Math.round(plan.cost.perDay)}/day).`)
     const languages = tripLanguages(plan.stops.map((s) => s.cityId))

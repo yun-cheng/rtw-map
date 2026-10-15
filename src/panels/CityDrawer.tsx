@@ -2,7 +2,7 @@ import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode }
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
-import { MODE_ICON, VISA_TEXT, compact, duration, flag, rateText, shortDate, shownTemps } from '../ui/format'
+import { MODE_ICON, VISA_TEXT, compact, duration, flag, dateRange, rateText, shownTemps } from '../ui/format'
 import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
@@ -651,7 +651,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
           {stop ? (
             <>
-              <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {shortDate(stop.arrive)} – {shortDate(stop.depart)} · {stop.nights} nights</span>
+              <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</span>
               {/* (Its nights, lock and removal are the Itinerary's, opened beside this at the stop: next to them here.) */}
               {!readOnly && (
                 // (Styled as Ask AI, above.)

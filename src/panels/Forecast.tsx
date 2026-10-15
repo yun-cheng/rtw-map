@@ -118,7 +118,7 @@ export function savedNote(on: number) {
   const d = new Date(on)
   return d.toDateString() === new Date().toDateString()
     ? `Offline: the forecast as of ${d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} today.`
-    : `Offline: the forecast from ${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })}.`
+    : `Offline: the forecast from ${d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}.`
 }
 
 /** "Next 10 days": the forecast charts (temperatures, then rain), today highlighted; a day's details on hover. */

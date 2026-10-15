@@ -11,7 +11,7 @@ import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { cleanEmojis, cleanTag, cleanTags, dayEmojis, JOURNAL_LIMITS } from '../store/journalCore'
 import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
-import { cityName, dayDate, flag, shortDate } from '../ui/format'
+import { cityName, dateRange, dayDate, dayMonth, flag, weekday } from '../ui/format'
 import { Section, Sections } from '../ui/kit'
 import { AlbumLinks } from './Visit'
 import { useOnline } from '../ui/useOnline'
@@ -286,7 +286,7 @@ export function JournalView() {
               {g.stop
                 ? <button onClick={() => select({ type: 'city', id: g.stop!.cityId })} className="text-left hover:underline">{flag(ds.cities[g.stop.cityId].iso2)} {cityName(g.stop.cityId)}</button>
                 : 'On the way'}
-              <span className="font-normal text-muted"> · {shortDate(g.days.at(-1)!)}{g.days.length > 1 && ` – ${shortDate(g.days[0])}`}</span>
+              <span className="font-normal text-muted"> · {dateRange(g.days.at(-1)!, g.days[0])}</span>
             </>}
             action={g.stop && <AlbumLinks cityId={g.stop.cityId} />}
           >
@@ -312,7 +312,7 @@ function DayRow({ date, day, onOpen, onTag }: { date: string; day: number; onOpe
   return (
     // (The day and its tags one card: a click on it opens the day, on a tag shows the days with it.)
     <li onClick={onOpen} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-canvas">
-      <span className="w-16 shrink-0 pt-px text-[11px] leading-tight text-muted">{dayDate(date)}<br />Day {day}</span>
+      <span className="w-[4.75rem] shrink-0 pt-px text-[11px] leading-tight whitespace-nowrap text-muted">{weekday(date)} {dayMonth(date)}<br />{date.slice(0, 4)} · Day {day}</span>
       <span className="min-w-0 flex-1">
         {e ? (
           <>

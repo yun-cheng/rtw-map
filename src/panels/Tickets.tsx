@@ -10,7 +10,7 @@ import { ITEM_LIMITS, NO_PLACE, TICKET_MODES, type TicketMode } from '../store/i
 import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
 import { localToday } from '../planner'
-import { cityName, dayDate, shortDate } from '../ui/format'
+import { cityName, dayDate, dayDateNoYear, shortDate } from '../ui/format'
 import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
@@ -39,7 +39,9 @@ const byDeparture = (a: TripItem, b: TripItem) => (a.from ?? '').localeCompare(b
 /** When it leaves and arrives: "Tue 4 May 07:35 → 09:10", the arrival's day too when it's another. */
 function when(t: TripItem) {
   if (!t.from && !t.to) return ''
-  const leaves = t.from ? `${dayDate(dayOf(t.from))}${timeOf(t.from) && ` ${timeOf(t.from)}`}` : '…'
+  // (The year once: by the day it arrives, when that's another day of the same year.)
+  const sameYear = !!t.to && dayOf(t.to) !== dayOf(t.from) && t.to.slice(0, 4) === t.from?.slice(0, 4)
+  const leaves = t.from ? `${(sameYear ? dayDateNoYear : dayDate)(dayOf(t.from))}${timeOf(t.from) && ` ${timeOf(t.from)}`}` : '…'
   const arrives = !t.to ? '' : dayOf(t.to) === dayOf(t.from) ? timeOf(t.to) : `${dayDate(dayOf(t.to))}${timeOf(t.to) && ` ${timeOf(t.to)}`}`
   return arrives ? `${leaves} → ${arrives}` : leaves
 }

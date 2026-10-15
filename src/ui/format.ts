@@ -45,14 +45,32 @@ export function duration(min: number): string {
   return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`
 }
 
-export function shortDate(iso: string): string {
+/** "14 Oct", without its year: where the year is said by it (a range's end, a year's list). */
+export function dayMonth(iso: string): string {
   const d = new Date(iso + 'T00:00:00Z')
   return `${d.getUTCDate()} ${MONTHS[d.getUTCMonth()]}`
 }
 
+/** "14 Oct 2026": with its year, as a trip can cross one. */
+export const shortDate = (iso: string) => `${dayMonth(iso)} ${iso.slice(0, 4)}`
+
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
-/** "Thu 14 Oct". */
-export const dayDate = (iso: string) => `${WEEKDAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]} ${shortDate(iso)}`
+/** "Thu", a day's weekday. */
+export const weekday = (iso: string) => WEEKDAYS[new Date(`${iso}T00:00:00Z`).getUTCDay()]
+/** "Thu 14 Oct 2026". */
+export const dayDate = (iso: string) => `${weekday(iso)} ${shortDate(iso)}`
+
+/** "Thu 14 Oct", a day with its weekday where the year is said after it ("Thu 14 Oct → Sat 16 Oct 2026"). */
+export const dayDateNoYear = (iso: string) => `${weekday(iso)} ${dayMonth(iso)}`
+
+/** Days from one to another, the year said once: "14–16 Oct 2026", "30 Sep – 3 Oct 2026", "28 Dec 2026 – 3 Jan 2027"
+ *  (one day: "14 Oct 2026"). */
+export function dateRange(from: string, to: string): string {
+  if (from === to) return shortDate(from)
+  if (from.slice(0, 4) !== to.slice(0, 4)) return `${shortDate(from)} – ${shortDate(to)}`
+  if (from.slice(0, 7) === to.slice(0, 7)) return `${Number(from.slice(8))}–${shortDate(to)}`
+  return `${dayMonth(from)} – ${shortDate(to)}`
+}
 
 export const compact = (n: number) =>
   n >= 1e6 ? `${(n / 1e6).toFixed(n >= 1e7 ? 0 : 1)}M` : n >= 1e3 ? `${Math.round(n / 1e3)}k` : String(n)

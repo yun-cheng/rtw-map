@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
 import { dataset as ds } from '../data/dataset'
 import { useTrip } from '../store/trip'
-import { shortDate } from '../ui/format'
+import { dateRange } from '../ui/format'
 import { Section, Sections, Segmented } from '../ui/kit'
 import { useTheme, type ThemeChoice } from '../ui/theme'
 import { useMoney } from '../ui/useMoney'
@@ -58,7 +58,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
           <Sections>
             <Section title="Trip">
               <div className="flex flex-wrap items-center gap-2">{SHARED_TOKEN ? <SharedTitle /> : <TripSwitcher />}</div>
-              {plan && <p className="mt-2 text-[13px] text-muted">{shortDate(input.startDate)} – {shortDate(input.endDate)} · {plan.totalNights} nights · {plan.stops.length} stops</p>}
+              {plan && <p className="mt-2 text-[13px] text-muted">{dateRange(input.startDate, input.endDate)} · {plan.totalNights} nights · {plan.stops.length} stops</p>}
             </Section>
             <Section title="Display">
               <div className="flex flex-col gap-3 text-[13px]">

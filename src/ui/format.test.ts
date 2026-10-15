@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { dataset as ds } from '../data/dataset'
-import { WEATHER_STYLE, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, rome2rioUrl, flightsUrl, warningTitle, weatherKind } from './format'
+import { WEATHER_STYLE, money, rateText, temp, shownTemps, tempBand, tempKind, tempRange, tempScale, tempTicks, transitUrl, rome2rioUrl, flightsUrl, warningTitle, weatherKind, dateRange, dayDate, shortDate } from './format'
 
 describe('money', () => {
   it('formats EUR amounts', () => {
@@ -134,5 +134,16 @@ describe('flightsUrl', () => {
     expect(flightsUrl('tirana', 'shkoder', '2027-05-10')).toMatch(/^https:\/\/www\.google\.com\/travel\/flights\?q=/)
     expect(q(flightsUrl('tirana', 'shkoder', '2027-05-10'))).toBe(`Flights from Tirana, Albania to ${ds.cities.shkoder.name}, Albania on 2027-05-10`)
     expect(q(flightsUrl('tirana', 'shkoder'))).toBe(`Flights from Tirana, Albania to ${ds.cities.shkoder.name}, Albania`)
+  })
+})
+
+describe('dates', () => {
+  it('say their year, a range only once', () => {
+    expect(shortDate('2026-10-14')).toBe('14 Oct 2026')
+    expect(dayDate('2026-10-14')).toBe('Wed 14 Oct 2026')
+    expect(dateRange('2026-10-14', '2026-10-16')).toBe('14–16 Oct 2026')
+    expect(dateRange('2026-09-30', '2026-10-03')).toBe('30 Sep – 3 Oct 2026')
+    expect(dateRange('2026-12-28', '2027-01-03')).toBe('28 Dec 2026 – 3 Jan 2027')
+    expect(dateRange('2026-10-14', '2026-10-14')).toBe('14 Oct 2026')
   })
 })
