@@ -234,7 +234,7 @@ describe('assistant runs', () => {
     expect(parseRunStart(start)).not.toHaveProperty('request.media')
     expect(parseRunStart({ ...start, media: [{ ...file, mimeType: 'text/html' }] })).toBe('Only images and PDFs can be attached')
     expect(parseRunStart({ ...start, media: [{ ...file, uri: 'https://example.com/x' }] })).toBe('Invalid attachment')
-    expect(parseRunStart({ ...start, media: Array(5).fill(file) })).toMatch(/up to 4/)
+    expect(parseRunStart({ ...start, media: Array(11).fill(file) })).toMatch(/up to 10/)
   })
 
   it('checks how a run ended, and notices one that went quiet', () => {

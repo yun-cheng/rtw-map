@@ -9,7 +9,7 @@ export type Attachment = { name: string; mimeType: string; uri: string; token: s
 
 /** What can be attached: images (as Gemini reads them) and PDFs. */
 export const MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf']
-export const MEDIA_LIMITS = { files: 4, bytes: 10_000_000, nameChars: 120, thumbChars: 16_000 }
+export const MEDIA_LIMITS = { files: 10, bytes: 10_000_000, nameChars: 120, thumbChars: 16_000 }
 
 /** A file's address at Gemini's Files API. */
 export const GEMINI_FILE = /^https:\/\/generativelanguage\.googleapis\.com\/v1beta\/files\/[a-z0-9-]{1,64}$/
