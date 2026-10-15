@@ -11,7 +11,7 @@ export type DayEntry = {
   cityId?: string
   /** One line, the day's highlight. */
   highlight: string
-  /** A few lines, plain text. */
+  /** A few lines, Markdown (plain text before it was written as it's shown). */
   text: string
   rating?: 1 | 2 | 3 | 4 | 5
   /** Shown on the trip's shared link; private otherwise. */

@@ -11,11 +11,12 @@ import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
 
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
+const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
 
 /**
- * "My notes" for a city (`at` its id; `tall` in its own tab) or a journey (`at` its `legKey(from, to)`), written in
- * Markdown: shown formatted (tasks can be ticked there), and as text to write while editing (an empty note is always
- * being written).
+ * "My notes" for a city (`at` its id; `tall` in its own tab) or a journey (`at` its `legKey(from, to)`), kept as
+ * Markdown: shown formatted (tasks can be ticked there), and written styled as it's typed or from a toolbar
+ * (MarkdownEditor.tsx; an empty note is always being written).
  */
 export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' : 'My notes' }: { at: string; placeholder: string; tall?: boolean; title?: string }) {
   const note = useNote(at)
@@ -51,25 +52,16 @@ export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' 
       }
     >
       {writing ? (
-        <>
-          <textarea
-            value={note}
-            autoFocus={editing}
-            onChange={(e) => {
+        <Suspense fallback={<div className={`${tall ? 'min-h-[221px]' : 'min-h-[97px]'} rounded-md border border-line bg-panel`} />}>
+          <MarkdownEditor
+            value={note} max={ITEM_LIMITS.textChars} placeholder={placeholder} label="My notes" autoFocus={editing} tall={tall}
+            onChange={(text) => {
               // (A note started from empty stays in writing until Done.)
               setEditing(true)
-              setNote(e.target.value)
+              setNote(text)
             }}
-            rows={Math.min(tall ? 24 : 10, Math.max(tall ? 10 : note ? 3 : 2, note.split('\n').length + 1))}
-            maxLength={ITEM_LIMITS.textChars}
-            placeholder={placeholder}
-            aria-label="My notes"
-            className="w-full resize-y rounded-md border border-line bg-panel px-2.5 py-1.5 font-mono text-[12.5px] outline-none focus:border-accent"
           />
-          <p className="mt-1 text-[11px] text-muted">
-            Markdown: **bold**, *italic*, # heading, - list, - [ ] to-do, [link](https://…), | tables |
-          </p>
-        </>
+        </Suspense>
       ) : (
         // A double click (or Edit) to change it.
         <div onDoubleClick={() => setEditing(true)} title="Double-click to edit">
