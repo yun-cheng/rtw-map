@@ -1,10 +1,11 @@
 import { Bell, FileText, MessagesSquare, Paperclip, X } from 'lucide-react'
-import { Fragment, useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { attach } from '../agent/attach'
 import { NO_SPENT, useChat, type ChatMessage, type Spent } from '../agent/chat'
 import { MEDIA_LIMITS, type Attachment } from '../agent/media'
 import { askToNotify, useNotify } from '../agent/notify'
+import { PHOTO_ASK_MS, usePhotoAsk } from '../agent/photoAsk'
 import { viewItems, type ViewItem } from '../agent/view'
 import { switchChat } from '../store/saved'
 import { useTrip } from '../store/trip'
@@ -369,6 +370,33 @@ function Chat() {
       else setAttached((list) => [...list, out])
     }))
   }
+
+  // "From files" in My trip: its files attached and sent with its question, or left in the box when it can't be sent
+  // now (or a file can't be attached).
+  const photoAsk = usePhotoAsk((s) => s.ask)
+  const takePhotoAsk = useEffectEvent((ask: NonNullable<typeof photoAsk>) => {
+    const files = ask.files.slice(0, MEDIA_LIMITS.files)
+    void (async () => {
+      setUploading((n) => n + files.length)
+      const out = await Promise.all(files.map((f) => attach(f)))
+      setUploading((n) => n - files.length)
+      const media = out.filter((a): a is Attachment => typeof a !== 'string')
+      const failed = out.find((a): a is string => typeof a === 'string')
+      const left = ask.files.length - files.length
+      if (failed) setAttachError(failed)
+      else if (left > 0) setAttachError(`A message takes ${MEDIA_LIMITS.files} files at most: ${left} more not sent. Attach ${left === 1 ? 'it' : 'them'} (📎) to your next message.`)
+      if (media.length && !failed && !useChat.getState().busy && !outOfAllowance && online) void send(ask.text, shared, { media })
+      else {
+        setDraft(ask.text)
+        setAttached((list) => [...list, ...media])
+      }
+    })()
+  })
+  useEffect(() => {
+    if (!photoAsk) return
+    usePhotoAsk.getState().set(null)
+    if (Date.now() - photoAsk.at <= PHOTO_ASK_MS) takePhotoAsk(photoAsk)
+  }, [photoAsk])
 
   const submit = (text = draft) => {
     const files = attached

@@ -16,12 +16,15 @@ cities that find_cities returns: don't add others. Prices are in EUR and tempera
 rules change: tell the user to confirm with official sources.
 
 My visit is the user's own, kept with the trip (get_visit): where they stay in each city, their tickets for the
-journeys between cities (flights, trains, buses, ferries), links, notes and prices they paid. To import bookings
-(from the user's email, say, with another tool of yours), save each with save_visit_item: a hotel or flat as a stay
-at its city, each flight or train as a ticket on the journey from city to journey_to (the nearest cities in the app
-to the airports or stations; one ticket per flight, so a connection is two). Check get_visit first and change a
-booking already there (by its id) instead of adding it again. Keep times as the booking gives them, in each place's
-local time. Leave out card numbers, passport numbers and the like. My visit can change on a read-only trip too.
+journeys between cities (flights, trains, buses, ferries), links, notes, receipts of what they spent, and prices they
+paid. To import bookings (from the user's email, say, with another tool of yours), save each with save_visit_item: a
+hotel or flat as a stay at its city, each flight or train as a ticket on the journey from city to journey_to (the
+nearest cities in the app to the airports or stations; one ticket per flight, so a connection is two); and, if the
+user asks to log their spending, each payment as a receipt at its city (what, day, amount, currency), linked to its
+stays and tickets (bookings: their ids, given when each was saved; a package of flights and a hotel paid together is
+one receipt for all of them). Check get_visit first and change a booking already there
+(by its id) instead of adding it again. Keep times as the booking gives them, in each place's local time. Leave out
+card numbers, passport numbers and the like. My visit can change on a read-only trip too.
 
 Changing a trip (if the user allowed this app to): each change is saved at once in the user's account and shows in
 the app, where the user can undo it; undo takes back this app's latest change. Changes apply to the trip's active

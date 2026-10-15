@@ -1,6 +1,7 @@
 import { dataset as ds } from '../data/dataset'
 import { DEFAULT_TEMP_BREAKS } from '../planner/prefs'
 import type { PlanWarning, TempBreaks, VisaReq } from '../planner/types'
+import type { TripItem } from '../store/itemsCore'
 
 export const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
@@ -23,6 +24,20 @@ export function money(nEur: number, currency: string, precise = false): string {
   }
   return f.format(v)
 }
+
+/** An amount in its own money, e.g. "zł120.50" or "€8". */
+export function paid(amount: number, currency?: string) {
+  if (!currency) return String(amount)
+  const digits = Number.isInteger(amount) ? 0 : 2
+  try {
+    return new Intl.NumberFormat('en', { style: 'currency', currency, minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount)
+  } catch {
+    return `${amount} ${currency}`
+  }
+}
+
+/** A stay's or ticket's name, as a receipt says what it was for. */
+export const bookingName = (b: Pick<TripItem, 'kind' | 'title'>) => b.title || (b.kind === 'stay' ? 'A stay' : 'A ticket')
 
 export function duration(min: number): string {
   const h = Math.floor(min / 60)

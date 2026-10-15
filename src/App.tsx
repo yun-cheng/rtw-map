@@ -1,4 +1,4 @@
-import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, MapPin, Settings, Sparkles, type LucideIcon } from 'lucide-react'
+import { ChevronsLeft, ChevronsRight, ListOrdered, Map as MapIcon, MapPin, Settings, Sparkles, Wallet, type LucideIcon } from 'lucide-react'
 import { useEffect, useState, type MouseEvent } from 'react'
 import { MapControls } from './map/MapControls'
 import { BOTH_PANELS_MIN_WIDTH, DRAWER_WIDTH, SIDEBAR_WIDTH } from './ui/layout'
@@ -8,6 +8,7 @@ import { CityDrawer } from './panels/CityDrawer'
 import { Header } from './panels/Header'
 import { Itinerary } from './panels/Itinerary'
 import { LegDrawer } from './panels/LegDrawer'
+import { MyTripPanel } from './panels/MyTrip'
 import { PlanBar } from './panels/PlanBar'
 import { SettingsPanel } from './panels/SettingsPanel'
 import { UndoNotice } from './panels/UndoRedo'
@@ -26,6 +27,7 @@ import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { OfflinePill } from './ui/OfflinePill'
+import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_TABS, useHasRightPanel, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
 import { usePhone } from './ui/usePhone'
 
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', today: 'Today', assistant: 'Assistant' }
@@ -137,8 +139,19 @@ export default function App() {
   const tabs = useTabs()
   // (Today only while the trip is under way: the itinerary otherwise.)
   const tab: Tab = SHARED_TOKEN ? 'itinerary' : !plan && panel !== 'assistant' ? 'setup' : tabs.includes(panel) ? panel : 'itinerary'
-  const sidebar = useSidebar(!!selected, () => select(null))
+  // My trip, the right panel: beside the map on a computer (a city or journey panel then opens in its place), a sheet
+  // on a phone.
+  const hasRight = useHasRightPanel()
+  const right = useRightPanel()
+  const rightBeside = useRightPanelBeside()
+  const rightSheet = useRightPanel((s) => s.sheet)
+  const setRightSheet = right.setSheet
+  const [rightSnap, setRightSnap] = useState<Snap>('half')
+  // (On a narrow window, My trip open folds the left panel away, like a city's panel.)
+  const sidebar = useSidebar(!!selected || rightBeside, () => { select(null); right.hide() })
   const phone = usePhone()
+  // A city or journey panel open over the right of the map (not in My trip's place).
+  const drawerOver = !!selected && !rightBeside
   const picking = useTrip((s) => s.picking)
   // The trip's setup is showing: the map shows its countries instead of its route (MapView).
   const editing = tab === 'setup' && (phone ? !selected : !sidebar.hidden)
@@ -181,8 +194,8 @@ export default function App() {
   const drawer = selected && (selected.type === 'city' ? <CityDrawer key={selected.id} cityId={selected.id} /> : <LegDrawer index={selected.index} />)
   // The strip's labels: shown at once beside each button.
   const [tip, setTip] = useState<Tip | null>(null)
-  const tipFor = (title: string) => ({
-    onMouseEnter: (e: MouseEvent<HTMLElement>) => setTip({ content: { lines: [title] }, rect: e.currentTarget.getBoundingClientRect(), side: 'right' }),
+  const tipFor = (title: string, side: Tip['side'] = 'right') => ({
+    onMouseEnter: (e: MouseEvent<HTMLElement>) => setTip({ content: { lines: [title] }, rect: e.currentTarget.getBoundingClientRect(), side }),
     onMouseLeave: () => setTip(null),
   })
 
@@ -247,7 +260,6 @@ export default function App() {
                 ))}
               </>
             )}
-            <HoverTip tip={tip} />
           </div>
         )}
         {!phone && (
@@ -260,7 +272,7 @@ export default function App() {
           <MapControls editing={editing} />
           {!plan && !phone && !picking && (
             // (Centred in the map left uncovered by a city or journey panel, clear of the map's buttons at its right.)
-            <div className="pointer-events-none absolute left-12 bottom-6 flex justify-center" style={{ right: (selected ? DRAWER_WIDTH : 0) + 48 }}>
+            <div className="pointer-events-none absolute left-12 bottom-6 flex justify-center" style={{ right: (drawerOver ? DRAWER_WIDTH : 0) + 48 }}>
               <div className="rounded-lg border border-line bg-panel/95 px-4 py-2 text-[13px] shadow-sm">
                 Add regions or countries on the left and press <b>Plan with AI</b>. Click any city on the map for details.
               </div>
@@ -268,8 +280,8 @@ export default function App() {
           )}
           {phone ? (
             <>
-              {/* (Under the settings button, clear of the map's legend; on a computer, in the top bar.) */}
-              <OfflinePill className="absolute top-13 right-2 z-10 h-8 shadow-sm" />
+              {/* (Under the settings button and My trip's, clear of the map's legend; on a computer, in the top bar.) */}
+              <OfflinePill className={`absolute right-2 z-10 h-8 shadow-sm ${hasRight ? 'top-24' : 'top-13'}`} />
               <button
                 onClick={() => setSettings(true)}
                 aria-label="Settings"
@@ -277,14 +289,29 @@ export default function App() {
               >
                 <Settings size={18} />
               </button>
+              {hasRight && (
+                <button
+                  onClick={() => { setRightSheet(!rightSheet); setRightSnap('half') }}
+                  aria-label="My trip: stays, tickets, receipts and journal"
+                  className="absolute top-13 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
+                >
+                  <Wallet size={18} />
+                </button>
+              )}
               <UndoNotice className="absolute top-2 right-12 left-2 z-40" />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while a city's is open. */}
               <BottomSheet
                 snap={leftSnap} onSnap={setLeftSnap} onClose={asking ? stopAsking : undefined} label={TAB_LABELS[tab]}
-                hidden={!!selected && !asking} className={`bg-panel ${asking ? 'z-30' : 'z-10'}`}
+                hidden={(!!selected || (hasRight && rightSheet)) && !asking} className={`bg-panel ${asking ? 'z-30' : 'z-10'}`}
               >
                 <LeftPanel tab={tab} peek />
               </BottomSheet>
+              {hasRight && rightSheet && (
+                // My trip's sheet: under a city's or journey's while that's open.
+                <BottomSheet snap={rightSnap} onSnap={setRightSnap} onClose={() => setRightSheet(false)} label="My trip" hidden={!!selected} className="z-20 bg-panel">
+                  <MyTripPanel peek onHide={() => setRightSheet(false)} />
+                </BottomSheet>
+              )}
               {selected && (
                 <BottomSheet snap={drawerSnap} onSnap={setDrawerSnap} onClose={() => select(null)} label={selected.type === 'city' ? 'City' : 'Journey'} className="z-20 bg-canvas">
                   <div className="min-h-0 flex-1 overflow-y-auto">{drawer}</div>
@@ -293,16 +320,45 @@ export default function App() {
             </>
           ) : <>
             {/* (Centred in the map left uncovered by a city or journey panel.) */}
-            <UndoNotice className="absolute top-3 left-3 z-30" style={{ right: (selected ? DRAWER_WIDTH : 0) + 12 }} />
-            {selected && (
+            <UndoNotice className="absolute top-3 left-3 z-30" style={{ right: (drawerOver ? DRAWER_WIDTH : 0) + 12 }} />
+            {drawerOver && (
               <div className="absolute top-0 right-0 bottom-0 z-20 overflow-y-auto border-l border-line bg-canvas shadow-xl" style={{ width: DRAWER_WIDTH }}>
                 {drawer}
               </div>
             )}
           </>}
         </main>
+        {!phone && hasRight && (rightBeside ? (
+          <aside className="flex shrink-0 flex-col border-l border-line bg-panel" style={{ width: DRAWER_WIDTH }}>
+            <MyTripPanel onHide={right.hide} over={drawer} onLeave={() => select(null)} />
+          </aside>
+        ) : (
+          // Folded: a strip to open it again, on any tab.
+          <div className="flex w-10 shrink-0 flex-col items-center gap-1 border-l border-line bg-panel pt-1.5">
+            <button
+              onClick={() => { setTip(null); right.show() }} aria-label="Show My trip" {...tipFor('Show My trip', 'top')}
+              className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink"
+            >
+              <ChevronsLeft size={16} />
+            </button>
+            <div className="my-0.5 h-px w-6 bg-line" />
+            {MY_TRIP_TABS.map((t) => {
+              const Icon = MY_TRIP_ICONS[t]
+              return (
+                <button
+                  key={t} onClick={() => { setTip(null); right.show(t) }} aria-label={`My trip: ${MY_TRIP_LABELS[t]}`} {...tipFor(MY_TRIP_LABELS[t], 'top')}
+                  className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink"
+                >
+                  <Icon size={16} />
+                </button>
+              )
+            })}
+          </div>
+        ))}
       </div>
       {!phone && <Timeline />}
+      {/* (The folded panels' labels.) */}
+      <HoverTip tip={tip} />
     </div>
   )
 }

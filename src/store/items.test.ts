@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isEmptyItem, mergeItems, notesAsItems, parseItems, phraseId, phrasesOf, priceId, seenPrices, webUrl, withoutPhrases, type TripItem } from './itemsCore'
+import { isEmptyItem, mergeItems, NO_PLACE, notesAsItems, parseItems, phraseId, phrasesOf, priceId, seenPrices, webUrl, withoutPhrases, type TripItem } from './itemsCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -34,6 +34,25 @@ describe('items', () => {
     expect(parseItems({ entries: [{ ...ticket, from: '2027-05-04T25:00' }] })).toBeTypeOf('string')
     expect(parseItems({ entries: [{ ...ticket, kind: 'stay', at: 'krakow' }] })).toBeTypeOf('string')
     expect(isEmptyItem({ id: 'x', kind: 'ticket', at: 'a>b', fromPlace: 'KRK', updatedAt: 1 })).toBe(false)
+    // A receipt: a city's, its amount and money once typed (checked), its day.
+    const receipt = { id: 'receipt:1', kind: 'receipt', at: 'krakow', title: 'Dinner', amount: 120.5, currency: 'PLN', from: '2027-05-04', updatedAt: 1 }
+    expect(parseItems({ entries: [receipt] })).toEqual([receipt])
+    expect(parseItems({ entries: [{ id: 'receipt:2', kind: 'receipt', at: 'krakow', title: 'Dinner', updatedAt: 1 }] })).toEqual([{ id: 'receipt:2', kind: 'receipt', at: 'krakow', title: 'Dinner', updatedAt: 1 }])
+    expect(parseItems({ entries: [{ ...receipt, amount: -1 }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...receipt, currency: 'zł' }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...receipt, at: 'krakow>tirana' }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...receipt, from: '2027-05-04T19:00' }] })).toBeTypeOf('string')
+    expect(isEmptyItem({ id: 'x', kind: 'receipt', at: 'krakow', amount: 0, updatedAt: 1 })).toBe(false)
+    expect(isEmptyItem({ id: 'x', kind: 'receipt', at: 'krakow', currency: 'PLN', updatedAt: 1 })).toBe(true)
+    // A ticket, stay or receipt may be at no city or journey; a receipt may be for a stay or ticket.
+    // (A package: one receipt for several.)
+    const linked = { ...receipt, at: NO_PLACE, bookings: ['ticket:123', 'ticket:124', 'stay:9', 'ticket:123'] }
+    expect(parseItems({ entries: [{ ...ticket, at: NO_PLACE }, linked] })).toEqual([{ ...ticket, at: NO_PLACE }, { ...linked, bookings: ['ticket:123', 'ticket:124', 'stay:9'] }])
+    expect(parseItems({ entries: [{ id: 'note:x', kind: 'note', at: NO_PLACE, text: 'x', updatedAt: 1 }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...receipt, bookings: ['note:krakow'] }] })).toBeTypeOf('string')
+    expect(parseItems({ entries: [{ ...receipt, bookings: 'ticket:123' }] })).toBeTypeOf('string')
+    // Filled in by AI: kept as true, nothing else.
+    expect(parseItems({ entries: [{ ...receipt, ai: true }, { ...receipt, id: 'receipt:3', ai: 'yes' }] })).toEqual([{ ...receipt, ai: true }, { ...receipt, id: 'receipt:3' }])
     expect(parseItems({ entries: [{ id: 'x', kind: 'note', at: 'a>b>c', updatedAt: 1 }] })).toBeTypeOf('string')
     expect(parseItems({ entries: [{ id: 'x', kind: 'stay', at: 'krakow', from: 'May 1', updatedAt: 1 }] })).toBeTypeOf('string')
     // A removal keeps nothing but where it was.

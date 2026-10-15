@@ -4,6 +4,7 @@ import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, TEMP_KINDS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { DRAWER_WIDTH } from '../ui/layout'
+import { useDrawerOverMap } from '../ui/rightPanel'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { dataset as ds } from '../data/dataset'
@@ -59,8 +60,9 @@ const COST_ABOUT: Record<CostKind, string> = {
 
 /** `editing`: the trip's setup is open, and the map shows its countries (see MapView) instead of a map view. */
 export function MapControls({ editing = false }: { editing?: boolean }) {
-  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, selected, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
+  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
   const phone = usePhone()
+  const drawerOver = useDrawerOverMap()
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
@@ -110,7 +112,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   )
   if (editing) {
     return (
-      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: selected ? DRAWER_WIDTH + 12 : 12 }}>
+      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: drawerOver ? DRAWER_WIDTH + 12 : 12 }}>
         <div className={LEGEND_BOX}>
           {(['must', 'optional', 'excluded'] as const).map((m) => (
             <span key={m} className="flex items-center gap-1.5">
@@ -181,8 +183,8 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   }
   return (
     // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge (their rows scroll sideways).
-    <div data-map-top className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: selected ? DRAWER_WIDTH + 12 : 12 }}>
-      <SwitchRow picked={layer} width={selected}>
+    <div data-map-top className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: drawerOver ? DRAWER_WIDTH + 12 : 12 }}>
+      <SwitchRow picked={layer} width={drawerOver}>
         {LAYERS.map((l) => (
           <button
             key={l.value}
@@ -195,7 +197,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
         ))}
       </SwitchRow>
       {layer === 'nearby' && (
-        <SwitchRow picked={nearbyKind} width={selected}>
+        <SwitchRow picked={nearbyKind} width={drawerOver}>
           {NEARBY_KINDS.map((k) => (
             <button
               key={k}
@@ -210,7 +212,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
       )}
       {layer === 'cost' && (
         <>
-        <SwitchRow picked={costGroup.label} width={selected}>
+        <SwitchRow picked={costGroup.label} width={drawerOver}>
           {COST_GROUPS.map((g) => (
             <button
               key={g.label}
@@ -223,7 +225,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
           ))}
         </SwitchRow>
         {costGroup.kinds.length > 1 && (
-          <SwitchRow picked={costKind} width={selected} gap>
+          <SwitchRow picked={costKind} width={drawerOver} gap>
             {costGroup.kinds.map((k) => (
               <button
                 key={k}
@@ -239,7 +241,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
         </>
       )}
       {(layer === 'climate' || layer === 'air') && (
-        <SwitchRow picked={layerMonth} width={selected}>
+        <SwitchRow picked={layerMonth} width={drawerOver}>
           <button
             onClick={() => setLayerMonth(0)}
             aria-pressed={layerMonth === 0}

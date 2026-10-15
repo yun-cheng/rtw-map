@@ -3,7 +3,7 @@ import { MCP_TOOLS, RUNNER_TOOLS } from '../src/agent/mcpTools'
 import { ITEM_TOOLS, WRITE_TOOLS } from '../src/agent/schema'
 import { dataset as ds } from '../src/data/dataset'
 import { draftStops, testCaseInput } from '../src/data/testCase'
-import type { Items } from '../src/store/itemsCore'
+import { NO_PLACE, type Items } from '../src/store/itemsCore'
 import type { Journal } from '../src/store/journalCore'
 import { createTripStore, tripData } from '../src/store/tripCore'
 import { callTool, parseToolCall } from './tool'
@@ -89,7 +89,10 @@ describe('tools for other apps (MCP)', () => {
     const out = call('save_visit_item', ticket, {})
     expect(out).toMatchObject({ ok: true, changes: [`Added ticket LOT LO 335 (${from} → ${to})`] })
     expect(out.data).toBeUndefined()
-    expect(out.items).toEqual([expect.objectContaining({ kind: 'ticket', at: `${first}>${second}`, title: 'LOT LO 335', mode: 'flight', from: '2027-05-04T07:35', to: '2027-05-04T09:10', fromPlace: 'KRK T1', ref: 'X7Y8Z9' })])
+    expect(out.items).toEqual([expect.objectContaining({ kind: 'ticket', at: `${first}>${second}`, title: 'LOT LO 335', mode: 'flight', from: '2027-05-04T07:35', to: '2027-05-04T09:10', fromPlace: 'KRK T1', ref: 'X7Y8Z9', ai: true })])
+    // Marked as filled in by AI only when it changes something: one the user typed, saved again as it is, isn't.
+    const { ai: _, ...typed } = out.items![0]
+    expect(call('save_visit_item', ticket, { [typed.id]: typed }).result.done).toMatch(/no change/)
     // Listed with its times; saved again as it is, no change.
     const items = { [out.items![0].id]: out.items![0] }
     expect(call('get_visit', {}, items).result.items).toEqual([expect.objectContaining({ kind: 'ticket', departs: '2027-05-04T07:35', arrives: '2027-05-04T09:10', from_place: 'KRK T1' })])
@@ -106,6 +109,48 @@ describe('tools for other apps (MCP)', () => {
     expect(call('save_visit_item', { ...ticket, arrives: '2027-05-03T23:00' }, {}).result.error).toMatch(/arrives must be after departs/)
     expect(call('save_visit_item', { ...ticket, mode: 'rocket' }, {}).result.error).toMatch(/mode must be/)
     expect(call('save_visit_item', { kind: 'stay', city: from, title: 'Hostel', departs: '2027-05-04' }, {}).result.error).toMatch(/departs isn't for a stay/)
+  })
+
+  it('logs a receipt: in the city\'s money unless another is given, once', () => {
+    const [first] = createTripStore(savedTrip()).getState().stops.map((s) => s.cityId)
+    const city = ds.cities[first].name
+    const own = ds.countries[ds.cities[first].iso2].currency
+    const receipt = { kind: 'receipt', city, title: 'Dinner', amount: 120.555, day: '2027-05-04' }
+    const out = call('save_visit_item', receipt, {})
+    expect(out).toMatchObject({ ok: true, changes: [`Added receipt Dinner, 120.56 ${own} (${city})`] })
+    expect(out.items).toEqual([expect.objectContaining({ kind: 'receipt', at: first, title: 'Dinner', amount: 120.56, currency: own, from: '2027-05-04' })])
+    const items = { [out.items![0].id]: out.items![0] }
+    expect(call('get_visit', {}, items).result.items).toEqual([expect.objectContaining({ kind: 'receipt', day: '2027-05-04', amount: 120.56, currency: own })])
+    // Logged again (the same name, amount and day): that one; another amount is another receipt.
+    expect(call('save_visit_item', receipt, items).result.done).toMatch(/no change/)
+    expect(call('save_visit_item', { ...receipt, amount: 30 }, items).items![0].id).not.toBe(out.items![0].id)
+    expect(call('save_visit_item', { ...receipt, currency: 'usd' }, {}).items![0].currency).toBe('USD')
+    expect(call('save_visit_item', { ...receipt, currency: 'XYZ' }, {}).result.error).toMatch(/No exchange rate for XYZ/)
+    expect(call('save_visit_item', { ...receipt, amount: -5 }, {}).result.error).toMatch(/amount must be/)
+    expect(call('save_visit_item', { ...receipt, day: 'today' }, {}).result.error).toMatch(/day must be a day/)
+    expect(call('save_visit_item', { ...receipt, reference: 'R1' }, {}).result.error).toMatch(/reference isn't for a receipt/)
+    expect(call('save_visit_item', { kind: 'stay', city, title: 'Hostel', amount: 84 }, {}).result.error).toMatch(/amount isn't for a stay/)
+  })
+
+  it('links a receipt to its bookings (a package: several), and keeps either without a city', () => {
+    const [first] = createTripStore(savedTrip()).getState().stops.map((s) => s.cityId)
+    // A ticket for none of the trip's journeys; its id given, to link to.
+    const ticket = call('save_visit_item', { kind: 'ticket', title: 'Ryanair FR 1', departs: '2027-05-01' }, {})
+    expect(ticket.items).toEqual([expect.objectContaining({ kind: 'ticket', at: NO_PLACE })])
+    const id = ticket.items![0].id
+    expect(ticket.result.done).toContain(`id ${id}`)
+    const items = { [id]: ticket.items![0] }
+    const stay = call('save_visit_item', { kind: 'stay', city: ds.cities[first].name, title: 'Hotel Package', check_in: '2027-05-01' }, items).items![0]
+    items[stay.id] = stay
+    const receipt = call('save_visit_item', { kind: 'receipt', title: 'Flight and hotel', amount: 40, currency: 'EUR', day: '2027-04-01', bookings: [id, stay.id] }, items)
+    expect(receipt.items).toEqual([expect.objectContaining({ kind: 'receipt', at: NO_PLACE, bookings: [id, stay.id] })])
+    expect(call('get_visit', {}, { ...items, [receipt.items![0].id]: receipt.items![0] }).result.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({ kind: 'ticket', where: 'no journey' }), expect.objectContaining({ kind: 'receipt', where: 'no city', bookings: [id, stay.id] }),
+    ]))
+    expect(call('save_visit_item', { kind: 'receipt', title: 'Flight', amount: 40, day: '2027-04-01' }, {}).result.error).toMatch(/Give the receipt's currency/)
+    expect(call('save_visit_item', { kind: 'receipt', city: ds.cities[first].name, title: 'Taxi', amount: 9, bookings: ['ticket:nope'] }, items).result.error).toMatch(/no stay or ticket/)
+    expect(call('save_visit_item', { kind: 'receipt', city: ds.cities[first].name, title: 'Taxi', amount: 9, bookings: [] }, items).items![0].bookings).toBeUndefined()
+    expect(call('save_visit_item', { kind: 'note', text: 'x' }, {}).result.error).toBeTruthy()
   })
 
   it('reads the journal: the latest days, or those asked for', () => {

@@ -4,14 +4,14 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
-import { isEmptyEntry, mergeJournal, type DayEntry } from './journalCore'
+import { isEmptyEntry, mergeJournal, type DayEntry, type Journal } from './journalCore'
 
 export { isEmptyEntry, type DayEntry, type Journal } from './journalCore'
 export { LOCAL } from './book'
 
 type JournalState = BookState<DayEntry> & {
-  /** The Itinerary shows the journal instead of the stops; `focus`: a stop's first day to bring into view. */
-  view: { journal: boolean; focus?: string }
+  /** My trip's Daily (the journal), brought to a stop's days: `focus`, its first day. */
+  view: { focus?: string }
 
   /** Changes a day (an empty one is kept, cleared, so the clearing reaches the other devices). */
   write: (date: string, patch: Partial<Omit<DayEntry, 'date' | 'updatedAt'>>) => void
@@ -28,7 +28,7 @@ export const useJournal = create<JournalState>()(
       books: {},
       key: LOCAL,
       problem: null,
-      view: { journal: false },
+      view: {},
 
       ...bookActions<DayEntry>(set, get, (e) => e.date, mergeJournal, () => onChange()),
 
@@ -50,8 +50,13 @@ export const useJournal = create<JournalState>()(
   ),
 )
 
+const NO_DAYS: Journal = {}
+
+/** The open trip's journal. */
+export const useJournalEntries = (): Journal => useJournal((s) => s.books[s.key]?.entries ?? NO_DAYS)
+
 /** The open trip's day, if written. */
-export const useDayEntry = (date: string): DayEntry | undefined => useJournal((s) => {
-  const e = s.books[s.key]?.entries[date]
+export const useDayEntry = (date: string): DayEntry | undefined => {
+  const e = useJournalEntries()[date]
   return isEmptyEntry(e) ? undefined : e
-})
+}

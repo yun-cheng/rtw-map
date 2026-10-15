@@ -1,16 +1,21 @@
 // The user's tickets for a journey (the trip's items, store/items.ts): each flight, train, bus or ferry booked, with
 // its times (each in its place's own time, as the booking gives them), where it leaves from and arrives, the booking
-// reference, price and link, and a note (the seat, the baggage). In the journey's panel, on Today, and marked by the
-// journey in the itinerary. Added here, by the app's assistant, or by another app's (an AI app reading the user's
+// reference, price and link, and a note (the seat, the baggage). In the journey's panel, on Today, all of them in My
+// trip (MyTrip.tsx), and marked by the journey in the itinerary. Added here, by the app's assistant, or by another app's (an AI app reading the user's
 // email: worker/mcp.ts). Private, like the rest of My visit.
 import { Bus, ExternalLink, Pencil, Plane, Plus, Ship, Ticket, TrainFront } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { isEmptyItem, newItemId, useAllItems, useItems, useItemsAt, type TripItem } from '../store/items'
-import { ITEM_LIMITS, TICKET_MODES, type TicketMode } from '../store/itemsCore'
+import { ITEM_LIMITS, NO_PLACE, TICKET_MODES, type TicketMode } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
-import { dayDate } from '../ui/format'
-import { Section } from '../ui/kit'
+import { legKey, useTrip } from '../store/trip'
+import { localToday } from '../planner'
+import { cityName, dayDate, shortDate } from '../ui/format'
+import { AiMark } from '../ui/AiMark'
+import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
+import { PhotoFill } from './PhotoFill'
+import { PaidFor } from './ReceiptLinks'
 import { EditorButtons, field, small, UrlInput } from './Visit'
 
 const MODES: Record<TicketMode, string> = { flight: 'Flight', train: 'Train', bus: 'Bus', ferry: 'Ferry', other: 'Other' }
@@ -39,16 +44,20 @@ function when(t: TripItem) {
 }
 
 /** A journey's tickets (`at` its `legKey(from, to)`), each to open and change, and one to add (leaving on `date`);
- *  `hideEmpty`: nothing without any (on Today). */
-export function Tickets({ at, date, hideEmpty }: { at: string; date?: string; hideEmpty?: boolean }) {
-  const tickets = [...useItemsAt(at, 'ticket')].sort(byDeparture)
+ *  `hideEmpty`: nothing without any (on Today); `brief`: one journey of many in My trip (added to from its top), only
+ *  its title without any;
+ *  `hidden`: one not to show (being added in My trip). */
+export function Tickets({ at, date, hideEmpty, title = 'My tickets', brief, hidden }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; hidden?: string }) {
+  const tickets = useItemsAt(at, 'ticket').filter((t) => t.id !== hidden).sort(byDeparture)
   const [editing, setEditing] = useState<string | null>(null)
   if (SHARED_TOKEN || (hideEmpty && !tickets.length)) return null
   return (
     <Section
-      title="My tickets"
-      aside={editing === null && <button onClick={() => setEditing(newItemId('ticket'))} className={small}><Plus size={12} /> Add a ticket</button>}
+      title={title}
+      aside={editing === null && !brief && <button onClick={() => setEditing(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
     >
+      {/* (One of many with none: just its name and Add.) */}
+      {(!brief || tickets.length > 0 || editing !== null) && <>
       {tickets.length === 0 && editing === null && (
         <p className="text-[12px] text-muted">Your flight, train, bus or ferry: its times, where it leaves from and the booking ref, kept on this device too, for when there's no connection.</p>
       )}
@@ -60,6 +69,7 @@ export function Tickets({ at, date, hideEmpty }: { at: string; date?: string; hi
           <li><TicketEditor id={editing} at={at} date={date} onDone={() => setEditing(null)} autoFocus /></li>
         )}
       </ul>
+      </>}
     </Section>
   )
 }
@@ -71,7 +81,7 @@ function TicketCard({ ticket: t, onEdit }: { ticket: TripItem; onEdit: () => voi
       <div className="flex items-start gap-2">
         <ModeIcon mode={t.mode} size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
-          <div className="font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}</div>
+          <div className="flex items-center gap-1.5 font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}<AiMark on={t.ai} /></div>
           {when(t) && <div className="text-[12px] text-muted">{when(t)}</div>}
         </div>
         <button onClick={onEdit} className={small} aria-label="Change this ticket"><Pencil size={12} /> Edit</button>
@@ -81,6 +91,7 @@ function TicketCard({ ticket: t, onEdit }: { ticket: TripItem; onEdit: () => voi
         {t.ref && <div><span className="text-muted">Booking ref </span><span className="font-mono select-all">{t.ref}</span></div>}
         {t.price && <div><span className="text-muted">Price </span>{t.price}</div>}
         {t.url && <a href={t.url} {...external} className="flex items-center gap-1 text-accent hover:underline">{host(t.url)}<ExternalLink size={11} /></a>}
+        <PaidFor id={t.id} />
         {t.text && <p className="whitespace-pre-wrap">{t.text}</p>}
       </div>
     </div>
@@ -104,10 +115,16 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
       <input value={live?.[k] ?? ''} onChange={(e) => save({ [k]: e.target.value })} maxLength={ITEM_LIMITS.shortChars} placeholder={placeholder} className={field} autoFocus={autoFocus && k === 'title'} />
     </label>
   )
-  /** A departure's or arrival's day and time, each typed apart (the time only with a day). */
+  /** A departure's or arrival's day and time, each typed apart (the time only with a day). The arrival is on the
+   *  departure's day until another is given, and a departure moved to another day takes it along. */
   const moment = (k: 'from' | 'to', label: string) => {
-    const now = live ? live[k] : k === 'from' ? date : undefined
-    const set = (day: string, time: string) => save({ [k]: day ? (time ? `${day}T${time}` : day) : '' })
+    const leaves = live ? live.from : date
+    const now = k === 'from' ? leaves : live?.to ?? dayOf(leaves)
+    const set = (day: string, time: string) => {
+      const at = day ? (time ? `${day}T${time}` : day) : ''
+      const follows = k === 'from' && dayOf(live?.to) === dayOf(leaves) && day
+      save({ [k]: at, ...(follows && { to: `${day}${timeOf(live?.to) && `T${timeOf(live?.to)}`}` }) })
+    }
     return (
       <div className="flex flex-col gap-0.5">
         <span className="text-[11px] text-muted">{label}</span>
@@ -148,6 +165,75 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
         <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="Seat, baggage, terminal, check-in closes…" className={`${field} resize-y`} />
       </label>
       <EditorButtons onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="ticket" />
+    </div>
+  )
+}
+
+/** My trip's Tickets: the journeys with tickets, in the plan's order (their names open their panels), then those
+ *  kept for journeys no longer in it; one to add, on a journey picked (the next one first), or from a photo. */
+export function AllTickets() {
+  const plan = useTrip((s) => s.plan)
+  const select = useTrip((s) => s.select)
+  const items = useAllItems()
+  // A new one, written at the top until it's done (not under its journey).
+  const [adding, setAdding] = useState<string | null>(null)
+  if (!plan || SHARED_TOKEN) return null
+  const tickets = Object.values(items).filter((i) => i.kind === 'ticket' && !isEmptyItem(i) && i.id !== adding)
+  const legs = plan.legs.map((l, index) => ({ at: legKey(l.from, l.to), index, date: plan.stops[index].depart }))
+  const booked = legs.filter((l) => tickets.some((t) => t.at === l.at))
+  const others = [...new Set(tickets.map((t) => t.at).filter((at) => !legs.some((l) => l.at === at)))]
+  const today = localToday()
+  return (
+    <Sections>
+      <Section
+        title={tickets.length ? `${tickets.length} ticket${tickets.length === 1 ? '' : 's'} for ${booked.length} of ${legs.length} journeys` : 'No tickets yet'}
+        aside={adding === null && <span className="flex items-center gap-1"><PhotoFill what="ticket" className={small} /><button onClick={() => setAdding(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+      >
+        {adding !== null
+          ? <NewTicket id={adding} legs={legs} first={legs.find((l) => l.date >= today) ?? legs[0] ?? NO_LEG} onDone={() => setAdding(null)} />
+          : null}
+      </Section>
+      {booked.map((l) => (
+        <Tickets
+          key={`${l.index}${l.at}`} at={l.at} date={l.date} brief hidden={adding ?? undefined}
+          title={<button onClick={() => select({ type: 'leg', index: l.index })} className="text-left hover:underline">{journeyName(l.at)} <span className="font-normal text-muted">· {shortDate(l.date)}</span></button>}
+        />
+      ))}
+      {others.map((at) => (
+        <Tickets
+          key={at} at={at} brief hidden={adding ?? undefined}
+          title={at === NO_PLACE ? null : <>{journeyName(at)} <span className="font-normal text-muted">· not in this plan</span></>}
+        />
+      ))}
+    </Sections>
+  )
+}
+
+const journeyName = (at: string) => at.split('>').map(cityName).join(' → ')
+/** A journey of the plan; or none (NO_LEG: a ticket kept for the trip, not for any of its journeys). */
+type Leg = { at: string; index: number; date?: string }
+const NO_LEG: Leg = { at: NO_PLACE, index: -1 }
+
+/** A ticket added in My trip: its journey picked (or none), then written as anywhere else. A journey changed moves it
+ *  there (with that journey's day, unless another was given). */
+function NewTicket({ id, legs, first, onDone }: { id: string; legs: Leg[]; first: Leg; onDone: () => void }) {
+  const [leg, setLeg] = useState(first)
+  const ticket = useAllItems()[id] as TripItem | undefined
+  const move = (to: Leg) => {
+    const day = ticket?.from?.slice(0, 10)
+    if (ticket && !ticket.deleted) useItems.getState().put({ id, at: to.at, ...(to.date && (!day || day === leg.date) && { from: to.date }) })
+    setLeg(to)
+  }
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[11px] text-muted">Journey</span>
+        <select value={leg.index} onChange={(e) => move(legs.find((l) => l.index === Number(e.target.value)) ?? NO_LEG)} className={field}>
+          <option value={NO_LEG.index} aria-label="None" />
+          {legs.map((l) => <option key={l.index} value={l.index}>{shortDate(l.date!)} · {journeyName(l.at)}</option>)}
+        </select>
+      </label>
+      <TicketEditor key={leg.index} id={id} at={leg.at} date={leg.date} onDone={onDone} autoFocus />
     </div>
   )
 }

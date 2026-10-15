@@ -11,6 +11,7 @@ import { plannedIn, isTravelling, localToday, stopTime, tripDay, type TripInput 
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { DRAWER_WIDTH } from '../ui/layout'
+import { drawerOverMap, useDrawerOverMap } from '../ui/rightPanel'
 import { isPhone } from '../ui/usePhone'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
@@ -126,6 +127,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
   const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, seenPrices, picking, localNames } = useTrip()
+  const drawerOver = useDrawerOverMap()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -469,7 +471,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     const p = map.project([c.lon, c.lat])
     const margin = 40
     // The panel covers the right of the map, or on a phone the bottom half (its sheet opens to half).
-    const cover = isPhone() ? { right: 0, bottom: height / 2 } : { right: DRAWER_WIDTH, bottom: 0 }
+    const cover = isPhone() ? { right: 0, bottom: height / 2 } : { right: drawerOverMap() ? DRAWER_WIDTH : 0, bottom: 0 }
     const visible = p.x > margin && p.x < width - cover.right - margin && p.y > margin + 80 && p.y < height - cover.bottom - margin
     // Centre it in the part of the map the panel doesn't cover.
     if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-cover.right / 2, -cover.bottom / 2], duration: 700 })
@@ -524,7 +526,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     <>
       {/* (--panel-cover: how much of the map's right side a city or journey panel covers; the map's buttons and credits
           keep left of it, see index.css.) */}
-      <div ref={container} className="h-full w-full" style={{ '--panel-cover': selected ? `${DRAWER_WIDTH}px` : '0px' } as CSSProperties} />
+      <div ref={container} className="h-full w-full" style={{ '--panel-cover': drawerOver ? `${DRAWER_WIDTH}px` : '0px' } as CSSProperties} />
       {shown && <OffscreenCity map={shown} node={node} />}
     </>
   )
@@ -578,7 +580,7 @@ const sheetHeight = (map: MlMap) => parseFloat(map.getContainer().parentElement?
 
 /** What covers the map: the legend along the top, and a phone's bottom sheet or the city or journey panel at the right. */
 const coverOf = (map: MlMap) =>
-  ({ top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: useTrip.getState().selected ? DRAWER_WIDTH : 0, bottom: 0 }) })
+  ({ top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: drawerOverMap() ? DRAWER_WIDTH : 0, bottom: 0 }) })
 /** From the map's middle to the middle of the part nothing covers, in pixels (a camera move's offset). */
 function uncoveredOffset(map: MlMap): [number, number] {
   const cover = coverOf(map)

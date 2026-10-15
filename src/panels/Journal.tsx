@@ -1,32 +1,33 @@
 // The trip's journal (PLAN.md §14.4, store/journal.ts): a day's highlight, a few lines and a rating, written from Today
-// or any day so far in the Itinerary's Journal. Saved on this device as it's typed, and sent to the account when there's
-// a connection; also on a read-only trip (the journal isn't the plan), never in a shared one.
-import { BookOpen, ChevronRight, Star } from 'lucide-react'
+// or any day so far in My trip's Daily (MyTrip.tsx). Saved on this device as it's typed, and sent to the account when
+// there's a connection; also on a read-only trip (the journal isn't the plan), never in a shared one.
+import { BookOpen, Check, ChevronRight, Plus, Star } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
-import { isEmptyEntry, useDayEntry, useJournal, type Journal } from '../store/journal'
+import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
 import { JOURNAL_LIMITS } from '../store/journalCore'
 import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate, flag, shortDate } from '../ui/format'
-import { Section } from '../ui/kit'
+import { Section, Sections } from '../ui/kit'
 import { AlbumLinks } from './Visit'
 import { useOnline } from '../ui/useOnline'
+import { useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
 
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
 
 const firstLine = (text: string) => text.trim().split('\n')[0]
-const NO_ENTRIES: Journal = {}
 
-/** Opens the Itinerary's Journal, at a stop's days (`focus`: its first day). */
+/** Opens the journal, My trip's Daily (closing a city's or journey's panel open in its place), at a stop's days
+ *  (`focus`: its first day). */
 export function useOpenJournal() {
   const setView = useJournal((s) => s.setView)
-  const setPanel = useTrip((s) => s.setPanel)
   return (focus?: string) => {
-    setView({ journal: true, focus })
-    setPanel('itinerary')
+    setView({ focus })
+    useTrip.getState().select(null)
+    useRightPanel.getState().show('daily')
   }
 }
 
@@ -106,29 +107,32 @@ export function TodayEntry({ today }: { today: string }) {
   )
 }
 
-/** The Itinerary's Journal: every day of the trip so far, newest first, under the stop where its night was; a day
- *  opens to write it. */
+/** The journal, My trip's Daily: the days of the trip so far that are written, newest first, under the stop where
+ *  their night was, each opening to change it; and one to add (today first). */
 export function JournalView() {
-  const { plan, input } = useTrip()
-  const entries = useJournal((s) => s.books[s.key]?.entries ?? NO_ENTRIES)
+  const { plan, input, select } = useTrip()
+  const entries = useJournalEntries()
   const { view, setView } = useJournal()
   const [open, setOpen] = useState<string | null>(null)
+  // The day being added, written at the top until it's done.
+  const [adding, setAdding] = useState<string | null>(null)
   const today = localToday()
 
   // Brought to a stop's days (from its mark in the stops).
   useEffect(() => {
     if (!view.focus) return
     document.getElementById(`journal-${view.focus}`)?.scrollIntoView({ block: 'start' })
-    setView({ journal: true })
+    setView({})
   }, [view.focus, setView])
 
   if (!plan) return null
   if (!input.startDate || today < input.startDate) {
-    return <p className="px-4 py-6 text-[13px] text-muted">The journal starts on the trip's first day, {dayDate(input.startDate)}: a few lines each day, kept on this device first, so a bad connection loses nothing.</p>
+    return <Sections><Section title="No days yet"><p className="text-[12px] text-muted">The journal starts on the trip's first day, {dayDate(input.startDate)}.</p></Section></Sections>
   }
   const last = today < input.endDate ? today : input.endDate
-  const days: string[] = []
-  for (let d = last; d >= input.startDate; d = addDays(d, -1)) days.push(d)
+  const all: string[] = []
+  for (let d = last; d >= input.startDate; d = addDays(d, -1)) all.push(d)
+  const days = all.filter((d) => !isEmptyEntry(entries[d]) && d !== adding)
   // Consecutive days at the same stop, together.
   const groups: { stop: ScheduledStop | null; days: string[] }[] = []
   for (const d of days) {
@@ -137,28 +141,52 @@ export function JournalView() {
     if (g && g.stop === stop) g.days.push(d)
     else groups.push({ stop, days: [d] })
   }
-  const written = days.filter((d) => !isEmptyEntry(entries[d])).length
+  const written = all.filter((d) => !isEmptyEntry(entries[d])).length
 
+  // (Cards, as My trip's other tabs: the count and Add on top, then each stop's days.)
   return (
-    <div className="px-2 pb-6">
-      <p className="px-2 pb-2 text-[12px] text-muted">
-        {written} of {days.length} day{days.length === 1 ? '' : 's'} written · only you see this
-      </p>
+    <Sections>
+      <Section
+        title={written ? `${written} of ${all.length} day${all.length === 1 ? '' : 's'} written` : 'No days written yet'}
+        aside={adding === null && (
+          <button onClick={() => setAdding(last)} className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Plus size={12} /> Add</button>
+        )}
+      >
+      {adding !== null && (
+        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-canvas p-2.5">
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[11px] text-muted">Day</span>
+            <input
+              type="date" value={adding} min={input.startDate} max={last} onChange={(e) => e.target.value && setAdding(e.target.value)}
+              className="w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]"
+            />
+          </label>
+          <DayEditor key={adding} date={adding} autoFocus />
+          <button onClick={() => setAdding(null)} className="flex items-center gap-1 self-end rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Check size={12} /> Done</button>
+        </div>
+      )}
+      </Section>
       {groups.map((g) => (
-        <section key={g.days[0]} id={g.stop ? `journal-${g.stop.arrive}` : undefined} className="mb-2 scroll-mt-2">
-          <h3 className="px-2 py-1 text-[12px] font-semibold">
-            {g.stop ? <>{flag(ds.cities[g.stop.cityId].iso2)} {cityName(g.stop.cityId)}</> : 'On the way'}
-            <span className="font-normal text-muted"> · {shortDate(g.days.at(-1)!)}{g.days.length > 1 && ` – ${shortDate(g.days[0])}`}</span>
-            {g.stop && <AlbumLinks cityId={g.stop.cityId} />}
-          </h3>
-          <ol>
-            {g.days.map((d) => (
-              <DayRow key={d} date={d} day={tripDay(input.startDate, d)} open={open === d} onToggle={() => setOpen(open === d ? null : d)} />
-            ))}
-          </ol>
-        </section>
+        // (Its id: brought into view from the stop's mark in the itinerary.)
+        <div key={g.days[0]} id={g.stop ? `journal-${g.stop.arrive}` : undefined} className="scroll-mt-3">
+          <Section
+            title={<>
+              {g.stop
+                ? <button onClick={() => select({ type: 'city', id: g.stop!.cityId })} className="text-left hover:underline">{flag(ds.cities[g.stop.cityId].iso2)} {cityName(g.stop.cityId)}</button>
+                : 'On the way'}
+              <span className="font-normal text-muted"> · {shortDate(g.days.at(-1)!)}{g.days.length > 1 && ` – ${shortDate(g.days[0])}`}</span>
+            </>}
+            action={g.stop && <AlbumLinks cityId={g.stop.cityId} />}
+          >
+            <ol className="-mx-2">
+              {g.days.map((d) => (
+                <DayRow key={d} date={d} day={tripDay(input.startDate, d)} open={open === d} onToggle={() => setOpen(open === d ? null : d)} />
+              ))}
+            </ol>
+          </Section>
+        </div>
       ))}
-    </div>
+    </Sections>
   )
 }
 
@@ -186,12 +214,9 @@ function DayRow({ date, day, open, onToggle }: { date: string; day: number; open
 
 /** A mark by a stop in the itinerary with days written there: how many; opens them in the Journal. */
 export function JournalMark({ stop }: { stop: ScheduledStop }) {
-  const count = useJournal((s) => {
-    const entries = s.books[s.key]?.entries ?? NO_ENTRIES
-    let n = 0
-    for (let d = stop.arrive; d < stop.depart; d = addDays(d, 1)) if (!isEmptyEntry(entries[d])) n++
-    return n
-  })
+  const entries = useJournalEntries()
+  let count = 0
+  for (let d = stop.arrive; d < stop.depart; d = addDays(d, 1)) if (!isEmptyEntry(entries[d])) count++
   const openJournal = useOpenJournal()
   if (!count) return null
   return (

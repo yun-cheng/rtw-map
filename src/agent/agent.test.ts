@@ -254,12 +254,12 @@ describe('My visit tools', () => {
       kind: 'stay', city: 'Kraków', title: 'Hostel Mleczarnia', address: 'Meiselsa 22', check_in: '2026-05-04', check_out: '2026-05-07',
       reference: 'BK-123', price: '€84, paid', url: 'booking.com/x',
     })
-    expect(added).toMatchObject({ ok: true, summary: 'Added stay Hostel Mleczarnia (Kraków)' })
+    expect(added).toMatchObject({ ok: true, summary: expect.stringMatching(/^Added stay Hostel Mleczarnia \(Kraków\); id stay:\d+$/) })
     // (No trip in the result: My visit isn't the plan.)
     expect(added.result.trip).toBeUndefined()
     const [stay] = run('get_visit', { city: 'krakow' }).result.items as { id: string }[]
     expect(stay).toMatchObject({ where: 'Kraków', kind: 'stay', title: 'Hostel Mleczarnia', check_in: '2026-05-04', url: 'https://booking.com/x' })
-    expect(run('save_visit_item', { id: stay.id, price: '€90', reference: '' }).summary).toBe('Changed stay Hostel Mleczarnia (Kraków)')
+    expect(run('save_visit_item', { id: stay.id, price: '€90', reference: '' }).summary).toBe(`Changed stay Hostel Mleczarnia (Kraków); id ${stay.id}`)
     expect(items.get()[stay.id]).toMatchObject({ title: 'Hostel Mleczarnia', price: '€90', from: '2026-05-04' })
     expect(items.get()[stay.id].ref).toBeUndefined()
     expect(run('remove_visit_item', { id: stay.id }).summary).toBe('Removed stay Hostel Mleczarnia (Kraków)')
@@ -271,7 +271,7 @@ describe('My visit tools', () => {
     run('save_visit_item', { kind: 'note', city: 'Kraków', text: '- [ ] Wawel tickets' })
     run('save_visit_item', { kind: 'note', city: 'Kraków', text: '- [ ] Salt mine', append: true })
     expect(items.get()['note:krakow'].text).toBe('- [ ] Wawel tickets\n\n- [ ] Salt mine')
-    expect(run('save_visit_item', { kind: 'note', city: 'Kraków', journey_to: 'Warsaw', text: 'Seat 42' }).summary).toBe('Added note (Kraków → Warsaw)')
+    expect(run('save_visit_item', { kind: 'note', city: 'Kraków', journey_to: 'Warsaw', text: 'Seat 42' }).summary).toBe('Added note (Kraków → Warsaw); id note:krakow>warsaw')
     expect(items.get()['note:krakow>warsaw'].text).toBe('Seat 42')
   })
 

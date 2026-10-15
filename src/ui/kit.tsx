@@ -17,11 +17,12 @@ export function Button({ variant = 'default', className = '', ...props }: Button
  * `Sections`). The title is optional for a card that needs no heading.
  */
 /** A card with a title; `action`, a small button right after the title (e.g. Update with AI); `aside`, at the right. */
-export function Section({ title, children, aside, action }: { title?: string; children: ReactNode; aside?: ReactNode; action?: ReactNode }) {
+export function Section({ title, children, aside, action }: { title?: ReactNode; children: ReactNode; aside?: ReactNode; action?: ReactNode }) {
   return (
     <section className="rounded-xl bg-panel px-4 py-3 shadow-[0_1px_2px_rgba(0,0,0,0.06)]">
       {(title || aside) && (
-        <div className="mb-2 flex items-center justify-between gap-2">
+        // (Just its title when there's nothing in it.)
+        <div className={`${children ? 'mb-2' : ''} flex items-center justify-between gap-2`}>
           <span className="flex min-w-0 items-center gap-2">
             <h3 className="text-[13px] font-semibold">{title}</h3>
             {action}

@@ -5,11 +5,10 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { legKey, useTrip } from '../store/trip'
 import { confirm } from '../ui/dialog'
 import { MODE_ICON, STOP_COLOR, cityName, duration, flag, shortDate } from '../ui/format'
-import { Badge, Named, Segmented } from '../ui/kit'
+import { Badge, Named } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
-import { useJournal } from '../store/journal'
 import { CheckMark, Checks, legWarnings, stopWarnings } from './Checks'
-import { JournalMark, JournalView } from './Journal'
+import { JournalMark } from './Journal'
 import { NoteMark } from './Notes'
 import { TicketMark } from './Tickets'
 import { VisitMarks } from './Visit'
@@ -21,15 +20,13 @@ export function Itinerary() {
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()
-  const { view, setView } = useJournal()
   // (A shared trip may have no plan yet: its page has only this tab.)
   if (!plan) return SHARED_TOKEN ? <p className="px-4 py-6 text-[13px] text-muted">This trip has no itinerary yet.</p> : null
   // On a trip under way, the stops already left are faded and today's is marked.
   const today = localToday()
   const travelling = isTravelling(input, today)
-  // From the trip's first day on, the days written (the journal) beside the stops; never on a shared trip.
+  // From the trip's first day on, each stop's days written (the journal, in My trip); never on a shared trip.
   const started = !SHARED_TOKEN && !!input.startDate && today >= input.startDate
-  const journal = started && view.journal
 
   return (
     <div className="flex min-h-full flex-col">
@@ -40,15 +37,6 @@ export function Itinerary() {
           <TripSummary />
         </div>
       </div>
-      {started && (
-        <div className="px-4 pb-2">
-          <Segmented
-            value={journal ? 'journal' : 'stops'} onChange={(v) => setView({ journal: v === 'journal' })}
-            options={[{ value: 'stops', label: 'Stops' }, { value: 'journal', label: 'Journal' }]}
-          />
-        </div>
-      )}
-      {journal ? <JournalView /> : <>
       {/* The trip's rough total: each stop's daily cost for its nights, and travel between cities (and from home). */}
       <div className="px-4 pb-2">
         <Named
@@ -138,7 +126,6 @@ export function Itinerary() {
         {plan.home.back && <HomeRow leg={plan.home.back} label={`Back to ${cityName(plan.home.back.to)}`} when={`leaving ${shortDate(input.endDate)}`} />}
       </ol>
       {!readOnly && <UpdatePlanBar />}
-      </>}
     </div>
   )
 }

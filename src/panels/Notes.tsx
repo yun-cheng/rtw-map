@@ -2,9 +2,10 @@
 // plan is shown, also on a read-only trip, and private (never in a shared trip).
 import { Check, Pencil, StickyNote } from 'lucide-react'
 import { lazy, Suspense, useState } from 'react'
-import { noteId, useItems, useNote } from '../store/items'
+import { noteId, useItem, useItems, useNote } from '../store/items'
 import { ITEM_LIMITS } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
+import { AiMark } from '../ui/AiMark'
 import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
 
@@ -17,6 +18,7 @@ const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
  */
 export function NoteBox({ at, placeholder, tall, title = 'My notes' }: { at: string; placeholder: string; tall?: boolean; title?: string }) {
   const note = useNote(at)
+  const item = useItem(noteId(at))
   const put = useItems((s) => s.put)
   const remove = useItems((s) => s.remove)
   const setNote = (text: string) => (text.trim() ? put({ id: noteId(at), kind: 'note', at, text }) : remove(noteId(at)))
@@ -28,9 +30,9 @@ export function NoteBox({ at, placeholder, tall, title = 'My notes' }: { at: str
   return (
     <Section
       title={title}
+      action={<AiMark on={item?.ai} />}
       aside={
         <span className="flex items-center gap-2 text-[11px] text-muted">
-          Only you see these
           {note.trim() && (editing
             ? <button onClick={() => setEditing(false)} className={button}><Check size={12} /> Done</button>
             : <button onClick={() => setEditing(true)} className={button}><Pencil size={12} /> Edit</button>)}

@@ -2,20 +2,25 @@
 // their notes, in the city panel's "My visit" tab; tonight's stay on Today; a stop's stay and album by it in the
 // itinerary, and its album in the journal. Kept per city for the trip (whichever plan), also on a read-only trip, and
 // private (never in a shared trip). A stay carries its dates, so two visits to a city each show theirs. A link to a
-// social post can show the post (PostPreview.tsx). A journey's tickets are in Tickets.tsx.
+// social post can show the post (PostPreview.tsx). Every stop's stays are in My trip too (MyTrip.tsx). A journey's
+// tickets are in Tickets.tsx.
 import { BedDouble, Camera, Check, ExternalLink, Link2, MapPin, Pencil, Plus, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { localToday, type ScheduledStop } from '../planner'
 import { isEmptyItem, newItemId, useAllItems, useItems, useItemsAt, webUrl, type Items, type TripItem } from '../store/items'
-import { ITEM_LIMITS } from '../store/itemsCore'
+import { ITEM_LIMITS, NO_PLACE } from '../store/itemsCore'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
-import { cityName, dayDate } from '../ui/format'
-import { Section } from '../ui/kit'
+import { dataset as ds } from '../data/dataset'
+import { cityName, dayDate, flag, shortDate } from '../ui/format'
+import { AiMark } from '../ui/AiMark'
+import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
 import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
+import { PhotoFill } from './PhotoFill'
 import { PostPreview } from './PostPreview'
+import { PaidFor } from './ReceiptLinks'
 import { socialPost } from './socialPost'
 
 /** Whether a stay is for a stop's visit (one without dates is for every visit). */
@@ -31,7 +36,7 @@ const linkName = (url: string) => {
   return post ? `${post.platform} ${post.ratio ? 'video' : 'post'}` : host(url)
 }
 const mapUrl = (stay: TripItem) =>
-  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([stay.title, stay.address, cityName(stay.at)].filter(Boolean).join(', '))}`
+  `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([stay.title, stay.address, stay.at !== NO_PLACE && cityName(stay.at)].filter(Boolean).join(', '))}`
 
 export const field = 'w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]'
 export const small = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
@@ -60,8 +65,9 @@ function useVisitDates(cityId: string): Pick<TripItem, 'from' | 'to'> {
 }
 
 /** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`); `ai`: with
- *  Update with AI (not on Today). */
-function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: string; ai?: boolean }) {
+ *  Update with AI (not on Today); `brief`: one stop of many in My trip (added to from its top), only its title
+ *  without any. */
+function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true, brief }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean }) {
   const all = useItemsAt(cityId, 'stay')
   const stays = (shown ? all.filter(shown) : [...all]).sort(byDate)
   const [editing, setEditing] = useState<string | null>(null)
@@ -69,8 +75,10 @@ function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true }: { ci
     <Section
       title={title}
       action={ai && <AiHelp topic="stay" place={cityName(cityId)} />}
-      aside={editing === null && <button onClick={() => setEditing(newItemId('stay'))} className={small}><Plus size={12} /> Add a stay</button>}
+      aside={editing === null && !brief && <button onClick={() => setEditing(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
     >
+      {/* (One of many with none: just its name and Add.) */}
+      {(!brief || stays.length > 0 || editing !== null) && <>
       {stays.length === 0 && editing === null && (
         <p className="text-[12px] text-muted">The hotel, hostel or flat: its address, booking and dates, kept on this device too, for when there's no connection.</p>
       )}
@@ -82,6 +90,7 @@ function Stays({ cityId, shown, dates, title = 'Where I stay', ai = true }: { ci
           <li><StayEditor id={editing} cityId={cityId} dates={dates} onDone={() => setEditing(null)} autoFocus /></li>
         )}
       </ul>
+      </>}
     </Section>
   )
 }
@@ -93,7 +102,7 @@ function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
       <div className="flex items-start gap-2">
         <BedDouble size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
-          <div className="font-medium">{stay.title || 'A stay'}</div>
+          <div className="flex items-center gap-1.5 font-medium">{stay.title || 'A stay'}<AiMark on={stay.ai} /></div>
           {(stay.from || stay.to) && (
             <div className="text-[12px] text-muted">
               {stay.from ? dayDate(stay.from) : '…'} → {stay.to ? dayDate(stay.to) : '…'}
@@ -112,6 +121,7 @@ function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
         {stay.ref && <div><span className="text-muted">Booking ref </span><span className="font-mono select-all">{stay.ref}</span></div>}
         {stay.price && <div><span className="text-muted">Price </span>{stay.price}</div>}
         {stay.url && <a href={stay.url} {...external} className="flex items-center gap-1 text-accent hover:underline">{host(stay.url)}<ExternalLink size={11} /></a>}
+        <PaidFor id={stay.id} />
         {stay.text && <p className="whitespace-pre-wrap">{stay.text}</p>}
       </div>
     </div>
@@ -216,6 +226,7 @@ function LinkList({ cityId, kind }: { cityId: string; kind: 'album' | 'link' }) 
                   {i.url
                     ? <a href={i.url} {...external} className="flex min-w-0 flex-1 items-center gap-1 text-accent hover:underline"><span className="truncate">{i.title || linkName(i.url)}</span><ExternalLink size={11} className="shrink-0" /></a>
                     : <span className="min-w-0 flex-1 truncate">{i.title}</span>}
+                  <AiMark on={i.ai} />
                   <button onClick={() => setEditing(i.id)} className={small} aria-label={`Change ${i.title || 'this link'}`}><Pencil size={12} /></button>
                 </div>
                 {kind === 'link' && i.url && <PostPreview url={i.url} />}
@@ -256,6 +267,77 @@ function LinkEditor({ id, cityId, kind, onDone, autoFocus }: { id: string; cityI
 export function TonightStay({ stop, today }: { stop: ScheduledStop; today: string }) {
   if (SHARED_TOKEN) return null
   return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" ai={false} />
+}
+
+/** My trip's Stays: the stops with stays, in the plan's order (their names open their cities' panels), then those
+ *  kept for other dates or cities no longer in it; one to add, at a stop picked (where tonight is, or the next one
+ *  first), or from a photo. */
+export function AllStays() {
+  const plan = useTrip((s) => s.plan)
+  const select = useTrip((s) => s.select)
+  const items = useAllItems()
+  // A new one, written at the top until it's done (not under its stop).
+  const [adding, setAdding] = useState<string | null>(null)
+  if (!plan || SHARED_TOKEN) return null
+  const stays = Object.values(items).filter((i) => i.kind === 'stay' && !isEmptyItem(i) && i.id !== adding)
+  const stops = plan.stops.filter((s) => s.nights > 0)
+  const booked = stops.filter((stop) => stays.some((s) => s.at === stop.cityId && stayCovers(s, stop)))
+  const elsewhere = (s: TripItem) => s.id !== adding && !stops.some((stop) => stop.cityId === s.at && stayCovers(s, stop))
+  const others = [...new Set(stays.filter(elsewhere).map((s) => s.at))]
+  const today = localToday()
+  return (
+    <Sections>
+      <Section
+        title={stays.length ? `Stays for ${booked.length} of ${stops.length} stops` : 'No stays yet'}
+        aside={adding === null && <span className="flex items-center gap-1"><PhotoFill what="stay" className={small} /><button onClick={() => setAdding(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+      >
+        {adding !== null
+          ? <NewStay id={adding} stops={stops} first={stops.find((s) => s.depart > today) ?? stops[0] ?? null} onDone={() => setAdding(null)} />
+          : null}
+      </Section>
+      {booked.map((stop) => (
+        <Stays
+          key={`${stop.arrive}${stop.cityId}`} cityId={stop.cityId} shown={(s) => s.id !== adding && stayCovers(s, stop)} dates={{ from: stop.arrive, to: stop.depart }} ai={false} brief
+          title={(
+            <button onClick={() => select({ type: 'city', id: stop.cityId })} className="text-left hover:underline">
+              {flag(ds.cities[stop.cityId].iso2)} {cityName(stop.cityId)}{' '}
+              <span className="font-normal text-muted">· {stopDates(stop)}</span>
+            </button>
+          )}
+        />
+      ))}
+      {others.map((c) => (
+        <Stays key={c} cityId={c} shown={elsewhere} dates={{}} ai={false} brief title={c === NO_PLACE ? null : <>{cityName(c)} <span className="font-normal text-muted">· other dates</span></>} />
+      ))}
+    </Sections>
+  )
+}
+
+const stopDates = (stop: ScheduledStop) => `${shortDate(stop.arrive)} – ${shortDate(stop.depart)}, ${stop.nights} night${stop.nights === 1 ? '' : 's'}`
+
+/** A stay added in My trip: its stop picked (or none: null), then written as anywhere else. A stop changed moves it
+ *  there (with that stop's dates, unless others were given). */
+function NewStay({ id, stops, first, onDone }: { id: string; stops: ScheduledStop[]; first: ScheduledStop | null; onDone: () => void }) {
+  const [stop, setStop] = useState(first)
+  const stay = useAllItems()[id] as TripItem | undefined
+  const move = (to: ScheduledStop | null) => {
+    const same = (!stay?.from && !stay?.to) || (stay?.from === stop?.arrive && stay?.to === stop?.depart)
+    if (stay && !stay.deleted) useItems.getState().put({ id, at: to?.cityId ?? NO_PLACE, ...(same && to && { from: to.arrive, to: to.depart }) })
+    setStop(to)
+  }
+  const index = stop ? stops.indexOf(stop) : -1
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[11px] text-muted">Where</span>
+        <select value={index} onChange={(e) => move(stops[Number(e.target.value)] ?? null)} className={field}>
+          <option value={-1} aria-label="None" />
+          {stops.map((s, i) => <option key={i} value={i}>{cityName(s.cityId)} · {stopDates(s)}</option>)}
+        </select>
+      </label>
+      <StayEditor key={index} id={id} cityId={stop?.cityId ?? NO_PLACE} dates={stop ? { from: stop.arrive, to: stop.depart } : {}} onDone={onDone} autoFocus />
+    </div>
+  )
 }
 
 /** A stop's marks in the itinerary: its stay (the name on hover) and its photo albums (each opens). */
