@@ -6,7 +6,7 @@ import { RUNNER_TOOLS } from '../src/agent/mcpTools'
 import { ITEM_TOOLS } from '../src/agent/schema'
 import { cityName, describeChanges, describeItemChanges, itemsHandle, runTool, toolContext, tripContext, withTrip, type ToolResult } from '../src/agent/tools'
 import type { Items, TripItem } from '../src/store/itemsCore'
-import { isEmptyEntry, type Journal } from '../src/store/journalCore'
+import { dayEmojis, isEmptyEntry, type Journal } from '../src/store/journalCore'
 import { createTripStore, tripData, type TripData } from '../src/store/tripCore'
 
 export type ToolCall = { name: string; args: Record<string, unknown>; trip: { id: string; name: string } | null; data: TripData | null; extra: unknown }
@@ -72,7 +72,7 @@ function journal(entries: Journal | null, args: Record<string, unknown>): ToolRe
   const shown = days.slice(-(from || to ? MOST_DAYS : LATEST_DAYS))
   if (!shown.length) return { days: [], note: from || to ? 'Nothing written for those days.' : 'Nothing written in the journal yet.' }
   return {
-    days: shown.map((e) => ({ date: e.date, city: e.cityId && cityName(e.cityId), highlight: e.highlight || undefined, text: e.text || undefined, rating: e.rating, tags: e.tags })),
+    days: shown.map((e) => ({ date: e.date, city: e.cityId && cityName(e.cityId), highlight: e.highlight || undefined, text: e.text || undefined, emojis: dayEmojis(e).length ? dayEmojis(e) : undefined, tags: e.tags })),
     ...(days.length > shown.length && { earlier: `${days.length - shown.length} earlier days not shown: ask with from and to.` }),
   }
 }

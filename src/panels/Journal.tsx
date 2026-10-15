@@ -1,14 +1,14 @@
 // The trip's journal (PLAN.md §14.4, store/journal.ts): a day's highlight, its story (Markdown, styled as it's typed),
-// how it was (a face) and tags, written from Today or any day so far in My trip's Journal tab (MyTrip.tsx). Saved on
+// its emoji and tags, written from Today or any day so far in My trip's Journal tab (MyTrip.tsx). Saved on
 // this device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal
 // isn't the plan); on a shared trip's page, only the days made public, read-only.
-import { BookOpen, Check, ChevronLeft, ChevronRight, Pencil, Plus, X } from 'lucide-react'
+import { BookOpen, Check, ChevronLeft, ChevronRight, Pencil, Plus, SmilePlus, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
 import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
-import { cleanTag, cleanTags, JOURNAL_LIMITS } from '../store/journalCore'
+import { cleanEmojis, cleanTag, cleanTags, dayEmojis, JOURNAL_LIMITS } from '../store/journalCore'
 import { useSaved } from '../store/saved'
 import { useTrip } from '../store/trip'
 import { cityName, dayDate, flag, shortDate } from '../ui/format'
@@ -21,6 +21,7 @@ import { plainLines, toggleTask } from './noteText'
 
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
+const EmojiPicker = lazy(() => import('./EmojiPicker'))
 
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
@@ -36,12 +37,7 @@ export function useOpenJournal() {
   }
 }
 
-/** How a day was, from 1 (awful) to 5 (great). */
-const MOODS = [
-  { face: '😣', label: 'Awful' }, { face: '🙁', label: 'Bad' }, { face: '😐', label: 'Okay' }, { face: '🙂', label: 'Good' }, { face: '😄', label: 'Great' },
-] as const
-
-/** A day's entry, as it's written: its highlight, its story, how it was (again to clear) and tags; and its
+/** A day's entry, as it's written: its highlight, its story, tags and emoji; and its
  *  Private/Public switch, unless it's by the editor's Done (`switchOutside`). */
 export function DayEditor({ date, autoFocus, switchOutside }: { date: string; autoFocus?: boolean; switchOutside?: boolean }) {
   const entry = useJournal((s) => s.books[s.key]?.entries[date])
@@ -63,8 +59,9 @@ export function DayEditor({ date, autoFocus, switchOutside }: { date: string; au
         />
       </Suspense>
       <Tags tags={entry?.tags ?? []} onChange={(tags) => save({ tags: tags.length ? tags : undefined })} />
-      <div className="flex items-center justify-between gap-2">
-        <Mood value={entry?.rating} onChange={(rating) => save({ rating: rating === entry?.rating ? undefined : rating })} />
+      {/* (Its emoji, as a face of how it was for a day written before; the picker opens under them.) */}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <Emojis emojis={dayEmojis(entry)} onChange={(emojis) => save({ emojis: emojis.length ? emojis : undefined, rating: undefined })} />
         <span className="flex min-w-0 items-center gap-1">
           <SaveState date={date} />
           {!switchOutside && <DayVisibility date={date} />}
@@ -82,27 +79,33 @@ function DayVisibility({ date }: { date: string }) {
   return <PublicToggle on={!!entry?.public} onChange={(on) => write(date, { public: on || undefined })} />
 }
 
-/** How the day was, a face of five to pick (or, `small`, the one picked). */
-function Mood({ value, onChange, small }: { value?: number; onChange?: (n: 1 | 2 | 3 | 4 | 5) => void; small?: boolean }) {
-  if (!onChange) {
-    const mood = value ? MOODS[value - 1] : null
-    return mood && <span title={mood.label} aria-label={`The day was ${mood.label.toLowerCase()}`} className={small ? 'text-[13px] leading-none' : 'text-[18px]'}>{mood.face}</span>
-  }
+/** A day's emoji: each removed with a click, more added from the picker (to the limit). */
+function Emojis({ emojis, onChange }: { emojis: string[]; onChange: (emojis: string[]) => void }) {
+  const [picking, setPicking] = useState(false)
+  const full = emojis.length >= JOURNAL_LIMITS.emojis
   return (
-    <span className="flex items-center gap-0.5" role="radiogroup" aria-label="How was the day">
-      {MOODS.map((m, i) => {
-        const n = (i + 1) as 1 | 2 | 3 | 4 | 5
-        const on = value === n
-        return (
+    <>
+      <span className="flex min-w-0 flex-wrap items-center gap-0.5" role="group" aria-label="The day's emoji">
+        {emojis.map((e) => (
+          <button key={e} onClick={() => onChange(emojis.filter((x) => x !== e))} title="Click to remove" aria-label={`Remove ${e}`} className="rounded-md px-0.5 text-[20px] leading-none hover:bg-canvas">{e}</button>
+        ))}
+        {!full && (
           <button
-            key={n} role="radio" aria-checked={on} aria-label={m.label} title={m.label} onClick={() => onChange(n)}
-            className={`rounded-full px-1 py-0.5 text-[18px] leading-none transition ${on ? 'bg-accent-soft' : value ? 'opacity-40 grayscale hover:opacity-100 hover:grayscale-0' : 'opacity-70 hover:opacity-100'}`}
+            onClick={() => setPicking(!picking)} aria-expanded={picking} title="Add an emoji" aria-label="Add an emoji"
+            className={`flex size-7 items-center justify-center rounded-md ${picking ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-canvas hover:text-ink'}`}
           >
-            {m.face}
+            <SmilePlus size={17} />
           </button>
-        )
-      })}
-    </span>
+        )}
+      </span>
+      {picking && !full && (
+        <Suspense fallback={<div className="h-[300px] rounded-lg border border-line" />}>
+          <div className="basis-full">
+            <EmojiPicker onPick={(e) => onChange(cleanEmojis([...emojis, e]))} />
+          </div>
+        </Suspense>
+      )}
+    </>
   )
 }
 
@@ -300,6 +303,7 @@ function DayRow({ date, day, onOpen, onTag }: { date: string; day: number; onOpe
   const lines = e ? plainLines(e.text) : []
   const lead = e?.highlight.trim() || lines[0] || ''
   const more = (e?.highlight.trim() ? lines : lines.slice(1)).join('\n')
+  const emojis = dayEmojis(e)
   return (
     // (The day and its tags one card: a click on it opens the day, on a tag shows the days with it.)
     <li onClick={onOpen} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-canvas">
@@ -319,8 +323,13 @@ function DayRow({ date, day, onOpen, onTag }: { date: string; day: number; onOpe
           </>
         ) : <button className="text-[13px] text-muted">Not written</button>}
       </span>
-      {/* (How it was, then whether it's public, at the right edge: as by Edit on the day's page.) */}
-      {(e?.rating || (e?.public && !SHARED_TOKEN)) && <span className="flex items-center gap-1.5 pt-0.5">{e.rating && <Mood value={e.rating} small />}<PublicMark on={e.public} /></span>}
+      {/* (Its emoji, then whether it's public, at the right edge: as by Edit on the day's page.) */}
+      {(!!emojis.length || (e?.public && !SHARED_TOKEN)) && (
+        <span className="flex items-center gap-1.5 pt-0.5">
+          {!!emojis.length && <span aria-label={`The day's emoji: ${emojis.join(' ')}`} className="text-[13px] leading-none whitespace-nowrap">{emojis.slice(0, 3).join('')}{emojis.length > 3 && <span className="text-[11px] text-muted"> +{emojis.length - 3}</span>}</span>}
+          <PublicMark on={e?.public} />
+        </span>
+      )}
     </li>
   )
 }
@@ -336,7 +345,7 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
   const newer = days[i - 1]
   const older = days[i + 1]
   const stop = nightStop(plan?.stops ?? [], date)
-  const mood = e?.rating && MOODS[e.rating - 1]
+  const emojis = dayEmojis(e)
   const link = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
   const step = 'flex size-7 items-center justify-center rounded-md text-muted hover:bg-panel hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
   return (
@@ -367,7 +376,7 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
                 )}
                 {e?.highlight.trim() && <h2 className="text-[21px] leading-snug font-bold">{e.highlight}</h2>}
               </div>
-              {mood && <span title={mood.label} aria-label={`The day was ${mood.label.toLowerCase()}`} className="text-[26px] leading-none">{mood.face}</span>}
+              {!!emojis.length && <span aria-label={`The day's emoji: ${emojis.join(' ')}`} className="max-w-[45%] text-right text-[24px] leading-tight">{emojis.join('')}</span>}
             </div>
             {e?.text.trim()
               ? (

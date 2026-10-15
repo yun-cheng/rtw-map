@@ -13,8 +13,10 @@ export type DayEntry = {
   highlight: string
   /** A few lines, Markdown (plain text before it was written as it's shown). */
   text: string
-  /** How the day was, 1 (awful) to 5 (great), shown as a face. */
+  /** How the day was, 1 (awful) to 5 (great): written before a day had emoji, shown as its face (`dayEmojis`). */
   rating?: 1 | 2 | 3 | 4 | 5
+  /** The day's emoji, picked by the user, each once. */
+  emojis?: string[]
   /** The user's own words to find days by ("hike", "food"), each once. */
   tags?: string[]
   /** Shown on the trip's shared link; private otherwise. */
@@ -24,9 +26,23 @@ export type DayEntry = {
 }
 export type Journal = Record<string, DayEntry>
 
-export const JOURNAL_LIMITS = { textChars: 4000, highlightChars: 140, days: 800, bytes: 1_500_000, tags: 12, tagChars: 32 }
+export const JOURNAL_LIMITS = { textChars: 4000, highlightChars: 140, days: 800, bytes: 1_500_000, tags: 12, tagChars: 32, emojis: 8, emojiChars: 20 }
 
-export const isEmptyEntry = (e: DayEntry | undefined) => !e || (!e.text.trim() && !e.highlight.trim() && !e.rating && !e.tags?.length)
+export const isEmptyEntry = (e: DayEntry | undefined) => !e || (!e.text.trim() && !e.highlight.trim() && !e.rating && !e.tags?.length && !e.emojis?.length)
+
+/** How a day was, 1 to 5, as its face. */
+export const RATING_FACES = ['😣', '🙁', '😐', '🙂', '😄'] as const
+
+/** A day's emoji: those picked, or the face of how it was, for a day written before. */
+export const dayEmojis = (e: DayEntry | undefined): string[] => e?.emojis ?? (e?.rating ? [RATING_FACES[e.rating - 1]] : [])
+
+/** One emoji: a picture (or a flag, or a keycap), with its skin tone, joiners and variation selectors (all emoji
+ *  components). */
+const EMOJI = /^(?=.*(?:[\p{Extended_Pictographic}\p{Regional_Indicator}]|\u20e3))[\p{Extended_Pictographic}\p{Emoji_Component}]+$/u
+
+/** Emoji as they're kept: each a single emoji, once, within the limit. */
+export const cleanEmojis = (emojis: string[]) =>
+  [...new Set(emojis.filter((e) => e.length <= JOURNAL_LIMITS.emojiChars && EMOJI.test(e)))].slice(0, JOURNAL_LIMITS.emojis)
 
 /** A tag as it's kept: its words, without a leading "#", within the limit. */
 export const cleanTag = (tag: string) => tag.replace(/\s+/g, ' ').trim().replace(/^#+ ?/, '').slice(0, JOURNAL_LIMITS.tagChars).trim()
@@ -57,6 +73,8 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
     if (rating !== undefined && ![1, 2, 3, 4, 5].includes(rating as number)) return 'Invalid journal day'
     if (x.tags !== undefined && (!Array.isArray(x.tags) || x.tags.length > JOURNAL_LIMITS.tags * 2 || x.tags.some((t) => typeof t !== 'string'))) return 'Invalid journal day'
     const tags = cleanTags((x.tags as string[] | undefined) ?? [])
+    if (x.emojis !== undefined && (!Array.isArray(x.emojis) || x.emojis.length > JOURNAL_LIMITS.emojis * 2 || x.emojis.some((e) => typeof e !== 'string'))) return 'Invalid journal day'
+    const emojis = cleanEmojis((x.emojis as string[] | undefined) ?? [])
     entries.push({
       date: x.date,
       ...(x.cityId ? { cityId: x.cityId as string } : {}),
@@ -64,6 +82,7 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
       text: x.text.slice(0, JOURNAL_LIMITS.textChars),
       ...(rating ? { rating: rating as DayEntry['rating'] } : {}),
       ...(tags.length && { tags }),
+      ...(emojis.length && { emojis }),
       ...(x.public === true && { public: true as const }),
       updatedAt: Math.min(x.updatedAt, now),
     })

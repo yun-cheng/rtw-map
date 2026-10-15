@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { isEmptyEntry, mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
+import { dayEmojis, isEmptyEntry, mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -35,6 +35,17 @@ describe('journal', () => {
     expect(isEmptyEntry(e)).toBe(false)
     expect((parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', tags: [' # '], updatedAt: 1 }] }) as DayEntry[])[0]).not.toHaveProperty('tags')
     expect(parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', tags: [3], updatedAt: 1 }] })).toBeTypeOf('string')
+  })
+
+  it("keeps a day's emoji: single emoji (with skin tones, joiners and flags), each once, within the limit", () => {
+    const emojis = ['😄', '👍🏽', '👨‍👩‍👧', '🇦🇱', '1️⃣', '😄', 'a', '😄😄x', '', '☕', '🏔️', '🍕', '🎉', '🌧️']
+    const [e] = parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', emojis, updatedAt: 1 }] }) as DayEntry[]
+    expect(e.emojis).toEqual(['😄', '👍🏽', '👨‍👩‍👧', '🇦🇱', '1️⃣', '☕', '🏔️', '🍕'])
+    expect(isEmptyEntry(e)).toBe(false)
+    expect(parseEntries({ entries: [{ date: '2027-05-01', highlight: '', text: '', emojis: '😄', updatedAt: 1 }] })).toBeTypeOf('string')
+    // A day written before: how it was, as its face.
+    expect(dayEmojis({ date: '2027-05-01', highlight: '', text: '', rating: 4, updatedAt: 1 })).toEqual(['🙂'])
+    expect(dayEmojis({ ...e, rating: 4 })).toEqual(e.emojis)
   })
 
   it('shows on the shared link only the days made public', () => {

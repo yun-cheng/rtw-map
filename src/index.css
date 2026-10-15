@@ -212,3 +212,23 @@ fieldset:disabled :is(input, select, textarea, button) {
   & p.is-editor-empty:first-child::before { content: attr(data-placeholder); color: var(--color-muted); float: left; height: 0; pointer-events: none; }
   & .selectedCell { background: var(--color-accent-soft); }
 }
+
+/* A day's emoji picker (panels/EmojiPicker.tsx, emoji-picker-element): the panel's width and colours. */
+.emoji-box emoji-picker {
+  width: 100%;
+  height: 300px;
+  --border-radius: 8px;
+  --background: var(--color-panel);
+  --border-color: var(--color-line);
+  --indicator-color: var(--color-accent);
+  --input-border-color: var(--color-line);
+  --input-font-color: var(--color-ink);
+  --input-placeholder-color: var(--color-muted);
+  --input-border-radius: 6px;
+  --category-font-color: var(--color-muted);
+  --button-hover-background: var(--color-canvas);
+  --button-active-background: var(--color-accent-soft);
+  --outline-color: var(--color-accent);
+  --emoji-size: 1.25rem;
+  --num-columns: 8;
+}
