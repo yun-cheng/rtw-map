@@ -2,7 +2,7 @@
 // how it was (a face) and tags, written from Today or any day so far in My trip's Journal tab (MyTrip.tsx). Saved on
 // this device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal
 // isn't the plan); on a shared trip's page, only the days made public, read-only.
-import { BookOpen, Check, ChevronRight, Plus, X } from 'lucide-react'
+import { BookOpen, Check, ChevronLeft, ChevronRight, Pencil, Plus, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
 import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
@@ -17,7 +17,7 @@ import { AlbumLinks } from './Visit'
 import { useOnline } from '../ui/useOnline'
 import { useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
-import { plainLines } from './noteText'
+import { plainLines, toggleTask } from './noteText'
 
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
@@ -41,8 +41,9 @@ const MOODS = [
   { face: '😣', label: 'Awful' }, { face: '🙁', label: 'Bad' }, { face: '😐', label: 'Okay' }, { face: '🙂', label: 'Good' }, { face: '😄', label: 'Great' },
 ] as const
 
-/** A day's entry, as it's written: its highlight, its story, how it was (again to clear) and tags. */
-export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boolean }) {
+/** A day's entry, as it's written: its highlight, its story, how it was (again to clear) and tags; and its
+ *  Private/Public switch, unless it's by the editor's Done (`switchOutside`). */
+export function DayEditor({ date, autoFocus, switchOutside }: { date: string; autoFocus?: boolean; switchOutside?: boolean }) {
   const entry = useJournal((s) => s.books[s.key]?.entries[date])
   const write = useJournal((s) => s.write)
   const stops = useTrip((s) => s.plan?.stops)
@@ -66,11 +67,19 @@ export function DayEditor({ date, autoFocus }: { date: string; autoFocus?: boole
         <Mood value={entry?.rating} onChange={(rating) => save({ rating: rating === entry?.rating ? undefined : rating })} />
         <span className="flex min-w-0 items-center gap-1">
           <SaveState date={date} />
-          {!isEmptyEntry(entry) && <PublicToggle on={!!entry?.public} onChange={(on) => save({ public: on || undefined })} />}
+          {!switchOutside && <DayVisibility date={date} />}
         </span>
       </div>
     </div>
   )
+}
+
+/** A day's Private/Public switch, once something is written. */
+function DayVisibility({ date }: { date: string }) {
+  const entry = useJournal((s) => s.books[s.key]?.entries[date])
+  const write = useJournal((s) => s.write)
+  if (isEmptyEntry(entry)) return null
+  return <PublicToggle on={!!entry?.public} onChange={(on) => write(date, { public: on || undefined })} />
 }
 
 /** How the day was, a face of five to pick (or, `small`, the one picked). */
@@ -113,7 +122,7 @@ function Tags({ tags, onChange }: { tags: string[]; onChange: (tags: string[]) =
     <div className="flex flex-wrap items-center gap-1 rounded-md border border-line bg-panel px-1.5 py-1 focus-within:border-accent">
       {tags.map((t) => (
         <span key={t} className="flex items-center gap-0.5 rounded-full bg-accent-soft py-0.5 pr-0.5 pl-2 text-[12px] text-accent">
-          #{t}
+          {t}
           <button onClick={() => onChange(tags.filter((x) => x !== t))} aria-label={`Remove the tag ${t}`} className="rounded-full p-0.5 hover:bg-panel"><X size={11} /></button>
         </span>
       ))}
@@ -178,17 +187,24 @@ export function TodayEntry({ today }: { today: string }) {
 }
 
 /** The journal, My trip's Journal tab: the days of the trip so far that are written (or those with a tag), newest first,
- *  under the stop where their night was, each opening to change it; and one to add (today first). */
+ *  under the stop where their night was, each opening on a page of its own; and one to add (today first). */
 export function JournalView() {
   const { plan, input, select } = useTrip()
   const entries = useJournalEntries()
   const { view, setView } = useJournal()
-  const [open, setOpen] = useState<string | null>(null)
+  // The day open on its page.
+  const [day, setDay] = useState<string | null>(null)
   // The day being added, written at the top until it's done.
   const [adding, setAdding] = useState<string | null>(null)
   // The tag the days are shown by (picked on a day).
   const [tag, setTag] = useState<string | null>(null)
   const today = localToday()
+  // (Brought to a stop's days, from the list.)
+  const [focus, setFocus] = useState(view.focus)
+  if (view.focus !== focus) {
+    setFocus(view.focus)
+    if (view.focus) setDay(null)
+  }
 
   // Brought to a stop's days (from its mark in the stops).
   useEffect(() => {
@@ -215,6 +231,11 @@ export function JournalView() {
     else groups.push({ stop, days: [d] })
   }
   const written = all.filter((d) => !isEmptyEntry(entries[d])).length
+  if (day) {
+    // (Newer and older: of the days in the list, or the day itself if it's no longer there, cleared.)
+    const list = days.includes(day) ? days : [day]
+    return <DayPage key={day} date={day} days={list} onGo={setDay} onBack={() => setDay(null)} onTag={(t) => { setTag(t); setDay(null) }} />
+  }
 
   // (Cards, as My trip's other tabs: the count and Add on top, then each stop's days.)
   return (
@@ -223,7 +244,7 @@ export function JournalView() {
         title={tag
           ? <span className="flex items-center gap-1.5">
               <span className="flex items-center gap-0.5 rounded-full bg-accent-soft py-0.5 pr-0.5 pl-2 text-[12px] font-normal text-accent">
-                #{tag}<button onClick={() => setTag(null)} aria-label="Show every day" className="rounded-full p-0.5 hover:bg-panel"><X size={11} /></button>
+                {tag}<button onClick={() => setTag(null)} aria-label="Show every day" className="rounded-full p-0.5 hover:bg-panel"><X size={11} /></button>
               </span>
               {days.length} day{days.length === 1 ? '' : 's'}
             </span>
@@ -241,8 +262,11 @@ export function JournalView() {
               className="w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]"
             />
           </label>
-          <DayEditor key={adding} date={adding} autoFocus />
-          <button onClick={() => setAdding(null)} className="flex items-center gap-1 self-end rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Check size={12} /> Done</button>
+          <DayEditor key={adding} date={adding} autoFocus switchOutside />
+          <span className="flex items-center gap-1 self-end">
+            <DayVisibility date={adding} />
+            <button onClick={() => setAdding(null)} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Check size={12} /> Done</button>
+          </span>
         </div>
       )}
       </Section>
@@ -260,7 +284,7 @@ export function JournalView() {
           >
             <ol className="-mx-2">
               {g.days.map((d) => (
-                <DayRow key={d} date={d} day={tripDay(input.startDate, d)} open={open === d} onToggle={() => setOpen(open === d ? null : d)} onTag={setTag} />
+                <DayRow key={d} date={d} day={tripDay(input.startDate, d)} onOpen={() => setDay(d)} onTag={setTag} />
               ))}
             </ol>
           </Section>
@@ -270,41 +294,98 @@ export function JournalView() {
   )
 }
 
-function DayRow({ date, day, open, onToggle, onTag }: { date: string; day: number; open: boolean; onToggle: () => void; onTag: (tag: string) => void }) {
+function DayRow({ date, day, onOpen, onTag }: { date: string; day: number; onOpen: () => void; onTag: (tag: string) => void }) {
   const e = useDayEntry(date)
-  // Its highlight (or first line) and, under it, the rest as plain text, line by line, cut with "…" after three.
+  // Its highlight (or first line) and, under it, the rest as plain text, line by line, cut with "…" after two.
   const lines = e ? plainLines(e.text) : []
   const lead = e?.highlight.trim() || lines[0] || ''
   const more = (e?.highlight.trim() ? lines : lines.slice(1)).join('\n')
   return (
-    <li className={open ? 'rounded-lg bg-canvas' : ''}>
-      <button onClick={onToggle} aria-expanded={open} className="flex w-full items-start gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-canvas">
-        <span className="w-16 shrink-0 pt-px text-[11px] leading-tight text-muted">{dayDate(date)}<br />Day {day}</span>
-        <span className="min-w-0 flex-1">
-          {e ? (
-            <>
-              <span className="flex items-center gap-1.5 text-[13px] font-medium"><span className="truncate">{lead || '—'}</span><PublicMark on={e.public} /></span>
-              {more && <span className="line-clamp-3 text-[12px] whitespace-pre-line text-muted">{more}</span>}
-            </>
-          ) : <span className="text-[13px] text-muted">Not written</span>}
-        </span>
-        {e?.rating && <span className="pt-0.5"><Mood value={e.rating} small /></span>}
-      </button>
-      {/* (A tag shows the days with it.) */}
-      {(!open || SHARED_TOKEN) && !!e?.tags?.length && (
-        <div className="-mt-1 flex flex-wrap gap-1 pr-2 pb-1.5 pl-[5.5rem]">
-          {e.tags.map((t) => <button key={t} onClick={() => onTag(t)} className="rounded-full px-1.5 text-[11px] text-accent hover:bg-accent-soft">#{t}</button>)}
-        </div>
-      )}
-      {/* (On a shared trip's page, the day as written.) */}
-      {open && (
-        <div className="px-2 pt-1 pb-3">
-          {SHARED_TOKEN
-            ? e?.text && <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{e.text}</p>}><NoteMarkdown text={e.text} onToggle={() => {}} /></Suspense>
-            : <DayEditor date={date} autoFocus={!e} />}
-        </div>
-      )}
+    // (The day and its tags one card: a click on it opens the day, on a tag shows the days with it.)
+    <li onClick={onOpen} className="flex cursor-pointer items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-canvas">
+      <span className="w-16 shrink-0 pt-px text-[11px] leading-tight text-muted">{dayDate(date)}<br />Day {day}</span>
+      <span className="min-w-0 flex-1">
+        {e ? (
+          <>
+            <button className="flex w-full items-center gap-1.5 text-left text-[13px] font-medium"><span className="truncate">{lead || '—'}</span></button>
+            {more && <span className="line-clamp-2 text-[12px] whitespace-pre-line text-muted">{more}</span>}
+            {!!e.tags?.length && (
+              <span className="mt-1 flex flex-wrap gap-1">
+                {e.tags.map((t) => (
+                  <button key={t} onClick={(ev) => { ev.stopPropagation(); onTag(t) }} className="rounded-full bg-accent-soft px-1.5 text-[11px] text-accent hover:underline">{t}</button>
+                ))}
+              </span>
+            )}
+          </>
+        ) : <button className="text-[13px] text-muted">Not written</button>}
+      </span>
+      {/* (How it was, then whether it's public, at the right edge: as by Edit on the day's page.) */}
+      {(e?.rating || (e?.public && !SHARED_TOKEN)) && <span className="flex items-center gap-1.5 pt-0.5">{e.rating && <Mood value={e.rating} small />}<PublicMark on={e.public} /></span>}
     </li>
+  )
+}
+
+/** A day on a page of its own: all of it as it reads (a to-do can be ticked there), with Edit to change it (not on a
+ *  shared trip's page), and the way back to the list and to the newer and older days in it (`days`, newest first). */
+function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: string[]; onGo: (date: string) => void; onBack: () => void; onTag: (tag: string) => void }) {
+  const { plan, input, select } = useTrip()
+  const e = useDayEntry(date)
+  const write = useJournal((s) => s.write)
+  const [editing, setEditing] = useState(false)
+  const i = days.indexOf(date)
+  const newer = days[i - 1]
+  const older = days[i + 1]
+  const stop = nightStop(plan?.stops ?? [], date)
+  const mood = e?.rating && MOODS[e.rating - 1]
+  const link = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
+  const step = 'flex size-7 items-center justify-center rounded-md text-muted hover:bg-panel hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
+  return (
+    <Sections>
+      <div className="flex items-center justify-between">
+        {/* (A way back, plain: not a tag's or an action's colour.) */}
+        <button onClick={onBack} className="-ml-1 flex items-center gap-0.5 rounded-md px-1 py-0.5 text-[12px] text-muted hover:text-ink"><ChevronLeft size={14} /> All days</button>
+        <span className="flex items-center gap-0.5">
+          <button onClick={() => newer && onGo(newer)} disabled={!newer} aria-label="Newer day" title="Newer day" className={step}><ChevronLeft size={16} /></button>
+          <button onClick={() => older && onGo(older)} disabled={!older} aria-label="Older day" title="Older day" className={step}><ChevronRight size={16} /></button>
+        </span>
+      </div>
+      <Section
+        title={<span className="font-normal text-muted">{dayDate(date)} · Day {tripDay(input.startDate, date)}</span>}
+        // (Public or not by Edit, its switch by Done: where every day has it, in the list too.)
+        aside={!SHARED_TOKEN && (editing
+          ? <span className="flex items-center gap-1"><DayVisibility date={date} /><button onClick={() => setEditing(false)} className={link}><Check size={12} /> Done</button></span>
+          : <span className="flex items-center gap-1"><PublicMark on={e?.public} /><button onClick={() => setEditing(true)} className={link}><Pencil size={12} /> Edit</button></span>)}
+      >
+        {editing ? <DayEditor date={date} autoFocus={!e} switchOutside /> : (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                {stop && (
+                  <button onClick={() => select({ type: 'city', id: stop.cityId })} className="text-[12px] text-muted hover:text-ink hover:underline">
+                    {flag(ds.cities[stop.cityId].iso2)} {cityName(stop.cityId)}
+                  </button>
+                )}
+                {e?.highlight.trim() && <h2 className="text-[21px] leading-snug font-bold">{e.highlight}</h2>}
+              </div>
+              {mood && <span title={mood.label} aria-label={`The day was ${mood.label.toLowerCase()}`} className="text-[26px] leading-none">{mood.face}</span>}
+            </div>
+            {e?.text.trim()
+              ? (
+                <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{e.text}</p>}>
+                  <NoteMarkdown text={e.text} onToggle={(n) => !SHARED_TOKEN && write(date, { text: toggleTask(e.text, n) })} />
+                </Suspense>
+              )
+              : !e?.highlight.trim() && <p className="text-[13px] text-muted">Nothing written for this day.</p>}
+            {!!e?.tags?.length && (
+              <div className="flex flex-wrap gap-1">
+                {e.tags.map((t) => <button key={t} onClick={() => onTag(t)} className="rounded-full bg-accent-soft px-2 py-0.5 text-[12px] text-accent hover:underline">{t}</button>)}
+              </div>
+            )}
+            {stop && <AlbumLinks cityId={stop.cityId} />}
+          </div>
+        )}
+      </Section>
+    </Sections>
   )
 }
 
