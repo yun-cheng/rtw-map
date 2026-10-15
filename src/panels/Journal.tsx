@@ -2,7 +2,7 @@
 // its emoji and tags, written from Today or any day so far in My trip's Journal tab (MyTrip.tsx). Saved on
 // this device as it's typed, and sent to the account when there's a connection; also on a read-only trip (the journal
 // isn't the plan); on a shared trip's page, only the days made public, read-only.
-import { BookOpen, Check, ChevronLeft, ChevronRight, Pencil, Plus, SmilePlus, X } from 'lucide-react'
+import { BookOpen, Check, ChevronRight, Pencil, Plus, SmilePlus, X } from 'lucide-react'
 import { lazy, Suspense, useEffect, useState } from 'react'
 import { addDays, localToday, tripDay, type ScheduledStop } from '../planner'
 import { isEmptyEntry, useDayEntry, useJournal, useJournalEntries } from '../store/journal'
@@ -18,6 +18,7 @@ import { useOnline } from '../ui/useOnline'
 import { useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
 import { plainLines, toggleTask } from './noteText'
+import { RecordNav } from './RecordPage'
 import { PlainNote } from './PlainNote'
 
 const loadEditor = () => import('./MarkdownEditor')
@@ -354,17 +355,9 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
   const stop = nightStop(plan?.stops ?? [], date)
   const emojis = dayEmojis(e)
   const link = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
-  const step = 'flex size-7 items-center justify-center rounded-md text-muted hover:bg-panel hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent'
   return (
     <Sections>
-      <div className="flex items-center justify-between">
-        {/* (A way back, plain: not a tag's or an action's colour.) */}
-        <button onClick={onBack} className="-ml-1 flex items-center gap-0.5 rounded-md px-1 py-0.5 text-[12px] text-muted hover:text-ink"><ChevronLeft size={14} /> All days</button>
-        <span className="flex items-center gap-0.5">
-          <button onClick={() => newer && onGo(newer)} disabled={!newer} aria-label="Newer day" title="Newer day" className={step}><ChevronLeft size={16} /></button>
-          <button onClick={() => older && onGo(older)} disabled={!older} aria-label="Older day" title="Older day" className={step}><ChevronRight size={16} /></button>
-        </span>
-      </div>
+      <RecordNav back="All days" onBack={onBack} prev={newer} next={older} onGo={onGo} prevLabel="Newer day" nextLabel="Older day" at={date} />
       <Section
         title={<span className="font-normal text-muted">{dayDate(date)} · Day {tripDay(input.startDate, date)}</span>}
         // (Public or not by Edit, its switch by Done: where every day has it, in the list too.)

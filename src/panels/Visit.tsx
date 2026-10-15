@@ -17,11 +17,13 @@ import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
+import { useRightPanel } from '../ui/rightPanel'
 import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
 import { PhotoFill } from './PhotoFill'
 import { PostPreview } from './PostPreview'
 import { PaidFor } from './ReceiptLinks'
+import { RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { socialPost } from './socialPost'
 
 /** Whether a stay is for a stop's visit (one without dates is for every visit). */
@@ -67,8 +69,8 @@ function useVisitDates(cityId: string): Pick<TripItem, 'from' | 'to'> {
 
 /** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`); `ai`: with
  *  Update with AI (not on Today); `brief`: one stop of many in My trip (added to from its top), only its title
- *  without any. */
-function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I stay', ai = true, brief }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean }) {
+ *  without any; `onOpen`: in My trip, each a row opening its page (StayPage). */
+function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I stay', ai = true, brief, onOpen }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean; onOpen?: (id: string) => void }) {
   const all = useItemsAt(cityId, 'stay')
   const stays = (shown ? all.filter(shown) : [...all]).sort(byDate)
   const [editing, setEditing] = useState<string | null>(null)
@@ -85,51 +87,90 @@ function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I
       {stays.length === 0 && editing === null && (
         <p className="text-[12px] text-muted">The hotel, hostel or flat: its address, booking and dates, kept on this device too, for when there's no connection.</p>
       )}
-      <ul className="flex flex-col gap-2">
+      {onOpen ? <ul className="flex flex-col">{stays.map((s) => <StayRow key={s.id} stay={s} onOpen={() => onOpen(s.id)} />)}</ul> : <ul className="flex flex-col gap-2">
         {stays.map((s) => (
           <li key={s.id}>{editing === s.id ? <StayEditor id={s.id} cityId={cityId} dates={dates} onDone={() => setEditing(null)} /> : <StayCard stay={s} onEdit={() => setEditing(s.id)} />}</li>
         ))}
         {editing !== null && !stays.some((s) => s.id === editing) && (
           <li><StayEditor id={editing} cityId={cityId} dates={dates} onDone={() => setEditing(null)} autoFocus /></li>
         )}
-      </ul>
+      </ul>}
       </>}
     </Section>
   )
 }
 
 function StayCard({ stay, onEdit }: { stay: TripItem; onEdit: () => void }) {
-  const nights = stay.from && stay.to ? Math.round((Date.parse(stay.to) - Date.parse(stay.from)) / 86_400_000) : null
   return (
     <div className="rounded-lg border border-line px-3 py-2 text-[13px]">
       <div className="flex items-start gap-2">
         <BedDouble size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-1.5 font-medium">{stay.title || 'A stay'}<AiMark on={stay.ai} /></div>
-          {(stay.from || stay.to) && (
-            <div className="text-[12px] text-muted">
-              {/* (The year once, when both are in it.) */}
-              {stay.from ? (stay.to?.slice(0, 4) === stay.from.slice(0, 4) ? dayDateNoYear(stay.from) : dayDate(stay.from)) : '…'} → {stay.to ? dayDate(stay.to) : '…'}
-              {nights !== null && nights > 0 && ` · ${nights} night${nights === 1 ? '' : 's'}`}
-            </div>
-          )}
+          {stayDates(stay) && <div className="text-[12px] text-muted">{stayDates(stay)}</div>}
         </div>
         {/* (Public or not by Edit, as everywhere in My trip.) */}
         <span className="flex shrink-0 items-center gap-1"><PublicMark on={stay.public} />{!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label="Change this stay"><Pencil size={12} /> Edit</button>}</span>
       </div>
-      <div className="mt-1.5 flex flex-col gap-1 pl-[23px] text-[12px]">
-        {stay.address && (
-          <a href={mapUrl(stay)} {...external} className="flex items-start gap-1 text-accent hover:underline">
-            <MapPin size={12} className="mt-0.5 shrink-0" /><span>{stay.address}</span>
-          </a>
-        )}
-        {stay.ref && <div><span className="text-muted">Booking ref </span><span className="font-mono select-all">{stay.ref}</span></div>}
-        {stay.price && <div><span className="text-muted">Price </span>{stay.price}</div>}
-        {stay.url && <a href={stay.url} {...external} className="flex items-center gap-1 text-accent hover:underline">{host(stay.url)}<ExternalLink size={11} /></a>}
-        <PaidFor id={stay.id} />
-        {stay.text && <p className="whitespace-pre-wrap">{stay.text}</p>}
-      </div>
+      <StayFacts stay={stay} className="mt-1.5 pl-[23px] text-[12px]" />
     </div>
+  )
+}
+
+/** A stay's dates, "Thu 15 Oct → Sat 17 Oct 2026 · 2 nights" (the year once, when both are in it). */
+function stayDates(stay: TripItem) {
+  if (!stay.from && !stay.to) return ''
+  const nights = stay.from && stay.to ? Math.round((Date.parse(stay.to) - Date.parse(stay.from)) / 86_400_000) : null
+  const from = stay.from ? (stay.to?.slice(0, 4) === stay.from.slice(0, 4) ? dayDateNoYear(stay.from) : dayDate(stay.from)) : '…'
+  return `${from} → ${stay.to ? dayDate(stay.to) : '…'}${nights !== null && nights > 0 ? ` · ${nights} night${nights === 1 ? '' : 's'}` : ''}`
+}
+
+/** What's kept of a stay besides its name and dates: its address (to the map), booking, link, what was paid, note. */
+function StayFacts({ stay, className }: { stay: TripItem; className: string }) {
+  return (
+    <div className={`flex flex-col gap-1 ${className}`}>
+      {stay.address && (
+        <a href={mapUrl(stay)} {...external} className="flex items-start gap-1 text-accent hover:underline">
+          <MapPin size={12} className="mt-0.5 shrink-0" /><span>{stay.address}</span>
+        </a>
+      )}
+      {stay.ref && <div><span className="text-muted">Booking ref </span><span className="font-mono select-all">{stay.ref}</span></div>}
+      {stay.price && <div><span className="text-muted">Price </span>{stay.price}</div>}
+      {stay.url && <a href={stay.url} {...external} className="flex items-center gap-1 text-accent hover:underline">{host(stay.url)}<ExternalLink size={11} /></a>}
+      <PaidFor id={stay.id} />
+      {stay.text && <p className="whitespace-pre-wrap">{stay.text}</p>}
+    </div>
+  )
+}
+
+/** A stay in My trip's list: its name and dates, opening its page. */
+function StayRow({ stay, onOpen }: { stay: TripItem; onOpen: () => void }) {
+  return <RecordRow icon={<BedDouble size={15} />} title={stay.title || 'A stay'} mark={<AiMark on={stay.ai} />} sub={stayDates(stay)} isPublic={stay.public} onOpen={onOpen} />
+}
+
+/** A stay on its page in My trip: where, all of it, and Edit (changed there); `ids`: the list's, for the stays before
+ *  and after it. */
+function StayPage({ stay, ids }: { stay: TripItem; ids: string[] }) {
+  const select = useTrip((s) => s.select)
+  const setRecord = useRightPanel((s) => s.setRecord)
+  const [editing, setEditing] = useState(false)
+  const i = ids.indexOf(stay.id)
+  return (
+    <Sections>
+      <RecordNav back="All stays" onBack={() => setRecord('stays', null)} prev={ids[i - 1]} next={ids[i + 1]} onGo={(id) => setRecord('stays', id)} prevLabel="Stay before" nextLabel="Stay after" at={stay.id} />
+      <RecordCard
+        title={stay.at === NO_PLACE ? 'Stay' : <button onClick={() => select({ type: 'city', id: stay.at })} className="hover:text-ink hover:underline">{flag(ds.cities[stay.at]?.iso2 ?? '')} {cityName(stay.at)}</button>}
+        isPublic={stay.public} editing={editing} onEdit={() => setEditing(true)}
+      >
+        {editing ? <StayEditor key={stay.id} id={stay.id} cityId={stay.at} dates={{}} onDone={() => setEditing(false)} autoFocus /> : (
+          <div className="flex flex-col gap-1.5 text-[13px]">
+            <RecordTitle mark={<AiMark on={stay.ai} />}>{stay.title || 'A stay'}</RecordTitle>
+            {stayDates(stay) && <div className="text-muted">{stayDates(stay)}</div>}
+            <StayFacts stay={stay} className="mt-1" />
+          </div>
+        )}
+      </RecordCard>
+    </Sections>
   )
 }
 
@@ -296,6 +337,8 @@ export function AllStays() {
   const plan = useTrip((s) => s.plan)
   const select = useTrip((s) => s.select)
   const items = useAllItems()
+  const open = useRightPanel((s) => s.records.stays)
+  const setRecord = useRightPanel((s) => s.setRecord)
   // A new one, written at the top until it's done (not under its stop).
   const [adding, setAdding] = useState<string | null>(null)
   if (!plan) return null
@@ -305,6 +348,14 @@ export function AllStays() {
   const elsewhere = (s: TripItem) => s.id !== adding && !stops.some((stop) => stop.cityId === s.at && stayCovers(s, stop))
   const others = [...new Set(stays.filter(elsewhere).map((s) => s.at))]
   const today = localToday()
+  // (The list's order, for a page's stays before and after it: by stop, then the others.)
+  const ids = [
+    ...booked.flatMap((stop) => stays.filter((s) => s.at === stop.cityId && stayCovers(s, stop)).sort(byDate)),
+    ...others.flatMap((c) => stays.filter((s) => s.at === c && elsewhere(s)).sort(byDate)),
+  ].map((s) => s.id).filter((id, i, all) => all.indexOf(id) === i)
+  const page = open ? items[open] : undefined
+  if (page && !page.deleted && page.kind === 'stay') return <StayPage stay={page} ids={ids.includes(page.id) ? ids : [page.id]} />
+  const onOpen = (id: string) => setRecord('stays', id)
   return (
     <Sections>
       <Section
@@ -317,7 +368,7 @@ export function AllStays() {
       </Section>
       {booked.map((stop) => (
         <Stays
-          key={`${stop.arrive}${stop.cityId}`} cityId={stop.cityId} shown={(s) => s.id !== adding && stayCovers(s, stop)} dates={{ from: stop.arrive, to: stop.depart }} ai={false} brief
+          key={`${stop.arrive}${stop.cityId}`} cityId={stop.cityId} shown={(s) => s.id !== adding && stayCovers(s, stop)} dates={{ from: stop.arrive, to: stop.depart }} ai={false} brief onOpen={onOpen}
           title={(
             <button onClick={() => select({ type: 'city', id: stop.cityId })} className="text-left hover:underline">
               {flag(ds.cities[stop.cityId].iso2)} {cityName(stop.cityId)}{' '}
@@ -327,7 +378,7 @@ export function AllStays() {
         />
       ))}
       {others.map((c) => (
-        <Stays key={c} cityId={c} shown={elsewhere} dates={{}} ai={false} brief title={c === NO_PLACE ? null : <>{cityName(c)} <span className="font-normal text-muted">· other dates</span></>} />
+        <Stays key={c} cityId={c} shown={elsewhere} dates={{}} ai={false} brief onOpen={onOpen} title={c === NO_PLACE ? null : <>{cityName(c)} <span className="font-normal text-muted">· other dates</span></>} />
       ))}
     </Sections>
   )

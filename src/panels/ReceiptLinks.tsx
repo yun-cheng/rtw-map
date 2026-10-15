@@ -1,15 +1,16 @@
 // A receipt's link to the stay or ticket it paid for (store/itemsCore.ts, `booking`): on the booking's card, what was
-// paid for it; on the receipt, what it was for. Each opens the other's tab in My trip.
+// paid for it; on the receipt, what it was for. Each opens the other's page in My trip.
 import { BedDouble, Ticket } from 'lucide-react'
 import { isEmptyItem, useAllItems } from '../store/items'
 import { useTrip } from '../store/trip'
 import { bookingName, paid } from '../ui/format'
 import { useRightPanel, type MyTripTab } from '../ui/rightPanel'
 
-/** My trip, on a tab (closing a city's or journey's panel open in its place). */
-const openTab = (tab: MyTripTab) => {
+/** My trip, on a record's page (or, `id` null, its tab's list), closing a city's or journey's panel open in its
+ *  place. */
+const openRecord = (tab: MyTripTab, id: string | null) => {
   useTrip.getState().select(null)
-  useRightPanel.getState().show(tab)
+  useRightPanel.getState().setRecord(tab, id, true)
 }
 
 /** On a stay's or ticket's card: what was paid for it, by its receipts ("Paid €84 · receipt"); a receipt for a
@@ -22,13 +23,13 @@ export function PaidFor({ id }: { id: string }) {
     <div>
       <span className="text-muted">Paid </span>{receipts.map((r) => paid(r.amount!, r.currency)).join(' + ')}
       {others > 0 && <span className="text-muted"> with {others} other booking{others === 1 ? '' : 's'}</span>}{' '}
-      <button onClick={() => openTab('receipts')} className="text-accent hover:underline">· receipt{receipts.length === 1 ? '' : 's'}</button>
+      <button onClick={(e) => { e.stopPropagation(); openRecord('receipts', receipts.length === 1 ? receipts[0].id : null) }} className="text-accent hover:underline">· receipt{receipts.length === 1 ? '' : 's'}</button>
     </div>
   )
 }
 
 /** On a receipt: the stays and tickets it paid for, those still kept ("for KLM KL 808 + 2 more"), opening the first's
- *  tab. */
+ *  page. */
 export function ReceiptFor({ bookings }: { bookings?: string[] }) {
   const items = useAllItems()
   const kept = (bookings ?? []).map((id) => items[id]).filter((b) => b && !b.deleted)
@@ -36,7 +37,7 @@ export function ReceiptFor({ bookings }: { bookings?: string[] }) {
   const first = kept[0]
   const Icon = first.kind === 'stay' ? BedDouble : Ticket
   return (
-    <button onClick={() => openTab(first.kind === 'stay' ? 'stays' : 'tickets')} className="flex min-w-0 items-center gap-1 text-[12px] text-accent hover:underline">
+    <button onClick={(e) => { e.stopPropagation(); openRecord(first.kind === 'stay' ? 'stays' : 'tickets', first.id) }} className="flex min-w-0 items-center gap-1 text-[12px] text-accent hover:underline">
       <Icon size={11} className="shrink-0" />
       <span className="truncate">for {bookingName(first)}{kept.length > 1 && ` + ${kept.length - 1} more`}</span>
     </button>

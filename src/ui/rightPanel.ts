@@ -24,8 +24,12 @@ type RightPanel = {
   /** Its sheet open (on a phone; not remembered). */
   sheet: boolean
   tab: MyTripTab
+  /** The record open on its page, by tab (a stay's, ticket's or receipt's id; not remembered). */
+  records: Partial<Record<MyTripTab, string>>
   /** Opens it (beside the map, or its sheet), on a tab. */
   show: (tab?: MyTripTab) => void
+  /** A record's page, or (null) its tab's list; `show`: opening My trip on that tab too. */
+  setRecord: (tab: MyTripTab, id: string | null, show?: boolean) => void
   setSheet: (sheet: boolean) => void
   hide: () => void
   setTab: (tab: MyTripTab) => void
@@ -37,7 +41,9 @@ export const useRightPanel = create<RightPanel>()(
       open: false,
       sheet: false,
       tab: 'stays',
+      records: {},
       show: (tab) => set((s) => ({ open: true, sheet: true, tab: tab ?? s.tab })),
+      setRecord: (tab, id, show) => set((s) => ({ records: { ...s.records, [tab]: id ?? undefined }, ...(show && { open: true, sheet: true, tab }) })),
       setSheet: (sheet) => set({ sheet }),
       hide: () => set({ open: false }),
       setTab: (tab) => set({ tab }),
