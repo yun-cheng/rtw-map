@@ -85,10 +85,11 @@ function TicketCard({ ticket: t, onEdit }: { ticket: TripItem; onEdit: () => voi
       <div className="flex items-start gap-2">
         <ModeIcon mode={t.mode} size={15} className="mt-0.5 shrink-0 text-muted" />
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-1.5 font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}<AiMark on={t.ai} /><PublicMark on={t.public} /></div>
+          <div className="flex items-center gap-1.5 font-medium">{t.title || (t.mode ? MODES[t.mode] : 'A ticket')}<AiMark on={t.ai} /></div>
           {when(t) && <div className="text-[12px] text-muted">{when(t)}</div>}
         </div>
-        {!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label="Change this ticket"><Pencil size={12} /> Edit</button>}
+        {/* (Public or not by Edit, as everywhere in My trip.) */}
+        <span className="flex shrink-0 items-center gap-1"><PublicMark on={t.public} />{!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label="Change this ticket"><Pencil size={12} /> Edit</button>}</span>
       </div>
       <div className="mt-1.5 flex flex-col gap-1 pl-[23px] text-[12px]">
         {places && <div>{places}</div>}

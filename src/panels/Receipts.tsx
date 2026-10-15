@@ -82,10 +82,10 @@ function ReceiptRow({ receipt: r, onEdit }: { receipt: TripItem; onEdit: () => v
   return (
     <div className="text-[13px]">
       <div className="flex items-center gap-2">
-        <span className="min-w-0 flex-1 truncate">{r.title || 'A receipt'}</span>
-        <AiMark on={r.ai} />
-        <PublicMark on={r.public} />
+        {/* (Its ✨ by its name; public or not by its pencil, as everywhere in My trip.) */}
+        <span className="flex min-w-0 flex-1 items-center gap-1.5"><span className="truncate">{r.title || 'A receipt'}</span><AiMark on={r.ai} /></span>
         {r.amount !== undefined && <span className="shrink-0 font-medium tabular-nums">{paid(r.amount, r.currency)}</span>}
+        <PublicMark on={r.public} />
         {!SHARED_TOKEN && <button onClick={onEdit} className={small} aria-label={`Change ${r.title || 'this receipt'}`}><Pencil size={12} /></button>}
       </div>
       <ReceiptFor bookings={r.bookings} />

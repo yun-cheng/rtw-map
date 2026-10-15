@@ -42,10 +42,12 @@ export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' 
   return (
     <Section
       title={title}
-      action={<><AiMark on={item?.ai} /><PublicMark on={item?.public} /></>}
+      action={<AiMark on={item?.ai} />}
       aside={
         <span className="flex items-center gap-2 text-[11px] text-muted">
+          {/* (Public or not by Edit, its switch by Done, as everywhere.) */}
           {note.trim() && editing && <PublicToggle on={!!item?.public} onChange={(on) => put({ id: noteId(at), public: on || undefined })} />}
+          {note.trim() && !editing && <PublicMark on={item?.public} />}
           {note.trim() && (editing
             ? <button onClick={() => setEditing(false)} className={button}><Check size={12} /> Done</button>
             : <button onClick={() => setEditing(true)} className={button}><Pencil size={12} /> Edit</button>)}
