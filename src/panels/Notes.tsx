@@ -9,6 +9,7 @@ import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section } from '../ui/kit'
 import { toggleTask } from './noteText'
+import { PlainNote } from './PlainNote'
 
 const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
 const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
@@ -30,7 +31,7 @@ export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' 
     if (!note.trim()) return null
     return (
       <Section title={title}>
-        <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{note}</p>}>
+        <Suspense fallback={<PlainNote text={note} />}>
           <NoteMarkdown text={note} onToggle={() => {}} />
         </Suspense>
       </Section>
@@ -65,7 +66,7 @@ export function NoteBox({ at, placeholder, tall, title = SHARED_TOKEN ? 'Notes' 
       ) : (
         // A double click (or Edit) to change it.
         <div onDoubleClick={() => setEditing(true)} title="Double-click to edit">
-          <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{note}</p>}>
+          <Suspense fallback={<PlainNote text={note} />}>
             <NoteMarkdown text={note} onToggle={(n) => setNote(toggleTask(note, n))} />
           </Suspense>
         </div>

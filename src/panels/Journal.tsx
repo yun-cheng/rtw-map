@@ -18,9 +18,12 @@ import { useOnline } from '../ui/useOnline'
 import { useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
 import { plainLines, toggleTask } from './noteText'
+import { PlainNote } from './PlainNote'
 
-const MarkdownEditor = lazy(() => import('./MarkdownEditor'))
-const NoteMarkdown = lazy(() => import('./NoteMarkdown'))
+const loadEditor = () => import('./MarkdownEditor')
+const MarkdownEditor = lazy(loadEditor)
+const loadMarkdown = () => import('./NoteMarkdown')
+const NoteMarkdown = lazy(loadMarkdown)
 const EmojiPicker = lazy(() => import('./EmojiPicker'))
 
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
@@ -202,6 +205,8 @@ export function JournalView() {
   // The tag the days are shown by (picked on a day).
   const [tag, setTag] = useState<string | null>(null)
   const today = localToday()
+  // (A day's page shows it formatted: ready by the time one's opened.)
+  useEffect(() => void loadMarkdown(), [])
   // (Brought to a stop's days, from the list.)
   const [focus, setFocus] = useState(view.focus)
   if (view.focus !== focus) {
@@ -341,6 +346,8 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
   const e = useDayEntry(date)
   const write = useJournal((s) => s.write)
   const [editing, setEditing] = useState(false)
+  // (Its editor, ready by the time Edit is pressed.)
+  useEffect(() => void (!SHARED_TOKEN && loadEditor()), [])
   const i = days.indexOf(date)
   const newer = days[i - 1]
   const older = days[i + 1]
@@ -380,7 +387,7 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
             </div>
             {e?.text.trim()
               ? (
-                <Suspense fallback={<p className="text-[13px] whitespace-pre-wrap">{e.text}</p>}>
+                <Suspense fallback={<PlainNote text={e.text} />}>
                   <NoteMarkdown text={e.text} onToggle={(n) => !SHARED_TOKEN && write(date, { text: toggleTask(e.text, n) })} />
                 </Suspense>
               )
