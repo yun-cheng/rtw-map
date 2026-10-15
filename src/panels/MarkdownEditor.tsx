@@ -1,7 +1,8 @@
 // A note or a day of the journal written as it's shown (Notes.tsx, Journal.tsx): Markdown applies as it's typed ("# "
 // a heading, "- " a list, "[ ] " a to-do, **bold**…), or from the toolbar, and it's saved as Markdown text (shown by
-// NoteMarkdown.tsx where it's read). Loaded when an editor is first shown, like the charts.
+// NoteMarkdown.tsx where it's read; ==highlighted== too). Loaded when an editor is first shown, like the charts.
 import { Extension, InputRule, type JSONContent } from '@tiptap/core'
+import { Highlight } from '@tiptap/extension-highlight'
 import { TableKit } from '@tiptap/extension-table'
 import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Placeholder } from '@tiptap/extensions'
@@ -9,7 +10,7 @@ import { Markdown } from '@tiptap/markdown'
 import { Plugin } from '@tiptap/pm/state'
 import { EditorContent, useEditor, useEditorState, type Editor } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
-import { Bold, Heading, Italic, Link, List, ListOrdered, ListTodo, Quote, Strikethrough, type LucideIcon } from 'lucide-react'
+import { Bold, Heading, Highlighter, IndentDecrease, IndentIncrease, Italic, Link, List, ListOrdered, ListTodo, Quote, RemoveFormatting, Strikethrough, type LucideIcon } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 /** Keeps the text, as Markdown, within `max` characters: a change that would make it longer is not made. */
@@ -48,7 +49,7 @@ export default function MarkdownEditor({ value, onChange, max, placeholder, labe
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ underline: false, heading: { levels: [1, 2, 3] }, link: { openOnClick: false, autolink: true, defaultProtocol: 'https' } }),
-      TaskList, TaskItem.configure({ nested: true }), TableKit.configure({ table: { resizable: false } }),
+      Highlight, TaskList, TaskItem.configure({ nested: true }), TableKit.configure({ table: { resizable: false } }),
       ListToTask, Placeholder.configure({ placeholder }), Markdown, Limit.configure({ max }),
     ],
     // (Without empty lines after it, kept by an older version: they'd be empty lines here.)
@@ -91,6 +92,7 @@ const TOOLS: Tool[][] = [
     { icon: Bold, label: 'Bold', key: '⌘B', on: (e) => e.isActive('bold'), run: (e) => e.chain().focus().toggleBold().run() },
     { icon: Italic, label: 'Italic', key: '⌘I', on: (e) => e.isActive('italic'), run: (e) => e.chain().focus().toggleItalic().run() },
     { icon: Strikethrough, label: 'Strikethrough', on: (e) => e.isActive('strike'), run: (e) => e.chain().focus().toggleStrike().run() },
+    { icon: Highlighter, label: 'Highlight', key: '==', on: (e) => e.isActive('highlight'), run: (e) => e.chain().focus().toggleHighlight().run() },
   ],
   [
     { icon: List, label: 'List', key: '-', on: (e) => e.isActive('bulletList'), run: (e) => e.chain().focus().toggleBulletList().run() },
@@ -100,12 +102,22 @@ const TOOLS: Tool[][] = [
   ],
 ]
 
-/** The text's styles, each lit where the cursor is; and a link, from an address typed in. */
+/** A list's item where the cursor is: a to-do's or another list's. */
+const itemType = (e: Editor) => (e.isActive('taskItem') ? 'taskItem' : 'listItem')
+
+/** The text's styles, each lit where the cursor is; a list's item moved in or out (as Tab and Shift-Tab do: in
+ *  Markdown only a list's items are indented); a link, from an address typed in; and back to plain text. */
 function Toolbar({ editor }: { editor: Editor | null }) {
-  const active = useEditorState({ editor, selector: ({ editor: e }) => e && [...TOOLS.flat().map((t) => t.on(e)), e.isActive('link')] })
+  const state = useEditorState({
+    editor,
+    selector: ({ editor: e }) => e && {
+      on: TOOLS.flat().map((t) => t.on(e)), link: e.isActive('link'),
+      outdent: e.can().liftListItem(itemType(e)), indent: e.can().sinkListItem(itemType(e)),
+    },
+  })
   const [linking, setLinking] = useState<string | null>(null)
-  if (!editor || !active) return null
-  const button = (lit: boolean) => `flex size-7 shrink-0 items-center justify-center rounded ${lit ? 'bg-accent-soft text-accent' : 'text-muted hover:bg-canvas hover:text-ink'}`
+  if (!editor || !state) return null
+  const button = (lit: boolean) => `flex size-7 shrink-0 items-center justify-center rounded disabled:opacity-30 ${lit ? 'bg-accent-soft text-accent' : 'text-muted enabled:hover:bg-canvas enabled:hover:text-ink'}`
   // (Pressing a button keeps the cursor and selection in the text.)
   const keep = (e: React.MouseEvent) => e.preventDefault()
   const addLink = () => {
@@ -118,7 +130,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
   }
   let i = 0
   return (
-    <div className="flex items-center gap-0.5 overflow-x-auto border-b border-line px-1 py-0.5" role="toolbar" aria-label="Text style">
+    <div className="flex flex-wrap items-center gap-0.5 border-b border-line px-1 py-0.5" role="toolbar" aria-label="Text style">
       {linking !== null ? (
         <form onSubmit={(e) => { e.preventDefault(); addLink() }} className="flex min-w-0 flex-1 items-center gap-1">
           <input
@@ -132,7 +144,7 @@ function Toolbar({ editor }: { editor: Editor | null }) {
           {TOOLS.map((group, g) => (
             <span key={g} className={`flex items-center gap-0.5 ${g ? 'border-l border-line pl-1' : ''}`}>
               {group.map((t) => {
-                const lit = active[i++]
+                const lit = state.on[i++]
                 return (
                   <button key={t.label} type="button" onMouseDown={keep} onClick={() => t.run(editor)} aria-pressed={lit} title={t.key ? `${t.label} (${t.key})` : t.label} aria-label={t.label} className={button(lit)}>
                     <t.icon size={14} />
@@ -141,12 +153,33 @@ function Toolbar({ editor }: { editor: Editor | null }) {
               })}
             </span>
           ))}
+          <span className="flex items-center gap-0.5 border-l border-line pl-1">
+            <button
+              type="button" onMouseDown={keep} onClick={() => editor.chain().focus().liftListItem(itemType(editor)).run()} disabled={!state.outdent}
+              title="Outdent (⇧Tab)" aria-label="Outdent" className={button(false)}
+            >
+              <IndentDecrease size={14} />
+            </button>
+            <button
+              type="button" onMouseDown={keep} onClick={() => editor.chain().focus().sinkListItem(itemType(editor)).run()} disabled={!state.indent}
+              title="Indent (Tab)" aria-label="Indent" className={button(false)}
+            >
+              <IndentIncrease size={14} />
+            </button>
+          </span>
           <span className="flex items-center border-l border-line pl-1">
             <button
-              type="button" onMouseDown={keep} aria-pressed={active.at(-1)} title={active.at(-1) ? 'Remove link' : 'Link'} aria-label={active.at(-1) ? 'Remove link' : 'Link'} className={button(!!active.at(-1))}
-              onClick={() => active.at(-1) ? editor.chain().focus().extendMarkRange('link').unsetLink().run() : setLinking('')}
+              type="button" onMouseDown={keep} aria-pressed={state.link} title={state.link ? 'Remove link' : 'Link'} aria-label={state.link ? 'Remove link' : 'Link'} className={button(state.link)}
+              onClick={() => state.link ? editor.chain().focus().extendMarkRange('link').unsetLink().run() : setLinking('')}
             >
               <Link size={14} />
+            </button>
+            {/* (Its marks off, and a heading, list or quote back to a paragraph.) */}
+            <button
+              type="button" onMouseDown={keep} onClick={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}
+              title="Clear formatting" aria-label="Clear formatting" className={button(false)}
+            >
+              <RemoveFormatting size={14} />
             </button>
           </span>
         </>

@@ -18,7 +18,7 @@ describe('a day\'s preview', () => {
   it('is its lines as plain text', () => {
     expect(plainLines('\n# A **long** day in [Tirana](https://x.al)\n\nmore')).toEqual(['A long day in Tirana', 'more'])
     expect(plainLines('&nbsp;\n- [x] Saw *the* castle, 3 &lt; 4 \\* 2\n---')).toEqual(['Saw the castle, 3 < 4 * 2'])
-    expect(plainLines('> 1. ~~Rain~~ sun, snake_case_word')).toEqual(['Rain sun, snake_case_word'])
+    expect(plainLines('> 1. ~~Rain~~ ==sun==, snake_case_word')).toEqual(['Rain sun, snake_case_word'])
     expect(plainLines('| a | b |\n|---|---|\n| 1 | 2 |')).toEqual(['a · b', '1 · 2'])
     expect(plainLines('')).toEqual([])
   })

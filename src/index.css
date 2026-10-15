@@ -184,6 +184,8 @@ fieldset:disabled :is(input, select, textarea, button) {
   & li + li, & li > ul, & li > ol { margin-top: 0.15em; }
   & li.task-list-item { list-style: none; margin-left: -1.25em; }
   & li.task-list-item input { margin-right: 0.4em; vertical-align: -1px; accent-color: var(--color-accent); }
+  /* (A list in a to-do: in by as much as a list's own, past the to-do's pulled-back box.) */
+  & li.task-list-item > :is(ul, ol) { padding-left: 2.5em; }
   & a { color: var(--color-accent); text-decoration: underline; }
   & code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: var(--color-canvas); padding: 0 0.25em; border-radius: 3px; }
   & pre { background: var(--color-canvas); padding: 0.5em 0.75em; border-radius: 6px; overflow-x: auto; }
@@ -194,6 +196,7 @@ fieldset:disabled :is(input, select, textarea, button) {
   & th { font-weight: 600; }
   & hr { border-color: var(--color-line); }
   & del { color: var(--color-muted); }
+  & mark { background: color-mix(in srgb, var(--color-warn) 35%, transparent); color: inherit; border-radius: 2px; padding: 0 0.1em; }
   /* (A line break kept, as it's shown being written: a day of the journal was plain text.) */
   &:not(.md-editor) p { white-space: pre-line; }
 }

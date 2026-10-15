@@ -12,7 +12,7 @@ export function toggleTask(text: string, offset: number): string {
 }
 
 /** The lines written, as plain text (a day's preview in a list of days): without a heading's "#", a list's "-", a
- *  to-do's box, a quote's ">", bold or italic marks, a link's address; empty lines and rules left out. */
+ *  to-do's box, a quote's ">", bold, italic or highlight marks, a link's address; empty lines and rules left out. */
 export function plainLines(text: string): string[] {
   return text.split('\n').map((l) => l.trim()).filter((l) => l && l !== '&nbsp;' && !/^(-{3,}|\*{3,}|_{3,}|\|?[\s:|-]+\|?)$/.test(l)).map((line) => line
     .replace(/^(>\s*)+/, '')
@@ -20,7 +20,7 @@ export function plainLines(text: string): string[] {
     .replace(/^\[[ xX]\]\s+/, '')
     .replace(/^\||\|$/g, '').replace(/\s*\|\s*/g, ' · ')
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-    .replace(/(\*\*|__|~~|`)(.+?)\1/g, '$2')
+    .replace(/(\*\*|__|~~|==|`)(.+?)\1/g, '$2')
     .replace(/(^|\W)[*_](\S(?:.*?\S)?)[*_](?=\W|$)/g, '$1$2')
     .replace(/\\([\\`*_{}[\]()#+\-.!|~<>])/g, '$1')
     .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&')

@@ -1,8 +1,26 @@
-// A note shown as Markdown (Notes.tsx): GitHub's flavour (tables, task lists, strikethrough, bare links), no raw HTML.
+// A note shown as Markdown (Notes.tsx): GitHub's flavour (tables, task lists, strikethrough, bare links) and
+// ==highlighted== text, as it's written (MarkdownEditor.tsx); no raw HTML.
 // Loaded when a note is first shown, like the charts.
 import { createContext, useContext, type ComponentProps } from 'react'
 import Markdown, { type ExtraProps } from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import type { Nodes, PhrasingContent, Root } from 'mdast'
+
+/** ==Highlighted== text, in a piece of text (not across bold or a link), shown marked. */
+function remarkHighlight() {
+  const walk = (node: Nodes) => {
+    if (!('children' in node)) return
+    node.children = node.children.flatMap((child): Nodes[] => {
+      if (child.type !== 'text') return walk(child), [child]
+      const parts = child.value.split(/==([^=\s](?:[^=]*[^=\s])?)==/)
+      if (parts.length === 1) return [child]
+      return parts.flatMap((value, i): PhrasingContent[] => (
+        i % 2 ? [{ type: 'emphasis', data: { hName: 'mark' }, children: [{ type: 'text', value }] }] : value ? [{ type: 'text', value }] : []
+      ))
+    }) as typeof node.children
+  }
+  return (tree: Root) => walk(tree)
+}
 
 /** Ticking a task's box: where its list item starts in the note's text. */
 const Toggle = createContext<(offset: number) => void>(() => {})
@@ -27,7 +45,7 @@ export default function NoteMarkdown({ text, onToggle }: { text: string; onToggl
   return (
     <div className="note-md">
       <Toggle.Provider value={onToggle}>
-        <Markdown remarkPlugins={[remarkGfm]} components={{ a: Link, li: ListItem, input: TaskBox }}>{text}</Markdown>
+        <Markdown remarkPlugins={[remarkGfm, remarkHighlight]} components={{ a: Link, li: ListItem, input: TaskBox }}>{text}</Markdown>
       </Toggle.Provider>
     </div>
   )
