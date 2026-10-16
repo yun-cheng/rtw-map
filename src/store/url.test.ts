@@ -10,6 +10,8 @@ beforeEach(() => {
   useTrip.setState({ input: testCaseInput(ds, 'US'), stops: [], plan: null, selected: null, layer: 'none', cityTab: 'overview', panel: 'setup' })
   useTrip.getState().setStops(draftStops(ds, useTrip.getState().input))
   useTrip.getState().setPanel('itinerary')
+  useRightPanel.setState({ open: false, sheet: false, tab: 'stays', records: {}, adding: {} })
+  useAssistantPanel.setState({ open: false, sheet: false })
 })
 
 describe('address bar state', () => {

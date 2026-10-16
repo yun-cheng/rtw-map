@@ -358,8 +358,9 @@ export function AllStays() {
     // (Done: its page, once something is written in it.)
     const done = () => {
       const stay = items[adding]
-      setAdding(null)
+      // (Its page first, then not new: the new one's page replaced by its own, Back not going to the new one's.)
       if (stay && !stay.deleted && !isEmptyItem(stay)) setRecord('stays', adding)
+      setAdding(null)
     }
     return (
       <NewRecord back="All stays" onBack={() => setAdding(null)} title="New stay">

@@ -28,6 +28,7 @@ import { OfflinePill } from './ui/OfflinePill'
 import { SwipeTabs } from './ui/SwipeTabs'
 import { useAssistantPanel } from './ui/assistantPanel'
 import { useButtonSide, useButtonsLeft } from './ui/buttonSide'
+import { useLeftSheet } from './ui/leftSheet'
 import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useHasRightPanel, useMyTripTabs, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
 import { usePhone } from './ui/usePhone'
 
@@ -215,7 +216,8 @@ export default function App() {
   // How far the left panel's sheet is pulled up on a phone: open on a new trip, else just its tabs.
   const [leftSnap, setLeftSnap] = useState<Snap>(plan ? 'peek' : 'half')
   // Whether it's open at all (closed by its ✕ or pulled down, for the whole map; the button under Settings opens it).
-  const [leftSheet, setLeftSheet] = useState(true)
+  const leftSheet = useLeftSheet((s) => s.open)
+  const setLeftSheet = useLeftSheet((s) => s.setOpen)
   const leftShown = leftSheet && !(hasRight && rightSheet) && !aiSheet
   // The trip's setup is showing: the map shows its countries instead of its route (MapView).
   const editing = tab === 'setup' && (phone ? leftShown : !sidebar.hidden && !aiLeft)

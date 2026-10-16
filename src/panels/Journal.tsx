@@ -240,8 +240,9 @@ export function JournalView() {
   if (adding !== null) {
     // (Done: its page, once something is written for it.)
     const done = () => {
-      setAdding(null)
+      // (Its page first, then not new: the new one's page replaced by its own, Back not going to the new one's.)
       if (!isEmptyEntry(entries[adding])) setDay(adding)
+      setAdding(null)
     }
     // Another day: what's written so far goes with it (cleared where it was), under a key of that day's.
     const moveTo = (date: string) => {
