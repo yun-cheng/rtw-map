@@ -94,6 +94,26 @@ body {
   .maplibregl-ctrl-bottom-right .maplibregl-ctrl-group:has(.maplibregl-ctrl-zoom-in) {
     display: none;
   }
+  /* With the map's buttons on the left (Settings, ui/buttonSide.ts), these too: as MapLibre's bottom-left. */
+  :root[data-buttons='left'] .maplibregl-map .maplibregl-ctrl-bottom-right {
+    right: auto;
+    left: 0;
+  }
+  :root[data-buttons='left'] .maplibregl-ctrl-bottom-right .maplibregl-ctrl {
+    margin: 0 0 10px 10px;
+    float: left;
+  }
+  :root[data-buttons='left'] .maplibregl-ctrl-bottom-right > .maplibregl-ctrl-attrib.maplibregl-compact-show {
+    padding: 2px 8px 2px 28px;
+  }
+  :root[data-buttons='left'] .maplibregl-ctrl-bottom-right .maplibregl-ctrl-attrib-button {
+    right: auto;
+    left: 0;
+  }
+  :root[data-buttons='left'] .maplibregl-ctrl-bottom-right > .maplibregl-ctrl-attrib.maplibregl-compact::after {
+    right: auto;
+    left: 0;
+  }
   /* A sheet's header is for dragging, not selecting text. */
   [data-sheet-peek] {
     user-select: none;

@@ -3,6 +3,7 @@ import { type CostKind, type SchengenSummary, type TempBreaks } from '../planner
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, TEMP_KINDS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
+import { useButtonSide } from '../ui/buttonSide'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { dataset as ds } from '../data/dataset'
@@ -60,6 +61,7 @@ const COST_ABOUT: Record<CostKind, string> = {
 export function MapControls({ editing = false }: { editing?: boolean }) {
   const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
   const phone = usePhone()
+  const left = useButtonSide((s) => s.side) === 'left'
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
@@ -109,7 +111,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   )
   if (editing) {
     return (
-      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: 12 }}>
+      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? `top-2 ${left ? 'right-2 left-12' : 'right-12 left-2'}` : 'top-3 left-3'}`} style={phone ? undefined : { right: 12 }}>
         <div className={LEGEND_BOX}>
           {(['must', 'optional', 'excluded'] as const).map((m) => (
             <span key={m} className="flex items-center gap-1.5">
@@ -128,9 +130,9 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
       // its sheet (`--sheet-height`, see BottomSheet) and clear of the map's ⓘ credits, one row of dropdowns instead of
       // rows of buttons and switches: the view, then its month or kind, and the legend's switches.
       <>
-        {/* (Clear of the settings gear at the top right, see App.) */}
-        <div data-map-top className="pointer-events-none absolute top-2 right-12 left-2 flex flex-col items-start">{legends}</div>
-        <div className="pointer-events-none absolute right-10 left-2 flex transition-[bottom] duration-300 ease-out" style={{ bottom: 'calc(var(--sheet-height, 0px) + 8px)' }}>
+        {/* (Clear of the settings gear and the buttons under it, at the right or the left: see App and ui/buttonSide.ts.) */}
+        <div data-map-top className={`pointer-events-none absolute top-2 flex flex-col items-start ${left ? 'right-2 left-12' : 'right-12 left-2'}`}>{legends}</div>
+        <div className={`pointer-events-none absolute flex transition-[bottom] duration-300 ease-out ${left ? 'right-2 left-10 justify-end' : 'right-10 left-2'}`} style={{ bottom: 'calc(var(--sheet-height, 0px) + 8px)' }}>
           <div className="no-scrollbar pointer-events-auto flex max-w-full gap-1.5 overflow-x-auto">
             <Pick label="Map view" value={layer} onChange={(v) => setLayer(v as MapLayer)}>
               {LAYERS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}

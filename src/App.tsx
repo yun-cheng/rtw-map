@@ -27,11 +27,12 @@ import { HoverTip, type Tip } from './ui/HoverTip'
 import { OfflinePill } from './ui/OfflinePill'
 import { SwipeTabs } from './ui/SwipeTabs'
 import { useAssistantPanel } from './ui/assistantPanel'
+import { useButtonSide, useButtonsLeft } from './ui/buttonSide'
 import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useHasRightPanel, useMyTripTabs, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
 import { usePhone } from './ui/usePhone'
 
-/** Where the buttons over a phone's map go, one under another at the right: Settings, the left panel, My trip, the
- *  Assistant, then "Offline". */
+/** Where the buttons over a phone's map go, one under another at the right (or the left: ui/buttonSide.ts): Settings,
+ *  the left panel, My trip, the Assistant, then "Offline". */
 const BUTTON_TOPS = ['top-2', 'top-13', 'top-24', 'top-35', 'top-46']
 
 const TAB_LABELS = { setup: 'Trip', itinerary: 'Itinerary', city: 'City' }
@@ -126,6 +127,7 @@ function AssistantSide({ peek }: { peek?: boolean }) {
  *  the sheet's header). `onHide` folds it away (closes the sheet, on a phone). */
 function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: () => void }) {
   const { plan, selected, setPanel } = useTrip()
+  const buttonsLeft = useButtonsLeft()
   // (A city's panel scrolls its own tabs on a phone.)
   const ownScroll = (t: Tab) => t === 'city' && peek && selected?.type === 'city'
   return (
@@ -149,7 +151,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
           )
         })}
         {onHide && (
-          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={peek ? 'Close the panel' : 'Hide the left panel'} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={peek ? 'Close the panel' : 'Hide the left panel'} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink ${buttonsLeft ? 'order-first' : ''}`}>
             {peek ? <X size={18} /> : <ChevronsLeft size={16} />}
           </button>
         )}
@@ -188,6 +190,8 @@ export default function App() {
     if (rightSheet) setRightSnap('full')
   }
   const phone = usePhone()
+  // (A phone's buttons over the map: at its right, or its left for a left hand.)
+  const buttonX = useButtonSide((s) => s.side) === 'left' ? 'left-2' : 'right-2'
   // The Assistant: on a computer beside the map, in My trip's place on the right or the left panel's on the left; on a
   // phone a sheet over the others. (Not on a shared trip's page: it's the owner's.)
   const ai = useAssistantPanel()
@@ -344,18 +348,18 @@ export default function App() {
             <>
               {/* (Under the settings button, the left panel's, My trip's and the Assistant's, clear of the map's legend; on a
                   computer, in the top bar.) */}
-              <OfflinePill className={`absolute right-2 z-10 h-8 shadow-sm ${BUTTON_TOPS[2 + +hasRight + +!SHARED_TOKEN]}`} />
+              <OfflinePill className={`absolute ${buttonX} z-10 h-8 shadow-sm ${BUTTON_TOPS[2 + +hasRight + +!SHARED_TOKEN]}`} />
               <button
                 onClick={() => setSettings(true)}
                 aria-label="Settings"
-                className="absolute top-2 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
+                className={`absolute top-2 ${buttonX} z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink`}
               >
                 <Settings size={18} />
               </button>
               <button
                 onClick={() => (leftShown ? setLeftSheet(false) : showLeft())}
                 aria-label={TABS.map((t) => tabLabel(t, selected)).join(', ')}
-                className="absolute top-13 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
+                className={`absolute top-13 ${buttonX} z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink`}
               >
                 {/* (Its open tab's icon.) */}
                 {createElement(tabIcon(tab, selected), { size: 18 })}
@@ -364,7 +368,7 @@ export default function App() {
                 <button
                   onClick={() => setRightSheet(!rightSheet)}
                   aria-label={`${MY_TRIP_NAME}: stays, tickets, receipts and journal`}
-                  className="absolute top-24 right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink"
+                  className={`absolute top-24 ${buttonX} z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink`}
                 >
                   <Wallet size={18} />
                 </button>
@@ -373,12 +377,12 @@ export default function App() {
                 <button
                   onClick={() => (aiSheet ? ai.setSheet(false) : ai.show())}
                   aria-label="Assistant"
-                  className={`absolute right-2 z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink ${BUTTON_TOPS[2 + +hasRight]}`}
+                  className={`absolute ${buttonX} z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink ${BUTTON_TOPS[2 + +hasRight]}`}
                 >
                   <Sparkles size={18} />
                 </button>
               )}
-              <UndoNotice className="absolute top-2 right-12 left-2 z-40" />
+              <UndoNotice className={`absolute top-2 z-40 ${buttonX === 'left-2' ? 'right-2 left-12' : 'right-12 left-2'}`} />
               {/* On a phone the left panel is a sheet over the bottom of the map, out of the way while another is open. */}
               <BottomSheet snap={leftSnap} onSnap={setLeftSnap} onClose={() => setLeftSheet(false)} label={tabLabel(tab, selected)} hidden={!leftShown} className="z-10 bg-panel">
                 <LeftPanel tab={tab} peek onHide={() => setLeftSheet(false)} />

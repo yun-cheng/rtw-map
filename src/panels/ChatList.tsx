@@ -5,6 +5,7 @@ import { SquarePen, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useChat } from '../agent/chat'
+import { useButtonsLeft } from '../ui/buttonSide'
 import { listChats, switchChat } from '../store/saved'
 import { CHAT_LIMITS, chatSummary, type ChatSummary } from '../../worker/chats'
 
@@ -53,6 +54,7 @@ export function ChatList({ open, onClose }: { open: boolean; onClose: () => void
   }
   const current = messages.length ? chatSummary({ messages }, '', 0) : null
   const locked = busy || opening !== null
+  const buttonsLeft = useButtonsLeft()
 
   // (In the page itself: inside the phone's sheet, which moves, it would be held to the sheet.)
   return createPortal(
@@ -65,7 +67,7 @@ export function ChatList({ open, onClose }: { open: boolean; onClose: () => void
       >
         <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-4 font-semibold">
           Chats
-          <button onClick={close} aria-label="Close chats" className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={close} aria-label="Close chats" className={`${buttonsLeft ? '-ml-2 order-first' : 'ml-auto'} flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink`}>
             <X size={18} />
           </button>
         </div>

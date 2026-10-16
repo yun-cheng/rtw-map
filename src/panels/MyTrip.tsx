@@ -2,6 +2,7 @@
 // keeps for it in one place: every stop's stays, every journey's tickets, the receipts of what they spent, and the
 // journal day by day (each the same as in the city's and journey's panels and the Itinerary, gathered).
 import { ChevronsRight, X } from 'lucide-react'
+import { useButtonsLeft } from '../ui/buttonSide'
 import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useMyTripTabs, useRightPanel, type MyTripTab } from '../ui/rightPanel'
 import { SwipeTabs } from '../ui/SwipeTabs'
 import { JournalView } from './Journal'
@@ -21,6 +22,7 @@ export function MyTripPanel({ peek, onHide }: { peek?: boolean; onHide?: () => v
   const picked = useRightPanel((s) => s.tab)
   const setTab = useRightPanel((s) => s.setTab)
   const tab = tabs.includes(picked) ? picked : tabs[0]
+  const buttonsLeft = useButtonsLeft()
   // (Five, Today's too, don't fit with their names, beside the map or on a phone: then only the open one has its name,
   // the others name themselves on hover, as a city's tabs.)
   const narrow = tabs.length > 4
@@ -42,7 +44,7 @@ export function MyTripPanel({ peek, onHide }: { peek?: boolean; onHide?: () => v
           )
         })}
         {onHide && (
-          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={`${peek ? 'Close' : 'Hide'} ${MY_TRIP_NAME}`} className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onHide} title={peek ? undefined : 'Hide this panel (more room for the map)'} aria-label={`${peek ? 'Close' : 'Hide'} ${MY_TRIP_NAME}`} className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink ${buttonsLeft ? 'order-first' : 'ml-auto'}`}>
             {peek ? <X size={18} /> : <ChevronsRight size={16} />}
           </button>
         )}

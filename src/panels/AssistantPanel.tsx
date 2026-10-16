@@ -10,6 +10,7 @@ import { viewItems, type ViewItem } from '../agent/view'
 import { useAllItems } from '../store/items'
 import { switchChat } from '../store/saved'
 import { useTrip } from '../store/trip'
+import { useButtonsLeft } from '../ui/buttonSide'
 import { HoverTip, type Tip } from '../ui/HoverTip'
 import { Button } from '../ui/kit'
 import { useRightPanel } from '../ui/rightPanel'
@@ -301,12 +302,15 @@ type BarProps = { peek?: boolean; controls: ReactNode }
 
 /** The panel's top bar: its name, `lead` before it (else its icon), `meter` after it, `tools` before the controls. */
 function Bar({ peek, controls, lead, meter, tools }: BarProps & { lead?: ReactNode; meter?: ReactNode; tools?: ReactNode }) {
+  // (Its ✕ first with a phone's buttons on the left: ui/buttonSide.ts.)
+  const buttonsLeft = useButtonsLeft()
   return (
     <div data-sheet-peek={peek || undefined} className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1.5 max-md:py-2">
+      {buttonsLeft && controls}
       {lead ?? <span className="flex h-7 w-7 items-center justify-center"><Sparkles size={peek ? 18 : 16} className="text-accent" /></span>}
       <h2 className="text-[13px] font-medium">Assistant</h2>
       {meter}
-      <div className="ml-auto flex items-center gap-1">{tools}{controls}</div>
+      <div className="ml-auto flex items-center gap-1">{tools}{!buttonsLeft && controls}</div>
     </div>
   )
 }

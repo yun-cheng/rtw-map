@@ -5,7 +5,9 @@ import { dataset as ds } from '../data/dataset'
 import { useTrip } from '../store/trip'
 import { dateRange } from '../ui/format'
 import { Section, Sections, Segmented } from '../ui/kit'
+import { useButtonSide, useButtonsLeft } from '../ui/buttonSide'
 import { useTheme, type ThemeChoice } from '../ui/theme'
+import { usePhone } from '../ui/usePhone'
 import { useMoney } from '../ui/useMoney'
 import { AccountLimits } from './AccountLimits'
 import { AiApps } from './AiApps'
@@ -19,7 +21,7 @@ import { TripSwitcher } from './TripSwitcher'
 const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label: 'Light' }, { value: 'dark', label: 'Dark' }, { value: 'system', label: 'Device' }]
 
 /**
- * All the settings (trips, currency, temperature unit, theme, phrases, offline map, account) in a panel that slides in from the
+ * All the settings (trips, currency, temperature unit, theme, the map's buttons, phrases, offline map, account) in a panel that slides in from the
  * right: on a phone from the gear over the map (the map gets the top bar's room), on a computer from the gear in the
  * top bar (which has the display settings at hand too).
  */
@@ -28,6 +30,9 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
   const { currency } = useMoney()
   const { choice, setChoice } = useTheme()
   const user = useAccount((s) => s.user)
+  const phone = usePhone()
+  const buttons = useButtonSide()
+  const buttonsLeft = useButtonsLeft()
   const [limits, setLimits] = useState(false)
   const [apps, setApps] = useState(false)
 
@@ -50,7 +55,7 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
         <div className="flex h-12 shrink-0 items-center gap-2 border-b border-line bg-panel px-4 font-semibold">
           <img src="/favicon.svg" alt="" className="h-5 w-5" />
           rtw-map
-          <button onClick={onClose} aria-label="Close settings" className="ml-auto flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onClose} aria-label="Close settings" className={`${buttonsLeft ? '-ml-2 order-first' : 'ml-auto'} flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink`}>
             <X size={18} />
           </button>
         </div>
@@ -94,6 +99,13 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
                   <span className="text-muted">Local names on the map</span>
                   <div className="w-32"><Segmented value={localNames ? 'show' : 'hide'} onChange={(v) => setLocalNames(v === 'show')} options={[{ value: 'show', label: 'Show' }, { value: 'hide', label: 'Hide' }]} /></div>
                 </div>
+                {phone && (
+                  // (Those over the map and the panels' ✕, where a thumb reaches them: the left for a left hand.)
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-muted">Buttons</span>
+                    <div className="w-32"><Segmented value={buttons.side} onChange={buttons.setSide} options={[{ value: 'left', label: 'Left' }, { value: 'right', label: 'Right' }]} /></div>
+                  </div>
+                )}
               </div>
             </Section>
             <Section title="Phrases">
