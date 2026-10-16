@@ -1,4 +1,4 @@
-import { Bell, FileText, MessagesSquare, Paperclip, X } from 'lucide-react'
+import { ArrowUp, Bell, Brain, FileText, MessagesSquare, Plus, Sparkles, SquarePen, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { attach } from '../agent/attach'
@@ -269,7 +269,7 @@ function UsageButton({ usage, spent, ms }: { usage: Usage | null; spent: Spent; 
         </svg>
       </button>
       {open && (
-        <div role="dialog" aria-label="Assistant use" className="absolute top-full right-0 z-30 mt-1 w-72 rounded-lg border border-line bg-panel p-3 text-[12px] shadow-lg">
+        <div role="dialog" aria-label="Assistant use" className="absolute top-full left-0 z-30 mt-1 w-72 rounded-lg border border-line bg-panel p-3 text-[12px] shadow-lg">
           <p className="font-semibold">This chat</p>
           {spent.calls > 0 ? <SpentLine spent={spent} ms={ms} /> : <p className="text-[11px] text-muted">Nothing used yet.</p>}
           {usage && (
@@ -290,16 +290,42 @@ function UsageButton({ usage, spent, ms }: { usage: Usage | null; spent: Spent; 
   )
 }
 
+const BAR_BUTTON = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-40'
+
+/** `peek`: in a phone's bottom sheet (the bar is its header); `controls`: the panel's own buttons, at the bar's end
+ *  (App: move it, close it). */
+type BarProps = { peek?: boolean; controls: ReactNode }
+
+/** The panel's top bar: its name, `lead` before it (else its icon), `meter` after it, `tools` before the controls. */
+function Bar({ peek, controls, lead, meter, tools }: BarProps & { lead?: ReactNode; meter?: ReactNode; tools?: ReactNode }) {
+  return (
+    <div data-sheet-peek={peek || undefined} className="flex shrink-0 items-center gap-1 border-b border-line px-2 py-1.5 max-md:py-2">
+      {lead ?? <span className="flex h-7 w-7 items-center justify-center"><Sparkles size={peek ? 18 : 16} className="text-accent" /></span>}
+      <h2 className="text-[13px] font-medium">Assistant</h2>
+      {meter}
+      <div className="ml-auto flex items-center gap-1">{tools}{controls}</div>
+    </div>
+  )
+}
+
 /** The Assistant's panel: sign-in first, then the chat. */
-export function AssistantPanel() {
+export function AssistantPanel({ peek, controls }: BarProps) {
   const { loaded, user, offline } = useAccount()
-  if (!loaded) return <p className="px-4 py-4 text-[13px] text-muted">Loading…</p>
-  if (!user && offline) return <p className="px-4 py-4 text-[13px] text-muted">You're offline. The assistant needs a connection: it's back when you are.</p>
-  return user ? <Chat /> : <SignIn />
+  if (user) return <Chat peek={peek} controls={controls} />
+  return (
+    <div className="flex h-full flex-col">
+      <Bar peek={peek} controls={controls} />
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        {!loaded ? <p className="px-4 py-4 text-[13px] text-muted">Loading…</p>
+          : offline ? <p className="px-4 py-4 text-[13px] text-muted">You're offline. The assistant needs a connection: it's back when you are.</p>
+            : <SignIn />}
+      </div>
+    </div>
+  )
 }
 
 /** Chat with the trip assistant (Gemini), which can answer questions and change the trip; every change can be undone. */
-function Chat() {
+function Chat({ peek, controls }: BarProps) {
   const usage = useAccount((s) => s.usage)
   const sub = useAccount((s) => s.user?.sub)
   const outOfAllowance = usage?.remaining === 0
@@ -384,7 +410,7 @@ function Chat() {
       const failed = out.find((a): a is string => typeof a === 'string')
       const left = ask.files.length - files.length
       if (failed) setAttachError(failed)
-      else if (left > 0) setAttachError(`A message takes ${MEDIA_LIMITS.files} files at most: ${left} more not sent. Attach ${left === 1 ? 'it' : 'them'} (📎) to your next message.`)
+      else if (left > 0) setAttachError(`A message takes ${MEDIA_LIMITS.files} files at most: ${left} more not sent. Attach ${left === 1 ? 'it' : 'them'} (+) to your next message.`)
       if (media.length && !failed && !useChat.getState().busy && !outOfAllowance && online) void send(ask.text, shared, { media })
       else {
         setDraft(ask.text)
@@ -409,12 +435,21 @@ function Chat() {
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center border-b border-line py-1 pr-2 pl-2 text-[12px]">
-        <button onClick={() => setChatsOpen(true)} title="This trip's chats with the assistant" className="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 font-medium text-muted hover:bg-canvas hover:text-ink">
-          <MessagesSquare size={15} /> Chats
-        </button>
-        <div className="ml-auto"><UsageButton usage={usage} spent={total} ms={totalMs} /></div>
-      </div>
+      <Bar
+        peek={peek}
+        controls={controls}
+        lead={
+          <button onClick={() => setChatsOpen(true)} title="This trip's chats with the assistant" aria-label="Chats" className={BAR_BUTTON}>
+            <MessagesSquare size={peek ? 18 : 16} />
+          </button>
+        }
+        meter={<UsageButton usage={usage} spent={total} ms={totalMs} />}
+        tools={
+          <button onClick={() => void newChat()} disabled={busy || !messages.length} title="New chat (this one is kept in Chats)" aria-label="New chat" className={BAR_BUTTON}>
+            <SquarePen size={peek ? 18 : 16} />
+          </button>
+        }
+      />
       <ChatList open={chatsOpen} onClose={closeChats} />
       {raised && (
         <div className="flex items-start gap-2 border-b border-line bg-accent-soft px-4 py-2 text-[12px]">
@@ -506,6 +541,8 @@ function Chat() {
         )}
         {attachError && <p className="mb-1.5 text-[12px] text-danger">{attachError}</p>}
         {newChatError && <p className="mb-1.5 text-[12px] text-danger">{newChatError}</p>}
+        {/* (Enter sends; so does the arrow at the bottom right, there once something is written or attached.) */}
+        <div className="rounded-md border border-line bg-panel focus-within:border-accent">
         <textarea
           data-assistant-input
           value={draft}
@@ -534,18 +571,19 @@ function Chat() {
           rows={2}
           maxLength={2000}
           disabled={outOfAllowance}
-          placeholder="Ask or tell the assistant… (Enter to send; paste or drop a booking, ticket or photo to attach it)"
-          className="w-full resize-none rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent"
+          enterKeyHint="send"
+          aria-label="Message the assistant (Enter sends; paste or drop a booking, ticket or photo to attach it)"
+          className="block w-full resize-none bg-transparent px-2.5 pt-1.5 text-[13px] outline-none"
         />
-        <div className="mt-1 flex items-center gap-2 text-[12px]">
+        <div className="flex items-center gap-1 px-1 pb-1 text-[12px]">
           <button
             onClick={() => fileInput.current?.click()}
             disabled={outOfAllowance || !online || attached.length + uploading >= MEDIA_LIMITS.files}
-            className="flex items-center gap-1 text-muted hover:text-ink disabled:opacity-40"
+            className="flex h-7 w-7 items-center justify-center rounded-full text-muted hover:bg-canvas hover:text-ink disabled:opacity-40"
             title="Attach an image or a PDF: a booking confirmation, a ticket, a screenshot, a photo"
             aria-label="Attach a file"
           >
-            <Paperclip size={14} />
+            <Plus size={16} />
           </button>
           <input
             ref={fileInput} type="file" accept="image/*,application/pdf" multiple hidden
@@ -554,13 +592,27 @@ function Chat() {
               e.target.value = ''
             }}
           />
-          <label className="flex items-center gap-1.5" title="Slower and a little more expensive, better for complex requests">
-            <input type="checkbox" checked={think} onChange={(e) => setThink(e.target.checked)} /> Think harder
-          </label>
-          {messages.length > 0 && <button onClick={() => void newChat()} disabled={busy} title="Start a new chat: this one is kept in Chats" className="text-muted hover:text-ink disabled:opacity-40">New chat</button>}
-          {busy
-            ? <Button className="ml-auto" onClick={stop}>■ Stop</Button>
-            : <Button variant="primary" className="ml-auto" disabled={(!draft.trim() && !attached.length) || uploading > 0 || outOfAllowance || !online} onClick={() => submit()}>Send</Button>}
+          <button
+            onClick={() => setThink(!think)}
+            aria-pressed={think}
+            title="Thinking: slower and a little more expensive, better for complex requests"
+            className={`flex h-7 items-center gap-1 rounded-full border px-2.5 ${think ? 'border-accent bg-accent-soft text-accent' : 'border-transparent text-muted hover:bg-canvas hover:text-ink'}`}
+          >
+            <Brain size={14} /> Thinking
+          </button>
+          {busy ? <Button variant="ghost" className="ml-auto !py-0.5" onClick={stop}>■ Stop</Button>
+            : (draft.trim() || attached.length > 0) && (
+              <button
+                onClick={() => submit()}
+                disabled={uploading > 0 || outOfAllowance || !online}
+                aria-label="Send"
+                title="Send (Enter)"
+                className="ml-auto flex h-7 w-7 items-center justify-center rounded-full bg-accent text-on-accent hover:opacity-90 disabled:opacity-40"
+              >
+                <ArrowUp size={16} />
+              </button>
+            )}
+        </div>
         </div>
       </div>
     </div>

@@ -106,10 +106,9 @@ function AssistantSide({ peek }: { peek?: boolean }) {
   const Move = side === 'left' ? ArrowRightToLine : ArrowLeftToLine
   const button = 'flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink'
   return (
-    <>
-      <div data-sheet-peek={peek || undefined} className="flex shrink-0 items-center gap-1.5 border-b border-line px-3 py-1.5 max-md:py-2">
-        <Sparkles size={peek ? 18 : 16} className="text-accent" />
-        <h2 className="mr-auto text-[13px] font-medium">Assistant</h2>
+    <AssistantPanel
+      peek={peek}
+      controls={<>
         {!peek && (
           <button onClick={swap} title={`Move to the ${side === 'left' ? 'right' : 'left'} of the map`} aria-label={`Move the Assistant to the ${side === 'left' ? 'right' : 'left'}`} className={button}>
             <Move size={16} />
@@ -118,9 +117,8 @@ function AssistantSide({ peek }: { peek?: boolean }) {
         <button onClick={() => (peek ? setSheet(false) : hide())} title={peek ? undefined : 'Close the Assistant'} aria-label="Close the Assistant" className={button}>
           <X size={peek ? 18 : 16} />
         </button>
-      </div>
-      <div className="min-h-0 flex-1"><AssistantPanel /></div>
-    </>
+      </>}
+    />
   )
 }
 

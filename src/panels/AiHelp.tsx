@@ -14,19 +14,19 @@ type Help = { ask: (place: string) => string; answer: (place: string) => string;
 const HELP = {
   stay: {
     ask: (c) => `How do I update where I stay in ${c} with AI?`,
-    answer: (c) => `**Send me your booking**, any way you like:\n- Paste the confirmation email\n- Attach a screenshot or PDF (📎 below)\n- Or just type it: *"Hostel Mostel, 20–23 May, €45"*\n\nI'll save it as your stay in ${c}.`,
+    answer: (c) => `**Send me your booking**, any way you like:\n- Paste the confirmation email\n- Attach a screenshot or PDF (+ below)\n- Or just type it: *"Hostel Mostel, 20–23 May, €45"*\n\nI'll save it as your stay in ${c}.`,
   },
   dailyCost: {
     ask: (c) => `How do I update the daily cost in ${c} with AI?`,
-    answer: (c) => `**Tell me what you paid**, or attach a receipt (📎 below):\n- A meal, a coffee, a beer\n- A bus day pass, a taxi ride\n- Or a whole day, all in\n\nAny currency is fine. Your prices replace ours for ${c}.`,
+    answer: (c) => `**Tell me what you paid**, or attach a receipt (+ below):\n- A meal, a coffee, a beer\n- A bus day pass, a taxi ride\n- Or a whole day, all in\n\nAny currency is fine. Your prices replace ours for ${c}.`,
   },
   stayPrices: {
     ask: (c) => `How do I update the prices for a night in ${c} with AI?`,
-    answer: (c) => `**Paste your booking**, or attach a screenshot (📎 below).\n\nI'll work out the price per night and put it in as the dorm bed or private room price for ${c}.`,
+    answer: (c) => `**Paste your booking**, or attach a screenshot (+ below).\n\nI'll work out the price per night and put it in as the dorm bed or private room price for ${c}.`,
   },
   foodPrices: {
     ask: (c) => `How do I update food and drink prices in ${c} with AI?`,
-    answer: (c) => `**Attach a photo** of a menu, a receipt or a supermarket shelf (📎 below), or just tell me what you paid.\n\nI'll fill in the prices for ${c}. Any currency is fine.`,
+    answer: (c) => `**Attach a photo** of a menu, a receipt or a supermarket shelf (+ below), or just tell me what you paid.\n\nI'll fill in the prices for ${c}. Any currency is fine.`,
   },
   phrases: {
     ask: (c) => `How do I add my own phrases for ${c} with AI?`,
