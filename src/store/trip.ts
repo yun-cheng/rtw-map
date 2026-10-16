@@ -50,7 +50,7 @@ type State = TripCore & {
    *  view: for a country in a region's card, the region. */
   hovered: { countries: string[]; focus: string[] }
   fitRequest: number
-  /** Counts "Make changes" presses in a stop's panel: the app brings the left panel into view on the Itinerary (see
+  /** Counts "Edit stop" presses in a stop's panel: the app brings the left panel into view on the Itinerary (see
    *  App). */
   besideRequest: number
   /** Base map labels also give a place's name in its own script where that isn't Latin ("Athens" over "Αθήνα"). */
@@ -83,7 +83,7 @@ type State = TripCore & {
   toggleCountry: (iso2: string) => void
   setAddAs: (mode: State['addAs']) => void
   setHovered: (countries: string[], focus?: string[]) => void
-  /** Opens the Itinerary at the open city's stop, to change its nights, lock or remove it there ("Make changes"). */
+  /** Opens the Itinerary at the open city's stop, to change its nights, lock or remove it there ("Edit stop"). */
   editInItinerary: () => void
   setCurrency: (c: string) => void
   setTempUnit: (u: TempUnit) => void

@@ -1,3 +1,4 @@
+import { Pencil, Plus } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
@@ -9,7 +10,7 @@ import { HoverTip, type Tip } from '../ui/HoverTip'
 import { SwipeTabs } from '../ui/SwipeTabs'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
-import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
+import { Badge, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
 import { MoneyCurrency, useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { AiHelp } from './AiHelp'
@@ -702,36 +703,33 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     )
   }
 
+  // (Its nights, lock and removal are the Itinerary's, opened at the stop: Edit stop goes there.)
+  const pill = 'flex h-7 shrink-0 items-center gap-1 rounded-full bg-accent px-2.5 text-[12px] font-medium text-on-accent hover:bg-accent-strong'
+  const action = readOnly ? null : stop ? (
+    <button onClick={editInItinerary} title="Change its nights, lock or remove it in the Itinerary" className={pill}>
+      <Pencil size={14} />
+      Edit stop
+    </button>
+  ) : plan && !city.auto ? (
+    <button onClick={() => addCity(cityId)} className={pill}>
+      <Plus size={14} />
+      Add to trip
+    </button>
+  ) : null
+
   return (
     <div className={phone ? 'flex h-full flex-col' : 'pb-8'}>
       <div data-sheet-peek className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3 max-md:pt-1">
-        <div className="flex items-start gap-2 max-md:items-center">
-          <div className="min-w-0 flex-1">
-            <h2 className="text-[18px] font-semibold">{city.name}</h2>
-            <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{country.schengen && ' · Schengen area'}</p>
+        <h2 className="text-[18px] font-semibold">{city.name}</h2>
+        <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{country.schengen && ' · Schengen area'}</p>
+        {stop && <p className="text-[13px] text-muted"><b className="text-ink">Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</p>}
+        {/* The panel's actions, one row of pills: the stop's or the city's own first, then Ask AI. */}
+        {(action || !SHARED_TOKEN) && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {action}
+            <AskButton />
           </div>
-          <AskButton />
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
-          {stop ? (
-            <>
-              <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</span>
-              {/* (Its nights, lock and removal are the Itinerary's, opened at the stop: next to them here.) */}
-              {!readOnly && (
-                // (Styled as Ask AI, above.)
-                <button
-                  onClick={editInItinerary}
-                  title="Change its nights, lock or remove it in the Itinerary"
-                  className="flex h-7 shrink-0 items-center rounded-full border border-accent/50 px-2.5 text-[12px] font-medium text-accent hover:bg-accent-soft"
-                >
-                  Make changes
-                </button>
-              )}
-            </>
-          ) : plan && !readOnly && !city.auto ? (
-            <Button variant="primary" onClick={() => addCity(cityId)}>+ Add to trip</Button>
-          ) : null}
-        </div>
+        )}
         <nav ref={tabBar.ref} style={tabBar.mask} className="no-scrollbar -mx-4 -mb-px mt-2 flex gap-1 overflow-x-auto overflow-y-hidden scroll-px-4 px-3" role="tablist" aria-label="City information">
           {/* Icons; the open tab also has its name, the others name themselves on hover. */}
           {tabs.map((t) => {

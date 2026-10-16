@@ -236,7 +236,7 @@ export default function App() {
   useEffect(() => {
     if (selected) showLeft()
   }, [selected]) // (only when one is picked)
-  // "Make changes" in a stop's panel: the Itinerary, with the stop in view (it marks the open city's), once it's in.
+  // "Edit stop" in a stop's panel: the Itinerary, with the stop in view (it marks the open city's), once it's in.
   const besideRequest = useTrip((s) => s.besideRequest)
   useEffect(() => {
     if (!besideRequest) return

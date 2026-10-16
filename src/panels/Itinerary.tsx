@@ -58,7 +58,7 @@ export function Itinerary() {
           const isSel = selected?.type === 'city' && selected.id === s.cityId
           const day = tripDay(input.startDate, s.arrive)
           const time = travelling ? stopTime(s, today) : 'ahead'
-          // Lock and remove show on pointing at the stop, and always on the open city's (a phone can't point: Make changes
+          // Lock and remove show on pointing at the stop, and always on the open city's (a phone can't point: Edit stop
           // in its panel opens it here).
           const hidden = isSel ? '' : 'opacity-0 group-hover:opacity-100'
           return (
