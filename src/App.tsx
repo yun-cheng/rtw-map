@@ -130,10 +130,9 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
   const ownScroll = (t: Tab) => t === 'city' && peek && selected?.type === 'city'
   return (
     <>
-      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center justify-between border-b border-line px-2" role="tablist">
+      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
         {TABS.map((t) => {
-          // Each with its icon and name, as wide as that, spread evenly across the bar (on a phone's sheet the first and
-          // last at its edges; beside the map, with the button folding it away last).
+          // Each with its icon and name, sharing the bar evenly (as My trip's; the button folding it away at the right).
           const Icon = tabIcon(t, selected)
           return (
             <button
@@ -142,15 +141,15 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
               aria-selected={tab === t}
               disabled={tabOff(t, plan, selected)}
               onClick={() => setPanel(t)}
-              className={`-mb-px flex items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:px-2 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              className={`-mb-px flex min-w-0 flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:px-2 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
-              <Icon size={peek ? 18 : 16} />
+              <Icon size={peek ? 18 : 16} className="shrink-0" />
               {tabLabel(t, selected)}
             </button>
           )
         })}
         {onHide && (
-          <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
             <ChevronsLeft size={16} />
           </button>
         )}
