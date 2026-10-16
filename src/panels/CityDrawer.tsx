@@ -27,6 +27,7 @@ import { Speak } from '../ui/Speak'
 import { PriceEdit } from './PriceEdit'
 import { PriceLevel } from './PriceLevel'
 import { TABS, type SectionKey } from './cityTabs'
+import { REGION_OF } from '../data/regions'
 
 /** The weather and air charts use a charting library (Recharts), loaded only when a Weather tab is first opened. */
 const ClimateChart = lazy(() => import('./ClimateChart').then((m) => ({ default: m.ClimateChart })))
@@ -721,7 +722,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     <div className={phone ? 'flex h-full flex-col' : 'pb-8'}>
       <div data-sheet-peek className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3 max-md:pt-1">
         <h2 className="text-[18px] font-semibold">{city.name}</h2>
-        <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{country.schengen && ' · Schengen area'}</p>
+        {/* The country, then the region it's in (not where they're one name, e.g. Russia) and whether it's Schengen. */}
+        <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{REGION_OF[city.iso2] && REGION_OF[city.iso2] !== country.name && ` · ${REGION_OF[city.iso2]}`}{country.schengen && ' · Schengen area'}</p>
         {stop && <p className="text-[13px] text-muted"><b className="text-ink">Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</p>}
         {/* The panel's actions, one row of pills: the stop's or the city's own first, then Ask AI. */}
         {(action || !SHARED_TOKEN) && (
