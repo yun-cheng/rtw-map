@@ -9,7 +9,7 @@ import { NoteBox } from './Notes'
 import { Tickets } from './Tickets'
 
 export function LegDrawer({ index }: { index: number }) {
-  const { plan, select } = useTrip()
+  const plan = useTrip((s) => s.plan)
   const { fmt } = useMoney()
   const leg = plan?.legs[index]
   if (!plan || !leg) return null
@@ -25,7 +25,6 @@ export function LegDrawer({ index }: { index: number }) {
             <p className="text-[13px] text-muted">Leg {index + 1} · leaves {shortDate(date)}{leg.overnight && ' · overnight'}</p>
           </div>
           <AskButton />
-          <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         {leg.reachable ? (
           <>

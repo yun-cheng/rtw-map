@@ -711,7 +711,6 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{country.schengen && ' · Schengen area'}</p>
           </div>
           <AskButton />
-          <button onClick={() => select(null)} className="h-7 w-7 rounded text-muted hover:bg-canvas hover:text-ink" aria-label="Close">✕</button>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
           {stop ? (
