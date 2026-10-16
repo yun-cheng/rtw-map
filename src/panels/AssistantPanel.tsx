@@ -1,4 +1,4 @@
-import { ArrowUp, Bell, Brain, FileText, MessagesSquare, Plus, Sparkles, SquarePen, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, Bell, Brain, FileText, MessagesSquare, Plus, Sparkles, SquarePen, X } from 'lucide-react'
 import { Fragment, useCallback, useEffect, useEffectEvent, useRef, useState, type ReactNode } from 'react'
 import { allowanceNote, renderGoogleButton, seenMultiple, setSeenMultiple, useAccount, type Usage } from '../agent/account'
 import { attach } from '../agent/attach'
@@ -382,6 +382,12 @@ function Chat({ peek, controls }: BarProps) {
   useEffect(() => {
     if (list.current) list.current.scrollTop = list.current.scrollHeight
   }, [messages.length, busy])
+  // Scrolled up from the latest message: a button to go back down to it.
+  const [away, setAway] = useState(false)
+  const onListScroll = () => {
+    const el = list.current
+    if (el) setAway(el.scrollHeight - el.scrollTop - el.clientHeight > 80)
+  }
 
   // Files attached to the next message (uploaded as soon as they're added).
   const [attached, setAttached] = useState<Attachment[]>([])
@@ -470,7 +476,8 @@ function Chat({ peek, controls }: BarProps) {
           </button>
         </div>
       )}
-      <div ref={list} className="min-h-0 flex-1 overflow-y-auto px-4 py-3">
+      <div className="relative min-h-0 flex-1">
+      <div ref={list} onScroll={onListScroll} className="h-full overflow-y-auto px-4 py-3">
         {messages.length === 0 ? (
           <div className="text-[13px]">
             <p className="font-medium">Ask the assistant to plan or change your trip.</p>
@@ -512,6 +519,16 @@ function Chat({ peek, controls }: BarProps) {
             )}
           </div>
         )}
+      </div>
+      {away && (
+        <button
+          onClick={() => { if (list.current) list.current.scrollTop = list.current.scrollHeight }}
+          title="To the latest message" aria-label="To the latest message"
+          className="absolute bottom-3 left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full border border-line bg-panel text-muted shadow-md hover:text-ink"
+        >
+          <ArrowDown size={16} />
+        </button>
+      )}
       </div>
 
       <div className="border-t border-line px-3 py-2">
