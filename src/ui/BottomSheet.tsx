@@ -1,40 +1,17 @@
-import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode, type TouchEvent as ReactTouchEvent } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react'
 
 /** How far a bottom sheet is pulled up: just its header, half the map, or all of it. */
 export type Snap = 'peek' | 'half' | 'full'
 
 const UP: Record<Snap, Snap> = { peek: 'half', half: 'full', full: 'half' }
 
-/** Whether a swipe from `el` is its own: on a field, something that scrolls sideways or takes the touch itself (a
- *  chart, a slider), up to the sheet. */
-function swipeTaken(el: Element | null, sheet: Element) {
-  for (; el && el !== sheet; el = el.parentElement) {
-    if (el.matches('input, textarea, select, [contenteditable="true"]')) return true
-    const style = getComputedStyle(el)
-    if (style.touchAction === 'none') return true
-    if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(style.overflowX)) return true
-  }
-  return false
-}
-
-/** Swiped left (1, the next tab) or right (-1) in `sheet`: picks that tab of its first tab bar, if there's one there. */
-function swipeTab(sheet: Element, step: 1 | -1) {
-  const tabs = [...(sheet.querySelector('[role="tablist"]')?.querySelectorAll<HTMLButtonElement>('[role="tab"]') ?? [])].filter((t) => !t.disabled)
-  const at = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true')
-  const next = at < 0 ? undefined : tabs[at + step]
-  if (!next) return
-  next.click()
-  next.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
-
 /**
  * A panel over the bottom of the map on a phone, like Google Maps' place card. Drag it by the grip or by the
  * element marked `data-sheet-peek` (its header, which is also what shows when it's pulled down) to one of three
- * heights; tap the grip to step it up. Choosing a tab (`role="tab"`) while only the header shows opens it to half.
- * A quick swipe sideways picks the next or previous tab of its (first) tab bar. With `onClose`, pulling it below its
- * header closes it. `hidden`: out of sight but kept (with its state). What doesn't
- * fit is clipped, not scrollable, so bringing something inside into view (scrollIntoView, focus) can't push its header
- * out of sight.
+ * heights; tap the grip to step it up. Choosing a tab (`role="tab"`) while only the header shows opens it to half
+ * (its tabs swipe sideways in SwipeTabs). With `onClose`, pulling it below its header closes it. `hidden`: out of
+ * sight but kept (with its state). What doesn't fit is clipped, not scrollable, so bringing something inside into view
+ * (scrollIntoView, focus) can't push its header out of sight.
  */
 export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = '', children }: {
   snap: Snap
@@ -125,25 +102,6 @@ export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = 
     window.addEventListener('pointercancel', up)
   }
 
-  // A sideways swipe (quick, mostly sideways, not from the screen's edge, where the browser goes back): another tab.
-  const swipe = useRef<{ x: number; y: number; t: number } | null>(null)
-  const onTouchStart = (e: ReactTouchEvent) => {
-    const t = e.touches[0]
-    const edge = 24
-    swipe.current = e.touches.length === 1 && t.clientX > edge && t.clientX < window.innerWidth - edge && !swipeTaken(e.target as Element, e.currentTarget)
-      ? { x: t.clientX, y: t.clientY, t: e.timeStamp }
-      : null
-  }
-  const onTouchEnd = (e: ReactTouchEvent) => {
-    const s = swipe.current
-    swipe.current = null
-    const t = e.changedTouches[0]
-    if (!s || !t || e.timeStamp - s.t > 700) return
-    const dx = t.clientX - s.x
-    const dy = t.clientY - s.y
-    if (Math.abs(dx) >= 60 && Math.abs(dx) > 2 * Math.abs(dy)) swipeTab(e.currentTarget, dx < 0 ? 1 : -1)
-  }
-
   const height = !opened ? 0 : dragHeight ?? heights[snap]
   // Tell the controls over the map (MapControls) how much of it the sheet covers, so they sit above it. A sheet that
   // comes up over another (Ask AI) puts the other's height back when it goes.
@@ -160,9 +118,6 @@ export function BottomSheet({ snap, onSnap, onClose, label, hidden, className = 
       role="dialog"
       aria-label={label}
       onPointerDown={onPointerDown}
-      onTouchStart={onTouchStart}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={() => (swipe.current = null)}
       onClickCapture={(e) => {
         // A drag that ends over a button isn't a click on it.
         if (dragged.current) {

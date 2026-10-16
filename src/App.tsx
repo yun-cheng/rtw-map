@@ -27,6 +27,7 @@ import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
 import { OfflinePill } from './ui/OfflinePill'
+import { SwipeTabs } from './ui/SwipeTabs'
 import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useHasRightPanel, useMyTripTabs, useRightPanel, useRightPanelBeside } from './ui/rightPanel'
 import { usePhone } from './ui/usePhone'
 
@@ -93,6 +94,10 @@ function useSidebar(drawerOpen: boolean, closeDrawer: () => void) {
   }
 }
 
+/** A left panel tab's content. */
+const TabBody = ({ tab }: { tab: Tab }) =>
+  tab === 'assistant' ? <AssistantPanel /> : tab === 'setup' ? <SetupPanel /> : tab === 'today' ? <Today /> : <Itinerary />
+
 /** The left panel's tabs and the open one: beside the map, or in a bottom sheet on a phone (`peek`: its tab bar is
  *  the sheet's header). `onHide` folds it away. */
 function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: () => void }) {
@@ -125,10 +130,15 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
         )}
       </nav>
       <PlanBar />
-      {tab === 'assistant' ? (
+      {peek ? (
+        // (A phone's sheet: swiped between its tabs, the itinerary not before there's a plan.)
+        <SwipeTabs tabs={tabs.filter((t) => t !== 'itinerary' || plan)} tab={tab} onTab={setPanel}>
+          {(t) => <div className={`h-full ${t === 'assistant' ? '' : 'overflow-y-auto'}`}><TabBody tab={t} /></div>}
+        </SwipeTabs>
+      ) : tab === 'assistant' ? (
         <div className="min-h-0 flex-1"><AssistantPanel /></div>
       ) : (
-        <div key={tab} className="min-h-0 flex-1 overflow-y-auto">{tab === 'setup' ? <SetupPanel /> : tab === 'today' ? <Today /> : <Itinerary />}</div>
+        <div key={tab} className="min-h-0 flex-1 overflow-y-auto"><TabBody tab={tab} /></div>
       )}
     </>
   )

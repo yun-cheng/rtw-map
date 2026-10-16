@@ -28,6 +28,7 @@
     "@tiptap/pm": "3.31.4",
     "@tiptap/react": "3.31.4",
     "@tiptap/starter-kit": "3.31.4",
+    "embla-carousel-react": "^8.6.0",
     "emoji-picker-element": "1.29.1",
     "emoji-picker-element-data": "1.8.0",
     "lucide-react": "^1.52.0",

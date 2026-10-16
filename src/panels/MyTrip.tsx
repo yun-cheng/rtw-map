@@ -3,11 +3,16 @@
 // same as in the city's and journey's panels, Today and the Itinerary, gathered.
 import { ChevronsRight, X } from 'lucide-react'
 import type { ReactNode } from 'react'
-import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useMyTripTabs, useRightPanel } from '../ui/rightPanel'
+import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useMyTripTabs, useRightPanel, type MyTripTab } from '../ui/rightPanel'
+import { SwipeTabs } from '../ui/SwipeTabs'
 import { JournalView } from './Journal'
 import { Receipts } from './Receipts'
 import { AllTickets } from './Tickets'
 import { AllStays } from './Visit'
+
+/** A tab's content. */
+const TabBody = ({ tab }: { tab: MyTripTab }) =>
+  tab === 'stays' ? <AllStays /> : tab === 'tickets' ? <AllTickets /> : tab === 'receipts' ? <Receipts /> : <JournalView />
 
 /** The panel's tabs and the open one: beside the map, or in a bottom sheet on a phone (`peek`: its tab bar is the
  *  sheet's header). `onHide` folds it away (closes the sheet). `over`: a city's or journey's panel open in its place, under its tabs
@@ -39,9 +44,14 @@ export function MyTripPanel({ peek, onHide, over, onLeave }: { peek?: boolean; o
         )}
       </nav>
       {over && <div className="min-h-0 flex-1 overflow-y-auto bg-canvas">{over}</div>}
-      <div key={tab} className={`min-h-0 flex-1 overflow-y-auto bg-canvas ${over ? 'hidden' : ''}`}>
-        {tab === 'stays' ? <AllStays /> : tab === 'tickets' ? <AllTickets /> : tab === 'receipts' ? <Receipts /> : <JournalView />}
-      </div>
+      {peek ? (
+        // (A phone's sheet: swiped between its tabs.)
+        <SwipeTabs tabs={tabs} tab={tab} onTab={setTab}>
+          {(t) => <div className="h-full overflow-y-auto bg-canvas"><TabBody tab={t} /></div>}
+        </SwipeTabs>
+      ) : (
+        <div key={tab} className={`min-h-0 flex-1 overflow-y-auto bg-canvas ${over ? 'hidden' : ''}`}><TabBody tab={tab} /></div>
+      )}
     </>
   )
 }

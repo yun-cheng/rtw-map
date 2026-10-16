@@ -6,6 +6,8 @@ import { MODE_ICON, VISA_TEXT, compact, duration, flag, dateRange, rateText, sho
 import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
+import { SwipeTabs } from '../ui/SwipeTabs'
+import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { Badge, Button, LevelBar, Links, Row, Section, Sections, Segmented } from '../ui/kit'
 import { MoneyCurrency, useMoney } from '../ui/useMoney'
@@ -621,7 +623,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   // (Named neutrally there: it's the owner's visit.)
   const tabs = !SHARED_TOKEN ? TABS : TABS.filter((t) => t.key !== 'notes' || visit).map((t) => (t.key === 'notes' ? { ...t, label: 'Visit' } : t))
   const tabInfo = tabs.find((t) => t.key === cityTab) ?? tabs[0]
-  const part = tabInfo.parts && (tabInfo.parts.find((p) => p.key === cityPart[tabInfo.key]) ?? tabInfo.parts[0])
+  const partOf = (t: (typeof tabs)[number]) => t.parts && (t.parts.find((p) => p.key === cityPart[t.key]) ?? t.parts[0])
+  const part = partOf(tabInfo)
+  const phone = usePhone()
   // Keep the open tab in view when the tab bar scrolls sideways (only the bar: scrollIntoView would also scroll the
   // panel, e.g. while a phone's sheet is still opening).
   const activeTab = useRef<HTMLButtonElement>(null)
@@ -637,8 +641,69 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   }, [tabInfo.key, tabBar.ref])
   const [tabTip, setTabTip] = useState<Tip | null>(null)
 
+  // A tab's content.
+  const body = (key: CityTab) => {
+    const info = tabs.find((t) => t.key === key)!
+    return key === 'overview' ? (
+      <>
+      <Section>
+        {city.blurb && <p className="text-[13px]">{city.blurb}</p>}
+        {city.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1">
+            {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
+          </div>
+        )}
+        {/* A capital from open data only: no suggested stay (its days are a plain default), so say what it has. */}
+        {city.auto ? (
+          <p className={`${city.blurb ? 'mt-2 ' : ''}text-[12px] text-muted`}>Only open data here so far (GeoNames, Wikidata, official advice, weather and map data): no local tips or prices yet, and plans leave it out.</p>
+        ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
+          <span className="text-muted">Suggested days:</span>
+          {PACES.map((p) => (
+            <span
+              key={p.value}
+              title={p.value === input.pace ? 'Your pace' : undefined}
+              className={`rounded-full border px-2 py-0.5 ${p.value === input.pace ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-muted'}`}
+            >
+              {p.icon} {p.label} <b>{suggested[p.value]}</b>
+            </span>
+          ))}
+        </div>
+        )}
+      </Section>
+
+      <Section title="At a glance">
+        <ul className="-mx-2 flex flex-col">
+          {glance.map((g) => (
+            <li key={g.label}>
+              <button
+                onClick={() => setCityTab(g.tab, g.part)}
+                className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : g.warn ? 'bg-warn-soft' : ''}`}
+              >
+                <span className="w-5 shrink-0 text-center">{g.icon}</span>
+                <span className="w-32 shrink-0 text-muted">{g.label}</span>
+                <span className="flex-1">
+                  <span className={`font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>
+                </span>
+                <span className="text-muted">›</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Section>
+      </>
+    ) : key === 'notes' ? (
+      <VisitTab cityId={cityId} />
+    ) : (
+      (partOf(info)?.sections ?? info.sections).some((k) => sections[k])
+        ? (partOf(info)?.sections ?? info.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
+        // Nothing for this city yet (a capital from open data has no phrases; the UK has no UK travel advice).
+        : <Section><p className="text-[13px] text-muted">Nothing here for {city.name} yet.</p></Section>
+    )
+  }
+
   return (
-    <div className="pb-8">
+    <div className={phone ? 'flex h-full flex-col' : 'pb-8'}>
       <div data-sheet-peek className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3 max-md:pt-1">
         <div className="flex items-start gap-2">
           <div className="min-w-0 flex-1">
@@ -714,64 +779,14 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         )}
       </div>
 
-      <Sections>
-      {tabInfo.key === 'overview' ? (
-        <>
-        <Section>
-          {city.blurb && <p className="text-[13px]">{city.blurb}</p>}
-          {city.tags.length > 0 && (
-            <div className="mt-2 flex flex-wrap items-center gap-1">
-              {city.tags.map((t) => <Badge key={t}>{t}</Badge>)}
-            </div>
-          )}
-          {/* A capital from open data only: no suggested stay (its days are a plain default), so say what it has. */}
-          {city.auto ? (
-            <p className={`${city.blurb ? 'mt-2 ' : ''}text-[12px] text-muted`}>Only open data here so far (GeoNames, Wikidata, official advice, weather and map data): no local tips or prices yet, and plans leave it out.</p>
-          ) : (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[12px]">
-            <span className="text-muted">Suggested days:</span>
-            {PACES.map((p) => (
-              <span
-                key={p.value}
-                title={p.value === input.pace ? 'Your pace' : undefined}
-                className={`rounded-full border px-2 py-0.5 ${p.value === input.pace ? 'border-accent bg-accent-soft font-semibold text-accent' : 'border-line text-muted'}`}
-              >
-                {p.icon} {p.label} <b>{suggested[p.value]}</b>
-              </span>
-            ))}
-          </div>
-          )}
-        </Section>
-
-        <Section title="At a glance">
-          <ul className="-mx-2 flex flex-col">
-            {glance.map((g) => (
-              <li key={g.label}>
-                <button
-                  onClick={() => setCityTab(g.tab, g.part)}
-                  className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[13px] hover:bg-canvas ${g.problem ? 'bg-danger-soft' : g.warn ? 'bg-warn-soft' : ''}`}
-                >
-                  <span className="w-5 shrink-0 text-center">{g.icon}</span>
-                  <span className="w-32 shrink-0 text-muted">{g.label}</span>
-                  <span className="flex-1">
-                    <span className={`font-medium ${g.problem ? 'text-danger' : ''}`}>{g.value}</span>
-                  </span>
-                  <span className="text-muted">›</span>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </Section>
-        </>
-      ) : tabInfo.key === 'notes' ? (
-        <VisitTab cityId={cityId} />
+      {phone ? (
+        // (A phone's sheet: swiped between its tabs, each scrolling on its own under the header.)
+        <SwipeTabs tabs={tabs.map((t) => t.key)} tab={tabInfo.key} onTab={(t) => setCityTab(t)}>
+          {(t) => <div className="h-full overflow-y-auto pb-8"><Sections>{body(t)}</Sections></div>}
+        </SwipeTabs>
       ) : (
-        (part?.sections ?? tabInfo.sections).some((k) => sections[k])
-          ? (part?.sections ?? tabInfo.sections).map((k) => <Fragment key={k}>{sections[k]}</Fragment>)
-          // Nothing for this city yet (a capital from open data has no phrases; the UK has no UK travel advice).
-          : <Section><p className="text-[13px] text-muted">Nothing here for {city.name} yet.</p></Section>
+        <Sections>{body(tabInfo.key)}</Sections>
       )}
-      </Sections>
     </div>
   )
 }
