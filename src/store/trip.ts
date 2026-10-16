@@ -37,8 +37,11 @@ type State = TripCore & {
   weatherBy: 'high' | 'low'
   /** What the Route view writes in each stop: the trip day you arrive, or the nights there. */
   routeBy: 'day' | 'nights'
-  /** The left panel's tab; Today only while the trip is under way (App). */
-  panel: 'today' | 'setup' | 'itinerary' | 'assistant'
+  /** The left panel's tab: City is the open city's or journey's panel, there while one is open (picking one opens it;
+   *  closing it goes back to `panelBefore`). */
+  panel: 'setup' | 'itinerary' | 'city' | 'assistant'
+  /** The tab open before a city or journey was. */
+  panelBefore: 'setup' | 'itinerary' | 'assistant'
   /** Adding places to the trip (the Trip tab's picker): whole regions or single countries, from its list or the map. */
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
@@ -47,8 +50,8 @@ type State = TripCore & {
    *  view: for a country in a region's card, the region. */
   hovered: { countries: string[]; focus: string[] }
   fitRequest: number
-  /** Counts "Ask AI" presses in a city or journey panel, and "Make changes" in a stop's: the app shows the left panel
-   *  beside it, on the tab they open (see App). */
+  /** Counts "Ask AI" presses in a city or journey panel, and "Make changes" in a stop's: the app brings the left panel
+   *  into view on the tab they open (see App). */
   besideRequest: number
   /** Base map labels also give a place's name in its own script where that isn't Latin ("Athens" over "Αθήνα"). */
   localNames: boolean
@@ -126,6 +129,9 @@ const safeStorage = createJSONStorage(() => {
   }
 })
 
+/** No city or journey open: the left panel back on the tab before it, if it was on its tab. */
+const closed = (s: Pick<State, 'panel' | 'panelBefore'>): Partial<State> => ({ selected: null, ...(s.panel === 'city' && { panel: s.panelBefore }) })
+
 export const useTrip = create<State>()(
   persist(
     (set, get) => {
@@ -165,6 +171,7 @@ export const useTrip = create<State>()(
         weatherBy: 'high',
         routeBy: 'day',
         panel: 'setup',
+        panelBefore: 'itinerary',
         picking: null,
         addAs: 'must',
         hovered: { countries: [], focus: [] },
@@ -186,14 +193,14 @@ export const useTrip = create<State>()(
         setStops: (stops) => {
           const fresh = !get().stops.length
           core.setStops(stops)
-          if (fresh) set({ selected: null, fitRequest: get().fitRequest + 1, layerMonth: 0 })
+          if (fresh) set({ ...closed(get()), fitRequest: get().fitRequest + 1, layerMonth: 0 })
         },
         switchPlan: (id) => {
           const was = get().activePlanId
           core.switchPlan(id)
-          if (get().activePlanId !== was) set({ selected: null })
+          if (get().activePlanId !== was) set(closed(get()))
         },
-        select: (selected) => set({ selected }),
+        select: (selected) => set((s) => (selected ? { selected, panel: 'city', ...(s.panel !== 'city' && { panelBefore: s.panel }) } : closed(s))),
         setLayer: (layer) => set({ layer }),
         setLayerMonth: (layerMonth) => set({ layerMonth }),
         setNearbyKind: (nearbyKind) => set({ nearbyKind }),
@@ -247,10 +254,10 @@ export const useTrip = create<State>()(
           }
           if (keepView) {
             const { selected } = get()
-            set({ ...trip, selected: selected?.type === 'leg' && !trip.plan?.legs[selected.index] ? null : selected })
+            set({ ...trip, ...(selected?.type === 'leg' && !trip.plan?.legs[selected.index] && closed(get())) })
             return
           }
-          set({ ...trip, selected: null, panel: trip.plan ? get().panel : 'setup', layerMonth: 0, fitRequest: get().fitRequest + 1 })
+          set({ ...trip, ...closed(get()), ...(!trip.plan && { panel: 'setup' }), layerMonth: 0, fitRequest: get().fitRequest + 1 })
         },
       }
     },
@@ -268,6 +275,8 @@ export const useTrip = create<State>()(
         if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
         // Preferences were a tab of their own; now they're in the Trip tab.
         if ((merged.panel as string) === 'prefs') merged.panel = 'setup'
+        // Today moved to My trip; a city's tab isn't open without its city (not kept).
+        if ((merged.panel as string) === 'today' || merged.panel === 'city') merged.panel = 'itinerary'
         try {
           merged.input = withPrefs(merged.input)
           // Trips saved before plans existed: one plan, the trip itself.

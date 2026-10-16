@@ -83,14 +83,6 @@ body {
   touch-action: pan-x;
 }
 
-/* With a city or journey panel open over the map's right side (wider than a phone), the map's buttons and credits keep
-   left of it. */
-@media (min-width: 768px) {
-  .maplibregl-map .maplibregl-ctrl-bottom-right {
-    right: var(--panel-cover, 0px);
-  }
-}
-
 /* On a phone the map's credits and location button ride above the bottom sheet, like the map's dropdowns (see
    MapControls), and its zoom buttons go (pinch to zoom). */
 @media (max-width: 767px) {

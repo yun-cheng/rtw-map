@@ -717,7 +717,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
           {stop ? (
             <>
               <span className="text-[13px]"><b>Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</span>
-              {/* (Its nights, lock and removal are the Itinerary's, opened beside this at the stop: next to them here.) */}
+              {/* (Its nights, lock and removal are the Itinerary's, opened at the stop: next to them here.) */}
               {!readOnly && (
                 // (Styled as Ask AI, above.)
                 <button

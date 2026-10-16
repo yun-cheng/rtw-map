@@ -1,22 +1,23 @@
-// The right panel, My trip (panels/MyTrip.tsx): the trip's stays, tickets, receipts and journal in one place. Beside
-// the map on a computer, open or folded to a strip, with its tab remembered in this browser; while it's open, a city or
-// journey panel opens in its place instead of over the map. On a phone it's a sheet, opened from a button over the map.
-import { BedDouble, BookOpen, Receipt, Ticket, type LucideIcon } from 'lucide-react'
+// The right panel, My trip (panels/MyTrip.tsx): Today while the trip is under way, and the trip's stays, tickets,
+// receipts and journal, in one place. Beside the map on a computer, open or folded to a strip, with its tab remembered
+// in this browser. On a phone it's a sheet, opened from a button over the map.
+import { BedDouble, BookOpen, MapPin, Receipt, Ticket, type LucideIcon } from 'lucide-react'
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { isTravelling, localToday } from '../planner'
 import { useSharedItems } from '../store/items'
 import { useSharedJournal } from '../store/journal'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
-import { isPhone, usePhone } from './usePhone'
+import { usePhone } from './usePhone'
 
-export type MyTripTab = 'stays' | 'tickets' | 'receipts' | 'daily'
+export type MyTripTab = 'today' | 'stays' | 'tickets' | 'receipts' | 'daily'
 /** The panel's name: the user's own, or neutral on a shared trip's page (it's its owner's). */
 export const MY_TRIP_NAME = SHARED_TOKEN ? 'Trip details' : 'My trip'
-export const MY_TRIP_TABS: MyTripTab[] = ['stays', 'tickets', 'receipts', 'daily']
-export const MY_TRIP_LABELS: Record<MyTripTab, string> = { tickets: 'Tickets', stays: 'Stays', daily: 'Journal', receipts: 'Receipts' }
+export const MY_TRIP_TABS: MyTripTab[] = ['today', 'stays', 'tickets', 'receipts', 'daily']
+export const MY_TRIP_LABELS: Record<MyTripTab, string> = { today: 'Today', tickets: 'Tickets', stays: 'Stays', daily: 'Journal', receipts: 'Receipts' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
-export const MY_TRIP_ICONS: Record<MyTripTab, LucideIcon> = { tickets: Ticket, stays: BedDouble, daily: BookOpen, receipts: Receipt }
+export const MY_TRIP_ICONS: Record<MyTripTab, LucideIcon> = { today: MapPin, tickets: Ticket, stays: BedDouble, daily: BookOpen, receipts: Receipt }
 
 type RightPanel = {
   /** Open beside the map (on a computer). */
@@ -63,16 +64,13 @@ export const useRightPanel = create<RightPanel>()(
   ),
 )
 
-/** My trip on a record's page (or, `id` null, its tab's list), closing a city's or journey's panel open in its
- *  place. */
+/** My trip on a record's page (or, `id` null, its tab's list). */
 export function openRecord(tab: MyTripTab, id: string | null) {
-  useTrip.getState().select(null)
   useRightPanel.getState().setRecord(tab, id, true)
 }
 
-/** My trip on a new record's page (`id`: the one it will be), closing a city's or journey's panel open in its place. */
+/** My trip on a new record's page (`id`: the one it will be). */
 export function addRecord(tab: MyTripTab, id: string) {
-  useTrip.getState().select(null)
   useRightPanel.getState().setAdding(tab, id, true)
 }
 
@@ -85,8 +83,11 @@ export function useHasRightPanel() {
   return plan && (!SHARED_TOKEN || Object.keys(shared).length + Object.keys(days).length > 0)
 }
 
-/** Its tabs. */
-export const useMyTripTabs = (): MyTripTab[] => MY_TRIP_TABS
+/** Its tabs: Today only while the trip is under way (not on a shared trip's page: it's its owner's). */
+export function useMyTripTabs(): MyTripTab[] {
+  const travelling = useTrip((s) => !SHARED_TOKEN && !!s.plan && isTravelling(s.input, localToday()))
+  return travelling ? MY_TRIP_TABS : MY_TRIP_TABS.slice(1)
+}
 
 /** Whether My trip is open beside the map now (on a computer). */
 export function useRightPanelBeside() {
@@ -94,19 +95,4 @@ export function useRightPanelBeside() {
   const open = useRightPanel((s) => s.open)
   const phone = usePhone()
   return has && open && !phone
-}
-
-/** Whether a city or journey panel is open over the right of the map (not in My trip's place): the map's controls
- *  stop short of it. */
-export function useDrawerOverMap() {
-  const selected = useTrip((s) => !!s.selected)
-  const beside = useRightPanelBeside()
-  return selected && !beside
-}
-
-/** The same, read once (outside React: the map's camera moves). */
-export const drawerOverMap = () => {
-  const { selected, plan } = useTrip.getState()
-  const shared = Object.keys(useSharedItems.getState().entries).length + Object.keys(useSharedJournal.getState().entries).length > 0
-  return !!selected && !(plan && (!SHARED_TOKEN || shared) && useRightPanel.getState().open && !isPhone())
 }

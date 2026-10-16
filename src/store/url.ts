@@ -1,16 +1,18 @@
 // Keeps what's on screen in the address bar, so a refresh (or a copied link) comes back to the same view:
-//   ?panel=itinerary&city=krakow&tab=weather&layer=climate&month=7&map=5.20/50.061/19.937
+//   ?panel=city&city=krakow&tab=weather&layer=climate&month=7&map=5.20/50.061/19.937
 // (or leg=3 for an open journey; part=prices for a sub-tab of the city panel tab; kind=atm for the Nearby layer; temp=low for the Weather layer by night temperatures; show=nights for the Route view numbered by nights; map is zoom/latitude/longitude, as on openstreetmap.org; no month means the
 // weather and air layers show each place at the time of the trip).
 // Going somewhere (another panel, city or journey) is a step in the browser's history, so Back (and a phone's back
 // gesture) returns from it; the rest (a city's tabs, the map moving, its view and month) replaces the address.
 import { dataset as ds } from '../data/dataset'
 import { COST_KINDS, isTravelling, localToday, type CostKind } from '../planner'
+import { useRightPanel } from '../ui/rightPanel'
+import { SHARED_TOKEN } from './shareLink'
 import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
-const PANELS = ['today', 'setup', 'itinerary', 'assistant'] as const
+const PANELS = ['setup', 'itinerary', 'city', 'assistant'] as const
 const TABS: CityTab[] = ['overview', 'notes', 'transport', 'weather', 'holidays', 'costs', 'daily', 'phrases', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
@@ -38,8 +40,11 @@ export function readUrl(search = window.location.search, back = false) {
   if (PANELS.includes(panel)) patch.panel = panel
   // Preferences were a tab of their own; now they're in the Trip tab.
   else if ((panel as string) === 'prefs') patch.panel = 'setup'
-  // A trip under way opens on Today, unless the address names a tab (a refresh, or a link).
-  else if (!q.has('panel') && state.plan && isTravelling(state.input, localToday())) patch.panel = 'today'
+  // A trip under way opens on Today, in My trip, unless the address names a tab (a refresh, or a link); Today was a
+  // tab of the left panel, so an address naming it opens it there too.
+  if ((panel as string) === 'today' || (!q.has('panel') && !SHARED_TOKEN && state.plan && isTravelling(state.input, localToday()))) {
+    useRightPanel.getState().show('today')
+  }
 
   const city = q.get('city')
   const leg = Number(q.get('leg'))
@@ -47,6 +52,11 @@ export function readUrl(search = window.location.search, back = false) {
   if (city && ds.cities[city]) selected = { type: 'city', id: city }
   else if (q.has('leg') && Number.isInteger(leg) && state.plan?.legs[leg]) selected = { type: 'leg', index: leg }
   patch.selected = selected
+  // The city's or journey's tab: on it when the address names one but no tab, and only with one.
+  if (selected && !patch.panel) patch.panel = 'city'
+  const on = patch.panel ?? state.panel
+  if (on === 'city' && !selected) patch.panel = state.panelBefore
+  else if (on !== 'city') patch.panelBefore = on
 
   const tab = q.get('tab') as CityTab
   if (TABS.includes(tab)) {

@@ -3,8 +3,6 @@ import { type CostKind, type SchengenSummary, type TempBreaks } from '../planner
 import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, TEMP_KINDS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
-import { DRAWER_WIDTH } from '../ui/layout'
-import { useDrawerOverMap } from '../ui/rightPanel'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { dataset as ds } from '../data/dataset'
@@ -62,7 +60,6 @@ const COST_ABOUT: Record<CostKind, string> = {
 export function MapControls({ editing = false }: { editing?: boolean }) {
   const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
   const phone = usePhone()
-  const drawerOver = useDrawerOverMap()
   // The kind last picked in each cost group, so going back to a group returns to it.
   const [groupKind, setGroupKind] = useState<Record<string, CostKind>>({})
   const costGroup = COST_GROUPS.find((g) => g.kinds.includes(costKind))!
@@ -112,7 +109,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
   )
   if (editing) {
     return (
-      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: drawerOver ? DRAWER_WIDTH + 12 : 12 }}>
+      <div data-map-top className={`pointer-events-none absolute flex flex-col items-start ${phone ? 'top-2 right-12 left-2' : 'top-3 left-3'}`} style={phone ? undefined : { right: 12 }}>
         <div className={LEGEND_BOX}>
           {(['must', 'optional', 'excluded'] as const).map((m) => (
             <span key={m} className="flex items-center gap-1.5">
@@ -182,9 +179,9 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
     )
   }
   return (
-    // With a city or journey panel open (DRAWER_WIDTH on the right), the controls stop at its edge (their rows scroll sideways).
-    <div data-map-top className="pointer-events-none absolute top-3 left-3 flex flex-col items-start gap-2" style={{ right: drawerOver ? DRAWER_WIDTH + 12 : 12 }}>
-      <SwitchRow picked={layer} width={drawerOver}>
+    // (Their rows scroll sideways when the map is narrow.)
+    <div data-map-top className="pointer-events-none absolute top-3 right-3 left-3 flex flex-col items-start gap-2">
+      <SwitchRow picked={layer}>
         {LAYERS.map((l) => (
           <button
             key={l.value}
@@ -197,7 +194,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
         ))}
       </SwitchRow>
       {layer === 'nearby' && (
-        <SwitchRow picked={nearbyKind} width={drawerOver}>
+        <SwitchRow picked={nearbyKind}>
           {NEARBY_KINDS.map((k) => (
             <button
               key={k}
@@ -212,7 +209,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
       )}
       {layer === 'cost' && (
         <>
-        <SwitchRow picked={costGroup.label} width={drawerOver}>
+        <SwitchRow picked={costGroup.label}>
           {COST_GROUPS.map((g) => (
             <button
               key={g.label}
@@ -225,7 +222,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
           ))}
         </SwitchRow>
         {costGroup.kinds.length > 1 && (
-          <SwitchRow picked={costKind} width={drawerOver} gap>
+          <SwitchRow picked={costKind} gap>
             {costGroup.kinds.map((k) => (
               <button
                 key={k}
@@ -241,7 +238,7 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
         </>
       )}
       {(layer === 'climate' || layer === 'air') && (
-        <SwitchRow picked={layerMonth} width={drawerOver}>
+        <SwitchRow picked={layerMonth}>
           <button
             onClick={() => setLayerMonth(0)}
             aria-pressed={layerMonth === 0}
@@ -269,10 +266,9 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
 
 /**
  * A row of switch buttons over the map: one line that scrolls sideways when it doesn't fit, keeping the pressed
- * button (`aria-pressed`) in sight when `picked` changes (e.g. December, opened from a link) or when the room for
- * it does (`width`: anything that changes it, like a city panel opening).
+ * button (`aria-pressed`) in sight when `picked` changes (e.g. December, opened from a link).
  */
-function SwitchRow({ picked, width, gap, children }: { picked: unknown; width?: unknown; gap?: boolean; children: ReactNode }) {
+function SwitchRow({ picked, gap, children }: { picked: unknown; gap?: boolean; children: ReactNode }) {
   const row = useSideScroll<HTMLDivElement>()
   useEffect(() => {
     const bar = row.ref.current
@@ -282,7 +278,7 @@ function SwitchRow({ picked, width, gap, children }: { picked: unknown; width?: 
     const r = on.getBoundingClientRect()
     if (r.left < b.left) bar.scrollLeft -= b.left - r.left + 16
     else if (r.right > b.right) bar.scrollLeft += r.right - b.right + 16
-  }, [picked, width, row.ref])
+  }, [picked, row.ref])
   return (
     <div className="pointer-events-auto max-w-full rounded-lg border border-line bg-panel p-0.5 shadow-sm">
       <div ref={row.ref} style={row.mask} className={`no-scrollbar flex overflow-x-auto ${gap ? 'gap-0.5' : ''}`}>{children}</div>

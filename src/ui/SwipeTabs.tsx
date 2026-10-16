@@ -3,10 +3,10 @@ import useEmblaCarousel from 'embla-carousel-react'
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 /** Whether a drag from `el` is its own: on a field, something that scrolls sideways or takes the touch itself (a
- *  chart, a slider), up to `top`. */
+ *  chart, a slider, tabs of its own: a city's in the left panel's), up to `top`. */
 function dragTaken(el: Element | null, top: Element) {
   for (; el && el !== top; el = el.parentElement) {
-    if (el.matches('input, textarea, select, [contenteditable="true"]')) return true
+    if (el.matches('input, textarea, select, [contenteditable="true"], [data-swipe-tabs]')) return true
     const style = getComputedStyle(el)
     if (style.touchAction === 'none') return true
     if (el.scrollWidth > el.clientWidth + 1 && /auto|scroll/.test(style.overflowX)) return true
@@ -69,7 +69,7 @@ export function SwipeTabs<K extends string>({ tabs, tab, onTab, children }: {
 
   return (
     // (Clipped, not hidden: nothing inside, brought into view, can scroll it sideways.)
-    <div ref={viewport} className="min-h-0 flex-1 overflow-clip">
+    <div ref={viewport} data-swipe-tabs className="min-h-0 flex-1 overflow-clip">
       <div className="flex h-full touch-pan-y">
         {tabs.map((t, i) => (
           <div key={t} className="h-full min-w-0 shrink-0 grow-0 basis-full" inert={i !== at}>

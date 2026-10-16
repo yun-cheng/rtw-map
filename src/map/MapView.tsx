@@ -2,7 +2,7 @@ import type { FeatureCollection, Point } from 'geojson'
 import * as maplibregl from 'maplibre-gl'
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url'
 import type { ExpressionSpecification, GeoJSONSource, MapGeoJSONFeature, MapMouseEvent, Map as MlMap, PointLike } from 'maplibre-gl'
-import { useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import boundaries from '../../data/gen/boundaries.json'
 import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
@@ -10,8 +10,6 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { plannedIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
 import { useTrip } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
-import { DRAWER_WIDTH } from '../ui/layout'
-import { drawerOverMap, useDrawerOverMap } from '../ui/rightPanel'
 import { isPhone } from '../ui/usePhone'
 import { useTheme, type Theme } from '../ui/theme'
 import { initialMapView, setMapView } from '../store/url'
@@ -127,7 +125,6 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
   const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, seenPrices, picking, localNames } = useTrip()
-  const drawerOver = useDrawerOverMap()
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -470,11 +467,11 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     const { width, height } = map.getContainer().getBoundingClientRect()
     const p = map.project([c.lon, c.lat])
     const margin = 40
-    // The panel covers the right of the map, or on a phone the bottom half (its sheet opens to half).
-    const cover = isPhone() ? { right: 0, bottom: height / 2 } : { right: drawerOverMap() ? DRAWER_WIDTH : 0, bottom: 0 }
-    const visible = p.x > margin && p.x < width - cover.right - margin && p.y > margin + 80 && p.y < height - cover.bottom - margin
+    // On a phone the panel covers the bottom half of the map (its sheet opens to half).
+    const cover = isPhone() ? height / 2 : 0
+    const visible = p.x > margin && p.x < width - margin && p.y > margin + 80 && p.y < height - cover - margin
     // Centre it in the part of the map the panel doesn't cover.
-    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [-cover.right / 2, -cover.bottom / 2], duration: 700 })
+    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [0, -cover / 2], duration: 700 })
   }, [selected])
 
   // Countries pointed at in the Trip tab: shaded, and what they're part of (a country in a region's card: the region)
@@ -524,9 +521,7 @@ export function MapView({ editing = false }: { editing?: boolean }) {
 
   return (
     <>
-      {/* (--panel-cover: how much of the map's right side a city or journey panel covers; the map's buttons and credits
-          keep left of it, see index.css.) */}
-      <div ref={container} className="h-full w-full" style={{ '--panel-cover': drawerOver ? `${DRAWER_WIDTH}px` : '0px' } as CSSProperties} />
+      <div ref={container} className="h-full w-full" />
       {shown && <OffscreenCity map={shown} node={node} />}
     </>
   )
@@ -578,9 +573,8 @@ function citiesCentre(countries: string[]): [number, number] | null {
 /** How much of the map a phone's bottom sheet covers (BottomSheet sets --sheet-height on the map's parent). */
 const sheetHeight = (map: MlMap) => parseFloat(map.getContainer().parentElement?.style.getPropertyValue('--sheet-height') || '0') || 0
 
-/** What covers the map: the legend along the top, and a phone's bottom sheet or the city or journey panel at the right. */
-const coverOf = (map: MlMap) =>
-  ({ top: 40, ...(isPhone() ? { right: 0, bottom: sheetHeight(map) } : { right: drawerOverMap() ? DRAWER_WIDTH : 0, bottom: 0 }) })
+/** What covers the map: the legend along the top, and a phone's bottom sheet. */
+const coverOf = (map: MlMap) => ({ top: 40, right: 0, bottom: isPhone() ? sheetHeight(map) : 0 })
 /** From the map's middle to the middle of the part nothing covers, in pixels (a camera move's offset). */
 function uncoveredOffset(map: MlMap): [number, number] {
   const cover = coverOf(map)

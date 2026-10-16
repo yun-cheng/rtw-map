@@ -33,13 +33,11 @@ const doneLink = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] f
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
 
-/** Opens the journal, My trip's Journal tab (closing a city's or journey's panel open in its place), on its list of
- *  days, at a stop's (`focus`: its first day). */
+/** Opens the journal, My trip's Journal tab, on its list of days, at a stop's (`focus`: its first day). */
 export function useOpenJournal() {
   const setView = useJournal((s) => s.setView)
   return (focus?: string) => {
     setView({ focus })
-    useTrip.getState().select(null)
     useRightPanel.getState().setRecord('daily', null, true)
   }
 }

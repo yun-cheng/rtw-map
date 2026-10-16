@@ -2,7 +2,6 @@ import type { Map as MlMap, MapLibreEvent } from 'maplibre-gl'
 import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { useTrip } from '../store/trip'
-import { DRAWER_WIDTH } from '../ui/layout'
 import { isPhone } from '../ui/usePhone'
 
 /**
@@ -139,7 +138,7 @@ function markFor(map: MlMap, cityLon: number, lat: number, reach: number): Mark 
 
 /**
  * The part of the map nothing covers: below the controls along the top (marked `data-map-top`, see MapControls; on a
- * phone also its settings button), left of the city panel, or on a phone above its sheet and the row of dropdowns
+ * phone also its settings button), and on a phone above its sheet and the row of dropdowns
  * just above that.
  */
 function uncovered(map: MlMap, box: DOMRect): Area {
@@ -150,7 +149,7 @@ function uncovered(map: MlMap, box: DOMRect): Area {
   return {
     left: 0,
     top: Math.max(phone ? 48 : 0, ...tops),
-    right: box.width - (phone ? 0 : DRAWER_WIDTH),
+    right: box.width,
     bottom: box.height - (phone ? sheet + 48 : 0),
   }
 }
