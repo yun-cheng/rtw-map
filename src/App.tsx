@@ -132,10 +132,10 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
   const ownScroll = (t: Tab) => t === 'city' && peek && selected?.type === 'city'
   return (
     <>
-      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2 max-md:justify-between" role="tablist">
+      <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center justify-between border-b border-line px-2" role="tablist">
         {TABS.map((t) => {
-          // Each with its icon and name, as wide as that (on a phone's sheet, spread across it, the first and last at its
-          // edges).
+          // Each with its icon and name, as wide as that, spread evenly across the bar (on a phone's sheet the first and
+          // last at its edges; beside the map, with the button folding it away last).
           const Icon = tabIcon(t, selected)
           return (
             <button
@@ -152,7 +152,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
           )
         })}
         {onHide && (
-          <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="ml-auto flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
+          <button onClick={onHide} title="Hide this panel (more room for the map)" aria-label="Hide the left panel" className="flex h-7 w-7 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
             <ChevronsLeft size={16} />
           </button>
         )}

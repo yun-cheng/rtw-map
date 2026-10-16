@@ -21,8 +21,9 @@ export function MyTripPanel({ peek, onHide }: { peek?: boolean; onHide?: () => v
   const picked = useRightPanel((s) => s.tab)
   const setTab = useRightPanel((s) => s.setTab)
   const tab = tabs.includes(picked) ? picked : tabs[0]
-  // (Five don't fit a phone with their names, Today's too: then only the open one has its name.)
-  const narrow = peek && tabs.length > 4
+  // (Five, Today's too, don't fit with their names, beside the map or on a phone: then only the open one has its name,
+  // the others name themselves on hover, as a city's tabs.)
+  const narrow = tabs.length > 4
   return (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line bg-panel px-2" role="tablist" aria-label={MY_TRIP_NAME}>
@@ -31,9 +32,11 @@ export function MyTripPanel({ peek, onHide }: { peek?: boolean; onHide?: () => v
           return (
             <button
               key={t} role="tab" aria-selected={tab === t} onClick={() => setTab(t)} aria-label={MY_TRIP_LABELS[t]}
-              className={`-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              title={narrow && tab !== t && !peek ? MY_TRIP_LABELS[t] : undefined}
+              // (The one with its name as wide as that, the others sharing the rest.)
+              className={`-mb-px flex items-center justify-center gap-1.5 ${narrow && tab === t ? 'flex-none' : 'min-w-0 flex-1'} border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
-              <Icon size={peek ? 18 : 16} />
+              <Icon size={peek ? 18 : 16} className="shrink-0" />
               {(!narrow || tab === t) && MY_TRIP_LABELS[t]}
             </button>
           )
