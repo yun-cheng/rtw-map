@@ -705,7 +705,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   return (
     <div className={phone ? 'flex h-full flex-col' : 'pb-8'}>
       <div data-sheet-peek className="sticky top-0 z-10 border-b border-line bg-panel px-4 pt-3 max-md:pt-1">
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 max-md:items-center">
           <div className="min-w-0 flex-1">
             <h2 className="text-[18px] font-semibold">{city.name}</h2>
             <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{country.schengen && ' · Schengen area'}</p>
