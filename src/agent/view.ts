@@ -1,20 +1,25 @@
-// What the user is looking at in the app (the open city or journey panel, the map view), shared with the assistant
-// so questions like "is it rainy here?" or "should I stay longer?" make sense. Each item is shown as a chip above
-// the message box; the user can leave any of them out. The assistant gets a short overview of each shared item with
-// its message; for the values shown it calls get_shared_view (tools.ts), which only returns the shared items.
+// What the user is looking at in the app (the open city or journey panel, My trip, the map view), sent to the assistant
+// with each message so questions like "is it rainy here?" or "should I stay longer?" make sense; the message box's
+// Context line names them. The assistant gets a short overview of each with its message; for the values shown it calls
+// get_shared_view (tools.ts). A panel the Assistant covers for now still counts: it's what the user was looking at.
 import { dataset as ds } from '../data/dataset'
-import { likelyMonth, stayMonth, type CostKind } from '../planner'
+import { isTravelling, likelyMonth, localToday, stayMonth, type CostKind } from '../planner'
+import { useItems } from '../store/items'
+import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
+import { MY_TRIP_LABELS, MY_TRIP_TABS, useRightPanel, type MyTripTab } from '../ui/rightPanel'
+import { isPhone } from '../ui/usePhone'
 import type { ViewItem } from './shared'
 import { MONTHS, dateRange } from '../ui/format'
 import { COST_LABELS } from '../map/scales'
+import { TABS } from '../panels/cityTabs'
 
 export { viewText, type ViewItem, type ViewRef } from './shared'
 
 /** What each city tab shows (the values come from get_shared_view). */
 const TAB_SHOWS: Record<CityTab, string> = {
   overview: 'a summary of everything below and any problems',
-  notes: 'the user\'s own stays, photo albums, links and notes for the city (private: not shared with you)',
+  notes: 'the user\'s own stays, photo albums, links and notes for the city',
   transport: 'public transport, taxis and rentals in the city, and direct connections to other cities',
   weather: 'monthly highs and lows, rainy days, sunshine and air quality, with the stay months highlighted',
   holidays: 'the country\'s public holidays from 2021 to about five years ahead, a year at a time (some only in the states or provinces named), with the stay\'s arrival and departure marked and the days between highlighted (the dates aren\'t shared with you)',
@@ -24,6 +29,15 @@ const TAB_SHOWS: Record<CityTab, string> = {
   health: 'vaccines and medicines (CDC advice), tap water, health risks, healthcare, and pharmacies, clinics and the nearest hospital',
   safety: 'government travel advice, the emergency number and travel insurance',
   entry: 'the visa rule for their passport, Schengen days and entry notices',
+}
+
+/** What each sub-tab shows, by tab (the first is open until another is picked). */
+const PART_SHOWS: Partial<Record<CityTab, Record<string, string>>> = {
+  costs: {
+    daily: 'the daily cost for each budget',
+    prices: 'sample prices of stays and of food and drink',
+    paying: 'how widely cards are accepted and when cash is needed',
+  },
 }
 
 const TAB_NAMES: Record<CityTab, string> = {
@@ -39,6 +53,15 @@ const LAYER_NAMES: Record<MapLayer, { name: string; about: string }> = {
   schengen: { name: 'Schengen', about: 'which countries are in the Schengen area' },
   visa: { name: 'Visa', about: 'the visa rule for the trip’s passport in each country, from visa-free to not admitted' },
 }
+/** What each tab of My trip shows (the values come from get_shared_view). */
+const MY_TRIP_SHOWS: Record<MyTripTab, string> = {
+  today: 'where they are today, the day\'s or next journey, the weather today and tomorrow, tonight\'s stay, today\'s journal entries (private: not shared with you), this stop\'s checks and the days left',
+  stays: 'every stop\'s stays, in the trip\'s order',
+  tickets: 'every journey\'s tickets, in the trip\'s order',
+  receipts: 'the receipts of what they spent',
+  daily: 'their journal, day by day (private: not shared with you)',
+}
+const RECORD_NAMES: Partial<Record<MyTripTab, string>> = { stays: 'stay', tickets: 'ticket', receipts: 'receipt' }
 const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
 const COST_NAMES: Record<CostKind, string> = {
   day: 'daily cost for their budget', dorm: 'a night in a hostel dorm', private: 'a night in a private room', meal: 'a meal at a simple local eatery',
@@ -48,34 +71,59 @@ const COST_NAMES: Record<CostKind, string> = {
 }
 const MONTH_NAMES = MONTHS.map((_, i) => new Date(2000, i).toLocaleString('en', { month: 'long' }))
 
-/** The parts of the current view worth sharing: the open city or journey, and the map view (Route only with a plan). */
+/** The parts of the current view worth sharing: the left panel's open city or journey, My trip's open tab, and the map
+ *  view (Route only with a plan). */
 export function viewItems(): ViewItem[] {
-  const { selected, cityTab, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, plan, input } = useTrip.getState()
+  const { selected, panel, cityTab, cityPart, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, plan, input } = useTrip.getState()
   const items: ViewItem[] = []
 
-  if (selected?.type === 'city' && ds.cities[selected.id]) {
-    const c = ds.cities[selected.id]
+  // The left panel's City tab (a city or journey stays picked while it's on another tab, out of sight then; its other
+  // tabs show the trip, which the assistant has).
+  const open = panel === 'city' ? selected : null
+  if (open?.type === 'city' && ds.cities[open.id]) {
+    const c = ds.cities[open.id]
     const country = ds.countries[c.iso2]?.name ?? c.iso2
     const i = plan?.stops.findIndex((s) => s.cityId === c.id) ?? -1
     const stop = i >= 0 ? plan!.stops[i] : null
     const where = stop
       ? `It is stop ${i + 1} of the trip: ${dateRange(stop.arrive, stop.depart)}, ${stop.nights} nights (mostly ${MONTH_NAMES[stayMonth(stop) - 1]}).`
       : `It is not in the trip; if added, they'd likely be there around ${MONTH_NAMES[likelyMonth(ds, plan, input, c.id) - 1]}.`
+    const parts = TABS.find((t) => t.key === cityTab)?.parts
+    const part = parts && (parts.find((p) => p.key === cityPart[cityTab]) ?? parts[0])
+    const shows = (part && PART_SHOWS[cityTab]?.[part.key]) ?? TAB_SHOWS[cityTab]
     items.push({
-      key: `city:${c.id}:${cityTab}`,
-      ref: { kind: 'city', id: c.id, tab: cityTab },
-      label: `${c.name} · ${TAB_NAMES[cityTab]}`,
-      text: `The details panel of ${c.name}, ${country} (id ${c.id}) is open on its ${TAB_NAMES[cityTab]} tab, showing ${TAB_SHOWS[cityTab]}. ${where}`,
+      key: `city:${c.id}:${cityTab}:${part?.key ?? ''}`,
+      ref: { kind: 'city', id: c.id, tab: cityTab, ...(part && { part: part.key }) },
+      label: `${c.name} · ${TAB_NAMES[cityTab]}${part ? ` · ${part.label}` : ''}`,
+      text: `The details panel of ${c.name}, ${country} (id ${c.id}) is open on its ${TAB_NAMES[cityTab]} tab${part ? `, ${part.label}` : ''}, showing ${shows}. ${where}`,
     })
-  } else if (selected?.type === 'leg' && plan?.legs[selected.index]) {
-    const leg = plan.legs[selected.index]
+  } else if (open?.type === 'leg' && plan?.legs[open.index]) {
+    const leg = plan.legs[open.index]
     const from = ds.cities[leg.from]?.name ?? leg.from
     const to = ds.cities[leg.to]?.name ?? leg.to
     items.push({
       key: `leg:${leg.from}:${leg.to}`,
-      ref: { kind: 'journey', from: leg.from, to: leg.to, index: selected.index },
+      ref: { kind: 'journey', from: leg.from, to: leg.to, index: open.index },
       label: `${from} → ${to}`,
-      text: `The panel for the journey from ${from} to ${to} (between stops ${selected.index + 1} and ${selected.index + 2}) is open, showing each part of the journey with its mode, time, price and whether it's estimated.`,
+      text: `The panel for the journey from ${from} to ${to} (between stops ${open.index + 1} and ${open.index + 2}) is open, showing each part of the journey with its mode, time, price and whether it's estimated.`,
+    })
+  }
+
+  // My trip, open beside the map or in its sheet (not on a shared trip's page: it's its owner's).
+  const right = useRightPanel.getState()
+  if (plan && !SHARED_TOKEN && (isPhone() ? right.sheet : right.open)) {
+    const tabs = isTravelling(input, localToday()) ? MY_TRIP_TABS : MY_TRIP_TABS.slice(1)
+    const tab = tabs.includes(right.tab) ? right.tab : tabs[0]
+    const { books, key } = useItems.getState()
+    const id = right.records[tab]
+    const record = id ? books[key]?.entries[id] : undefined
+    const kind = RECORD_NAMES[tab]
+    const on = record && kind ? `, on the ${kind} "${record.title || 'untitled'}" (id ${record.id})` : right.adding[tab] && kind ? `, writing a new ${kind}` : ''
+    items.push({
+      key: `mytrip:${tab}:${record?.id ?? ''}`,
+      ref: { kind: 'mytrip', tab, ...(record && { record: record.id }) },
+      label: `My trip · ${MY_TRIP_LABELS[tab]}${record?.title ? ` · ${record.title}` : ''}`,
+      text: `My trip is open on its ${MY_TRIP_LABELS[tab]} tab${on}, showing ${MY_TRIP_SHOWS[tab]}.`,
     })
   }
 

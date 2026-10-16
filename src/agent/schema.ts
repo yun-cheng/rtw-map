@@ -164,8 +164,8 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_shared_view',
-    description: 'The values shown in the parts of the app the user shared with their latest message (listed after the trip): an open city tab, an open journey, or the map view (its value for each stop). Prices in EUR, temperatures in °C.',
-    parametersJsonSchema: obj({ item: { type: 'string', enum: ['city', 'journey', 'map'], description: 'Only this item; default: all shared items' } }),
+    description: 'The values shown in the parts of the app the user was looking at with their latest message (listed after the trip): an open city tab, an open journey, My trip\'s open tab (stays, tickets, receipts or today), or the map view (its value for each stop). Prices in EUR, temperatures in °C.',
+    parametersJsonSchema: obj({ item: { type: 'string', enum: ['city', 'journey', 'mytrip', 'map'], description: 'Only this item; default: all of them' } }),
   },
   {
     name: 'compare_cities',

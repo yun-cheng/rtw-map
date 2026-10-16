@@ -7,9 +7,12 @@ import { MEDIA_LIMITS, type Attachment } from '../agent/media'
 import { askToNotify, useNotify } from '../agent/notify'
 import { PHOTO_ASK_MS, usePhotoAsk } from '../agent/photoAsk'
 import { viewItems, type ViewItem } from '../agent/view'
+import { useAllItems } from '../store/items'
 import { switchChat } from '../store/saved'
 import { useTrip } from '../store/trip'
+import { HoverTip, type Tip } from '../ui/HoverTip'
 import { Button } from '../ui/kit'
+import { useRightPanel } from '../ui/rightPanel'
 import { useOnline } from '../ui/useOnline'
 import { usePhone } from '../ui/usePhone'
 import { useTheme } from '../ui/theme'
@@ -356,9 +359,7 @@ function Chat({ peek, controls }: BarProps) {
   const [draft, setDraft] = useState('')
   const list = useRef<HTMLDivElement>(null)
   const view = useViewItems()
-  // Items the user chose not to share; keyed by item, so something newly opened is shared again.
-  const [hidden, setHidden] = useState<Set<string>>(() => new Set())
-  const shared = view.filter((v) => !hidden.has(v.key))
+  const [viewTip, setViewTip] = useState<Tip | null>(null)
   // Undo is offered for the latest reply that changed the trip (undoing older ones would also undo what came after);
   // on a read-only trip, only for one that changed just My visit; not in a chat set aside and opened again (its
   // replies keep no trip from before, chat.ts setAside).
@@ -411,7 +412,7 @@ function Chat({ peek, controls }: BarProps) {
       const left = ask.files.length - files.length
       if (failed) setAttachError(failed)
       else if (left > 0) setAttachError(`A message takes ${MEDIA_LIMITS.files} files at most: ${left} more not sent. Attach ${left === 1 ? 'it' : 'them'} (+) to your next message.`)
-      if (media.length && !failed && !useChat.getState().busy && !outOfAllowance && online) void send(ask.text, shared, { media })
+      if (media.length && !failed && !useChat.getState().busy && !outOfAllowance && online) void send(ask.text, view, { media })
       else {
         setDraft(ask.text)
         setAttached((list) => [...list, ...media])
@@ -430,7 +431,7 @@ function Chat({ peek, controls }: BarProps) {
     setDraft('')
     setAttached([])
     setAttachError(null)
-    void send(text.trim() || (files.length > 1 ? 'See the attached files.' : 'See the attached file.'), shared, { media: files })
+    void send(text.trim() || (files.length > 1 ? 'See the attached files.' : 'See the attached file.'), view, { media: files })
   }
 
   return (
@@ -489,8 +490,8 @@ function Chat({ peek, controls }: BarProps) {
                 <AssistantMessage
                   key={i} msg={m} index={i} canUndo={i === lastChange}
                   {...(i === messages.length - 1 && !busy && !outOfAllowance && {
-                    onChoose: (text: string) => void send(text, shared, { think: m.think }),
-                    onRetry: () => void retry(i, shared),
+                    onChoose: (text: string) => void send(text, view, { think: m.think }),
+                    onRetry: () => void retry(i, view),
                   })}
                 />
               ),
@@ -518,17 +519,6 @@ function Chat({ peek, controls }: BarProps) {
               : <>You've used today's assistant allowance. More at {resetTime(usage.resetsAt)}. You can still edit the trip by hand.</>}
           </p>
         )}
-        {view.length > 0 && (
-          <ViewChips
-            items={view}
-            hidden={hidden}
-            toggle={(key) => setHidden((h) => {
-              const next = new Set(h)
-              if (!next.delete(key)) next.add(key)
-              return next
-            })}
-          />
-        )}
         {!online && <p className="mb-1.5 text-[12px] text-muted">You're offline: the assistant needs a connection.</p>}
         {(attached.length > 0 || uploading > 0) && (
           <div className="mb-1.5">
@@ -543,6 +533,17 @@ function Chat({ peek, controls }: BarProps) {
         {newChatError && <p className="mb-1.5 text-[12px] text-danger">{newChatError}</p>}
         {/* (Enter sends; so does the arrow at the bottom right, there once something is written or attached.) */}
         <div className="rounded-md border border-line bg-panel focus-within:border-accent">
+        {/* (What's on screen, sent with each message: shown only while developing, what the assistant gets on hover.) */}
+        {import.meta.env.DEV && view.length > 0 && (
+          <p
+            onMouseEnter={(e) => setViewTip({ content: { lines: view.map((v) => v.text) }, rect: e.currentTarget.getBoundingClientRect() })}
+            onMouseLeave={() => setViewTip(null)}
+            className="w-fit max-w-full truncate px-2.5 pt-1.5 text-[11px] text-muted"
+          >
+            {view.map((v) => v.label).join(', ')}
+          </p>
+        )}
+        <HoverTip tip={viewTip} />
         <textarea
           data-assistant-input
           value={draft}
@@ -637,40 +638,27 @@ function AttachmentChip({ file, onRemove }: { file: Attachment; onRemove?: () =>
   )
 }
 
-/** The parts of the current view (open city or journey, map view) that can be shared; updates as the view changes. */
+/** What the user is looking at (the open city or journey, My trip's tab, the map view), sent with each message;
+ *  updates as the view changes. */
 function useViewItems(): ViewItem[] {
   // Re-render on the parts of the state the items are built from.
   useTrip((s) => s.selected)
+  useTrip((s) => s.panel)
   useTrip((s) => s.cityTab)
+  useTrip((s) => s.cityPart)
+  useTrip((s) => s.costKind)
   useTrip((s) => s.layer)
   useTrip((s) => s.layerMonth)
   useTrip((s) => s.nearbyKind)
   useTrip((s) => s.weatherBy)
   useTrip((s) => s.routeBy)
   useTrip((s) => s.plan)
+  useRightPanel((s) => s.open)
+  useRightPanel((s) => s.sheet)
+  useRightPanel((s) => s.tab)
+  useRightPanel((s) => s.records)
+  useRightPanel((s) => s.adding)
+  useAllItems()
+  usePhone()
   return viewItems()
-}
-
-/** What will be shared with the next message; each chip can be left out (and added back). */
-function ViewChips({ items, hidden, toggle }: { items: ViewItem[]; hidden: Set<string>; toggle: (key: string) => void }) {
-  return (
-    <div className="mb-1.5 flex flex-wrap items-center gap-1.5 text-[11px]">
-      <span className="text-muted" title="What you're looking at, sent with your next message so the assistant knows what &quot;here&quot; or &quot;this city&quot; means">Context:</span>
-      {items.map((v) => {
-        const off = hidden.has(v.key)
-        return (
-          <button
-            key={v.key}
-            onClick={() => toggle(v.key)}
-            title={off ? 'Not shared: click to share it with your next message' : 'Click to leave this out of your next message'}
-            aria-pressed={!off}
-            className={`flex items-center gap-1 rounded-full border px-2 py-0.5 ${off ? 'border-dashed border-muted/50 text-muted' : 'border-accent bg-accent-soft text-ink'}`}
-          >
-            <span aria-hidden className={`w-2.5 text-center font-semibold ${off ? '' : 'text-accent'}`}>{off ? '+' : '✓'}</span>
-            {v.label}
-          </button>
-        )
-      })}
-    </div>
-  )
 }

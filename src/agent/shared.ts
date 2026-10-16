@@ -5,15 +5,18 @@ import type { CityTab, MapLayer, NearbyKind } from '../store/trip'
 
 /** What a view item points at, for get_shared_view. */
 export type ViewRef =
-  | { kind: 'city'; id: string; tab: CityTab }
+  /** `part`: the tab's sub-tab, on one that has them (Costs: daily, prices, paying). */
+  | { kind: 'city'; id: string; tab: CityTab; part?: string }
   | { kind: 'journey'; from: string; to: string; index: number }
   | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; costKind?: CostKind; weatherBy?: 'high' | 'low' }
+  /** My trip, on a tab; `record`: the stay, ticket or receipt open on it. */
+  | { kind: 'mytrip'; tab: 'today' | 'stays' | 'tickets' | 'receipts' | 'daily'; record?: string }
 
 export type ViewItem = {
-  /** Changes when the view changes, so a chip the user removed comes back for something new. */
+  /** Tells it apart from the others (and changes when what it shows does). */
   key: string
   ref: ViewRef
-  /** Short text for the chip. */
+  /** Short text for the message box's Context line. */
   label: string
   /** The overview the assistant gets: what is open and what it shows. */
   text: string

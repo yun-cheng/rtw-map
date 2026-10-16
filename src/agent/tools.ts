@@ -800,7 +800,7 @@ function routeTool(args: Args): ToolResult {
 /** Which parts of get_city_info each tab of the city panel shows. */
 const TAB_FIELDS: Record<CityTab, string[] | null> = {
   overview: null, // a summary of everything
-  notes: [], // the user's own notes, which the assistant doesn't see
+  notes: [], // the user's own (get_visit)
   transport: ['public_transport', 'taxi_apps', 'connections'],
   weather: ['weather', 'air_quality'],
   holidays: [], // loaded with the tab, not in get_city_info
@@ -812,17 +812,24 @@ const TAB_FIELDS: Record<CityTab, string[] | null> = {
   entry: ['schengen', 'visa'],
 }
 
+/** Which of them each sub-tab shows, on a tab that has them (panels/cityTabs.ts). */
+const PART_FIELDS: Partial<Record<CityTab, Record<string, string[]>>> = {
+  costs: { daily: ['currency', 'daily_cost_eur'], prices: ['currency', 'prices_eur'], paying: ['currency', 'cards'] },
+}
+
 /** The values on screen for one shared item. */
 function viewDetails(ref: ViewRef): ToolResult {
   const { plan, input } = trip()
   if (ref.kind === 'city') {
+    if (ref.tab === 'notes') return { open: `${cityName(ref.id)} details, My visit tab`, ...visit({ city: ref.id }) }
     const info = cityInfo({ city: ref.id })
-    const fields = TAB_FIELDS[ref.tab]
+    const fields = (ref.part && PART_FIELDS[ref.tab]?.[ref.part]) || TAB_FIELDS[ref.tab]
     return {
-      open: `${info.name} details, ${ref.tab} tab`,
+      open: `${info.name} details, ${ref.tab} tab${ref.part ? `, ${ref.part}` : ''}`,
       ...(fields ? { name: info.name, country: info.country, in_itinerary: info.in_itinerary, ...Object.fromEntries(fields.map((f) => [f, f === 'phrases' ? phrasesView(ref.id) : info[f]])) } : info),
     }
   }
+  if (ref.kind === 'mytrip') return myTripView(ref)
   if (ref.kind === 'journey') {
     const i = plan?.legs.findIndex((l) => l.from === ref.from && l.to === ref.to) ?? -1
     const leg = i >= 0 ? plan!.legs[i] : null
@@ -874,6 +881,23 @@ function viewDetails(ref: ViewRef): ToolResult {
       ...(ref.layer === 'none' ? { arrive: s.arrive, nights: s.nights, ...arrival(i) } : value(s.cityId)),
     })),
   }
+}
+
+/** What My trip's open tab shows: the open record, or the tab's records; on Today, today's place and what's kept for it. */
+function myTripView(ref: Extract<ViewRef, { kind: 'mytrip' }>): ToolResult {
+  const open = `My trip, ${ref.tab === 'daily' ? 'journal' : ref.tab} tab`
+  if (ref.tab === 'daily') return { open, note: 'The journal is private: not shared with you.' }
+  const { plan, input } = trip()
+  if (ref.tab === 'today') {
+    const today = localToday()
+    if (!plan || !isTravelling(input, today)) return { open, note: 'The trip isn\'t under way.' }
+    const { day, of, at } = travelDay(input, plan.stops, today)
+    const city = at !== null ? plan.stops[at].cityId : null
+    return { open, today, day, of, ...(city && { at: cityName(city), ...visit({ city }) }) }
+  }
+  const kind = ({ stays: 'stay', tickets: 'ticket', receipts: 'receipt' } as const)[ref.tab]
+  const items = ((visit({}).items ?? []) as { id: string; kind: string }[]).filter((i) => (ref.record ? i.id === ref.record : i.kind === kind))
+  return { open: ref.record ? `${open}, one ${kind}` : open, items }
 }
 
 function sharedViewTool(args: Args): ToolResult {

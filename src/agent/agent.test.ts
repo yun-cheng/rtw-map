@@ -5,6 +5,7 @@ import { draftStops, testCaseInput } from '../data/testCase'
 import { useTrip } from '../store/trip'
 import { TOOLS, WRITE_TOOLS } from './schema'
 import { bindTrip, changeList, describeChanges, planChanges, describeItemChanges, itemsBefore, itemsHandle, runTool, snapshot, toolContext, tripContext, withTrip } from './tools'
+import { useRightPanel } from '../ui/rightPanel'
 import { viewItems, viewText } from './view'
 
 const stopIds = () => useTrip.getState().stops.map((s) => s.cityId)
@@ -427,7 +428,7 @@ describe('chat endpoint checks', () => {
 describe('what the user is looking at', () => {
   it('describes the open city with its tab and stay, and the map view', () => {
     const krakow = useTrip.getState().plan!.stops.findIndex((s) => s.cityId === 'krakow')
-    useTrip.setState({ selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
+    useTrip.setState({ panel: 'city', selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
     const items = viewItems()
     expect(items.map((v) => v.label)).toEqual(['Kraków · Weather', 'Weather map · trip dates'])
     expect(items[0].text).toContain(`stop ${krakow + 1} of the trip`)
@@ -436,7 +437,7 @@ describe('what the user is looking at', () => {
   })
 
   it('names a city off the route, a journey, a chosen month, and the Route map (only with a plan)', () => {
-    useTrip.setState({ selected: { type: 'city', id: 'atlantis' }, layer: 'none' })
+    useTrip.setState({ panel: 'city', selected: { type: 'city', id: 'atlantis' }, layer: 'none' })
     expect(viewItems().map((v) => v.label)).toEqual(['Route map'])
     const plan = useTrip.getState().plan
     useTrip.setState({ plan: null })
@@ -444,18 +445,29 @@ describe('what the user is looking at', () => {
     useTrip.setState({ plan })
     expect(viewText([])).toBe('')
     const off = Object.keys(ds.cities).find((id) => !useTrip.getState().stops.some((s) => s.cityId === id))!
-    useTrip.setState({ selected: { type: 'city', id: off }, cityTab: 'costs', layer: 'air', layerMonth: 7 })
+    useTrip.setState({ panel: 'city', selected: { type: 'city', id: off }, cityTab: 'costs', layer: 'air', layerMonth: 7 })
     const [city, map] = viewItems()
     expect(city.text).toContain('not in the trip')
+    expect(city.label).toBe(`${ds.cities[off].name} · Costs · Daily cost`)
     expect(map.label).toBe('Air map · Jul')
-    useTrip.setState({ selected: { type: 'leg', index: 0 }, layer: 'none' })
+    useTrip.setState({ panel: 'city', selected: { type: 'leg', index: 0 }, layer: 'none' })
     expect(viewItems()[0].label).toMatch(/ → /)
+  })
+
+  it('leaves out a city picked while the left panel is on another tab, and names My trip\'s open tab', () => {
+    useTrip.setState({ panel: 'itinerary', selected: { type: 'city', id: 'krakow' }, layer: 'none' })
+    expect(viewItems().map((v) => v.label)).toEqual(['Route map'])
+    useRightPanel.setState({ open: true, tab: 'tickets', records: {}, adding: {} })
+    const [mine] = viewItems()
+    expect(mine).toMatchObject({ label: 'My trip · Tickets', ref: { kind: 'mytrip', tab: 'tickets' } })
+    useRightPanel.setState({ open: false })
+    expect(viewItems().map((v) => v.label)).toEqual(['Route map'])
   })
 })
 
 describe('get_shared_view', () => {
   it('returns the values on the shared city tab and the map, and only what was shared', () => {
-    useTrip.setState({ selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
+    useTrip.setState({ panel: 'city', selected: { type: 'city', id: 'krakow' }, cityTab: 'weather', layer: 'climate', layerMonth: 0 })
     const [city, map] = viewItems()
     bindTrip(useTrip, [city, map])
     const both = runTool('get_shared_view', {}).result.items as Record<string, unknown>[]
@@ -465,7 +477,14 @@ describe('get_shared_view', () => {
     expect(stops).toHaveLength(useTrip.getState().stops.length)
     expect(stops[0]).toMatchObject({ stop: 1, high_c: expect.any(Number), rainy_share_pct: expect.any(Number) })
 
-    // The user left the map out: the assistant can't read it.
+    // A sub-tab: only what it shows.
+    useTrip.setState({ cityTab: 'costs', cityPart: { costs: 'paying' } })
+    bindTrip(useTrip, viewItems())
+    const [paying] = runTool('get_shared_view', { item: 'city' }).result.items as Record<string, unknown>[]
+    expect(paying).toMatchObject({ open: 'Kraków details, costs tab, paying', cards: expect.anything() })
+    expect(paying).not.toHaveProperty('prices_eur')
+
+    // What wasn't sent: the assistant can't read it.
     bindTrip(useTrip, [city])
     expect(runTool('get_shared_view', { item: 'map' }).result.error).toMatch(/didn't share/)
     bindTrip(useTrip, [])
@@ -480,8 +499,23 @@ describe('get_shared_view', () => {
     expect(map.stops[1]).toHaveProperty('travel_in.modes')
   })
 
+  it('returns My trip\'s open tab: its records, or the one open, but not the journal', () => {
+    const items = itemsHandle({})
+    const mine = (ref: Record<string, unknown>) => [{ key: 'mytrip', ref, label: '', text: '' }] as unknown as ReturnType<typeof viewItems>
+    const run = (ref: Record<string, unknown>, name: string, args: Record<string, unknown> = {}) => withTrip(toolContext(useTrip, mine(ref), false, items), () => runTool(name, args))
+    run({}, 'save_visit_item', { kind: 'stay', city: 'Kraków', title: 'Hostel Mleczarnia' })
+    run({}, 'save_visit_item', { kind: 'receipt', city: 'Kraków', title: 'Pierogi', day: '2026-05-05', amount: 30, currency: 'PLN' })
+    const stays = run({ kind: 'mytrip', tab: 'stays' }, 'get_shared_view').result.items as { items: { id: string; kind: string }[] }[]
+    expect(stays[0].items.map((i) => i.kind)).toEqual(['stay'])
+    const id = stays[0].items[0].id
+    const one = run({ kind: 'mytrip', tab: 'stays', record: id }, 'get_shared_view').result.items as { open: string; items: { id: string }[] }[]
+    expect(one[0]).toMatchObject({ open: 'My trip, stays tab, one stay', items: [{ id }] })
+    const journal = run({ kind: 'mytrip', tab: 'daily' }, 'get_shared_view').result.items as { note: string }[]
+    expect(journal[0].note).toMatch(/private/)
+  })
+
   it('returns each part of an open journey', () => {
-    useTrip.setState({ selected: { type: 'leg', index: 0 }, layer: 'none' })
+    useTrip.setState({ panel: 'city', selected: { type: 'leg', index: 0 }, layer: 'none' })
     bindTrip(useTrip, viewItems())
     const [journey] = runTool('get_shared_view', { item: 'journey' }).result.items as Record<string, unknown>[]
     expect(journey.open).toMatch(/^Journey /)
