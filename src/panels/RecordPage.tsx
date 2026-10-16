@@ -4,12 +4,12 @@ import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { PublicMark } from '../ui/PublicToggle'
-import { Section } from '../ui/kit'
+import { Section, Sections } from '../ui/kit'
 
-/** The way back to the list (`back`: "All days"), and to the records before (`prev`) and after (`next`) it there;
- *  brought into view when it opens (`at`: the record shown). */
+/** The way back to the list (`back`: "All days"), and to the records before (`prev`) and after (`next`) it there
+ *  (none for a new one: no `onGo`); brought into view when it opens (`at`: the record shown). */
 export function RecordNav({ back, onBack, prev, next, onGo, prevLabel, nextLabel, at }: {
-  back: string; onBack: () => void; prev?: string; next?: string; onGo: (id: string) => void; prevLabel: string; nextLabel: string; at: string
+  back: string; onBack: () => void; prev?: string; next?: string; onGo?: (id: string) => void; prevLabel?: string; nextLabel?: string; at: string
 }) {
   const ref = useRef<HTMLDivElement>(null)
   // (Braces: in newer browsers it returns a promise, and an effect must return nothing but a clean-up.)
@@ -21,10 +21,10 @@ export function RecordNav({ back, onBack, prev, next, onGo, prevLabel, nextLabel
     <div ref={ref} className="flex scroll-mt-3 items-center justify-between">
       {/* (A way back, plain: not a tag's or an action's colour.) */}
       <button onClick={onBack} className="-ml-1 flex items-center gap-0.5 rounded-md px-1 py-0.5 text-[12px] text-muted hover:text-ink"><ChevronLeft size={14} /> {back}</button>
-      <span className="flex items-center gap-0.5">
+      {onGo && <span className="flex items-center gap-0.5">
         <button onClick={() => prev && onGo(prev)} disabled={!prev} aria-label={prevLabel} title={prevLabel} className={step}><ChevronLeft size={16} /></button>
         <button onClick={() => next && onGo(next)} disabled={!next} aria-label={nextLabel} title={nextLabel} className={step}><ChevronRight size={16} /></button>
-      </span>
+      </span>}
     </div>
   )
 }
@@ -40,6 +40,17 @@ export function RecordCard({ title, isPublic, editing, onEdit, children }: { tit
     >
       {children}
     </Section>
+  )
+}
+
+/** A new record on a page of its own, as it's written (`title`: "New stay"; its Done in its editor, or `aside`), and
+ *  the way back to the list. */
+export function NewRecord({ back, onBack, title, aside, children }: { back: string; onBack: () => void; title: ReactNode; aside?: ReactNode; children: ReactNode }) {
+  return (
+    <Sections>
+      <RecordNav back={back} onBack={onBack} at="new" />
+      <Section title={<span className="font-normal text-muted">{title}</span>} aside={aside}>{children}</Section>
+    </Sections>
   )
 }
 

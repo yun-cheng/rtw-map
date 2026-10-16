@@ -19,7 +19,7 @@ import { useRightPanel } from '../ui/rightPanel'
 import { nightStop } from './Journal'
 import { PhotoFill } from './PhotoFill'
 import { ReceiptFor } from './ReceiptLinks'
-import { RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
+import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { EditorButtons, field, small } from './Visit'
 
 /** Units of a currency per EUR (undefined: no rate). */
@@ -38,16 +38,25 @@ export function Receipts() {
   const { fmt } = useMoney()
   const open = useRightPanel((s) => s.records.receipts)
   const setRecord = useRightPanel((s) => s.setRecord)
-  // A new one, at the top while it's written (not under its day).
-  const [adding, setAdding] = useState<string | null>(null)
+  // A new one, written on a page of its own until it's done.
+  const adding = useRightPanel((s) => s.adding.receipts) ?? null
+  const setAdding = (id: string | null) => useRightPanel.getState().setAdding('receipts', id)
   if (!plan) return null
   const receipts = Object.values(items).filter((i) => i.kind === 'receipt' && !i.deleted)
   const kept = receipts.filter((r) => !isEmptyItem(r))
-  const listed = receipts.filter((r) => r.id !== adding)
   // (By day, the newest first; those without a day last.)
-  const days = [...new Set(listed.map((r) => r.from ?? ''))].sort((a, b) => (!a ? 1 : !b ? -1 : b.localeCompare(a)))
+  const days = [...new Set(receipts.map((r) => r.from ?? ''))].sort((a, b) => (!a ? 1 : !b ? -1 : b.localeCompare(a)))
   const unrated = receipts.filter((r) => r.amount !== undefined && !rateOf(r.currency)).length
-  const byDay = (d: string) => listed.filter((r) => (r.from ?? '') === d).sort((a, b) => a.updatedAt - b.updatedAt)
+  const byDay = (d: string) => receipts.filter((r) => (r.from ?? '') === d).sort((a, b) => a.updatedAt - b.updatedAt)
+  if (adding !== null) {
+    // (Done: its page, once something is written in it.)
+    const done = () => {
+      const receipt = items[adding]
+      setAdding(null)
+      if (receipt && !receipt.deleted && !isEmptyItem(receipt)) setRecord('receipts', adding)
+    }
+    return <NewRecord back="All receipts" onBack={() => setAdding(null)} title="New receipt"><ReceiptEditor id={adding} onDone={done} autoFocus /></NewRecord>
+  }
   const page = open ? items[open] : undefined
   if (page && !page.deleted && page.kind === 'receipt') {
     // (The list's order, for a page's receipts before and after it.)
@@ -58,17 +67,14 @@ export function Receipts() {
     <Sections>
       <Section
         title={kept.length ? 'Spent so far' : 'No receipts yet'}
-        aside={adding === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setAdding(newItemId('receipt'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+        aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setAdding(newItemId('receipt'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {/* (Just its title while there are none.) */}
-        {(kept.length > 0 || adding !== null) && <>
-          {kept.length > 0 && <>
-            <div className="text-[20px] font-semibold">{fmt(totalEur(kept))}</div>
-            <p className="text-[12px] text-muted">
-              {kept.length} receipt{kept.length === 1 ? '' : 's'}, at today's rates{unrated > 0 && ` (${unrated} in money without a rate left out)`}
-            </p>
-          </>}
-          {adding !== null && <div className={kept.length ? 'mt-2' : ''}><ReceiptEditor id={adding} onDone={() => setAdding(null)} autoFocus /></div>}
+        {kept.length > 0 && <>
+          <div className="text-[20px] font-semibold">{fmt(totalEur(kept))}</div>
+          <p className="text-[12px] text-muted">
+            {kept.length} receipt{kept.length === 1 ? '' : 's'}, at today's rates{unrated > 0 && ` (${unrated} in money without a rate left out)`}
+          </p>
         </>}
       </Section>
       {days.map((d) => {

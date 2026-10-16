@@ -18,7 +18,7 @@ import { external, host } from '../ui/links'
 import { useRightPanel } from '../ui/rightPanel'
 import { PhotoFill } from './PhotoFill'
 import { PaidFor } from './ReceiptLinks'
-import { RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
+import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { EditorButtons, field, small, UrlInput } from './Visit'
 
 const MODES: Record<TicketMode, string> = { flight: 'Flight', train: 'Train', bus: 'Bus', ferry: 'Ferry', other: 'Other' }
@@ -50,10 +50,9 @@ function when(t: TripItem) {
 
 /** A journey's tickets (`at` its `legKey(from, to)`), each to open and change, and one to add (leaving on `date`);
  *  `hideEmpty`: nothing without any (on Today); `brief`: one journey of many in My trip (added to from its top), only
- *  its title without any;
- *  `hidden`: one not to show (being added in My trip); `onOpen`: in My trip, each a row opening its page (TicketPage). */
-export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' : 'My tickets', brief, hidden, onOpen }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; hidden?: string; onOpen?: (id: string) => void }) {
-  const tickets = useItemsAt(at, 'ticket').filter((t) => t.id !== hidden).sort(byDeparture)
+ *  its title without any; `onOpen`: in My trip, each a row opening its page (TicketPage). */
+export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' : 'My tickets', brief, onOpen }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; onOpen?: (id: string) => void }) {
+  const tickets = [...useItemsAt(at, 'ticket')].sort(byDeparture)
   const [editing, setEditing] = useState<string | null>(null)
   // (A shared trip's page: only those there are, read-only.)
   if ((SHARED_TOKEN || hideEmpty) && !tickets.length) return null
@@ -227,10 +226,11 @@ export function AllTickets() {
   const items = useAllItems()
   const open = useRightPanel((s) => s.records.tickets)
   const setRecord = useRightPanel((s) => s.setRecord)
-  // A new one, written at the top until it's done (not under its journey).
-  const [adding, setAdding] = useState<string | null>(null)
+  // A new one, written on a page of its own until it's done.
+  const adding = useRightPanel((s) => s.adding.tickets) ?? null
+  const setAdding = (id: string | null) => useRightPanel.getState().setAdding('tickets', id)
   if (!plan) return null
-  const tickets = Object.values(items).filter((i) => i.kind === 'ticket' && !isEmptyItem(i) && i.id !== adding)
+  const tickets = Object.values(items).filter((i) => i.kind === 'ticket' && !isEmptyItem(i))
   const legs = plan.legs.map((l, index) => ({ at: legKey(l.from, l.to), index, date: plan.stops[index].depart }))
   const booked = legs.filter((l) => tickets.some((t) => t.at === l.at))
   const others = [...new Set(tickets.map((t) => t.at).filter((at) => !legs.some((l) => l.at === at)))]
@@ -239,6 +239,19 @@ export function AllTickets() {
   const ids = [...booked.map((l) => l.at), ...others]
     .flatMap((at) => tickets.filter((t) => t.at === at).sort(byDeparture)).map((t) => t.id)
     .filter((id, i, all) => all.indexOf(id) === i)
+  if (adding !== null) {
+    // (Done: its page, once something is written in it.)
+    const done = () => {
+      const ticket = items[adding]
+      setAdding(null)
+      if (ticket && !ticket.deleted && !isEmptyItem(ticket)) setRecord('tickets', adding)
+    }
+    return (
+      <NewRecord back="All tickets" onBack={() => setAdding(null)} title="New ticket">
+        <NewTicket id={adding} legs={legs} first={legs.find((l) => l.date >= today) ?? legs[0] ?? NO_LEG} onDone={done} />
+      </NewRecord>
+    )
+  }
   const page = open ? items[open] : undefined
   if (page && !page.deleted && page.kind === 'ticket') {
     const leg = legs.find((l) => l.at === page.at)
@@ -249,21 +262,17 @@ export function AllTickets() {
     <Sections>
       <Section
         title={tickets.length ? `${tickets.length} ticket${tickets.length === 1 ? '' : 's'} for ${booked.length} of ${legs.length} journeys` : 'No tickets yet'}
-        aside={adding === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="ticket" className={small} /><button onClick={() => setAdding(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
-      >
-        {adding !== null
-          ? <NewTicket id={adding} legs={legs} first={legs.find((l) => l.date >= today) ?? legs[0] ?? NO_LEG} onDone={() => setAdding(null)} />
-          : null}
-      </Section>
+        aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="ticket" className={small} /><button onClick={() => setAdding(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+      >{null}</Section>
       {booked.map((l) => (
         <Tickets
-          key={`${l.index}${l.at}`} at={l.at} date={l.date} brief hidden={adding ?? undefined} onOpen={onOpen}
+          key={`${l.index}${l.at}`} at={l.at} date={l.date} brief onOpen={onOpen}
           title={<button onClick={() => select({ type: 'leg', index: l.index })} className="text-left hover:underline">{journeyName(l.at)} <span className="font-normal text-muted">· {shortDate(l.date)}</span></button>}
         />
       ))}
       {others.map((at) => (
         <Tickets
-          key={at} at={at} brief hidden={adding ?? undefined} onOpen={onOpen}
+          key={at} at={at} brief onOpen={onOpen}
           title={at === NO_PLACE ? null : <>{journeyName(at)} <span className="font-normal text-muted">· not in this plan</span></>}
         />
       ))}

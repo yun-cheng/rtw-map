@@ -23,7 +23,7 @@ import { NoteBox } from './Notes'
 import { PhotoFill } from './PhotoFill'
 import { PostPreview } from './PostPreview'
 import { PaidFor } from './ReceiptLinks'
-import { RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
+import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { socialPost } from './socialPost'
 
 /** Whether a stay is for a stop's visit (one without dates is for every visit). */
@@ -339,13 +339,14 @@ export function AllStays() {
   const items = useAllItems()
   const open = useRightPanel((s) => s.records.stays)
   const setRecord = useRightPanel((s) => s.setRecord)
-  // A new one, written at the top until it's done (not under its stop).
-  const [adding, setAdding] = useState<string | null>(null)
+  // A new one, written on a page of its own until it's done.
+  const adding = useRightPanel((s) => s.adding.stays) ?? null
+  const setAdding = (id: string | null) => useRightPanel.getState().setAdding('stays', id)
   if (!plan) return null
-  const stays = Object.values(items).filter((i) => i.kind === 'stay' && !isEmptyItem(i) && i.id !== adding)
+  const stays = Object.values(items).filter((i) => i.kind === 'stay' && !isEmptyItem(i))
   const stops = plan.stops.filter((s) => s.nights > 0)
   const booked = stops.filter((stop) => stays.some((s) => s.at === stop.cityId && stayCovers(s, stop)))
-  const elsewhere = (s: TripItem) => s.id !== adding && !stops.some((stop) => stop.cityId === s.at && stayCovers(s, stop))
+  const elsewhere = (s: TripItem) => !stops.some((stop) => stop.cityId === s.at && stayCovers(s, stop))
   const others = [...new Set(stays.filter(elsewhere).map((s) => s.at))]
   const today = localToday()
   // (The list's order, for a page's stays before and after it: by stop, then the others.)
@@ -353,6 +354,19 @@ export function AllStays() {
     ...booked.flatMap((stop) => stays.filter((s) => s.at === stop.cityId && stayCovers(s, stop)).sort(byDate)),
     ...others.flatMap((c) => stays.filter((s) => s.at === c && elsewhere(s)).sort(byDate)),
   ].map((s) => s.id).filter((id, i, all) => all.indexOf(id) === i)
+  if (adding !== null) {
+    // (Done: its page, once something is written in it.)
+    const done = () => {
+      const stay = items[adding]
+      setAdding(null)
+      if (stay && !stay.deleted && !isEmptyItem(stay)) setRecord('stays', adding)
+    }
+    return (
+      <NewRecord back="All stays" onBack={() => setAdding(null)} title="New stay">
+        <NewStay id={adding} stops={stops} first={stops.find((s) => s.depart > today) ?? stops[0] ?? null} onDone={done} />
+      </NewRecord>
+    )
+  }
   const page = open ? items[open] : undefined
   if (page && !page.deleted && page.kind === 'stay') return <StayPage stay={page} ids={ids.includes(page.id) ? ids : [page.id]} />
   const onOpen = (id: string) => setRecord('stays', id)
@@ -360,15 +374,11 @@ export function AllStays() {
     <Sections>
       <Section
         title={stays.length ? `Stays for ${booked.length} of ${stops.length} stops` : 'No stays yet'}
-        aside={adding === null && !SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="stay" className={small} /><button onClick={() => setAdding(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
-      >
-        {adding !== null
-          ? <NewStay id={adding} stops={stops} first={stops.find((s) => s.depart > today) ?? stops[0] ?? null} onDone={() => setAdding(null)} />
-          : null}
-      </Section>
+        aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="stay" className={small} /><button onClick={() => setAdding(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+      >{null}</Section>
       {booked.map((stop) => (
         <Stays
-          key={`${stop.arrive}${stop.cityId}`} cityId={stop.cityId} shown={(s) => s.id !== adding && stayCovers(s, stop)} dates={{ from: stop.arrive, to: stop.depart }} ai={false} brief onOpen={onOpen}
+          key={`${stop.arrive}${stop.cityId}`} cityId={stop.cityId} shown={(s) => stayCovers(s, stop)} dates={{ from: stop.arrive, to: stop.depart }} ai={false} brief onOpen={onOpen}
           title={(
             <button onClick={() => select({ type: 'city', id: stop.cityId })} className="text-left hover:underline">
               {flag(ds.cities[stop.cityId].iso2)} {cityName(stop.cityId)}{' '}

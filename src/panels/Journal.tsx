@@ -18,7 +18,7 @@ import { useOnline } from '../ui/useOnline'
 import { useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
 import { plainLines, toggleTask } from './noteText'
-import { RecordNav } from './RecordPage'
+import { NewRecord, RecordNav } from './RecordPage'
 import { PlainNote } from './PlainNote'
 
 const loadEditor = () => import('./MarkdownEditor')
@@ -26,6 +26,8 @@ const MarkdownEditor = lazy(loadEditor)
 const loadMarkdown = () => import('./NoteMarkdown')
 const NoteMarkdown = lazy(loadMarkdown)
 const EmojiPicker = lazy(() => import('./EmojiPicker'))
+/** Edit, Done and Add. */
+const doneLink = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
 
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
@@ -201,7 +203,7 @@ export function JournalView() {
   const { view, setView } = useJournal()
   // The day open on its page.
   const [day, setDay] = useState<string | null>(null)
-  // The day being added, written at the top until it's done.
+  // The day being added, written on a page of its own until it's done.
   const [adding, setAdding] = useState<string | null>(null)
   // The tag the days are shown by (picked on a day).
   const [tag, setTag] = useState<string | null>(null)
@@ -230,7 +232,7 @@ export function JournalView() {
   const all: string[] = []
   for (let d = last; d >= input.startDate; d = addDays(d, -1)) all.push(d)
   const tagged = (d: string) => !tag || !!entries[d]?.tags?.some((t) => t.toLowerCase() === tag.toLowerCase())
-  const days = all.filter((d) => !isEmptyEntry(entries[d]) && d !== adding && tagged(d))
+  const days = all.filter((d) => !isEmptyEntry(entries[d]) && tagged(d))
   // Consecutive days at the same stop, together.
   const groups: { stop: ScheduledStop | null; days: string[] }[] = []
   for (const d of days) {
@@ -240,6 +242,30 @@ export function JournalView() {
     else groups.push({ stop, days: [d] })
   }
   const written = all.filter((d) => !isEmptyEntry(entries[d])).length
+  if (adding !== null) {
+    // (Done: its page, once something is written for it.)
+    const done = () => {
+      setAdding(null)
+      if (!isEmptyEntry(entries[adding])) setDay(adding)
+    }
+    return (
+      <NewRecord
+        back="All days" onBack={() => setAdding(null)} title="New day"
+        aside={<span className="flex items-center gap-1"><DayVisibility date={adding} /><button onClick={done} className={doneLink}><Check size={12} /> Done</button></span>}
+      >
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col gap-0.5">
+            <span className="text-[11px] text-muted">Day</span>
+            <input
+              type="date" value={adding} min={input.startDate} max={last} onChange={(e) => e.target.value && setAdding(e.target.value)}
+              className="w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]"
+            />
+          </label>
+          <DayEditor key={adding} date={adding} autoFocus switchOutside />
+        </div>
+      </NewRecord>
+    )
+  }
   if (day) {
     // (Newer and older: of the days in the list, or the day itself if it's no longer there, cleared.)
     const list = days.includes(day) ? days : [day]
@@ -258,27 +284,8 @@ export function JournalView() {
               {days.length} day{days.length === 1 ? '' : 's'}
             </span>
           : written ? `${written} of ${all.length} day${all.length === 1 ? '' : 's'} written` : 'No days written yet'}
-        aside={adding === null && !SHARED_TOKEN && (
-          <button onClick={() => setAdding(last)} className="flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Plus size={12} /> Add</button>
-        )}
-      >
-      {adding !== null && (
-        <div className="flex flex-col gap-2 rounded-lg border border-accent/40 bg-canvas p-2.5">
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[11px] text-muted">Day</span>
-            <input
-              type="date" value={adding} min={input.startDate} max={last} onChange={(e) => e.target.value && setAdding(e.target.value)}
-              className="w-full rounded-md border border-line bg-panel px-2.5 py-1.5 text-[13px] outline-none focus:border-accent max-md:!text-[16px]"
-            />
-          </label>
-          <DayEditor key={adding} date={adding} autoFocus switchOutside />
-          <span className="flex items-center gap-1 self-end">
-            <DayVisibility date={adding} />
-            <button onClick={() => setAdding(null)} className="flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft"><Check size={12} /> Done</button>
-          </span>
-        </div>
-      )}
-      </Section>
+        aside={!SHARED_TOKEN && <button onClick={() => setAdding(last)} className={`${doneLink} shrink-0`}><Plus size={12} /> Add</button>}
+      >{null}</Section>
       {groups.map((g) => (
         // (Its id: brought into view from the stop's mark in the itinerary.)
         <div key={g.days[0]} id={g.stop ? `journal-${g.stop.arrive}` : undefined} className="scroll-mt-3">
@@ -354,7 +361,6 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
   const older = days[i + 1]
   const stop = nightStop(plan?.stops ?? [], date)
   const emojis = dayEmojis(e)
-  const link = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-medium text-accent hover:bg-accent-soft'
   return (
     <Sections>
       <RecordNav back="All days" onBack={onBack} prev={newer} next={older} onGo={onGo} prevLabel="Newer day" nextLabel="Older day" at={date} />
@@ -362,8 +368,8 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
         title={<span className="font-normal text-muted">{dayDate(date)} · Day {tripDay(input.startDate, date)}</span>}
         // (Public or not by Edit, its switch by Done: where every day has it, in the list too.)
         aside={!SHARED_TOKEN && (editing
-          ? <span className="flex items-center gap-1"><DayVisibility date={date} /><button onClick={() => setEditing(false)} className={link}><Check size={12} /> Done</button></span>
-          : <span className="flex items-center gap-1"><PublicMark on={e?.public} /><button onClick={() => setEditing(true)} className={link}><Pencil size={12} /> Edit</button></span>)}
+          ? <span className="flex items-center gap-1"><DayVisibility date={date} /><button onClick={() => setEditing(false)} className={doneLink}><Check size={12} /> Done</button></span>
+          : <span className="flex items-center gap-1"><PublicMark on={e?.public} /><button onClick={() => setEditing(true)} className={doneLink}><Pencil size={12} /> Edit</button></span>)}
       >
         {editing ? <DayEditor date={date} autoFocus={!e} switchOutside /> : (
           <div className="flex flex-col gap-2">
