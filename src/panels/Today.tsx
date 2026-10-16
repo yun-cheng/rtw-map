@@ -9,6 +9,7 @@ import { useNote } from '../store/items'
 import { legKey, useTrip } from '../store/trip'
 import { MODE_ICON, cityName, dayDate, duration, flag } from '../ui/format'
 import { Named, Section, Sections } from '../ui/kit'
+import { openRecord } from '../ui/rightPanel'
 import { useMoney } from '../ui/useMoney'
 import { useTemp } from '../ui/useTemp'
 import { CheckNotes, legWarnings, stopWarnings } from './Checks'
@@ -89,7 +90,7 @@ export function Today() {
       <Sections>
         {journey && <JourneyCard journey={journey} today={today} />}
         {/* The journey's tickets and its own note (the bus time…), when there are: from the journey panel. */}
-        {journey && <Tickets key={`t${legKey(journey.leg.from, journey.leg.to)}`} at={legKey(journey.leg.from, journey.leg.to)} date={journey.date} hideEmpty />}
+        {journey && <Tickets key={`t${legKey(journey.leg.from, journey.leg.to)}`} at={legKey(journey.leg.from, journey.leg.to)} date={journey.date} hideEmpty onOpen={(id) => openRecord('tickets', id)} />}
         {journey && <JourneyNote key={legKey(journey.leg.from, journey.leg.to)} at={legKey(journey.leg.from, journey.leg.to)} />}
         {stop && <TonightStay stop={stop} today={today} />}
         {stop && (

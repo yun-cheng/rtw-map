@@ -17,7 +17,7 @@ import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
-import { useRightPanel } from '../ui/rightPanel'
+import { addRecord, openRecord, useRightPanel } from '../ui/rightPanel'
 import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
 import { PhotoFill } from './PhotoFill'
@@ -69,7 +69,7 @@ function useVisitDates(cityId: string): Pick<TripItem, 'from' | 'to'> {
 
 /** The city's stays (those `shown`), each to open and change, and one to add (starting with `dates`); `ai`: with
  *  Update with AI (not on Today); `brief`: one stop of many in My trip (added to from its top), only its title
- *  without any; `onOpen`: in My trip, each a row opening its page (StayPage). */
+ *  without any; `onOpen`: each a row opening its page in My trip (StayPage), where one is added too. */
 function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I stay', ai = true, brief, onOpen }: { cityId: string; shown?: (s: TripItem) => boolean; dates: Pick<TripItem, 'from' | 'to'>; title?: ReactNode; ai?: boolean; brief?: boolean; onOpen?: (id: string) => void }) {
   const all = useItemsAt(cityId, 'stay')
   const stays = (shown ? all.filter(shown) : [...all]).sort(byDate)
@@ -80,7 +80,7 @@ function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I
     <Section
       title={title}
       action={ai && <AiHelp topic="stay" place={cityName(cityId)} />}
-      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => setEditing(newItemId('stay'))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('stays', newItemId('stay')) : setEditing(newItemId('stay')))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || stays.length > 0 || editing !== null) && <>
@@ -327,7 +327,7 @@ function LinkEditor({ id, cityId, kind, onDone, autoFocus }: { id: string; cityI
 /** Today's card: where tonight is spent (the stop's stays for tonight), or a way to add it (with the stop's dates). */
 export function TonightStay({ stop, today }: { stop: ScheduledStop; today: string }) {
   if (SHARED_TOKEN) return null
-  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" ai={false} />
+  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" ai={false} onOpen={(id) => openRecord('stays', id)} />
 }
 
 /** My trip's Stays: the stops with stays, in the plan's order (their names open their cities' panels), then those
@@ -339,7 +339,7 @@ export function AllStays() {
   const items = useAllItems()
   const open = useRightPanel((s) => s.records.stays)
   const setRecord = useRightPanel((s) => s.setRecord)
-  // A new one, written on a page of its own until it's done.
+  // A new one, written on a page of its own until it's done (from Today too).
   const adding = useRightPanel((s) => s.adding.stays) ?? null
   const setAdding = (id: string | null) => useRightPanel.getState().setAdding('stays', id)
   if (!plan) return null

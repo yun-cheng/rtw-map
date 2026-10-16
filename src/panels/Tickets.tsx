@@ -15,7 +15,7 @@ import { AiMark } from '../ui/AiMark'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
-import { useRightPanel } from '../ui/rightPanel'
+import { addRecord, useRightPanel } from '../ui/rightPanel'
 import { PhotoFill } from './PhotoFill'
 import { PaidFor } from './ReceiptLinks'
 import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
@@ -50,7 +50,7 @@ function when(t: TripItem) {
 
 /** A journey's tickets (`at` its `legKey(from, to)`), each to open and change, and one to add (leaving on `date`);
  *  `hideEmpty`: nothing without any (on Today); `brief`: one journey of many in My trip (added to from its top), only
- *  its title without any; `onOpen`: in My trip, each a row opening its page (TicketPage). */
+ *  its title without any; `onOpen`: each a row opening its page in My trip (TicketPage), where one is added too. */
 export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' : 'My tickets', brief, onOpen }: { at: string; date?: string; hideEmpty?: boolean; title?: ReactNode; brief?: boolean; onOpen?: (id: string) => void }) {
   const tickets = [...useItemsAt(at, 'ticket')].sort(byDeparture)
   const [editing, setEditing] = useState<string | null>(null)
@@ -59,7 +59,7 @@ export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' 
   return (
     <Section
       title={title}
-      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => setEditing(newItemId('ticket'))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('tickets', newItemId('ticket')) : setEditing(newItemId('ticket')))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || tickets.length > 0 || editing !== null) && <>
@@ -226,7 +226,7 @@ export function AllTickets() {
   const items = useAllItems()
   const open = useRightPanel((s) => s.records.tickets)
   const setRecord = useRightPanel((s) => s.setRecord)
-  // A new one, written on a page of its own until it's done.
+  // A new one, written on a page of its own until it's done (from Today too).
   const adding = useRightPanel((s) => s.adding.tickets) ?? null
   const setAdding = (id: string | null) => useRightPanel.getState().setAdding('tickets', id)
   if (!plan) return null

@@ -2,16 +2,8 @@
 // paid for it; on the receipt, what it was for. Each opens the other's page in My trip.
 import { BedDouble, Ticket } from 'lucide-react'
 import { isEmptyItem, useAllItems } from '../store/items'
-import { useTrip } from '../store/trip'
 import { bookingName, paid } from '../ui/format'
-import { useRightPanel, type MyTripTab } from '../ui/rightPanel'
-
-/** My trip, on a record's page (or, `id` null, its tab's list), closing a city's or journey's panel open in its
- *  place. */
-const openRecord = (tab: MyTripTab, id: string | null) => {
-  useTrip.getState().select(null)
-  useRightPanel.getState().setRecord(tab, id, true)
-}
+import { openRecord } from '../ui/rightPanel'
 
 /** On a stay's or ticket's card: what was paid for it, by its receipts ("Paid €84 · receipt"); a receipt for a
  *  package (it and other bookings, paid together) is its whole amount, said so. */

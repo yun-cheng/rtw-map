@@ -63,6 +63,19 @@ export const useRightPanel = create<RightPanel>()(
   ),
 )
 
+/** My trip on a record's page (or, `id` null, its tab's list), closing a city's or journey's panel open in its
+ *  place. */
+export function openRecord(tab: MyTripTab, id: string | null) {
+  useTrip.getState().select(null)
+  useRightPanel.getState().setRecord(tab, id, true)
+}
+
+/** My trip on a new record's page (`id`: the one it will be), closing a city's or journey's panel open in its place. */
+export function addRecord(tab: MyTripTab, id: string) {
+  useTrip.getState().select(null)
+  useRightPanel.getState().setAdding(tab, id, true)
+}
+
 /** Whether there's a My trip panel: once the trip is planned; on a shared trip's page, if its owner made anything in it
  *  public. */
 export function useHasRightPanel() {

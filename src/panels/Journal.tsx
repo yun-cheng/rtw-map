@@ -15,7 +15,7 @@ import { cityName, dateRange, dayDate, dayMonth, flag, weekday } from '../ui/for
 import { Section, Sections } from '../ui/kit'
 import { AlbumLinks } from './Visit'
 import { useOnline } from '../ui/useOnline'
-import { useRightPanel } from '../ui/rightPanel'
+import { openRecord, useRightPanel } from '../ui/rightPanel'
 import { dataset as ds } from '../data/dataset'
 import { plainLines, toggleTask } from './noteText'
 import { NewRecord, RecordNav } from './RecordPage'
@@ -32,14 +32,14 @@ const doneLink = 'flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] f
 /** The stop where the night of `date` is spent, if any (none on a night on the way, or before the first stop). */
 export const nightStop = (stops: ScheduledStop[], date: string) => stops.find((s) => s.arrive <= date && date < s.depart) ?? null
 
-/** Opens the journal, My trip's Journal tab (closing a city's or journey's panel open in its place), at a stop's days
- *  (`focus`: its first day). */
+/** Opens the journal, My trip's Journal tab (closing a city's or journey's panel open in its place), on its list of
+ *  days, at a stop's (`focus`: its first day). */
 export function useOpenJournal() {
   const setView = useJournal((s) => s.setView)
   return (focus?: string) => {
     setView({ focus })
     useTrip.getState().select(null)
-    useRightPanel.getState().show('daily')
+    useRightPanel.getState().setRecord('daily', null, true)
   }
 }
 
@@ -174,23 +174,23 @@ function SaveState({ date }: { date: string }) {
   return <span className="truncate text-[11px] text-muted" role="status">{text}</span>
 }
 
-/** Today's card: today's entry (or yesterday's, when that's not written yet), and the way to every day. */
+/** Today's card: today's entry as in the journal's list (or the way to write it), opening it there; and the way to
+ *  every day. */
 export function TodayEntry({ today }: { today: string }) {
   const start = useTrip((s) => s.input.startDate)
-  const yesterday = addDays(today, -1)
-  const [date, setDate] = useState(today)
-  const yesterdayWritten = !!useDayEntry(yesterday)
+  const written = !isEmptyEntry(useDayEntry(today))
   const openJournal = useOpenJournal()
+  // (Today on its page in the journal, written there if it isn't yet.)
+  const open = () => openRecord('daily', today)
   const link = 'text-[12px] text-accent hover:underline'
   return (
     <Section
-      title={date === today ? "Today's entry" : `Yesterday · ${dayDate(yesterday)}`}
+      title="Today's entry"
       aside={<button onClick={() => openJournal()} className={`flex items-center ${link}`}>All days<ChevronRight size={14} /></button>}
     >
-      <DayEditor key={date} date={date} />
-      {yesterday >= start && (date !== today
-        ? <button onClick={() => setDate(today)} className={`mt-2 ${link}`}>Back to today</button>
-        : !yesterdayWritten && <button onClick={() => setDate(yesterday)} className={`mt-2 ${link}`}>Yesterday isn't written yet: write it</button>)}
+      {written
+        ? <ol className="-mx-2"><DayRow date={today} day={tripDay(start, today)} onOpen={open} onTag={open} /></ol>
+        : <button onClick={open} className="flex items-center gap-1 text-[13px] text-accent hover:underline"><Pencil size={12} /> Write today's entry</button>}
     </Section>
   )
 }
@@ -201,8 +201,10 @@ export function JournalView() {
   const { plan, input, select } = useTrip()
   const entries = useJournalEntries()
   const { view, setView } = useJournal()
-  // The day open on its page.
-  const [day, setDay] = useState<string | null>(null)
+  // The day open on its page (from Today too).
+  const day = useRightPanel((s) => s.records.daily) ?? null
+  const setRecord = useRightPanel((s) => s.setRecord)
+  const setDay = (d: string | null) => setRecord('daily', d)
   // The day being added, written on a page of its own until it's done.
   const [adding, setAdding] = useState<string | null>(null)
   // The tag the days are shown by (picked on a day).
@@ -210,13 +212,6 @@ export function JournalView() {
   const today = localToday()
   // (A day's page shows it formatted: ready by the time one's opened.)
   useEffect(() => void loadMarkdown(), [])
-  // (Brought to a stop's days, from the list.)
-  const [focus, setFocus] = useState(view.focus)
-  if (view.focus !== focus) {
-    setFocus(view.focus)
-    if (view.focus) setDay(null)
-  }
-
   // Brought to a stop's days (from its mark in the stops).
   useEffect(() => {
     if (!view.focus) return
@@ -353,7 +348,8 @@ function DayPage({ date, days, onGo, onBack, onTag }: { date: string; days: stri
   const { plan, input, select } = useTrip()
   const e = useDayEntry(date)
   const write = useJournal((s) => s.write)
-  const [editing, setEditing] = useState(false)
+  // (Written at once when there's nothing yet: opened from Today.)
+  const [editing, setEditing] = useState(() => !SHARED_TOKEN && isEmptyEntry(e))
   // (Its editor, ready by the time Edit is pressed.)
   useEffect(() => void (!SHARED_TOKEN && loadEditor()), [])
   const i = days.indexOf(date)
