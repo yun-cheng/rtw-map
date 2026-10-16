@@ -682,11 +682,12 @@ export function CityDrawer({ cityId }: { cityId: string }) {
                 onMouseEnter={active ? undefined : (e) => setTabTip({ content: { lines: [t.label] }, rect: e.currentTarget.getBoundingClientRect() })}
                 onMouseLeave={() => setTabTip(null)}
                 onClick={() => { setTabTip(null); setCityTab(t.key) }}
-                className={`relative flex shrink-0 items-center gap-1.5 border-b-2 px-2 py-2 text-[13px] font-medium whitespace-nowrap ${active ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+                // (Wider on a phone, for a finger.)
+                className={`relative flex shrink-0 items-center justify-center gap-1.5 border-b-2 px-2 py-2 text-[13px] max-md:min-w-11 max-md:px-3 max-md:py-2.5 font-medium whitespace-nowrap ${active ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
               >
                 <t.icon size={16} />
                 {active && t.label}
-                <Dot severity={dots.get(t.key)} className="top-1 right-0.5" />
+                <Dot severity={dots.get(t.key)} className="top-1 right-0.5 max-md:top-1.5 max-md:right-1.5" />
               </button>
             )
           })}
