@@ -1,6 +1,6 @@
 import type { EmblaCarouselType, EmblaOptionsType } from 'embla-carousel'
 import useEmblaCarousel from 'embla-carousel-react'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 
 /** Whether a drag from `el` is its own: on a field, something that scrolls sideways or takes the touch itself (a
  *  chart, a slider), up to `top`. */
@@ -21,6 +21,10 @@ const watchDrag = (api: EmblaCarouselType, e: MouseEvent | TouchEvent) => {
   return x > 24 && x < window.innerWidth - 24 && !dragTaken(e.target as Element, api.rootNode())
 }
 
+/** Measured again on a resize, not while hidden (a phone's sheet under another): at no width, every tab would be at
+ *  the first's place. */
+const watchResize = (api: EmblaCarouselType) => api.rootNode().offsetWidth > 0
+
 /**
  * A phone sheet's tabs side by side (Embla): dragged sideways, the open one follows the finger and the next or
  * previous comes in, and let go past the middle (or flicked) it moves on, picking that tab (`onTab`); a tab picked on
@@ -36,11 +40,11 @@ export function SwipeTabs<K extends string>({ tabs, tab, onTab, children }: {
 }) {
   const at = Math.max(0, tabs.indexOf(tab))
   // (Set once: Embla starts again, at `startIndex`, when they change.)
-  const [options] = useState<EmblaOptionsType>(() => ({ startIndex: at, duration: 22, watchDrag }))
+  const [options] = useState<EmblaOptionsType>(() => ({ startIndex: at, duration: 22, watchDrag, watchResize }))
   const [viewport, embla] = useEmblaCarousel(options)
-  // (Through a ref, so the handler is added once.)
-  const picked = useRef({ tabs, onTab })
-  useEffect(() => void (picked.current = { tabs, onTab }))
+  // (Through a ref, so the handlers are added once; set before Embla sees new tabs.)
+  const picked = useRef({ tabs, onTab, at })
+  useLayoutEffect(() => void (picked.current = { tabs, onTab, at }))
   useEffect(() => {
     if (!embla) return
     const select = () => {
@@ -48,8 +52,14 @@ export function SwipeTabs<K extends string>({ tabs, tab, onTab, children }: {
       const t = tabs[embla.selectedScrollSnap()]
       if (t) onTab(t)
     }
+    // Measured again (a resize, tabs added or gone): still on the open tab.
+    const back = () => {
+      const { at } = picked.current
+      if (embla.rootNode().offsetWidth > 0 && embla.selectedScrollSnap() !== at) embla.scrollTo(at, true)
+    }
     embla.on('select', select)
-    return () => void embla.off('select', select)
+    embla.on('reInit', back)
+    return () => void embla.off('select', select).off('reInit', back)
   }, [embla])
   // A tab picked elsewhere: slid to (one beside), or jumped to.
   useEffect(() => {
