@@ -290,7 +290,7 @@ function UsageButton({ usage, spent, ms }: { usage: Usage | null; spent: Spent; 
   )
 }
 
-/** The assistant tab: sign-in first, then the chat. */
+/** The Assistant's panel: sign-in first, then the chat. */
 export function AssistantPanel() {
   const { loaded, user, offline } = useAccount()
   if (!loaded) return <p className="px-4 py-4 text-[13px] text-muted">Loading…</p>

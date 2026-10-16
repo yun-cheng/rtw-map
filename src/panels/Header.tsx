@@ -1,8 +1,9 @@
-import { Settings } from 'lucide-react'
+import { Settings, Sparkles } from 'lucide-react'
 import { useTrip } from '../store/trip'
 import { dataset as ds } from '../data/dataset'
 import { dateRange } from '../ui/format'
 import { OfflinePill } from '../ui/OfflinePill'
+import { useAssistantPanel } from '../ui/assistantPanel'
 import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
 import { ThemeMenu } from './ThemeMenu'
@@ -11,11 +12,13 @@ import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
 import { UndoRedo } from './UndoRedo'
 
-/** The top bar on a computer: the trip, its dates, Undo, Redo and the version history, the display settings at hand,
- *  the account, and the gear for all the settings (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
+/** The top bar on a computer: the trip, its dates, Undo, Redo and the version history, the Assistant (its panel opened
+ *  and closed), the display settings at hand, the account, and the gear for all the settings (`onSettings`: the
+ *  settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
   const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
   const { currency } = useMoney()
+  const ai = useAssistantPanel()
 
   return (
     <header className="flex h-12 items-center gap-4 border-b border-line bg-panel px-4">
@@ -32,6 +35,17 @@ export function Header({ onSettings }: { onSettings: () => void }) {
       <UndoRedo />
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <OfflinePill className="mr-1.5 h-7" />
+        {!SHARED_TOKEN && (
+          <button
+            onClick={() => (ai.open ? ai.hide() : ai.show())}
+            aria-pressed={ai.open}
+            title={ai.open ? 'Close the Assistant' : 'Open the Assistant'}
+            className={`mr-1.5 flex h-7 items-center gap-1.5 rounded-full border px-2.5 text-[13px] font-medium ${ai.open ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:text-ink'}`}
+          >
+            <Sparkles size={15} />
+            Assistant
+          </button>
+        )}
         <select
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}

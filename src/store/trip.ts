@@ -39,9 +39,9 @@ type State = TripCore & {
   routeBy: 'day' | 'nights'
   /** The left panel's tab: City is the open city's or journey's panel, there while one is open (picking one opens it;
    *  closing it goes back to `panelBefore`). */
-  panel: 'setup' | 'itinerary' | 'city' | 'assistant'
+  panel: 'setup' | 'itinerary' | 'city'
   /** The tab open before a city or journey was. */
-  panelBefore: 'setup' | 'itinerary' | 'assistant'
+  panelBefore: 'setup' | 'itinerary'
   /** Adding places to the trip (the Trip tab's picker): whole regions or single countries, from its list or the map. */
   picking: 'region' | 'country' | null
   /** How a country picked on its own joins the trip: must visit, or optional (the planner decides). */
@@ -50,8 +50,8 @@ type State = TripCore & {
    *  view: for a country in a region's card, the region. */
   hovered: { countries: string[]; focus: string[] }
   fitRequest: number
-  /** Counts "Ask AI" presses in a city or journey panel, and "Make changes" in a stop's: the app brings the left panel
-   *  into view on the tab they open (see App). */
+  /** Counts "Make changes" presses in a stop's panel: the app brings the left panel into view on the Itinerary (see
+   *  App). */
   besideRequest: number
   /** Base map labels also give a place's name in its own script where that isn't Latin ("Athens" over "Αθήνα"). */
   localNames: boolean
@@ -83,8 +83,6 @@ type State = TripCore & {
   toggleCountry: (iso2: string) => void
   setAddAs: (mode: State['addAs']) => void
   setHovered: (countries: string[], focus?: string[]) => void
-  /** Opens the Assistant about the open city or journey panel ("Ask AI"). */
-  askAssistant: () => void
   /** Opens the Itinerary at the open city's stop, to change its nights, lock or remove it there ("Make changes"). */
   editInItinerary: () => void
   setCurrency: (c: string) => void
@@ -234,7 +232,6 @@ export const useTrip = create<State>()(
           const mode = group.countries.find((c) => c.iso2 === iso2)!.mode === 'excluded' ? addAs : 'excluded'
           setInput({ groups: input.groups.map((g) => (g === group ? { ...g, countries: g.countries.map((c) => (c.iso2 === iso2 ? { ...c, mode } : c)) } : g)) })
         },
-        askAssistant: () => set({ panel: 'assistant', besideRequest: get().besideRequest + 1 }),
         editInItinerary: () => set({ panel: 'itinerary', besideRequest: get().besideRequest + 1 }),
         setCurrency: (currency) => set({ currency }),
         setTempUnit: (tempUnit) => set({ tempUnit }),
@@ -275,8 +272,8 @@ export const useTrip = create<State>()(
         if (!MAP_LAYERS.includes(merged.layer)) merged.layer = 'none'
         // Preferences were a tab of their own; now they're in the Trip tab.
         if ((merged.panel as string) === 'prefs') merged.panel = 'setup'
-        // Today moved to My trip; a city's tab isn't open without its city (not kept).
-        if ((merged.panel as string) === 'today' || merged.panel === 'city') merged.panel = 'itinerary'
+        // Today moved to My trip and the Assistant to its own panel; a city's tab isn't open without its city (not kept).
+        if (['today', 'assistant', 'city'].includes(merged.panel)) merged.panel = 'itinerary'
         try {
           merged.input = withPrefs(merged.input)
           // Trips saved before plans existed: one plan, the trip itself.

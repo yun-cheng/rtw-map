@@ -6,6 +6,7 @@ import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, plannedIn, dayRangeText, da
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { useTrip } from '../store/trip'
+import { openAssistant } from '../ui/assistantPanel'
 import { PrefsCards } from './PrefsCards'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { Editable } from './ReadOnly'
@@ -30,7 +31,7 @@ const planned = (iso2: string) => plannedIn(ds).has(iso2)
 
 export function SetupPanel() {
   const s = useTrip()
-  const { input, setInput, setPanel, stops, plan, picking, setPicking, setHovered, readOnly } = s
+  const { input, setInput, stops, plan, picking, setPicking, setHovered, readOnly } = s
   // Nothing stays highlighted on the map once the tab closes.
   useEffect(() => () => setHovered([]), [setHovered])
   const { user, loaded } = useAccount()
@@ -222,8 +223,8 @@ export function SetupPanel() {
               )}
             </>
           ) : (
-            // Signing in is in the Assistant tab (Google draws its own button there).
-            <Button variant="primary" className="w-full py-2 text-[14px]" onClick={() => setPanel('assistant')}>
+            // Signing in is in the Assistant (Google draws its own button there).
+            <Button variant="primary" className="w-full py-2 text-[14px]" onClick={openAssistant}>
               Sign in to plan with AI
             </Button>
           )}

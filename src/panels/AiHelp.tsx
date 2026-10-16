@@ -6,7 +6,7 @@
 import { Sparkles } from 'lucide-react'
 import { useChat } from '../agent/chat'
 import { SHARED_TOKEN } from '../store/shareLink'
-import { useTrip } from '../store/trip'
+import { askAssistant } from '../ui/assistantPanel'
 
 /** `choices`: replies to click instead of typing (examples to start from). */
 type Help = { ask: (place: string) => string; answer: (place: string) => string; choices?: string[] }
@@ -40,7 +40,6 @@ export type AiTopic = keyof typeof HELP
 /** The button: `place`, the city (or the journey, "from Kraków to Vienna") the card is about. Not on someone
  *  else's shared trip. */
 export function AiHelp({ topic, place = '' }: { topic: AiTopic; place?: string }) {
-  const askAssistant = useTrip((s) => s.askAssistant)
   const busy = useChat((s) => s.busy)
   if (SHARED_TOKEN) return null
   const open = () => {

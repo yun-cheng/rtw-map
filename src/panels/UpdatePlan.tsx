@@ -9,6 +9,7 @@ import { useChat } from '../agent/chat'
 import { CHANGE_GROUPS, planChangeList } from '../agent/tools'
 import { isTravelling, localToday } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
+import { openAssistant } from '../ui/assistantPanel'
 import { ask, type Answer } from '../ui/dialog'
 import { Button } from '../ui/kit'
 import { usePhone } from '../ui/usePhone'
@@ -19,13 +20,13 @@ import { UndoRedo } from './UndoRedo'
  *  replaces (`replanning`: the question before it). */
 export function usePlanUpdate() {
   const s = useTrip()
-  const { input, stops, plan, setPanel, addPlan } = s
+  const { input, stops, plan, addPlan } = s
   const changes = planChangeList({ input, stops, plan })
   const travelling = stops.length > 0 && isTravelling(input, localToday())
   const update = () => {
     const later = travelling ? ' The trip is under way: change only what comes after today.' : ''
     void useChat.getState().send(`Update my plan for what changed since it was made: ${changes.map((c) => c.text).join('; ')}. Keep the rest of the plan and my own edits.${later}`, [], { think: true, plan: 'update' })
-    setPanel('assistant')
+    openAssistant()
   }
   // Plans are made with the assistant, so only signed in: a clean plan each time (chat.ts `plan`), made with its usual
   // tools (so the app's rules still hold), thinking harder, since fitting several wishes into a trip takes planning.
@@ -35,7 +36,7 @@ export function usePlanUpdate() {
     const wishes = input.wishes?.trim()
     const what = travelling ? 'Replan my trip from tomorrow on (keep the days so far as they were)' : 'Plan my trip from scratch'
     void useChat.getState().send(`${what}, to my setup, preferences and interests${wishes ? `, and these wishes: ${wishes}` : '.'}`, [], { think: true, plan: 'new' })
-    setPanel('assistant')
+    openAssistant()
   }
   const plans = tripPlans(s)
   const name = plans.find((p) => p.id === s.activePlanId)?.name ?? 'This plan'

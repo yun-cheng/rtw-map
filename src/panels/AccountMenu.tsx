@@ -68,7 +68,7 @@ export function AccountMenu() {
 
 /**
  * The signed-in account: picture and name, and its assistant allowance if it's more than the usual one (today's use
- * is in the Assistant tab), then AI apps, Assistant limits (admins) and
+ * is in the Assistant), then AI apps, Assistant limits (admins) and
  * Sign out as full-width rows. In the top bar's account menu (`menu`) and, as it is, in a phone's settings panel
  * (`top`: the padding above it, none under the card's own heading). `onApps` and `onLimits` open their dialogs;
  * `onSignOut` runs before signing out (e.g. to close the menu).

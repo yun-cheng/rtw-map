@@ -6,7 +6,7 @@
 import { create } from 'zustand'
 import { b64url, doneNotice } from '../../worker/push'
 import { useSaved } from '../store/saved'
-import { useTrip } from '../store/trip'
+import { openAssistant } from '../ui/assistantPanel'
 import { useAccount } from './account'
 import { useChat } from './chat'
 
@@ -93,7 +93,7 @@ async function notify(notice: ReturnType<typeof doneNotice>) {
 /** From a notification's click (pwa/sw.ts): that trip's chat. */
 function openTrip(tripId: unknown) {
   if (typeof tripId === 'string' && useSaved.getState().activeId !== tripId && useSaved.getState().trips.some((t) => t.id === tripId)) void useSaved.getState().open(tripId)
-  useTrip.getState().setPanel('assistant')
+  openAssistant()
 }
 
 export function startDoneNotice() {

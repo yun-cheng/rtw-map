@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { dataset as ds } from '../data/dataset'
 import { draftStops, testCaseInput } from '../data/testCase'
+import { useAssistantPanel } from '../ui/assistantPanel'
 import { useRightPanel } from '../ui/rightPanel'
 import { useTrip } from './trip'
 import { buildSearch, initialMapView, parseMapView, readUrl } from './url'
@@ -17,6 +18,13 @@ describe('address bar state', () => {
     expect(parseMapView('5/95/10')).toBeNull()
     expect(parseMapView('abc')).toBeNull()
     expect(parseMapView(null)).toBeNull()
+  })
+
+  it('opens the Assistant, now a panel of its own, for a link to its old tab', () => {
+    useAssistantPanel.setState({ open: false, sheet: false })
+    readUrl('?panel=assistant')
+    expect(useAssistantPanel.getState()).toMatchObject({ open: true, sheet: true })
+    expect(useTrip.getState().panel).toBe('itinerary')
   })
 
   it('opens the Trip tab for a link to the old Preferences tab', () => {
@@ -63,9 +71,9 @@ describe('address bar state', () => {
     expect(useTrip.getState().panel).toBe('itinerary')
     // (Closed from another tab: that tab stays.)
     select({ type: 'city', id: 'tirana' })
-    setPanel('assistant')
+    setPanel('setup')
     select(null)
-    expect(useTrip.getState().panel).toBe('assistant')
+    expect(useTrip.getState().panel).toBe('setup')
     // (No City tab without one, from the address either.)
     readUrl('?panel=city')
     expect(useTrip.getState().panel).toBe('itinerary')

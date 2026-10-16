@@ -3,7 +3,7 @@
 import { Sparkles } from 'lucide-react'
 import { useRef } from 'react'
 import { usePhotoAsk } from '../agent/photoAsk'
-import { useTrip } from '../store/trip'
+import { askAssistant } from '../ui/assistantPanel'
 
 /** What's asked: what's in it, and what was paid for it too, linked (a booking with its price is both; a package of
  *  flights and a hotel is several bookings and one receipt). */
@@ -16,7 +16,6 @@ const ASK = {
 /** `className`: styled as the buttons beside it. */
 export function PhotoFill({ what, className = '' }: { what: keyof typeof ASK; className?: string }) {
   const input = useRef<HTMLInputElement>(null)
-  const askAssistant = useTrip((s) => s.askAssistant)
   return (
     <>
       <button onClick={() => input.current?.click()} title="Send photos, screenshots or PDFs to the assistant to fill these in" className={`${className} shrink-0`}>

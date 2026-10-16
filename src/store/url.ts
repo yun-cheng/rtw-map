@@ -6,13 +6,14 @@
 // gesture) returns from it; the rest (a city's tabs, the map moving, its view and month) replaces the address.
 import { dataset as ds } from '../data/dataset'
 import { COST_KINDS, isTravelling, localToday, type CostKind } from '../planner'
+import { openAssistant } from '../ui/assistantPanel'
 import { useRightPanel } from '../ui/rightPanel'
 import { SHARED_TOKEN } from './shareLink'
 import { MAP_LAYERS, NEARBY_KINDS, useTrip, type NearbyKind, type CityTab, type MapLayer, type Selection } from './trip'
 
 export type MapView = { zoom: number; center: [lon: number, lat: number] }
 
-const PANELS = ['setup', 'itinerary', 'city', 'assistant'] as const
+const PANELS = ['setup', 'itinerary', 'city'] as const
 const TABS: CityTab[] = ['overview', 'notes', 'transport', 'weather', 'holidays', 'costs', 'daily', 'phrases', 'health', 'safety', 'entry']
 /** Layers that show one month of the year. */
 const MONTHLY: MapLayer[] = ['climate', 'air']
@@ -45,6 +46,8 @@ export function readUrl(search = window.location.search, back = false) {
   if ((panel as string) === 'today' || (!q.has('panel') && !SHARED_TOKEN && state.plan && isTravelling(state.input, localToday()))) {
     useRightPanel.getState().show('today')
   }
+  // The Assistant was a tab of the left panel too: now its own panel.
+  if ((panel as string) === 'assistant') openAssistant()
 
   const city = q.get('city')
   const leg = Number(q.get('leg'))

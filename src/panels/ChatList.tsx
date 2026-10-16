@@ -1,5 +1,5 @@
 // The trip's chats with the assistant (worker/chats.ts), in a panel from the left over the whole app (as Settings is,
-// from the right), opened by Chats at the top of the assistant tab: the open chat, then the past ones, the latest first. A click opens one, the open one
+// from the right), opened by Chats at the top of the Assistant: the open chat, then the past ones, the latest first. A click opens one, the open one
 // set aside in its place (store/saved.ts); a chat set aside keeps no Undo.
 import { SquarePen, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
