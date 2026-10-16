@@ -184,7 +184,7 @@ export function TodayEntry({ today }: { today: string }) {
   const keys = dayKeys(entries, today).reverse()
   return (
     <Section
-      title="Today's entry"
+      title="Journal"
       aside={!SHARED_TOKEN && <button onClick={() => addRecord('daily', newEntryKey(entries, today))} className={`${doneLink} shrink-0`}><Plus size={12} /> Add</button>}
     >
       {keys.length

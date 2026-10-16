@@ -80,7 +80,7 @@ function Stays({ cityId, shown, dates, title = SHARED_TOKEN ? 'Stays' : 'Where I
     <Section
       title={title}
       action={ai && <AiHelp topic="stay" place={cityName(cityId)} />}
-      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('stays', newItemId('stay')) : setEditing(newItemId('stay')))} className={`${small} shrink-0`}><Plus size={12} /> Add a stay</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('stays', newItemId('stay')) : setEditing(newItemId('stay')))} className={`${small} shrink-0`}><Plus size={12} /> {onOpen ? 'Add' : 'Add a stay'}</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || stays.length > 0 || editing !== null) && <>
@@ -327,7 +327,7 @@ function LinkEditor({ id, cityId, kind, onDone, autoFocus }: { id: string; cityI
 /** Today's card: where tonight is spent (the stop's stays for tonight), or a way to add it (with the stop's dates). */
 export function TonightStay({ stop, today }: { stop: ScheduledStop; today: string }) {
   if (SHARED_TOKEN) return null
-  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Tonight's stay" ai={false} onOpen={(id) => openRecord('stays', id)} />
+  return <Stays cityId={stop.cityId} shown={(s) => stayOn(s, today)} dates={{ from: stop.arrive, to: stop.depart }} title="Stays" ai={false} onOpen={(id) => openRecord('stays', id)} />
 }
 
 /** My trip's Stays: the stops with stays, in the plan's order (their names open their cities' panels), then those

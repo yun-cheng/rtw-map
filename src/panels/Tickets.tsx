@@ -59,7 +59,7 @@ export function Tickets({ at, date, hideEmpty, title = SHARED_TOKEN ? 'Tickets' 
   return (
     <Section
       title={title}
-      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('tickets', newItemId('ticket')) : setEditing(newItemId('ticket')))} className={`${small} shrink-0`}><Plus size={12} /> Add a ticket</button>}
+      aside={editing === null && !brief && !SHARED_TOKEN && <button onClick={() => (onOpen ? addRecord('tickets', newItemId('ticket')) : setEditing(newItemId('ticket')))} className={`${small} shrink-0`}><Plus size={12} /> {onOpen ? 'Add' : 'Add a ticket'}</button>}
     >
       {/* (One of many with none: just its name and Add.) */}
       {(!brief || tickets.length > 0 || editing !== null) && <>

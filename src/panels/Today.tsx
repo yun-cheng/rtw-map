@@ -90,7 +90,7 @@ export function Today() {
       <Sections>
         {journey && <JourneyCard journey={journey} today={today} />}
         {/* The journey's tickets and its own note (the bus time…), when there are: from the journey panel. */}
-        {journey && <Tickets key={`t${legKey(journey.leg.from, journey.leg.to)}`} at={legKey(journey.leg.from, journey.leg.to)} date={journey.date} hideEmpty onOpen={(id) => openRecord('tickets', id)} />}
+        {journey && <Tickets key={`t${legKey(journey.leg.from, journey.leg.to)}`} at={legKey(journey.leg.from, journey.leg.to)} date={journey.date} hideEmpty title="Tickets" onOpen={(id) => openRecord('tickets', id)} />}
         {journey && <JourneyNote key={legKey(journey.leg.from, journey.leg.to)} at={legKey(journey.leg.from, journey.leg.to)} />}
         {stop && <TonightStay stop={stop} today={today} />}
         {stop && (
@@ -105,7 +105,7 @@ export function Today() {
         )}
         <TodayEntry today={today} />
         {stop && stopWarnings(plan.warnings, stop.cityId).length > 0 && (
-          <Section title={`Checks for ${cityName(stop.cityId)}`}>
+          <Section title="Checks">
             <CheckNotes warnings={stopWarnings(plan.warnings, stop.cityId)} cityId={stop.cityId} />
           </Section>
         )}
@@ -118,7 +118,7 @@ export function Today() {
 /** A journey's note, when written. */
 function JourneyNote({ at }: { at: string }) {
   if (!useNote(at).trim()) return null
-  return <NoteBox at={at} title="Journey notes" placeholder="Your ticket, the bus time, where it leaves from…" />
+  return <NoteBox at={at} title="Notes" placeholder="Your ticket, the bus time, where it leaves from…" />
 }
 
 /** The journey: when, how, how long and for how much, the timetable's tips and its checks; on its day or the day
@@ -132,7 +132,7 @@ function JourneyCard({ journey: { leg, date, index, home }, today }: { journey: 
   const checks = index === undefined || !plan ? [] : legWarnings(plan.warnings, index)
   return (
     <Section
-      title={date === today && index !== undefined ? "Today's journey" : home && plan?.home.back === leg ? 'Going home' : 'Next journey'}
+      title="Journey"
       aside={<span className={`text-[12px] ${soon ? 'font-semibold text-accent' : 'text-muted'}`}>{when[0].toUpperCase() + when.slice(1)} · {dayDate(date)}</span>}
     >
       <div className="text-[14px] font-medium">{cityName(leg.from)} → {cityName(leg.to)}</div>
