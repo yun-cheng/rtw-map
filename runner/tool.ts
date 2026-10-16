@@ -6,7 +6,7 @@ import { RUNNER_TOOLS } from '../src/agent/mcpTools'
 import { ITEM_TOOLS } from '../src/agent/schema'
 import { cityName, describeChanges, describeItemChanges, itemsHandle, runTool, toolContext, tripContext, withTrip, type ToolResult } from '../src/agent/tools'
 import type { Items, TripItem } from '../src/store/itemsCore'
-import { dayEmojis, isEmptyEntry, type Journal } from '../src/store/journalCore'
+import { dayEmojis, entryKey, isEmptyEntry, type Journal } from '../src/store/journalCore'
 import { createTripStore, tripData, type TripData } from '../src/store/tripCore'
 
 export type ToolCall = { name: string; args: Record<string, unknown>; trip: { id: string; name: string } | null; data: TripData | null; extra: unknown }
@@ -14,7 +14,7 @@ export type ToolCall = { name: string; args: Record<string, unknown>; trip: { id
  *  (`items`), and what changed (`changes`). */
 export type ToolAnswer = { ok: boolean; result: ToolResult; data?: TripData; items?: TripItem[]; changes?: string[] }
 
-/** The journal days shown without from and to; the most in a range. */
+/** The journal entries shown without from and to; the most in a range. */
 const LATEST_DAYS = 60
 const MOST_DAYS = 120
 
@@ -62,17 +62,17 @@ export function callTool(call: ToolCall): ToolAnswer {
 
 const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v)
 
-/** The days written, oldest first: those from and to the days asked, or the latest. */
+/** The entries written (a day may have several), oldest first: those from and to the days asked, or the latest. */
 function journal(entries: Journal | null, args: Record<string, unknown>): ToolResult {
   const from = isDay(args.from) ? args.from : null
   const to = isDay(args.to) ? args.to : null
   const days = Object.values(entries ?? {})
     .filter((e) => !isEmptyEntry(e) && (!from || e.date >= from) && (!to || e.date <= to))
-    .sort((a, b) => a.date.localeCompare(b.date))
+    .sort((a, b) => a.date.localeCompare(b.date) || entryKey(a).localeCompare(entryKey(b)))
   const shown = days.slice(-(from || to ? MOST_DAYS : LATEST_DAYS))
   if (!shown.length) return { days: [], note: from || to ? 'Nothing written for those days.' : 'Nothing written in the journal yet.' }
   return {
     days: shown.map((e) => ({ date: e.date, city: e.cityId && cityName(e.cityId), highlight: e.highlight || undefined, text: e.text || undefined, emojis: dayEmojis(e).length ? dayEmojis(e) : undefined, tags: e.tags })),
-    ...(days.length > shown.length && { earlier: `${days.length - shown.length} earlier days not shown: ask with from and to.` }),
+    ...(days.length > shown.length && { earlier: `${days.length - shown.length} earlier entries not shown: ask with from and to.` }),
   }
 }

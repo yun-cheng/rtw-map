@@ -1,5 +1,5 @@
 // The Today tab, while the trip is under way (PLAN.md §14.3): where you are, the day's or next journey, the weather
-// today and tomorrow, tonight's stay, today's journal entry, this stop's checks and the days left. The app opens on it
+// today and tomorrow, tonight's stay, today's journal entries, this stop's checks and the days left. The app opens on it
 // then (store/url.ts).
 import { ChevronRight } from 'lucide-react'
 import { useEffect, useState } from 'react'

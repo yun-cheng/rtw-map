@@ -1,12 +1,16 @@
-// The trip's journal (PLAN.md §14.4): one entry per trip day, what happened, kept apart from the trip's data (plans are
-// versions of the future, the journal is what happened). Written on any device, offline too, and merged day by day:
-// the latest edit of each day wins, so a day written on the phone and another on the laptop are both kept. Plain
+// The trip's journal (PLAN.md §14.4): entries for the trip's days (one or more a day), what happened, kept apart from
+// the trip's data (plans are versions of the future, the journal is what happened). Written on any device, offline too,
+// and merged entry by entry: the latest edit of each wins, so an entry written on the phone and another on the laptop
+// are both kept. Plain
 // rules, shared by the app (store/journal.ts) and the Worker (worker/trips.ts, account.ts), tested in journal.test.ts.
 
-/** A day of the trip as the user wrote it; all empty is a day cleared (kept, so the clearing wins over older copies). */
+/** An entry for a day of the trip as the user wrote it; all empty is one cleared (kept, so the clearing wins over older
+ *  copies). */
 export type DayEntry = {
   /** The trip day, ISO. */
   date: string
+  /** A day's entries after its first (kept under its date): their own key, the day and when it was added (`newEntryKey`). */
+  id?: string
   /** Where the night was, by the plan when written. */
   cityId?: string
   /** One line, the day's highlight. */
@@ -27,6 +31,24 @@ export type DayEntry = {
 export type Journal = Record<string, DayEntry>
 
 export const JOURNAL_LIMITS = { textChars: 4000, highlightChars: 140, days: 800, bytes: 1_500_000, tags: 12, tagChars: 32, emojis: 8, emojiChars: 20 }
+
+/** Where an entry is kept in the journal: its date, or its own key for a day's other entries. */
+export const entryKey = (e: DayEntry) => e.id ?? e.date
+
+/** An entry's key: its day's own, or one of its other entries' (the day, then when it was added: they sort in order). */
+const ENTRY_KEY = /^(\d{4}-\d{2}-\d{2})(~[0-9a-z]{1,12})?$/
+export const entryDate = (key: string) => key.slice(0, 10)
+
+/** The key for a new entry on `date`: the day's own if nothing's written under it, else one of its own. */
+export const newEntryKey = (journal: Journal, date: string) => (isEmptyEntry(journal[date]) ? date : `${date}~${Date.now().toString(36)}`)
+
+/** The entries written, by key, the day's latest first (newest first over the days too). */
+export const writtenKeys = (journal: Journal) =>
+  Object.keys(journal).filter((k) => !isEmptyEntry(journal[k])).sort((a, b) => entryDate(b).localeCompare(entryDate(a)) || b.localeCompare(a))
+
+/** A day's entries written, by key, the first first. */
+export const dayKeys = (journal: Journal, date: string) =>
+  Object.keys(journal).filter((k) => entryDate(k) === date && !isEmptyEntry(journal[k])).sort()
 
 export const isEmptyEntry = (e: DayEntry | undefined) => !e || (!e.text.trim() && !e.highlight.trim() && !e.rating && !e.tags?.length && !e.emojis?.length)
 
@@ -67,6 +89,7 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
   const entries: DayEntry[] = []
   for (const x of list as Record<string, unknown>[]) {
     if (!x || typeof x !== 'object' || typeof x.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(x.date)) return 'Invalid journal day'
+    if (x.id !== undefined && (typeof x.id !== 'string' || !ENTRY_KEY.exec(x.id)?.[2] || entryDate(x.id) !== x.date)) return 'Invalid journal day'
     if (typeof x.text !== 'string' || typeof x.highlight !== 'string' || typeof x.updatedAt !== 'number' || !Number.isFinite(x.updatedAt)) return 'Invalid journal day'
     if (x.cityId !== undefined && (typeof x.cityId !== 'string' || x.cityId.length > 64)) return 'Invalid journal day'
     const rating = x.rating === undefined || x.rating === null ? undefined : x.rating
@@ -77,6 +100,7 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
     const emojis = cleanEmojis((x.emojis as string[] | undefined) ?? [])
     entries.push({
       date: x.date,
+      ...(x.id ? { id: x.id as string } : {}),
       ...(x.cityId ? { cityId: x.cityId as string } : {}),
       highlight: x.highlight.slice(0, JOURNAL_LIMITS.highlightChars),
       text: x.text.slice(0, JOURNAL_LIMITS.textChars),
@@ -90,13 +114,16 @@ export function parseEntries(raw: unknown, now = Date.now()): DayEntry[] | strin
   return entries
 }
 
-/** The days the user made public, as the shared link shows them. */
+/** The entries the user made public, as the shared link shows them. */
 export const publicJournal = (journal: Journal): Journal =>
-  Object.fromEntries(Object.values(journal).filter((e) => e.public && !isEmptyEntry(e)).map((e) => [e.date, e]))
+  Object.fromEntries(Object.values(journal).filter((e) => e.public && !isEmptyEntry(e)).map((e) => [entryKey(e), e]))
 
-/** The journal with these entries in: each day's latest edit wins (a tie keeps what's there). */
+/** The journal with these entries in: each entry's latest edit wins (a tie keeps what's there). */
 export function mergeJournal(journal: Journal, entries: DayEntry[]): Journal {
   const merged = { ...journal }
-  for (const e of entries) if (!merged[e.date] || e.updatedAt > merged[e.date].updatedAt) merged[e.date] = e
+  for (const e of entries) {
+    const k = entryKey(e)
+    if (!merged[k] || e.updatedAt > merged[k].updatedAt) merged[k] = e
+  }
   return merged
 }

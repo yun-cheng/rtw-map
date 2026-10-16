@@ -4,7 +4,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
-import { isEmptyEntry, mergeJournal, type DayEntry, type Journal } from './journalCore'
+import { entryDate, entryKey, isEmptyEntry, mergeJournal, type DayEntry, type Journal } from './journalCore'
 import { SHARED_TOKEN } from './shareLink'
 
 export { isEmptyEntry, type DayEntry, type Journal } from './journalCore'
@@ -14,8 +14,8 @@ type JournalState = BookState<DayEntry> & {
   /** My trip's Daily (the journal), brought to a stop's days: `focus`, its first day. */
   view: { focus?: string }
 
-  /** Changes a day (an empty one is kept, cleared, so the clearing reaches the other devices). */
-  write: (date: string, patch: Partial<Omit<DayEntry, 'date' | 'updatedAt'>>) => void
+  /** Changes an entry, by its key (an empty one is kept, cleared, so the clearing reaches the other devices). */
+  write: (key: string, patch: Partial<Omit<DayEntry, 'date' | 'id' | 'updatedAt'>>) => void
   setView: (view: JournalState['view']) => void
 }
 
@@ -31,13 +31,14 @@ export const useJournal = create<JournalState>()(
       problem: null,
       view: {},
 
-      ...bookActions<DayEntry>(set, get, (e) => e.date, mergeJournal, () => onChange()),
+      ...bookActions<DayEntry>(set, get, entryKey, mergeJournal, () => onChange()),
 
-      write: (date, patch) => {
+      write: (k, patch) => {
         const { key, books } = get()
-        const entry: DayEntry = { ...(books[key]?.entries[date] ?? { date, highlight: '', text: '' }), ...patch, updatedAt: Date.now() }
+        const date = entryDate(k)
+        const entry: DayEntry = { ...(books[key]?.entries[k] ?? { date, ...(k !== date && { id: k }), highlight: '', text: '' }), ...patch, updatedAt: Date.now() }
         if (!entry.rating) delete entry.rating
-        changeBook(set, get, { [date]: entry }, onChange)
+        changeBook(set, get, { [k]: entry }, onChange)
       },
 
       setView: (view) => set({ view }),
@@ -63,8 +64,8 @@ export const useJournalEntries = (): Journal => {
   return SHARED_TOKEN ? shared : own
 }
 
-/** The open trip's day, if written. */
-export const useDayEntry = (date: string): DayEntry | undefined => {
-  const e = useJournalEntries()[date]
+/** The open trip's entry (by its key), if written. */
+export const useDayEntry = (key: string): DayEntry | undefined => {
+  const e = useJournalEntries()[key]
   return isEmptyEntry(e) ? undefined : e
 }

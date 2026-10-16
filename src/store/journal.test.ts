@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { dayEmojis, isEmptyEntry, mergeJournal, parseEntries, publicJournal, type DayEntry } from './journalCore'
+import { dayEmojis, dayKeys, isEmptyEntry, mergeJournal, newEntryKey, parseEntries, publicJournal, writtenKeys, type DayEntry } from './journalCore'
 
 vi.hoisted(() => {
   const mem = new Map<string, string>()
@@ -89,5 +89,28 @@ describe('journal', () => {
     expect(s.key).toBe('t3')
     expect(s.books.local).toBeUndefined()
     expect(s.books.t3.pending).toEqual(['2027-05-01'])
+  })
+
+  it("keeps a day's other entries under their own keys: merged, sent and shown each on its own", () => {
+    useJournal.setState({ books: {}, key: 't4' })
+    const { write } = useJournal.getState()
+    expect(newEntryKey({}, '2027-05-01')).toBe('2027-05-01')
+    write('2027-05-01', { text: 'morning' })
+    const other = newEntryKey(useJournal.getState().books.t4.entries, '2027-05-01')
+    expect(other).toMatch(/^2027-05-01~[0-9a-z]+$/)
+    write(other, { text: 'evening', public: true })
+    write('2027-05-02', { text: 'next day' })
+    const { entries, pending } = useJournal.getState().books.t4
+    expect(entries[other]).toMatchObject({ date: '2027-05-01', id: other, text: 'evening' })
+    expect(pending).toEqual(['2027-05-01', other, '2027-05-02'])
+    expect(dayKeys(entries, '2027-05-01')).toEqual(['2027-05-01', other])
+    expect(writtenKeys(entries)).toEqual(['2027-05-02', other, '2027-05-01'])
+    // (The server's merge and the shared link keep both of the day's.)
+    const merged = mergeJournal({}, Object.values(entries))
+    expect(Object.keys(merged).sort()).toEqual(['2027-05-01', other, '2027-05-02'])
+    expect(Object.keys(publicJournal(merged))).toEqual([other])
+    expect(parseEntries({ entries: [entries[other]] }, 1e15)).toEqual([entries[other]])
+    expect(parseEntries({ entries: [{ ...entries[other], date: '2027-05-02' }] })).toBe('Invalid journal day')
+    expect(parseEntries({ entries: [{ ...entries[other], id: '2027-05-01' }] })).toBe('Invalid journal day')
   })
 })
