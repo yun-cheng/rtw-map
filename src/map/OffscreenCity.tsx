@@ -47,11 +47,10 @@ export function OffscreenCity({ map, node }: { map: MlMap; node: CityNode | null
   if (!city || !node || !mark) return null
   const { x, y, angle, area, lon } = mark
   const { width, height } = map.getContainer().getBoundingClientRect()
-  // Into the middle of the uncovered part.
-  const back = () => map.easeTo({
+  // Into the middle of the uncovered part, flying there as the location button does.
+  const back = () => map.flyTo({
     center: [lon, city.lat],
     offset: [(area.left + area.right - width) / 2, (area.top + area.bottom - height) / 2],
-    duration: 700,
   })
   const half = halfSize(node)
   // The name on the side towards the middle of the map, as the map's names sit beside their stops.

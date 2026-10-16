@@ -470,8 +470,8 @@ export function MapView({ editing = false }: { editing?: boolean }) {
     // On a phone the panel covers the bottom half of the map (its sheet opens to half).
     const cover = isPhone() ? height / 2 : 0
     const visible = p.x > margin && p.x < width - margin && p.y > margin + 80 && p.y < height - cover - margin
-    // Centre it in the part of the map the panel doesn't cover.
-    if (!visible) map.easeTo({ center: [c.lon, c.lat], offset: [0, -cover / 2], duration: 700 })
+    // Centre it in the part of the map the panel doesn't cover, flying there as the location button does (OffscreenCity too).
+    if (!visible) map.flyTo({ center: [c.lon, c.lat], offset: [0, -cover / 2] })
   }, [selected])
 
   // Countries pointed at in the Trip tab: shaded, and what they're part of (a country in a region's card: the region)
