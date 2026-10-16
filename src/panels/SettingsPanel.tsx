@@ -56,6 +56,20 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto">
           <Sections>
+            {SHARED_TOKEN ? null : user ? (
+              // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
+              <Section title="Account">
+                <div className="-mx-4 -mb-3 overflow-hidden rounded-b-xl">
+                  <AccountDetails top="pt-0" onApps={() => setApps(true)} onLimits={() => setLimits(true)} onSignOut={onClose} />
+                </div>
+                {limits && <AccountLimits onClose={() => setLimits(false)} />}
+                {apps && <AiApps onClose={() => setApps(false)} />}
+              </Section>
+            ) : (
+              <Section title="Account" aside={<AccountMenu />}>
+                <p className="text-[13px] text-muted">Sign in to save your trips to your account, keep several and use the assistant.</p>
+              </Section>
+            )}
             <Section title="Trip">
               <div className="flex flex-wrap items-center gap-2">{SHARED_TOKEN ? <SharedTitle /> : <TripSwitcher />}</div>
               {plan && <p className="mt-2 text-[13px] text-muted">{dateRange(input.startDate, input.endDate)} · {plan.totalNights} nights · {plan.stops.length} stops</p>}
@@ -88,20 +102,6 @@ export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () =>
             {!SHARED_TOKEN && plan && (
               <Section title="Offline map">
                 <OfflineMapSettings />
-              </Section>
-            )}
-            {SHARED_TOKEN ? null : user ? (
-              // Signed in: the account shown as it is (not behind the avatar's menu, as in the top bar).
-              <Section title="Account">
-                <div className="-mx-4 -mb-3 overflow-hidden rounded-b-xl">
-                  <AccountDetails top="pt-0" onApps={() => setApps(true)} onLimits={() => setLimits(true)} onSignOut={onClose} />
-                </div>
-                {limits && <AccountLimits onClose={() => setLimits(false)} />}
-                {apps && <AiApps onClose={() => setApps(false)} />}
-              </Section>
-            ) : (
-              <Section title="Account" aside={<AccountMenu />}>
-                <p className="text-[13px] text-muted">Sign in to save your trips to your account, keep several and use the assistant.</p>
               </Section>
             )}
           </Sections>
