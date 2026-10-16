@@ -4,7 +4,7 @@ import { dateRange } from '../ui/format'
 import { OfflinePill } from '../ui/OfflinePill'
 import { useAssistantPanel } from '../ui/assistantPanel'
 import { AccountMenu } from './AccountMenu'
-import { ThemeMenu } from './ThemeMenu'
+import { ThemeButton } from './ThemeButton'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
@@ -43,7 +43,7 @@ export function Header({ onSettings }: { onSettings: () => void }) {
             Assistant
           </button>
         )}
-        <ThemeMenu />
+        <ThemeButton />
         <button onClick={onSettings} aria-label="Settings" title="Settings" className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
           <Settings size={17} />
         </button>
