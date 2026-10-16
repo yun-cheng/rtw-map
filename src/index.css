@@ -67,10 +67,12 @@ body,
 }
 
 /* On a phone, the height of the visible page (not counting the browser's bars), and no pull-to-refresh or
-   rubber-banding while dragging a sheet. */
+   rubber-banding while dragging a sheet or scrolling one past its top (the browser takes it from the root, html; body
+   for older ones). */
 #root {
   height: 100dvh;
 }
+html,
 body {
   overscroll-behavior: none;
 }
