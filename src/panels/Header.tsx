@@ -1,10 +1,8 @@
 import { Settings, Sparkles } from 'lucide-react'
 import { useTrip } from '../store/trip'
-import { dataset as ds } from '../data/dataset'
 import { dateRange } from '../ui/format'
 import { OfflinePill } from '../ui/OfflinePill'
 import { useAssistantPanel } from '../ui/assistantPanel'
-import { useMoney } from '../ui/useMoney'
 import { AccountMenu } from './AccountMenu'
 import { ThemeMenu } from './ThemeMenu'
 import { SHARED_TOKEN } from '../store/shareLink'
@@ -13,11 +11,10 @@ import { TripSwitcher } from './TripSwitcher'
 import { UndoRedo } from './UndoRedo'
 
 /** The top bar on a computer: the trip, its dates, Undo, Redo and the version history, the Assistant (its panel opened
- *  and closed), the display settings at hand, the account, and the gear for all the settings (`onSettings`: the
- *  settings panel, as on a phone, with the offline map); "Offline" with no connection. */
+ *  and closed), the theme (currency and °C/°F are in the settings), the account, and the gear for all the settings
+ *  (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
-  const { plan, input, setCurrency, tempUnit, setTempUnit } = useTrip()
-  const { currency } = useMoney()
+  const { plan, input } = useTrip()
   const ai = useAssistantPanel()
 
   return (
@@ -46,27 +43,6 @@ export function Header({ onSettings }: { onSettings: () => void }) {
             Assistant
           </button>
         )}
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          title="Show prices in this currency"
-          className="rounded-md border border-line bg-panel px-1.5 py-1 text-[13px] font-medium"
-          aria-label="Display currency"
-        >
-          {ds.fx.display.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-        <div className="flex rounded-md border border-line p-0.5 text-[12px] font-medium" role="group" aria-label="Temperature unit" title="Show temperatures in Celsius or Fahrenheit">
-          {(['C', 'F'] as const).map((u) => (
-            <button
-              key={u}
-              onClick={() => setTempUnit(u)}
-              aria-pressed={tempUnit === u}
-              className={`rounded px-1.5 py-0.5 ${tempUnit === u ? 'bg-ink text-panel' : 'text-muted hover:text-ink'}`}
-            >
-              °{u}
-            </button>
-          ))}
-        </div>
         <ThemeMenu />
         <button onClick={onSettings} aria-label="Settings" title="Settings" className="flex h-8 w-8 items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink">
           <Settings size={17} />
