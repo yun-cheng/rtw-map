@@ -12,8 +12,6 @@ import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
 import { openAssistant } from '../ui/assistantPanel'
 import { ask, type Answer } from '../ui/dialog'
 import { Button } from '../ui/kit'
-import { usePhone } from '../ui/usePhone'
-import { UndoRedo } from './UndoRedo'
 
 /** What changed since the plan, and the actions that send the assistant to work (and show its tab): update the plan
  *  for them, or plan the trip again (`copy`: in a copy of the plan, which keeps this one), and what replanning
@@ -84,19 +82,15 @@ export function ReviewChanges({ canUpdate, why, className = '' }: { canUpdate: b
 }
 
 /** Pinned to the bottom of the Itinerary tab (like the Trip tab's plan buttons), after edits by hand or setup
- *  changes: Review changes, with Update plan; on a phone always, with Undo and Redo. */
+ *  changes: Review changes, with Update plan. */
 export function UpdatePlanBar() {
   const { changes } = usePlanUpdate()
   const busy = useChat((s) => s.busy)
   const user = useAccount((s) => s.user)
-  const phone = usePhone()
-  const review = changes.length > 0 && !busy
-  // (On a phone, also Undo and Redo, which a computer has in the top bar.)
-  if (!review && !phone) return null
+  if (!changes.length || busy) return null
   return (
     <div className="sticky bottom-0 mt-auto flex items-center gap-2 border-t border-line bg-panel p-3 max-md:py-2">
-      {phone && <UndoRedo phone />}
-      {review && <ReviewChanges canUpdate={!!user} why="Sign in to update the plan with AI." className="min-w-0 flex-1" />}
+      <ReviewChanges canUpdate={!!user} why="Sign in to update the plan with AI." className="min-w-0 flex-1" />
     </div>
   )
 }

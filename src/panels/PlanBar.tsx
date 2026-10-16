@@ -1,67 +1,112 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Check, ChevronDown, Columns2, CopyPlus, Pencil, Trash2 } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { evaluatePlan, type Plan } from '../planner'
 import { MAX_PLANS, tripPlans, useTrip, type TripPlan } from '../store/trip'
 import { cityName, duration } from '../ui/format'
 import { confirm } from '../ui/dialog'
+import { usePhone } from '../ui/usePhone'
 import { useMoney } from '../ui/useMoney'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { ReadOnlyToggle } from './ReadOnly'
+import { UndoRedo } from './UndoRedo'
 
 /**
- * The trip's plans (versions of the itinerary, each with its own setup and preferences): switch between them, add a
- * copy of the current one to try something, rename or delete one, and compare them side by side; and the switch that
- * makes the whole trip read-only (then the plans can still be switched and compared, not added, renamed or deleted).
+ * The trip's plans (versions of the itinerary, each with its own setup and preferences) in a menu: switch between
+ * them, add a copy of the current one to try something, compare them side by side, rename or delete the current one.
+ * Then Undo, Redo and the version history (UndoRedo.tsx), and the switch that makes the whole trip read-only (then the
+ * plans can still be switched and compared, not added, renamed or deleted, and the switch is all there is at the right).
  */
 export function PlanBar() {
   const s = useTrip()
-  const { activePlanId, switchPlan, addPlan, readOnly } = s
+  const { activePlanId, switchPlan, addPlan, deletePlan, readOnly } = s
   const plans = tripPlans(s)
+  const plan = plans.find((p) => p.id === activePlanId)!
   const [comparing, setComparing] = useState(false)
   const [menu, setMenu] = useState(false)
+  const [renaming, setRenaming] = useState(false)
+  const phone = usePhone()
+  const box = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!menu) return
+    const onDown = (e: MouseEvent) => box.current && !box.current.contains(e.target as Node) && setMenu(false)
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setMenu(false)
+    document.addEventListener('mousedown', onDown)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', onDown)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [menu])
+  // A menu item: closes the menu, then does its thing.
+  const item = (label: ReactNode, run: () => void, { danger = false, disabled = false, title }: { danger?: boolean; disabled?: boolean; title?: string } = {}) => (
+    <button
+      role="menuitem" disabled={disabled} title={title}
+      onClick={() => {
+        setMenu(false)
+        run()
+      }}
+      className={`flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-canvas disabled:opacity-40 disabled:hover:bg-transparent max-md:py-2.5 ${danger ? 'text-danger' : ''}`}
+    >
+      {label}
+    </button>
+  )
 
   return (
-    <div className="relative border-b border-line px-2 py-1.5">
-      <div className="flex items-center gap-1 overflow-x-auto">
-        {plans.map((p) => {
-          const on = p.id === activePlanId
-          return (
-            <button
-              key={p.id}
-              onClick={() => (on ? !readOnly && setMenu(!menu) : switchPlan(p.id))}
-              title={on ? (readOnly ? 'The plan shown' : 'The plan you are editing: click to rename or delete it') : `Switch to ${p.name}`}
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[12px] font-medium whitespace-nowrap ${on ? 'border-accent bg-accent-soft text-accent' : 'border-line text-muted hover:text-ink'}`}
-            >
-              {p.name}{on && !readOnly && <span className="ml-1 text-[10px]">▾</span>}
-            </button>
-          )
-        })}
-        {!readOnly && <button
-          onClick={() => addPlan()}
-          disabled={plans.length >= MAX_PLANS}
-          title={plans.length >= MAX_PLANS ? `A trip can have up to ${MAX_PLANS} plans` : 'New plan: a copy of this one, to try something without losing it'}
-          className="shrink-0 rounded-full border border-dashed border-line px-2 py-0.5 text-[12px] text-muted hover:text-ink disabled:opacity-40"
+    <div className="relative flex items-center gap-1 border-b border-line px-2 py-1">
+      <div ref={box} className="relative min-w-0">
+        <button
+          onClick={() => setMenu(!menu)}
+          aria-haspopup="menu"
+          aria-expanded={menu}
+          className="flex max-w-full min-w-0 items-center gap-1 rounded-full border border-accent bg-accent-soft py-0.5 pr-1.5 pl-2.5 text-[12px] font-medium text-accent max-md:py-1"
         >
-          + Plan
-        </button>}
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          {plans.length > 1 && (
-            <button onClick={() => setComparing(!comparing)} className={`shrink-0 px-1 text-[12px] ${comparing ? 'text-accent' : 'text-muted hover:text-ink'}`}>
-              Compare
-            </button>
-          )}
-          {!SHARED_TOKEN && <ReadOnlyToggle />}
-        </div>
+          <span className="truncate">{plan.name}</span>
+          <ChevronDown size={14} className="shrink-0" />
+        </button>
+        {menu && (
+          <div role="menu" className="absolute top-full left-0 z-40 mt-1 w-60 rounded-lg border border-line bg-panel py-1.5 text-[13px] shadow-lg">
+            {plans.map((p) => (
+              <button
+                key={p.id}
+                role="menuitemradio"
+                aria-checked={p.id === activePlanId}
+                onClick={() => {
+                  setMenu(false)
+                  switchPlan(p.id)
+                }}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left hover:bg-canvas max-md:py-2.5"
+              >
+                <span className="w-3.5 shrink-0 text-accent">{p.id === activePlanId && <Check size={14} />}</span>
+                <span className="truncate">{p.name}</span>
+              </button>
+            ))}
+            <div className="my-1.5 border-t border-line" />
+            {!readOnly && item(<><CopyPlus size={14} className="shrink-0 text-muted" />New plan, a copy of this one</>, () => addPlan(), {
+              disabled: plans.length >= MAX_PLANS,
+              title: plans.length >= MAX_PLANS ? `A trip can have up to ${MAX_PLANS} plans` : 'To try something without losing this one',
+            })}
+            {plans.length > 1 && item(<><Columns2 size={14} className="shrink-0 text-muted" />Compare plans</>, () => setComparing(true))}
+            {!readOnly && item(<><Pencil size={14} className="shrink-0 text-muted" />Rename this plan</>, () => setRenaming(true))}
+            {!readOnly && plans.length > 1 && item(<><Trash2 size={14} className="shrink-0" />Delete this plan</>, async () => {
+              if (await confirm(`Delete ${plan.name}?`, { message: "This can't be undone.", ok: 'Delete' })) deletePlan(plan.id)
+            }, { danger: true })}
+          </div>
+        )}
       </div>
-      {menu && !readOnly && <PlanMenu plan={plans.find((p) => p.id === activePlanId)!} canDelete={plans.length > 1} onClose={() => setMenu(false)} />}
+      <div className="ml-auto flex shrink-0 items-center gap-1">
+        <UndoRedo phone={phone} />
+        {!SHARED_TOKEN && <ReadOnlyToggle />}
+      </div>
+      {renaming && !readOnly && <RenamePlan plan={plan} onClose={() => setRenaming(false)} />}
       {comparing && plans.length > 1 && <Compare plans={plans} onClose={() => setComparing(false)} />}
     </div>
   )
 }
 
-/** Rename or delete the active plan. */
-function PlanMenu({ plan, canDelete, onClose }: { plan: TripPlan; canDelete: boolean; onClose: () => void }) {
-  const { renamePlan, deletePlan } = useTrip()
+/** Rename the active plan. */
+function RenamePlan({ plan, onClose }: { plan: TripPlan; onClose: () => void }) {
+  const { renamePlan } = useTrip()
   const [name, setName] = useState(plan.name)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -85,17 +130,6 @@ function PlanMenu({ plan, canDelete, onClose }: { plan: TripPlan; canDelete: boo
         />
         <button onClick={save} className="rounded-md bg-accent px-2 text-[12px] font-medium text-on-accent">Save</button>
       </div>
-      <button
-        disabled={!canDelete}
-        onClick={async () => {
-          onClose()
-          if (await confirm(`Delete ${plan.name}?`, { message: "This can't be undone.", ok: 'Delete' })) deletePlan(plan.id)
-        }}
-        title={canDelete ? undefined : 'A trip needs at least one plan'}
-        className="mt-2 text-[12px] text-danger hover:underline disabled:text-muted disabled:no-underline"
-      >
-        Delete this plan
-      </button>
     </div>
   )
 }

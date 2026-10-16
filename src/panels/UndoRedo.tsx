@@ -1,6 +1,5 @@
-// Undo, Redo and the version history's clock: in the top bar on a computer; on a phone (no top bar), at the bottom of
-// the Trip and Itinerary tabs, beside Review changes. And what each undo or redo did, in a notice for a few seconds
-// (UndoNotice).
+// Undo, Redo and the version history's clock: at the right of the plan bar (PlanBar.tsx), under the left panel's
+// tabs. And what each undo or redo did, in a notice for a few seconds (UndoNotice).
 import { History, Redo2, Undo2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useChat } from '../agent/chat'
@@ -16,17 +15,16 @@ const LINES_SHOWN = 3
 const NOTICE_MS = 4000
 
 /** Undo and redo of the trip's edits (store/history.ts), not while the assistant is changing it; and the saved trip's
- *  version history (VersionHistory.tsx), signed in. Not on a shared trip. `phone`: buttons big enough for a finger. */
+ *  version history (VersionHistory.tsx), signed in. None of them on a read-only trip (it doesn't change, not even back,
+ *  store/tripCore.ts; the lock beside them is all there is) or a shared one. `phone`: buttons big enough for a finger. */
 export function UndoRedo({ phone = false }: { phone?: boolean }) {
   const { past, future, undo, redo } = useHistory()
   const saved = useSaved((s) => !!s.activeId)
-  // A read-only trip doesn't change (store/tripCore.ts), not even back.
-  const working = useChat((s) => s.busy)
+  const busy = useChat((s) => s.busy)
   const readOnly = useTrip((s) => s.readOnly)
-  if (SHARED_TOKEN) return null
-  const busy = working || readOnly
-  const btn = `flex items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent ${phone ? 'h-10 w-10' : 'h-8 w-8'}`
-  const size = phone ? 18 : 17
+  if (SHARED_TOKEN || readOnly) return null
+  const btn = `flex items-center justify-center rounded-md text-muted hover:bg-canvas hover:text-ink disabled:opacity-30 disabled:hover:bg-transparent ${phone ? 'h-9 w-9' : 'h-7 w-7'}`
+  const size = phone ? 18 : 16
   return (
     <div className="flex shrink-0 items-center" role="group" aria-label="Undo and history">
       <button className={btn} onClick={undo} disabled={busy || !past.length} title={`Undo (${UNDO_KEYS})`} aria-label="Undo"><Undo2 size={size} /></button>

@@ -14,8 +14,6 @@ import { TripSummary } from './Travel'
 import { ReviewChanges, usePlanUpdate } from './UpdatePlan'
 import { flag } from '../ui/format'
 import { Button, Segmented, Stepper } from '../ui/kit'
-import { usePhone } from '../ui/usePhone'
-import { UndoRedo } from './UndoRedo'
 
 const MODE_STYLE: Record<CountryMode, string> = {
   must: 'border-accent bg-accent-soft text-accent',
@@ -41,7 +39,6 @@ export function SetupPanel() {
   // What changed since the plan was made or updated (the setup, edits by hand): the assistant can update the plan for
   // just that, keeping the rest and the user's own edits.
   const { changes, askReplan } = usePlanUpdate()
-  const phone = usePhone()
   // The dates asked for (with flexible dates, the plan's own may differ within them).
   const asked = { start: input.flex?.start ?? input.startDate, end: input.flex?.end ?? input.endDate }
   const flex = { start: input.flex?.startDays ?? 0, end: input.flex?.endDays ?? 0 }
@@ -203,8 +200,6 @@ export function SetupPanel() {
       {/* Pinned to the bottom of the panel, so they're at hand however far it's scrolled (not on someone else's shared
           trip, which can't change). */}
       {!SHARED_TOKEN && <div className="sticky bottom-0 flex items-center gap-2 border-t border-line bg-panel p-3 max-md:py-2">
-        {/* (On a phone, Undo and Redo too, which a computer has in the top bar.) */}
-        {phone && !readOnly && <UndoRedo phone />}
         <div className="min-w-0 flex-1">
           {readOnly ? (
             <p className="text-center text-[12px] text-muted">Read-only: make the trip editable (the lock above) to change or replan it.</p>

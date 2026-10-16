@@ -8,9 +8,8 @@ import { ThemeButton } from './ThemeButton'
 import { SHARED_TOKEN } from '../store/shareLink'
 import { SharedTitle } from './SharedTrip'
 import { TripSwitcher } from './TripSwitcher'
-import { UndoRedo } from './UndoRedo'
 
-/** The top bar on a computer: the trip, its dates, Undo, Redo and the version history, the Assistant (its panel opened
+/** The top bar on a computer: the trip, its dates, the Assistant (its panel opened
  *  and closed), the theme (currency and °C/°F are in the settings), the account, and the gear for all the settings
  *  (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
@@ -29,7 +28,6 @@ export function Header({ onSettings }: { onSettings: () => void }) {
           <span>{dateRange(input.startDate, input.endDate)} · <b>{plan.totalNights}</b> nights · <b>{plan.stops.length}</b> stops</span>
         </div>
       )}
-      <UndoRedo />
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         <OfflinePill className="mr-1.5 h-7" />
         {!SHARED_TOKEN && (

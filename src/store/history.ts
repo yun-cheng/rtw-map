@@ -1,4 +1,4 @@
-// Undo and redo for the trip on screen (the top bar's buttons, ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y): each edit to the
+// Undo and redo for the trip on screen (the plan bar's buttons, ⌘Z / Ctrl+Z, ⇧⌘Z / Ctrl+Y): each edit to the
 // active plan's setup or stops is a step (by hand anywhere: the Itinerary or Trip tab, the map, a city's panel), and
 // each of the assistant's replies is one step as a whole. Kept for the open plan while the page is open; opening
 // another trip or plan starts afresh. Each undo or redo says what it did (`notice`, shown by UndoNotice.tsx).
