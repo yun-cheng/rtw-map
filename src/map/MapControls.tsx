@@ -7,6 +7,7 @@ import { useButtonSide } from '../ui/buttonSide'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
 import { dataset as ds } from '../data/dataset'
+import { anyOwnCost } from './cityMetric'
 import { COST_GROUPS, COST_LABELS, NEARBY_LABELS, airLegend, costScale, mobileLegend, nearbyLegend, visaLegend, type LegendItem } from './scales'
 
 const LAYERS: { value: MapLayer; label: string }[] = [
@@ -59,7 +60,7 @@ const COST_ABOUT: Record<CostKind, string> = {
 
 /** `editing`: the trip's setup is open, and the map shows its countries (see MapView) instead of a map view. */
 export function MapControls({ editing = false }: { editing?: boolean }) {
-  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy } = useTrip()
+  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy, seenPrices } = useTrip()
   const phone = usePhone()
   const left = useButtonSide((s) => s.side) === 'left'
   // The kind last picked in each cost group, so going back to a group returns to it.
@@ -104,6 +105,12 @@ export function MapControls({ editing = false }: { editing?: boolean }) {
           ))}
           {layer === 'climate' && <RainRing />}
           {layer === 'schengen' && plan && <SchengenDays s={plan.schengen} />}
+          {layer === 'cost' && anyOwnCost(costKind, input, seenPrices) && (
+            // The * on a city's cost in its hover box, said once here.
+            <span className="border-l border-line pl-3 text-muted" title={costKind === 'day' ? "A city's daily cost with a * is changed by you: its choices changed in its Costs tab, or a price you saw there" : "A city's cost with a * is from a price you saw there (its Costs tab)"}>
+              * {costKind === 'day' ? 'Changed by you' : 'Price you saw'}
+            </span>
+          )}
           {layer === 'visa' && <span className="border-l border-line pl-3 text-muted">{ds.visa.passports.find((p) => p.code === input.passport)?.name ?? input.passport} passport</span>}
         </div>
       )}

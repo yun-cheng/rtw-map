@@ -1,7 +1,7 @@
 // What a city looks like in the current map view: its colour, hover box and the value on its circle. Shared by the
 // map and the timeline, so a stop has the same colour and hover box in both.
 import { dataset as ds } from '../data/dataset'
-import { airBand, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type ScheduledStop } from '../planner'
+import { airBand, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type CostInput, type CostKind, type ScheduledStop, type SeenPrices } from '../planner'
 import type { useTrip } from '../store/trip'
 import { VISA_TEXT, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, tempKind, tempRange, tempValue } from '../ui/format'
 import { COST_LABELS, NEARBY_LABELS, costScale, nearbyColor, visaOf } from './scales'
@@ -80,12 +80,28 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       const d = costOf(ds, cityId, costKind, { ...input, prices: seenPrices })
       // No rental price where that rental isn't usual in the city; for other costs, no data.
       if (!d) return { color: NO_DATA, lines: [costKind === 'car' || costKind === 'scooter' ? `No ${COST_LABELS[costKind].label.toLowerCase()} here` : 'No data'] }
-      // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").
-      return { color: costs.color(d), lines: [`~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`] }
+      // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day"); a * where the cost
+      // is the user's (explained once, in the legend).
+      const amount = `~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`
+      return { color: costs.color(d), lines: [`${amount}${ownCost(cityId, costKind, input, seenPrices) ? '*' : ''}`] }
     }
     return {}
   }
 }
+
+/**
+ * Whether a city's cost of this kind is the user's, marked * on the Cost view: a price they saw there that changes it,
+ * or, for a day, its choices changed for that city.
+ */
+export function ownCost(cityId: string, kind: CostKind, input: CostInput, prices?: SeenPrices): boolean {
+  if (kind === 'day' && input.cityCosts?.[cityId]) return true
+  return !!prices?.[cityId] && costOf(ds, cityId, kind, { ...input, prices }) !== costOf(ds, cityId, kind, input)
+}
+
+/** Whether any city's cost of this kind is the user's (ownCost): the legend then says what the * means. */
+export const anyOwnCost = (kind: CostKind, input: CostInput, prices?: SeenPrices): boolean =>
+  [...new Set([...Object.keys(prices ?? {}), ...(kind === 'day' ? Object.keys(input.cityCosts ?? {}) : [])])]
+    .some((id) => ds.cities[id] && ownCost(id, kind, input, prices))
 
 /** A stop's hover box: its name, then the view's value; in the Route view (no value) "Day 12 · 4 nights". */
 export const stopTip = (startDate: string, stop: ScheduledStop, metric: Metric): TipContent => ({
