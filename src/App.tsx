@@ -102,7 +102,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
     <>
       <nav data-sheet-peek={peek || undefined} className="flex shrink-0 items-center border-b border-line px-2" role="tablist">
         {tabs.map((t) => {
-          // Each with its icon and name.
+          // Each with its icon and name: as wide as that beside the map, sharing the width on a phone's sheet.
           const Icon = TAB_ICONS[t]
           return (
             <button
@@ -111,7 +111,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
               aria-selected={tab === t}
               disabled={t === 'itinerary' && !plan}
               onClick={() => setPanel(t)}
-              className={`-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:px-1 max-md:py-2.5 ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
+              className={`-mb-px flex flex-1 items-center justify-center gap-1.5 border-b-2 px-3 py-2 text-[13px] font-medium whitespace-nowrap disabled:opacity-40 max-md:px-1 max-md:py-2.5 md:flex-none ${tab === t ? 'border-accent text-ink' : 'border-transparent text-muted hover:text-ink'}`}
             >
               <Icon size={peek ? 18 : 16} />
               {TAB_LABELS[t]}
