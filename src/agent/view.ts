@@ -58,10 +58,10 @@ const MY_TRIP_SHOWS: Record<MyTripTab, string> = {
   today: 'where they are today, the day\'s or next journey, the weather today and tomorrow, tonight\'s stay, today\'s journal entries (private: not shared with you), this stop\'s checks and the days left',
   stays: 'every stop\'s stays, in the trip\'s order',
   tickets: 'every journey\'s tickets, in the trip\'s order',
-  receipts: 'the receipts of what they spent',
+  receipts: 'what they spent: the total so far, then each day\'s expenses',
   daily: 'their journal, day by day (private: not shared with you)',
 }
-const RECORD_NAMES: Partial<Record<MyTripTab, string>> = { stays: 'stay', tickets: 'ticket', receipts: 'receipt' }
+const RECORD_NAMES: Partial<Record<MyTripTab, string>> = { stays: 'stay', tickets: 'ticket', receipts: 'expense' }
 const NEARBY_NAMES: Record<NearbyKind, string> = { supermarket: 'supermarkets', pharmacy: 'pharmacies', clinic: 'clinics & doctors', atm: 'ATMs' }
 const COST_NAMES: Record<CostKind, string> = {
   day: 'daily cost for their budget', dorm: 'a night in a hostel dorm', private: 'a night in a private room', meal: 'a meal at a simple local eatery',

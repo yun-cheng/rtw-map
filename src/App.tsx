@@ -369,7 +369,7 @@ export default function App() {
               {hasRight && (
                 <button
                   onClick={() => setRightSheet(!rightSheet)}
-                  aria-label={`${MY_TRIP_NAME}: stays, tickets, receipts and journal`}
+                  aria-label={`${MY_TRIP_NAME}: stays, tickets, spending and journal`}
                   className={`absolute top-24 ${buttonX} z-10 flex h-9 w-9 items-center justify-center rounded-lg border border-line bg-panel text-muted shadow-sm hover:text-ink`}
                 >
                   <Wallet size={18} />

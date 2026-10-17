@@ -56,7 +56,7 @@ export function Receipts() {
       if (receipt && !receipt.deleted && !isEmptyItem(receipt)) setRecord('receipts', adding)
       setAdding(null)
     }
-    return <NewRecord back="All receipts" onBack={() => setAdding(null)} title="New receipt"><ReceiptEditor id={adding} onDone={done} autoFocus /></NewRecord>
+    return <NewRecord back="All spending" onBack={() => setAdding(null)} title="New expense"><ReceiptEditor id={adding} onDone={done} autoFocus /></NewRecord>
   }
   const page = open ? items[open] : undefined
   if (page && !page.deleted && page.kind === 'receipt') {
@@ -67,14 +67,14 @@ export function Receipts() {
   return (
     <Sections>
       <Section
-        title={kept.length ? 'Spent so far' : 'No receipts yet'}
+        title={kept.length ? 'Spent so far' : 'Nothing spent yet'}
         aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setAdding(newItemId('receipt'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {/* (Just its title while there are none.) */}
         {kept.length > 0 && <>
           <div className="text-[20px] font-semibold">{fmt(totalEur(kept))}</div>
           <p className="text-[12px] text-muted">
-            {kept.length} receipt{kept.length === 1 ? '' : 's'}, at today's rates{unrated > 0 && ` (${unrated} in money without a rate left out)`}
+            {kept.length} expense{kept.length === 1 ? '' : 's'}, at today's rates{unrated > 0 && ` (${unrated} in money without a rate left out)`}
           </p>
         </>}
       </Section>
@@ -95,7 +95,7 @@ export function Receipts() {
 function ReceiptRow({ receipt: r, onOpen }: { receipt: TripItem; onOpen: () => void }) {
   return (
     <RecordRow
-      title={r.title || 'A receipt'} mark={<AiMark on={r.ai} />} sub={r.bookings?.length ? <ReceiptFor bookings={r.bookings} /> : undefined} isPublic={r.public} onOpen={onOpen}
+      title={r.title || 'An expense'} mark={<AiMark on={r.ai} />} sub={r.bookings?.length ? <ReceiptFor bookings={r.bookings} /> : undefined} isPublic={r.public} onOpen={onOpen}
       aside={r.amount !== undefined && <span className="font-medium tabular-nums">{paid(r.amount, r.currency)}</span>}
     />
   )
@@ -110,11 +110,11 @@ function ReceiptPage({ receipt: r, ids }: { receipt: TripItem; ids: string[] }) 
   const where = [r.from && dayDate(r.from), r.at !== NO_PLACE && cityName(r.at)].filter(Boolean).join(' · ')
   return (
     <Sections>
-      <RecordNav back="All receipts" onBack={() => setRecord('receipts', null)} prev={ids[i - 1]} next={ids[i + 1]} onGo={(id) => setRecord('receipts', id)} prevLabel="Receipt before" nextLabel="Receipt after" at={r.id} />
-      <RecordCard title={where || 'Receipt'} isPublic={r.public} editing={editing} onEdit={() => setEditing(true)}>
+      <RecordNav back="All spending" onBack={() => setRecord('receipts', null)} prev={ids[i - 1]} next={ids[i + 1]} onGo={(id) => setRecord('receipts', id)} prevLabel="Expense before" nextLabel="Expense after" at={r.id} />
+      <RecordCard title={where || 'Expense'} isPublic={r.public} editing={editing} onEdit={() => setEditing(true)}>
         {editing ? <ReceiptEditor key={r.id} id={r.id} onDone={() => setEditing(false)} autoFocus /> : (
           <div className="flex flex-col gap-1.5 text-[13px]">
-            <RecordTitle mark={<AiMark on={r.ai} />}>{r.title || 'A receipt'}</RecordTitle>
+            <RecordTitle mark={<AiMark on={r.ai} />}>{r.title || 'An expense'}</RecordTitle>
             {r.amount !== undefined && <div className="text-[20px] font-semibold tabular-nums">{paid(r.amount, r.currency)}</div>}
             <ReceiptFor bookings={r.bookings} />
             {r.text && <p className="whitespace-pre-wrap">{r.text}</p>}
@@ -225,7 +225,7 @@ function ReceiptEditor({ id, onDone, autoFocus }: { id: string; onDone: () => vo
         <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="What was in it, who paid…" className={`${field} resize-y`} />
       </label>
       <EditorButtons
-        onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="receipt"
+        onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="expense"
         visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} of="receipt" />}
       />
     </div>

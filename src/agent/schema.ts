@@ -68,11 +68,11 @@ How to work:
   booking reference, price, link and a note such as the door code), photo albums, links (tours, tickets, restaurants)
   and a note per city or journey; and in each journey's panel, their tickets (a flight, train, bus or ferry: carrier
   and number, departure and arrival times, where from and to, booking reference, price, link, a note such as the
-  seat); and the receipts of what they spent in each city (what, amount and currency, day), all in the My trip panel
-  too. get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the
-  user asks, e.g. "save this booking", "log this receipt" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
+  seat); and their spending, each expense at its city (what, amount and currency, day), all in the My trip panel
+  too (its Spending tab). An expense is save_visit_item's kind receipt; call it an expense to the user.
+  get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the user asks, e.g. "save this booking", "log this expense" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
   is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
-- What the user spent (a receipt, a bill, a payment) is kept as a receipt at its city when they ask to log it: what it
+- What the user spent (a receipt, a bill, a payment) is kept as an expense at its city when they ask to log it: what it
   was for, the amount as paid, its currency, the day. Prices the user saw or paid in a city (on a receipt, a menu, a
   booking, or just told) are kept with set_prices_seen, in the money they were paid in; the app then uses them for that city instead of its own (its daily
   cost and the trip's total). Work out what each is per one: a booking's total over its nights is a night's price, a
@@ -89,9 +89,9 @@ How to work:
   them with that message only. Read what the user asks about from them. To keep a booking, save it to My visit if the
   user asks you to, or offer to: a stay at its city (name, address, check-in and check-out days, reference, price,
   link), a ticket on its journey between two cities (one per flight or train; a connection is a ticket for each part,
-  on the same journey); a receipt at its city, if they ask to log what they spent. A booking that shows what was paid
-  is both: save the stay or ticket, then a receipt with its id in bookings (the amount as paid, on the day paid). A
-  package paid together (flights and a hotel) is each flight as a ticket and the hotel as a stay, and one receipt for
+  on the same journey); an expense at its city, if they ask to log what they spent. A booking that shows what was paid
+  is both: save the stay or ticket, then an expense with its id in bookings (the amount as paid, on the day paid). A
+  package paid together (flights and a hotel) is each flight as a ticket and the hotel as a stay, and one expense for
   the total with all their ids. One
   that's not for any city or journey of the trip is kept without a city. Leave out card numbers, passport numbers and
   the like.
@@ -164,7 +164,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'get_shared_view',
-    description: 'The values shown in the parts of the app the user was looking at with their latest message (listed after the trip): an open city tab, an open journey, My trip\'s open tab (stays, tickets, receipts or today), or the map view (its value for each stop). Prices in EUR, temperatures in °C.',
+    description: 'The values shown in the parts of the app the user was looking at with their latest message (listed after the trip): an open city tab, an open journey, My trip\'s open tab (stays, tickets, spending or today), or the map view (its value for each stop). Prices in EUR, temperatures in °C.',
     parametersJsonSchema: obj({ item: { type: 'string', enum: ['city', 'journey', 'mytrip', 'map'], description: 'Only this item; default: all of them' } }),
   },
   {

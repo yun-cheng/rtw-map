@@ -5,7 +5,7 @@ import { isEmptyItem, useAllItems } from '../store/items'
 import { bookingName, paid } from '../ui/format'
 import { openRecord } from '../ui/rightPanel'
 
-/** On a stay's or ticket's card: what was paid for it, by its receipts ("Paid €84 · receipt"); a receipt for a
+/** On a stay's or ticket's card: what was paid for it, by its receipts ("Paid €84 · expense"); a receipt for a
  *  package (it and other bookings, paid together) is its whole amount, said so. */
 export function PaidFor({ id }: { id: string }) {
   const receipts = Object.values(useAllItems()).filter((r) => r.kind === 'receipt' && r.bookings?.includes(id) && !isEmptyItem(r) && r.amount !== undefined)
@@ -15,7 +15,7 @@ export function PaidFor({ id }: { id: string }) {
     <div>
       <span className="text-muted">Paid </span>{receipts.map((r) => paid(r.amount!, r.currency)).join(' + ')}
       {others > 0 && <span className="text-muted"> with {others} other booking{others === 1 ? '' : 's'}</span>}{' '}
-      <button onClick={(e) => { e.stopPropagation(); openRecord('receipts', receipts.length === 1 ? receipts[0].id : null) }} className="text-accent hover:underline">· receipt{receipts.length === 1 ? '' : 's'}</button>
+      <button onClick={(e) => { e.stopPropagation(); openRecord('receipts', receipts.length === 1 ? receipts[0].id : null) }} className="text-accent hover:underline">· expense{receipts.length === 1 ? '' : 's'}</button>
     </div>
   )
 }

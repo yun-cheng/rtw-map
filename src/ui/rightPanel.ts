@@ -15,7 +15,7 @@ export type MyTripTab = 'today' | 'stays' | 'tickets' | 'receipts' | 'daily'
 /** The panel's name: the user's own, or neutral on a shared trip's page (it's its owner's). */
 export const MY_TRIP_NAME = SHARED_TOKEN ? 'Trip details' : 'My trip'
 export const MY_TRIP_TABS: MyTripTab[] = ['today', 'stays', 'tickets', 'receipts', 'daily']
-export const MY_TRIP_LABELS: Record<MyTripTab, string> = { today: 'Today', tickets: 'Tickets', stays: 'Stays', daily: 'Journal', receipts: 'Receipts' }
+export const MY_TRIP_LABELS: Record<MyTripTab, string> = { today: 'Today', tickets: 'Tickets', stays: 'Stays', daily: 'Journal', receipts: 'Spending' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
 export const MY_TRIP_ICONS: Record<MyTripTab, LucideIcon> = { today: MapPin, tickets: Ticket, stays: BedDouble, daily: BookOpen, receipts: Receipt }
 
