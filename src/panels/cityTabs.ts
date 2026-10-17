@@ -1,7 +1,8 @@
 // The city panel's tabs, their icons and the sections each one shows (or its sub-tabs); shared with the plan's checks
-// (Checks.tsx), which open the tab a check is about.
+// (Checks.tsx), which open the tab a check is about, and with the map and timeline, whose cities open on their view's.
 import { BedDouble, CalendarDays, CircleDollarSign, CloudSun, Coffee, HeartPulse, Languages, LayoutGrid, ShieldCheck, Stamp, TramFront, type LucideIcon } from 'lucide-react'
-import type { CityTab } from '../store/trip'
+import type { CostKind } from '../planner'
+import { useTrip, type CityTab, type MapLayer, type NearbyKind } from '../store/trip'
 
 export type SectionKey =
   | 'around' | 'gettingThere' | 'weather' | 'air' | 'holidays' | 'day' | 'stay' | 'food' | 'money' | 'language' | 'phone' | 'services' | 'people' | 'phrases'
@@ -41,4 +42,35 @@ export function tabOf(section: SectionKey): [CityTab, string?] {
     if (part) return [t.key, part.key]
   }
   return ['overview']
+}
+
+/** The section a map view shows of a city (none for the Route view): a city clicked on that view opens on its tab. */
+function viewSection(layer: MapLayer, costKind: CostKind, nearbyKind: NearbyKind): SectionKey | null {
+  switch (layer) {
+    case 'climate': return 'weather'
+    case 'air': return 'air'
+    case 'mobile': return 'phone'
+    case 'schengen': case 'visa': return 'visa'
+    case 'nearby': return nearbyKind === 'pharmacy' || nearbyKind === 'clinic' ? 'medical' : 'services'
+    case 'cost':
+      if (costKind === 'day') return 'day'
+      if (costKind === 'dorm' || costKind === 'private') return 'stay'
+      if (costKind === 'transport' || costKind === 'taxi' || costKind === 'car' || costKind === 'scooter') return 'around'
+      return 'food'
+    default: return null
+  }
+}
+
+/** The tab (and sub-tab) a city clicked on the map or timeline opens on in this map view; null keeps the one open. */
+export function viewTab(s: { layer: MapLayer; costKind: CostKind; nearbyKind: NearbyKind }): [CityTab, string?] | null {
+  const section = viewSection(s.layer, s.costKind, s.nearbyKind)
+  return section && tabOf(section)
+}
+
+/** Opens a city clicked on the map or timeline, on the tab that shows what the map view does (viewTab). */
+export function openFromMap(cityId: string) {
+  const s = useTrip.getState()
+  const tab = viewTab(s)
+  if (tab) s.setCityTab(...tab)
+  s.select({ type: 'city', id: cityId })
 }

@@ -20,6 +20,7 @@ import { OffscreenCity, type CityNode } from './OffscreenCity'
 import { visaOf } from './scales'
 import { shapeOf } from './shapes'
 import { tipElement } from '../ui/tipBody'
+import { openFromMap } from '../panels/cityTabs'
 
 // Vite bundles MapLibre's worker separately; tell MapLibre where it is.
 maplibregl.setWorkerUrl(workerUrl)
@@ -288,7 +289,9 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       }
       const f = hit(e.point)
       if (!f || (!isCity(f) && Number(f.properties.leg) < 0)) return
-      useTrip.getState().select(isCity(f) ? { type: 'city', id: String(f.properties.id) } : { type: 'leg', index: Number(f.properties.leg) })
+      // A city opens on the tab that shows what the view does (Costs on the Cost view).
+      if (isCity(f)) openFromMap(String(f.properties.id))
+      else useTrip.getState().select({ type: 'leg', index: Number(f.properties.leg) })
     })
     map.on('mousemove', (e: MapMouseEvent) => {
       if (useTrip.getState().picking && editingRef.current) return showPick(e)

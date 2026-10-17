@@ -5,6 +5,7 @@ import { useTrip } from '../store/trip'
 import { cityMetrics, stopTip, tipText, type TipContent } from '../map/cityMetric'
 import { MONTHS, STOP_COLOR } from '../ui/format'
 import { HoverTip, type Tip } from '../ui/HoverTip'
+import { openFromMap } from './cityTabs'
 import { useSideScroll } from '../ui/useSideScroll'
 
 /** A bar's hover box: the map's, without the city name (it's on the bar); "Day 3 · 4 nights" in the Route view. */
@@ -14,7 +15,7 @@ const barTip = (t: TipContent): TipContent => ({ lines: t.lines ?? (t.sub ? [t.s
 const PX_PER_DAY = 12
 
 export function Timeline() {
-  const { plan, input, selected, select, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices } = useTrip()
+  const { plan, input, selected, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices } = useTrip()
   // Each stop in the map's colour for the current view, with the map's hover text.
   const metric = useMemo(
     () => cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices }),
@@ -67,7 +68,7 @@ export function Timeline() {
                 <div key={s.cityId}>
                   <button
                     data-city={s.cityId}
-                    onClick={() => select({ type: 'city', id: s.cityId })}
+                    onClick={() => openFromMap(s.cityId)}
                     aria-label={tipText(stopTip(input.startDate, s, m))}
                     onMouseEnter={showTip(barTip(stopTip(input.startDate, s, m)))}
                     onMouseLeave={hideTip}
