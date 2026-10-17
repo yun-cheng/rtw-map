@@ -251,7 +251,7 @@ async function authorize(request: Request, ctx: OAuthContext, params: URLSearchP
   const write = canWrite(req.scope)
   return page(`Allow ${req.name}?`, `
     <h1>Allow ${name} to see your trips?</h1>
-    <p>It will be able to read your saved trips in rtw-map: their plans, dates and costs, your journal and My visit (stays, tickets, receipts, links and notes).${write ? '' : ' It can\'t change anything.'}</p>
+    <p>It will be able to read your saved trips in rtw-map: their plans, dates and costs, your journal and My visit (stays, tickets, expenses, links and notes).${write ? '' : ' It can\'t change anything.'}</p>
     <form method="post" action="/oauth/authorize">${fields}
       ${write ? `<label class="check"><input type="checkbox" name="write" value="1" checked><span><b>Also let it change your trips</b><br><span class="muted">Their plans, stops, nights and settings, and My visit (your bookings, links and notes), as the app's own assistant can. Its changes show in the app, and each can be undone.</span></span></label>` : ''}
       <p class="muted">Allow it only if you just started connecting it: the app chose its own name. You can disconnect it any time in the app (Account, AI apps). After you answer, you go back to ${esc(redirectLabel(req.redirectUri))}.</p>

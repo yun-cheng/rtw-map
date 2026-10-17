@@ -36,7 +36,7 @@ export function paid(amount: number, currency?: string) {
   }
 }
 
-/** A stay's or ticket's name, as a receipt says what it was for. */
+/** A stay's or ticket's name, as an expense says what it was for. */
 export const bookingName = (b: Pick<TripItem, 'kind' | 'title'>) => b.title || (b.kind === 'stay' ? 'A stay' : 'A ticket')
 
 export function duration(min: number): string {

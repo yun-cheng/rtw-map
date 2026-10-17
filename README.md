@@ -74,8 +74,8 @@ it are refused, and the assistant suggests such changes instead.
 | `get_route` | How to travel between two cities, or many pairs at once | ✓ |
 | `get_shared_view` | The values on the parts of the screen you shared with your message | ✓ |
 | `get_options` | The world's regions, countries, interests, passports, paces and budgets | ✓ |
-| `get_visit` | My visit: stays, tickets, albums, links, receipts and notes per city or journey, with their ids, and prices the user saw (which the costs use) | ✓ |
-| `save_visit_item`, `remove_visit_item` | Add a stay, ticket, album, link, receipt (linked to the stays and tickets it paid for) or note to My visit, change one (only the fields given) or remove one; a ticket, stay or receipt may be for no city; the id of each saved, to link to; also on a read-only trip | ✓ |
+| `get_visit` | My visit: stays, tickets, albums, links, expenses and notes per city or journey, with their ids, and prices the user saw (which the costs use) | ✓ |
+| `save_visit_item`, `remove_visit_item` | Add a stay, ticket, album, link, expense (linked to the stays and tickets it paid for; `receipt`, its old name, still taken) or note to My visit, change one (only the fields given) or remove one; a ticket, stay or expense may be for no city; the id of each saved, to link to; also on a read-only trip | ✓ |
 | `save_phrases` | Keep the user's own phrases, translated into each language they want (this country's, or every language on the trip, which it asks about), with how to say them; shown on the Phrases tab wherever the language is spoken | ✓ |
 | `set_prices_seen` | Keep prices the user saw or paid in a city (from a receipt, a menu, a booking, or told), in the money paid, or set some back to the app's own: beds, meals, drinks, supermarket items, transport, a taxi ride, a whole day; the costs then use them for that city | ✓ |
 | `set_itinerary` | The whole itinerary at once: every stop in order with its nights (a plan from scratch, a big rework) | ✓ (your locked stops stay) |
@@ -107,7 +107,7 @@ a few of its own:
 | `get_visit` | As for the assistant: My visit's stays, tickets, albums, links, notes and prices seen per city or journey, in the trip's order (one city if asked) |
 | `get_journal` | The journal's entries (the latest 60, or from and to given days) |
 | `update_settings` … `reorder_stops` | The assistant's tools that change the trip (above), with `trips:write` |
-| `save_visit_item`, `remove_visit_item`, `set_prices_seen`, `save_phrases` | The assistant's tools that change My visit, with `trips:write`: bookings (from the user's email, say) as stays and tickets, and what was paid as expenses (kind `receipt`) linked to them (a package: one for all); a booking saved again (the same reference or name, the same day) changes the one kept, as does an expense (the same name, amount and day) |
+| `save_visit_item`, `remove_visit_item`, `set_prices_seen`, `save_phrases` | The assistant's tools that change My visit, with `trips:write`: bookings (from the user's email, say) as stays and tickets, and what was paid as expenses linked to them (a package: one for all); a booking saved again (the same reference or name, the same day) changes the one kept, as does an expense (the same name, amount and day) |
 | `get_changes` | The changes apps made to the trip (the latest 30 of the last two weeks), with their ids |
 | `undo` | Undoes the app's latest change, or a given one with every later one |
 

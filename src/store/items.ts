@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { bookActions, changeBook, LOCAL, type BookState } from './book'
 import { SHARED_TOKEN } from './shareLink'
-import { changedItem, mergeItems, noteId, notesAsItems, removedItem, type Items, type TripItem } from './itemsCore'
+import { changedItem, itemsNow, mergeItems, noteId, notesAsItems, removedItem, type Items, type TripItem } from './itemsCore'
 import type { TripNotes } from './tripCore'
 
 export { isEmptyItem, newItemId, noteId, priceId, webUrl, type ItemKind, type Items, type TripItem } from './itemsCore'
@@ -62,8 +62,13 @@ export const useItems = create<ItemsState>()(
     },
     {
       name: 'rtw-map-items',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // (Version 1 may have receipts, now expenses: those not yet sent too.)
+      migrate: (kept) => {
+        const { books = {}, key = LOCAL } = (kept ?? {}) as Partial<ItemsState>
+        return { books: Object.fromEntries(Object.entries(books).map(([k, b]) => [k, { ...b, entries: itemsNow(b.entries) }])), key } as ItemsState
+      },
       partialize: (s) => ({ books: s.books, key: s.key }),
     },
   ),

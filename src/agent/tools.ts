@@ -10,7 +10,7 @@ import {
   groceryDay, isTravelling, prefsDay, PRICE_LABELS, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, RENAMED_KINDS, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { dateRange, rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
@@ -256,8 +256,10 @@ function tripDetails(): ToolResult {
 
 // ---------------------------------------------------------------- My visit
 
-const ITEM_KINDS: ItemKind[] = ['stay', 'ticket', 'note', 'album', 'link', 'receipt']
-const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', ticket: 'ticket', note: 'note', album: 'photo album', link: 'link', price: 'price seen', receipt: 'receipt', phrase: 'phrase' }
+const ITEM_KINDS: ItemKind[] = ['stay', 'ticket', 'note', 'album', 'link', 'expense']
+const ITEM_NAMES: Record<ItemKind, string> = { stay: 'stay', ticket: 'ticket', note: 'note', album: 'photo album', link: 'link', price: 'price seen', expense: 'expense', phrase: 'phrase' }
+/** A kind's name with its article ("a stay", "an expense"). */
+const aName = (name: string) => `${/^[aeiou]/.test(name) ? 'an' : 'a'} ${name}`
 /** What a seen price is the price of (its id is `price:<city>:<what>`). */
 const priceOf = (i: TripItem) => PRICE_LABELS[i.id.split(':')[2] as PriceKey] ?? i.id.split(':')[2]
 /** Where an item belongs, by name: "Kraków", or "Kraków → Vienna" for a journey. */
@@ -268,10 +270,10 @@ const languageName = (tag: string) => ds.phrases.languages[tag]?.name ?? tag
 const placeOf = (i: TripItem) =>
   (i.kind === 'phrase' ? languageName(i.at) : i.at === NO_PLACE ? (i.kind === 'ticket' ? 'no journey' : 'no city') : itemPlace(i.at))
 /** An item in a few words: "stay Hostel Mleczarnia (Kraków)", "note (Kraków → Vienna)", "phrase "Thank you" (Greek)",
- *  "receipt Dinner, 120 PLN (Kraków)". */
+ *  "expense Dinner, 120 PLN (Kraków)". */
 const itemText = (i: TripItem) =>
   `${ITEM_NAMES[i.kind]}${i.kind === 'price' ? ` for ${priceOf(i)}` : i.kind === 'phrase' ? ` "${i.title}"` : i.kind !== 'note' && i.title ? ` ${i.title}` : ''}` +
-  `${i.kind === 'receipt' && i.amount !== undefined ? `${i.title ? ',' : ''} ${i.amount} ${i.currency ?? ''}`.trimEnd() : ''} (${placeOf(i)})`
+  `${i.kind === 'expense' && i.amount !== undefined ? `${i.title ? ',' : ''} ${i.amount} ${i.currency ?? ''}`.trimEnd() : ''} (${placeOf(i)})`
 
 /** The order of kinds in a city's list: stays, notes, albums, links, then prices seen and phrases. */
 const kindRank = (k: ItemKind) => (k === 'price' ? ITEM_KINDS.length : k === 'phrase' ? ITEM_KINDS.length + 1 : ITEM_KINDS.indexOf(k))
@@ -300,7 +302,7 @@ function visit(args: Args): ToolResult {
       id: i.id, where: placeOf(i), kind: i.kind, title: i.title, address: i.address,
       ...(i.kind === 'ticket'
         ? { mode: i.mode, departs: i.from, arrives: i.to, from_place: i.fromPlace, to_place: i.toPlace }
-        : i.kind === 'receipt' ? { day: i.from, amount: i.amount, currency: i.currency, bookings: i.bookings }
+        : i.kind === 'expense' ? { day: i.from, amount: i.amount, currency: i.currency, bookings: i.bookings }
         : { check_in: i.from, check_out: i.to }),
       url: i.url, reference: i.ref, price: i.price, text: i.text,
       ...(i.kind === 'price' && { price_of: priceOf(i), price_seen: `${i.amount} ${i.currency}` }),
@@ -311,7 +313,7 @@ function visit(args: Args): ToolResult {
   }
 }
 
-/** The tool's arguments and the item's fields they set (a ticket's times are `from` and `to` too, and a receipt's
+/** The tool's arguments and the item's fields they set (a ticket's times are `from` and `to` too, and an expense's
  *  day `from`). */
 const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'fromPlace' | 'toPlace' | 'ref' | 'price' | 'text'][] = [
   ['title', 'title'], ['url', 'url'], ['address', 'address'], ['check_in', 'from'], ['check_out', 'to'], ['departs', 'from'], ['arrives', 'to'],
@@ -321,7 +323,7 @@ const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'fromP
 const KIND_ARGS: Partial<Record<ItemKind, string[]>> = {
   stay: ['url', 'address', 'check_in', 'check_out', 'reference', 'price'],
   ticket: ['url', 'mode', 'departs', 'arrives', 'from_place', 'to_place', 'reference', 'price'],
-  receipt: ['day', 'amount', 'currency', 'bookings'],
+  expense: ['day', 'amount', 'currency', 'bookings'],
   album: ['url'],
   link: ['url'],
   note: [],
@@ -330,16 +332,16 @@ const KIND_ONLY = ['url', 'address', 'check_in', 'check_out', 'mode', 'departs',
 /** A ticket's departure or arrival: a day, with its time or not. */
 const isDayTime = (v: string) => /^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/.test(v) && !Number.isNaN(Date.parse(v.slice(0, 10)))
 
-/** A stay, ticket or receipt kept already that `args` would add again: at the same place, starting the same day, with
- *  the same booking reference, or the same name if neither has one (a receipt: the same name and amount). */
+/** A stay, ticket or expense kept already that `args` would add again: at the same place, starting the same day, with
+ *  the same booking reference, or the same name if neither has one (an expense: the same name and amount). */
 function sameBooking(all: Items, kind: ItemKind, at: string, args: Args): TripItem | undefined {
   const text = (v: unknown) => (typeof v === 'string' ? v.trim().replace(/\s+/g, ' ').toLowerCase() : '')
-  const day = text(kind === 'ticket' ? args.departs : kind === 'receipt' ? args.day : args.check_in).slice(0, 10)
+  const day = text(kind === 'ticket' ? args.departs : kind === 'expense' ? args.day : args.check_in).slice(0, 10)
   const ref = text(args.reference)
   const title = text(args.title)
   if (!day || (!ref && !title)) return undefined
   return Object.values(all).find((i) => i.kind === kind && i.at === at && !isEmptyItem(i) && i.from?.slice(0, 10) === day &&
-    (kind === 'receipt' ? text(i.title) === title && i.amount === roundAmount(args.amount)
+    (kind === 'expense' ? text(i.title) === title && i.amount === roundAmount(args.amount)
       : ref || text(i.ref) ? text(i.ref) === ref : text(i.title) === title))
 }
 /** An amount given, to the cent (undefined if it isn't one). */
@@ -350,26 +352,28 @@ function saveItem(args: Args): string {
   const all = items.get()
   let old: TripItem | undefined
   let patch: Partial<TripItem> & { id: string }
+  // (An app whose tool list is from before expenses were named so may still ask for a receipt.)
+  if (typeof args.kind === 'string' && RENAMED_KINDS[args.kind]) args = { ...args, kind: RENAMED_KINDS[args.kind] }
   if (typeof args.id === 'string' && args.id) {
     old = all[args.id]
     if (!old || old.deleted) throw new ToolError(`There's no item ${args.id}: get_visit lists them with their ids.`)
     if (old.kind === 'price') throw new ToolError('A price seen is changed with set_prices_seen.')
     if (old.kind === 'phrase') throw new ToolError('A phrase is changed with save_phrases.')
-    if (args.kind && args.kind !== old.kind) throw new ToolError(`That's a ${ITEM_NAMES[old.kind]}: to make it a ${args.kind}, remove it and add one.`)
+    if (args.kind && args.kind !== old.kind) throw new ToolError(`That's ${aName(ITEM_NAMES[old.kind])}: to make it ${aName(String(args.kind))}, remove it and add one.`)
     patch = { id: old.id }
   } else {
     const kind = args.kind as ItemKind
-    if (!ITEM_KINDS.includes(kind)) throw new ToolError('Give the kind to add: stay, ticket, album, link, receipt or note.')
-    // (A ticket, stay or receipt may be at none of the trip's cities or journeys.)
-    const placeless = !(typeof args.city === 'string' && args.city.trim()) && (kind === 'ticket' || kind === 'stay' || kind === 'receipt')
+    if (!ITEM_KINDS.includes(kind)) throw new ToolError('Give the kind to add: stay, ticket, album, link, expense or note.')
+    // (A ticket, stay or expense may be at none of the trip's cities or journeys.)
+    const placeless = !(typeof args.city === 'string' && args.city.trim()) && (kind === 'ticket' || kind === 'stay' || kind === 'expense')
     const from = placeless ? NO_PLACE : cityId(args.city)
     const at = args.journey_to && !placeless ? `${from}>${cityId(args.journey_to)}` : from
-    if (at.includes('>') && kind !== 'note' && kind !== 'ticket') throw new ToolError('A journey keeps tickets and a note: put a stay, album, link or receipt on a city.')
+    if (at.includes('>') && kind !== 'note' && kind !== 'ticket') throw new ToolError('A journey keeps tickets and a note: put a stay, album, link or expense on a city.')
     if (kind === 'ticket' && !at.includes('>') && !placeless) throw new ToolError('A ticket is for a journey: give the city it leaves from (city) and the one it goes to (journey_to).')
     if (!placeless && from === at.split('>')[1]) throw new ToolError('A journey goes from one city to another.')
     // (A city or journey has one note: adding one changes it. A booking kept already, the same reference or name on
     // the same day, is changed too: saved again from the same email, say.)
-    const id = kind === 'note' ? noteId(at) : (kind === 'stay' || kind === 'ticket' || kind === 'receipt') ? sameBooking(all, kind, at, args)?.id ?? newItemId(kind) : newItemId(kind)
+    const id = kind === 'note' ? noteId(at) : (kind === 'stay' || kind === 'ticket' || kind === 'expense') ? sameBooking(all, kind, at, args)?.id ?? newItemId(kind) : newItemId(kind)
     old = all[id]?.deleted ? undefined : all[id]
     patch = { id, kind, at }
   }
@@ -381,16 +385,16 @@ function saveItem(args: Args): string {
   if (args.append === true && old?.text && patch.text) patch.text = `${old.text.trimEnd()}\n\n${patch.text}`
   const kind = (patch.kind ?? old?.kind)!
   const ticket = kind === 'ticket'
-  const [fromArg, toArg] = ticket ? ['departs', 'arrives'] : kind === 'receipt' ? ['day', 'day'] : ['check_in', 'check_out']
-  // (A stay's days are check_in and check_out, a ticket's departs and arrives, a receipt's day: the others aren't for it.)
+  const [fromArg, toArg] = ticket ? ['departs', 'arrives'] : kind === 'expense' ? ['day', 'day'] : ['check_in', 'check_out']
+  // (A stay's days are check_in and check_out, a ticket's departs and arrives, an expense's day: the others aren't for it.)
   for (const arg of KIND_ONLY) {
     const given = typeof args[arg] === 'number' || (typeof args[arg] === 'string' && args[arg]) || (Array.isArray(args[arg]) && (args[arg] as unknown[]).length)
-    if (given && !KIND_ARGS[kind]?.includes(arg)) throw new ToolError(`${arg} isn't for a ${ITEM_NAMES[kind]}.`)
+    if (given && !KIND_ARGS[kind]?.includes(arg)) throw new ToolError(`${arg} isn't for ${aName(ITEM_NAMES[kind])}.`)
   }
   for (const key of ['from', 'to'] as const) {
     if (patch[key] && !(ticket ? isDayTime(patch[key]) : isDate(patch[key]))) throw new ToolError(`${key === 'from' ? fromArg : toArg} must be ${ticket ? 'a day and time, YYYY-MM-DDTHH:MM (or the day alone)' : 'a day, YYYY-MM-DD'}.`)
   }
-  if (kind === 'receipt') {
+  if (kind === 'expense') {
     if (args.amount !== undefined) {
       const amount = roundAmount(args.amount)
       if (amount === undefined || amount < 0 || amount > 1e9) throw new ToolError('amount must be a number, 0 or more.')
@@ -399,7 +403,7 @@ function saveItem(args: Args): string {
     // (In the city's own money unless another is given.)
     const given = typeof args.currency === 'string' && args.currency.trim() ? args.currency.trim().toUpperCase() : undefined
     const at = patch.at ?? old!.at
-    if (!given && patch.amount !== undefined && !old?.currency && at === NO_PLACE) throw new ToolError('Give the receipt\'s currency: it isn\'t at a city.')
+    if (!given && patch.amount !== undefined && !old?.currency && at === NO_PLACE) throw new ToolError('Give the expense\'s currency: it isn\'t at a city.')
     const currency = given ?? (patch.amount !== undefined && !old?.currency ? ds.countries[ds.cities[at].iso2].currency : undefined)
     if (currency && currency !== 'EUR' && !ds.fx.rates[currency]) throw new ToolError(`No exchange rate for ${currency}: give a currency's three-letter code (PLN, EUR, USD).`)
     if (currency) patch.currency = currency
@@ -413,7 +417,7 @@ function saveItem(args: Args): string {
           throw new ToolError(`There's no stay or ticket ${b}: give the ids get_visit lists, or those given when they were saved.`)
         }
       }
-      if (ids.length > ITEM_LIMITS.bookings) throw new ToolError(`A receipt can be for ${ITEM_LIMITS.bookings} bookings at most.`)
+      if (ids.length > ITEM_LIMITS.bookings) throw new ToolError(`An expense can be for ${ITEM_LIMITS.bookings} bookings at most.`)
       patch.bookings = ids.length ? ids : undefined
     }
   }
@@ -435,7 +439,7 @@ function saveItem(args: Args): string {
   // (Marked as filled in by AI, if this changes anything in it.)
   const changes = !old || Object.entries(patch).some(([k, v]) => JSON.stringify(v) !== JSON.stringify(old[k as keyof TripItem]))
   items.put(changes ? { ...patch, ai: true } : patch)
-  // (With its id, to change it or link a receipt to it.)
+  // (With its id, to change it or link an expense to it.)
   return `${old ? 'Changed' : 'Added'} ${itemText(item)}; id ${item.id}`
 }
 
@@ -895,7 +899,7 @@ function myTripView(ref: Extract<ViewRef, { kind: 'mytrip' }>): ToolResult {
     const city = at !== null ? plan.stops[at].cityId : null
     return { open, today, day, of, ...(city && { at: cityName(city), ...visit({ city }) }) }
   }
-  const kind = ({ stays: 'stay', tickets: 'ticket', spending: 'receipt' } as const)[ref.tab]
+  const kind = ({ stays: 'stay', tickets: 'ticket', spending: 'expense' } as const)[ref.tab]
   const items = ((visit({}).items ?? []) as { id: string; kind: string }[]).filter((i) => (ref.record ? i.id === ref.record : i.kind === kind))
   return { open: ref.record ? `${open}, one ${kind}` : open, items }
 }

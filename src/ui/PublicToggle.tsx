@@ -3,14 +3,14 @@
 import { Globe, Lock } from 'lucide-react'
 import { SHARED_TOKEN } from '../store/shareLink'
 
-/** What the link shows of a stay or ticket (never its booking reference, price, link, address or note), or of a
- *  receipt (never its note). */
+/** What the link shows of a stay or ticket (never its booking reference, price, link, address or note), or of an
+ *  expense (never its note). */
 const SHOWN = {
   booking: ' (its name, dates and places; never the booking ref, price, link, address or note)',
-  receipt: ' (what, how much and when; never its note)',
+  expense: ' (what, how much and when; never its note)',
 }
 
-/** `of`: a stay or ticket, or a receipt, of which the link shows only some. */
+/** `of`: a stay or ticket, or an expense, of which the link shows only some. */
 export function PublicToggle({ on, onChange, of }: { on: boolean; onChange: (on: boolean) => void; of?: keyof typeof SHOWN }) {
   const shown = `Shown on the trip's shared link${of ? SHOWN[of] : ''}`
   return (

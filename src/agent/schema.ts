@@ -69,7 +69,7 @@ How to work:
   and a note per city or journey; and in each journey's panel, their tickets (a flight, train, bus or ferry: carrier
   and number, departure and arrival times, where from and to, booking reference, price, link, a note such as the
   seat); and their spending, each expense at its city (what, amount and currency, day), all in the My trip panel
-  too (its Spending tab). An expense is save_visit_item's kind receipt; call it an expense to the user.
+  too (its Spending tab).
   get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the user asks, e.g. "save this booking", "log this expense" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
   is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
 - What the user spent (a receipt, a bill, a payment) is kept as an expense at its city when they ask to log it: what it
@@ -195,18 +195,18 @@ export const TOOLS: FunctionDeclaration[] = [
   // ---- My visit
   {
     name: 'get_visit',
-    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), their tickets for the journeys between two cities (flight, train, bus or ferry: carrier and number, departure and arrival, from and to where, reference, price), photo albums, links and notes, for each city or journey between two, receipts of what they spent (what, day, amount, currency), prices the user saw, and their own phrases (by language), each with its id.',
+    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), their tickets for the journeys between two cities (flight, train, bus or ferry: carrier and number, departure and arrival, from and to where, reference, price), photo albums, links and notes, for each city or journey between two, expenses, what they spent (what, day, amount, currency), prices the user saw, and their own phrases (by language), each with its id.',
     parametersJsonSchema: obj({ city: str('Only this city and the journeys to and from it (name or id); default: all') }),
   },
   {
     name: 'save_visit_item',
-    description: 'Add a stay, ticket, photo album, link, receipt or note to My visit, or change one (its id from get_visit). Give only the fields to set ("" empties one). A stay, album, link or receipt (something the user paid for) is a city\'s; a ticket (a flight, train, bus or ferry booked) is a journey\'s, from city to journey_to, one per flight or train. A city has one note, and a journey between two cities one note.',
+    description: 'Add a stay, ticket, photo album, link, expense or note to My visit, or change one (its id from get_visit). Give only the fields to set ("" empties one). A stay, album, link or expense (something the user paid for) is a city\'s; a ticket (a flight, train, bus or ferry booked) is a journey\'s, from city to journey_to, one per flight or train. A city has one note, and a journey between two cities one note.',
     parametersJsonSchema: obj({
       id: str('The item to change, from get_visit; leave out to add one'),
-      kind: str('What to add', { enum: ['stay', 'ticket', 'album', 'link', 'receipt', 'note'] }),
-      city: { ...CITY, description: 'The city it belongs to (to add one): any city in the app, usually a stop of the trip; for a ticket or a journey\'s note, the city the journey leaves from. Leave out only for a ticket, stay or receipt that isn\'t for any city or journey of the trip' },
+      kind: str('What to add', { enum: ['stay', 'ticket', 'album', 'link', 'expense', 'note'] }),
+      city: { ...CITY, description: 'The city it belongs to (to add one): any city in the app, usually a stop of the trip; for a ticket or a journey\'s note, the city the journey leaves from. Leave out only for a ticket, stay or expense that isn\'t for any city or journey of the trip' },
       journey_to: { ...CITY, description: 'For a ticket or a note on the journey from city to this city: the city it goes to (the nearest city in the app to the airport or station)' },
-      title: str('A stay\'s name (the hotel, hostel or flat); a ticket\'s carrier and number, e.g. "LOT LO 335" or "ÖBB Railjet 73"; an album\'s or a link\'s title; what a receipt was for, e.g. "Dinner at Pod Wawelem" or "Bus day pass"'),
+      title: str('A stay\'s name (the hotel, hostel or flat); a ticket\'s carrier and number, e.g. "LOT LO 335" or "ÖBB Railjet 73"; an album\'s or a link\'s title; what an expense was for, e.g. "Dinner at Pod Wawelem" or "Bus day pass"'),
       url: str('A stay\'s or ticket\'s booking link; the album\'s or the link\'s web address'),
       address: str('A stay\'s address'),
       check_in: str('A stay\'s check-in day, YYYY-MM-DD'),
@@ -216,13 +216,13 @@ export const TOOLS: FunctionDeclaration[] = [
       arrives: str('A ticket\'s arrival, in the local time where it arrives, YYYY-MM-DDTHH:MM (or YYYY-MM-DD without a time)'),
       from_place: str('Where a ticket leaves from: the airport (with its code and terminal), station or port, e.g. "Kraków Airport (KRK), T1"'),
       to_place: str('Where a ticket arrives: the airport, station or port'),
-      day: str('A receipt\'s day, YYYY-MM-DD'),
-      amount: { type: 'number', description: 'What a receipt came to, as paid (in currency)' },
-      currency: str('A receipt\'s currency, its three-letter code, e.g. "PLN"; default: the city\'s own'),
-      bookings: { type: 'array', items: { type: 'string' }, description: 'A receipt\'s stays and tickets, by their ids (from get_visit, or given when each was saved): what it paid for, one or several (a package of flights and a hotel paid together: all of them); [] unlinks it' },
+      day: str('An expense\'s day, YYYY-MM-DD'),
+      amount: { type: 'number', description: 'What an expense came to, as paid (in currency)' },
+      currency: str('An expense\'s currency, its three-letter code, e.g. "PLN"; default: the city\'s own'),
+      bookings: { type: 'array', items: { type: 'string' }, description: 'An expense\'s stays and tickets, by their ids (from get_visit, or given when each was saved): what it paid for, one or several (a package of flights and a hotel paid together: all of them); [] unlinks it' },
       reference: str('A stay\'s or ticket\'s booking reference'),
       price: str('A stay\'s or ticket\'s price as the user would write it, e.g. "€84, paid" or "NT$3,200, pay at the hotel"'),
-      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s, ticket\'s or receipt\'s own note (door code, wifi, how to get in; seat, baggage; what was in it)'),
+      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s, ticket\'s or expense\'s own note (door code, wifi, how to get in; seat, baggage; what was in it)'),
       append: { type: 'boolean', description: 'Add text to the end of the note instead of replacing it' },
     }),
   },
@@ -255,7 +255,7 @@ export const TOOLS: FunctionDeclaration[] = [
   },
   {
     name: 'remove_visit_item',
-    description: 'Remove a stay, ticket, album, link, receipt, note, price seen or phrase from My visit, by its id from get_visit. Only when the user asks.',
+    description: 'Remove a stay, ticket, album, link, expense, note, price seen or phrase from My visit, by its id from get_visit. Only when the user asks.',
     parametersJsonSchema: obj({ id: str('The item\'s id, from get_visit') }, ['id']),
   },
   // ---- change the setup

@@ -42,7 +42,7 @@ export function Spending() {
   const adding = useRightPanel((s) => s.adding.spending) ?? null
   const setAdding = (id: string | null) => useRightPanel.getState().setAdding('spending', id)
   if (!plan) return null
-  const expenses = Object.values(items).filter((i) => i.kind === 'receipt' && !i.deleted)
+  const expenses = Object.values(items).filter((i) => i.kind === 'expense' && !i.deleted)
   const kept = expenses.filter((r) => !isEmptyItem(r))
   // (By day, the newest first; those without a day last.)
   const days = [...new Set(expenses.map((r) => r.from ?? ''))].sort((a, b) => (!a ? 1 : !b ? -1 : b.localeCompare(a)))
@@ -59,7 +59,7 @@ export function Spending() {
     return <NewRecord back="All spending" onBack={() => setAdding(null)} title="New expense"><ExpenseEditor id={adding} onDone={done} autoFocus /></NewRecord>
   }
   const page = open ? items[open] : undefined
-  if (page && !page.deleted && page.kind === 'receipt') {
+  if (page && !page.deleted && page.kind === 'expense') {
     // (The list's order, for a page's expenses before and after it.)
     const ids = days.flatMap(byDay).map((r) => r.id)
     return <ExpensePage expense={page} ids={ids.includes(page.id) ? ids : [page.id]} />
@@ -68,7 +68,7 @@ export function Spending() {
     <Sections>
       <Section
         title={kept.length ? 'Spent so far' : 'Nothing spent yet'}
-        aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="receipt" className={small} /><button onClick={() => setAdding(newItemId('receipt'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
+        aside={!SHARED_TOKEN && <span className="flex items-center gap-1"><PhotoFill what="expense" className={small} /><button onClick={() => setAdding(newItemId('expense'))} className={`${small} shrink-0`}><Plus size={12} /> Add</button></span>}
       >
         {/* (Just its title while there are none.) */}
         {kept.length > 0 && <>
@@ -143,7 +143,7 @@ function ExpenseEditor({ id, onDone, autoFocus }: { id: string; onDone: () => vo
   const items = useAllItems()
   const now = live ?? fresh
   const [typed, setTyped] = useState(live?.amount !== undefined ? String(live.amount) : '')
-  const save = (patch: Partial<TripItem>) => put({ ...(expense ? {} : { kind: 'receipt', ...fresh }), id, ...patch })
+  const save = (patch: Partial<TripItem>) => put({ ...(expense ? {} : { kind: 'expense', ...fresh }), id, ...patch })
   const done = () => {
     if (expense && isEmptyItem(expense)) remove(id)
     onDone()
@@ -226,7 +226,7 @@ function ExpenseEditor({ id, onDone, autoFocus }: { id: string; onDone: () => vo
       </label>
       <EditorButtons
         onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="expense"
-        visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} of="receipt" />}
+        visibility={<PublicToggle on={!!live?.public} onChange={(on) => save({ public: on || undefined })} of="expense" />}
       />
     </div>
   )

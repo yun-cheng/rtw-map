@@ -504,9 +504,11 @@ describe('get_shared_view', () => {
     const mine = (ref: Record<string, unknown>) => [{ key: 'mytrip', ref, label: '', text: '' }] as unknown as ReturnType<typeof viewItems>
     const run = (ref: Record<string, unknown>, name: string, args: Record<string, unknown> = {}) => withTrip(toolContext(useTrip, mine(ref), false, items), () => runTool(name, args))
     run({}, 'save_visit_item', { kind: 'stay', city: 'Kraków', title: 'Hostel Mleczarnia' })
-    run({}, 'save_visit_item', { kind: 'receipt', city: 'Kraków', title: 'Pierogi', day: '2026-05-05', amount: 30, currency: 'PLN' })
+    run({}, 'save_visit_item', { kind: 'expense', city: 'Kraków', title: 'Pierogi', day: '2026-05-05', amount: 30, currency: 'PLN' })
     const stays = run({ kind: 'mytrip', tab: 'stays' }, 'get_shared_view').result.items as { items: { id: string; kind: string }[] }[]
     expect(stays[0].items.map((i) => i.kind)).toEqual(['stay'])
+    const spent = run({ kind: 'mytrip', tab: 'spending' }, 'get_shared_view').result.items as { items: { kind: string; title: string }[] }[]
+    expect(spent[0].items).toEqual([expect.objectContaining({ kind: 'expense', title: 'Pierogi' })])
     const id = stays[0].items[0].id
     const one = run({ kind: 'mytrip', tab: 'stays', record: id }, 'get_shared_view').result.items as { open: string; items: { id: string }[] }[]
     expect(one[0]).toMatchObject({ open: 'My trip, stays tab, one stay', items: [{ id }] })

@@ -1,4 +1,4 @@
-// The mark on something the user keeps (a stay, a ticket, a receipt, a link, a note) that an AI assistant filled in,
+// The mark on something the user keeps (a stay, a ticket, an expense, a link, a note) that an AI assistant filled in,
 // all or in part (store/itemsCore.ts, `ai`).
 import { Sparkles } from 'lucide-react'
 

@@ -8,7 +8,7 @@ import { openRecord } from '../ui/rightPanel'
 /** On a stay's or ticket's card: what was paid for it, by its expenses ("Paid €84 · expense"); an expense for a
  *  package (it and other bookings, paid together) is its whole amount, said so. */
 export function PaidFor({ id }: { id: string }) {
-  const expenses = Object.values(useAllItems()).filter((r) => r.kind === 'receipt' && r.bookings?.includes(id) && !isEmptyItem(r) && r.amount !== undefined)
+  const expenses = Object.values(useAllItems()).filter((r) => r.kind === 'expense' && r.bookings?.includes(id) && !isEmptyItem(r) && r.amount !== undefined)
   if (!expenses.length) return null
   const others = Math.max(...expenses.map((r) => r.bookings!.length)) - 1
   return (

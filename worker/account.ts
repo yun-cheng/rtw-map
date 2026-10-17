@@ -8,6 +8,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, itemsUndo, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView, type ItemsChange } from './changes'
 import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
+import { renameItemKinds } from './migrations'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, publicItems, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, publicJournal, type DayEntry, type Journal } from '../src/store/journalCore'
@@ -71,6 +72,8 @@ export class Account extends DurableObject {
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(changes)').toArray().some((c) => c.name === 'items')) {
       ctx.storage.sql.exec('ALTER TABLE changes ADD COLUMN items TEXT')
     }
+    // Items kept with a kind since renamed (receipts are expenses), as they are now.
+    renameItemKinds(ctx.storage.sql)
     // Each trip's versions (versions.ts): the trip after each spell of changes, by whom, kept for good.
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS versions (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, by TEXT NOT NULL, data TEXT, rev INTEGER NOT NULL, started INTEGER NOT NULL, updated INTEGER NOT NULL)`)

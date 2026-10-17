@@ -1,4 +1,4 @@
-// A record of My trip on a page of its own (a day of the journal, a stay, a ticket, a receipt): opened from its tab's
+// A record of My trip on a page of its own (a day of the journal, a stay, a ticket, an expense): opened from its tab's
 // list, read until Edit, and changed there.
 import { ChevronLeft, ChevronRight, Pencil } from 'lucide-react'
 import { useEffect, useRef, type ReactNode } from 'react'
