@@ -1,19 +1,19 @@
 // My trip, the right panel (ui/rightPanel.ts), in tabs: Today while the trip is under way, then everything the user
-// keeps for it in one place: every stop's stays, every journey's tickets, the receipts of what they spent, and the
+// keeps for it in one place: every stop's stays, every journey's tickets, what they spent, and the
 // journal day by day (each the same as in the city's and journey's panels and the Itinerary, gathered).
 import { ChevronsRight, X } from 'lucide-react'
 import { useButtonsLeft } from '../ui/buttonSide'
 import { MY_TRIP_ICONS, MY_TRIP_LABELS, MY_TRIP_NAME, useMyTripTabs, useRightPanel, type MyTripTab } from '../ui/rightPanel'
 import { SwipeTabs } from '../ui/SwipeTabs'
 import { JournalView } from './Journal'
-import { Receipts } from './Receipts'
+import { Spending } from './Spending'
 import { AllTickets } from './Tickets'
 import { Today } from './Today'
 import { AllStays } from './Visit'
 
 /** A tab's content. */
 const TabBody = ({ tab }: { tab: MyTripTab }) =>
-  tab === 'today' ? <Today /> : tab === 'stays' ? <AllStays /> : tab === 'tickets' ? <AllTickets /> : tab === 'receipts' ? <Receipts /> : <JournalView />
+  tab === 'today' ? <Today /> : tab === 'stays' ? <AllStays /> : tab === 'tickets' ? <AllTickets /> : tab === 'spending' ? <Spending /> : <JournalView />
 
 /** The panel's tabs and the open one: beside the map, or in a bottom sheet on a phone (`peek`: its tab bar is the
  *  sheet's header). `onHide` folds it away (closes the sheet). */

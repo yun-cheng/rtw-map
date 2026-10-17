@@ -1,5 +1,5 @@
 // The right panel, My trip (panels/MyTrip.tsx): Today while the trip is under way, and the trip's stays, tickets,
-// receipts and journal, in one place. Beside the map on a computer, open or folded to a strip, with its tab remembered
+// spending and journal, in one place. Beside the map on a computer, open or folded to a strip, with its tab remembered
 // in this browser. On a phone it's a sheet, opened from a button over the map.
 import { BedDouble, BookOpen, MapPin, Receipt, Ticket, type LucideIcon } from 'lucide-react'
 import { create } from 'zustand'
@@ -11,13 +11,16 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { useTrip } from '../store/trip'
 import { usePhone } from './usePhone'
 
-export type MyTripTab = 'today' | 'stays' | 'tickets' | 'receipts' | 'daily'
+export type MyTripTab = 'today' | 'stays' | 'tickets' | 'spending' | 'daily'
 /** The panel's name: the user's own, or neutral on a shared trip's page (it's its owner's). */
 export const MY_TRIP_NAME = SHARED_TOKEN ? 'Trip details' : 'My trip'
-export const MY_TRIP_TABS: MyTripTab[] = ['today', 'stays', 'tickets', 'receipts', 'daily']
-export const MY_TRIP_LABELS: Record<MyTripTab, string> = { today: 'Today', tickets: 'Tickets', stays: 'Stays', daily: 'Journal', receipts: 'Spending' }
+export const MY_TRIP_TABS: MyTripTab[] = ['today', 'stays', 'tickets', 'spending', 'daily']
+/** A tab as an address or this browser keeps it, as it's called now (Spending was Receipts); null if it's none. */
+export const myTripTab = (tab: unknown): MyTripTab | null =>
+  tab === 'receipts' ? 'spending' : MY_TRIP_TABS.includes(tab as MyTripTab) ? tab as MyTripTab : null
+export const MY_TRIP_LABELS: Record<MyTripTab, string> = { today: 'Today', tickets: 'Tickets', stays: 'Stays', daily: 'Journal', spending: 'Spending' }
 /** The tabs' icons, on the tab bar and on the folded panel's strip. */
-export const MY_TRIP_ICONS: Record<MyTripTab, LucideIcon> = { today: MapPin, tickets: Ticket, stays: BedDouble, daily: BookOpen, receipts: Receipt }
+export const MY_TRIP_ICONS: Record<MyTripTab, LucideIcon> = { today: MapPin, tickets: Ticket, stays: BedDouble, daily: BookOpen, spending: Receipt }
 
 type RightPanel = {
   /** Open beside the map (on a computer). */
@@ -25,7 +28,7 @@ type RightPanel = {
   /** Its sheet open (on a phone; not remembered). */
   sheet: boolean
   tab: MyTripTab
-  /** The record open on its page, by tab (a stay's, ticket's or receipt's id; not remembered). */
+  /** The record open on its page, by tab (a stay's, ticket's or expense's id; not remembered). */
   records: Partial<Record<MyTripTab, string>>
   /** The new one being written on its page, by tab (its id; not remembered). */
   adding: Partial<Record<MyTripTab, string>>
@@ -57,8 +60,10 @@ export const useRightPanel = create<RightPanel>()(
     }),
     {
       name: 'rtw-map-right-panel',
-      version: 1,
+      version: 2,
       storage: createJSONStorage(() => localStorage),
+      // (Version 1 may have the Receipts tab, now Spending.)
+      migrate: (kept) => ({ ...(kept as object), tab: myTripTab((kept as { tab?: unknown })?.tab) ?? 'stays' }) as RightPanel,
       partialize: (s) => ({ open: s.open, tab: s.tab }),
     },
   ),

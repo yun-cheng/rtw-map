@@ -895,7 +895,7 @@ function myTripView(ref: Extract<ViewRef, { kind: 'mytrip' }>): ToolResult {
     const city = at !== null ? plan.stops[at].cityId : null
     return { open, today, day, of, ...(city && { at: cityName(city), ...visit({ city }) }) }
   }
-  const kind = ({ stays: 'stay', tickets: 'ticket', receipts: 'receipt' } as const)[ref.tab]
+  const kind = ({ stays: 'stay', tickets: 'ticket', spending: 'receipt' } as const)[ref.tab]
   const items = ((visit({}).items ?? []) as { id: string; kind: string }[]).filter((i) => (ref.record ? i.id === ref.record : i.kind === kind))
   return { open: ref.record ? `${open}, one ${kind}` : open, items }
 }

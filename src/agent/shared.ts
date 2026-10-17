@@ -9,8 +9,8 @@ export type ViewRef =
   | { kind: 'city'; id: string; tab: CityTab; part?: string }
   | { kind: 'journey'; from: string; to: string; index: number }
   | { kind: 'map'; layer: MapLayer; month: number; nearbyKind?: NearbyKind; costKind?: CostKind; weatherBy?: 'high' | 'low' }
-  /** My trip, on a tab; `record`: the stay, ticket or receipt open on it. */
-  | { kind: 'mytrip'; tab: 'today' | 'stays' | 'tickets' | 'receipts' | 'daily'; record?: string }
+  /** My trip, on a tab; `record`: the stay, ticket or expense open on it. */
+  | { kind: 'mytrip'; tab: 'today' | 'stays' | 'tickets' | 'spending' | 'daily'; record?: string }
 
 export type ViewItem = {
   /** Tells it apart from the others (and changes when what it shows does). */

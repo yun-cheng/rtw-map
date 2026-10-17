@@ -22,7 +22,7 @@ import { AiHelp } from './AiHelp'
 import { NoteBox } from './Notes'
 import { PhotoFill } from './PhotoFill'
 import { PostPreview } from './PostPreview'
-import { PaidFor } from './ReceiptLinks'
+import { PaidFor } from './ExpenseLinks'
 import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { socialPost } from './socialPost'
 

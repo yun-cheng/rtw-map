@@ -17,7 +17,7 @@ import { Section, Sections } from '../ui/kit'
 import { external, host } from '../ui/links'
 import { addRecord, useRightPanel } from '../ui/rightPanel'
 import { PhotoFill } from './PhotoFill'
-import { PaidFor } from './ReceiptLinks'
+import { PaidFor } from './ExpenseLinks'
 import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { EditorButtons, field, small, UrlInput } from './Visit'
 

@@ -11,7 +11,7 @@
 import { dataset as ds } from '../data/dataset'
 import { COST_KINDS, isTravelling, localToday, type CostKind } from '../planner'
 import { openAssistant, useAssistantPanel } from '../ui/assistantPanel'
-import { MY_TRIP_TABS, useRightPanel, type MyTripTab } from '../ui/rightPanel'
+import { myTripTab, useRightPanel } from '../ui/rightPanel'
 import { useLeftSheet } from '../ui/leftSheet'
 import { isPhone } from '../ui/usePhone'
 import { SHARED_TOKEN } from './shareLink'
@@ -99,8 +99,8 @@ export function readUrl(search = window.location.search, back = false) {
 function readSidePanels(q: URLSearchParams, back: boolean) {
   const phone = isPhone()
   const show = !back || phone
-  const tab = q.get('mytrip') as MyTripTab
-  if (MY_TRIP_TABS.includes(tab)) {
+  const tab = myTripTab(q.get('mytrip'))
+  if (tab) {
     useRightPanel.setState((s) => ({
       ...(show && { open: true, sheet: true }), tab,
       records: { ...s.records, [tab]: q.get('record') ?? undefined },

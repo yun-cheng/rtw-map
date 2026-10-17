@@ -1,28 +1,28 @@
-// A receipt's link to the stay or ticket it paid for (store/itemsCore.ts, `booking`): on the booking's card, what was
-// paid for it; on the receipt, what it was for. Each opens the other's page in My trip.
+// An expense's link to the stay or ticket it paid for (store/itemsCore.ts, `booking`): on the booking's card, what was
+// paid for it; on the expense, what it was for. Each opens the other's page in My trip.
 import { BedDouble, Ticket } from 'lucide-react'
 import { isEmptyItem, useAllItems } from '../store/items'
 import { bookingName, paid } from '../ui/format'
 import { openRecord } from '../ui/rightPanel'
 
-/** On a stay's or ticket's card: what was paid for it, by its receipts ("Paid €84 · expense"); a receipt for a
+/** On a stay's or ticket's card: what was paid for it, by its expenses ("Paid €84 · expense"); an expense for a
  *  package (it and other bookings, paid together) is its whole amount, said so. */
 export function PaidFor({ id }: { id: string }) {
-  const receipts = Object.values(useAllItems()).filter((r) => r.kind === 'receipt' && r.bookings?.includes(id) && !isEmptyItem(r) && r.amount !== undefined)
-  if (!receipts.length) return null
-  const others = Math.max(...receipts.map((r) => r.bookings!.length)) - 1
+  const expenses = Object.values(useAllItems()).filter((r) => r.kind === 'receipt' && r.bookings?.includes(id) && !isEmptyItem(r) && r.amount !== undefined)
+  if (!expenses.length) return null
+  const others = Math.max(...expenses.map((r) => r.bookings!.length)) - 1
   return (
     <div>
-      <span className="text-muted">Paid </span>{receipts.map((r) => paid(r.amount!, r.currency)).join(' + ')}
+      <span className="text-muted">Paid </span>{expenses.map((r) => paid(r.amount!, r.currency)).join(' + ')}
       {others > 0 && <span className="text-muted"> with {others} other booking{others === 1 ? '' : 's'}</span>}{' '}
-      <button onClick={(e) => { e.stopPropagation(); openRecord('receipts', receipts.length === 1 ? receipts[0].id : null) }} className="text-accent hover:underline">· expense{receipts.length === 1 ? '' : 's'}</button>
+      <button onClick={(e) => { e.stopPropagation(); openRecord('spending', expenses.length === 1 ? expenses[0].id : null) }} className="text-accent hover:underline">· expense{expenses.length === 1 ? '' : 's'}</button>
     </div>
   )
 }
 
-/** On a receipt: the stays and tickets it paid for, those still kept ("for KLM KL 808 + 2 more"), opening the first's
+/** On an expense: the stays and tickets it paid for, those still kept ("for KLM KL 808 + 2 more"), opening the first's
  *  page. */
-export function ReceiptFor({ bookings }: { bookings?: string[] }) {
+export function ExpenseFor({ bookings }: { bookings?: string[] }) {
   const items = useAllItems()
   const kept = (bookings ?? []).map((id) => items[id]).filter((b) => b && !b.deleted)
   if (!kept.length) return null

@@ -1,4 +1,4 @@
-// The user's receipts (the trip's items, store/items.ts): what they spent in each city, by day, in the money they paid
+// The user's expenses (the trip's items, store/items.ts): what they spent in each city, by day, in the money they paid
 // in, with the total in the display currency at today's rates. In My trip (MyTrip.tsx). Added here, by the app's
 // assistant (a photo of a receipt: PhotoFill.tsx), or by another app's (worker/mcp.ts). Private, like the rest of My
 // visit.
@@ -18,51 +18,51 @@ import { useMoney } from '../ui/useMoney'
 import { useRightPanel } from '../ui/rightPanel'
 import { nightStop } from './Journal'
 import { PhotoFill } from './PhotoFill'
-import { ReceiptFor } from './ReceiptLinks'
+import { ExpenseFor } from './ExpenseLinks'
 import { NewRecord, RecordCard, RecordNav, RecordRow, RecordTitle } from './RecordPage'
 import { EditorButtons, field, small } from './Visit'
 
 /** Units of a currency per EUR (undefined: no rate). */
 const rateOf = (currency?: string) => (currency === 'EUR' ? 1 : currency ? ds.fx.rates[currency] : undefined)
-/** The receipts' total in EUR (those in money without a rate left out). */
+/** The expenses' total in EUR (those in money without a rate left out). */
 const totalEur = (list: TripItem[]) => list.reduce((sum, r) => sum + (r.amount !== undefined && rateOf(r.currency) ? r.amount / rateOf(r.currency)! : 0), 0)
 
-/** The stop a receipt on `date` is likely from: where that night is spent, or the last one reached by then. */
+/** The stop an expense on `date` is likely from: where that night is spent, or the last one reached by then. */
 const stopOn = (stops: ScheduledStop[], date: string) => nightStop(stops, date) ?? [...stops].reverse().find((s) => s.arrive <= date) ?? stops[0]
 
-/** My trip's Receipts: the total so far, then each day's receipts (the newest first), each opening its page (where
+/** My trip's Spending: the total so far, then each day's expenses (the newest first), each opening its page (where
  *  it's changed), and one to add. */
-export function Receipts() {
+export function Spending() {
   const plan = useTrip((s) => s.plan)
   const items = useAllItems()
   const { fmt } = useMoney()
-  const open = useRightPanel((s) => s.records.receipts)
+  const open = useRightPanel((s) => s.records.spending)
   const setRecord = useRightPanel((s) => s.setRecord)
   // A new one, written on a page of its own until it's done.
-  const adding = useRightPanel((s) => s.adding.receipts) ?? null
-  const setAdding = (id: string | null) => useRightPanel.getState().setAdding('receipts', id)
+  const adding = useRightPanel((s) => s.adding.spending) ?? null
+  const setAdding = (id: string | null) => useRightPanel.getState().setAdding('spending', id)
   if (!plan) return null
-  const receipts = Object.values(items).filter((i) => i.kind === 'receipt' && !i.deleted)
-  const kept = receipts.filter((r) => !isEmptyItem(r))
+  const expenses = Object.values(items).filter((i) => i.kind === 'receipt' && !i.deleted)
+  const kept = expenses.filter((r) => !isEmptyItem(r))
   // (By day, the newest first; those without a day last.)
-  const days = [...new Set(receipts.map((r) => r.from ?? ''))].sort((a, b) => (!a ? 1 : !b ? -1 : b.localeCompare(a)))
-  const unrated = receipts.filter((r) => r.amount !== undefined && !rateOf(r.currency)).length
-  const byDay = (d: string) => receipts.filter((r) => (r.from ?? '') === d).sort((a, b) => a.updatedAt - b.updatedAt)
+  const days = [...new Set(expenses.map((r) => r.from ?? ''))].sort((a, b) => (!a ? 1 : !b ? -1 : b.localeCompare(a)))
+  const unrated = expenses.filter((r) => r.amount !== undefined && !rateOf(r.currency)).length
+  const byDay = (d: string) => expenses.filter((r) => (r.from ?? '') === d).sort((a, b) => a.updatedAt - b.updatedAt)
   if (adding !== null) {
     // (Done: its page, once something is written in it.)
     const done = () => {
-      const receipt = items[adding]
+      const expense = items[adding]
       // (Its page first, then not new: the new one's page replaced by its own, Back not going to the new one's.)
-      if (receipt && !receipt.deleted && !isEmptyItem(receipt)) setRecord('receipts', adding)
+      if (expense && !expense.deleted && !isEmptyItem(expense)) setRecord('spending', adding)
       setAdding(null)
     }
-    return <NewRecord back="All spending" onBack={() => setAdding(null)} title="New expense"><ReceiptEditor id={adding} onDone={done} autoFocus /></NewRecord>
+    return <NewRecord back="All spending" onBack={() => setAdding(null)} title="New expense"><ExpenseEditor id={adding} onDone={done} autoFocus /></NewRecord>
   }
   const page = open ? items[open] : undefined
   if (page && !page.deleted && page.kind === 'receipt') {
-    // (The list's order, for a page's receipts before and after it.)
+    // (The list's order, for a page's expenses before and after it.)
     const ids = days.flatMap(byDay).map((r) => r.id)
-    return <ReceiptPage receipt={page} ids={ids.includes(page.id) ? ids : [page.id]} />
+    return <ExpensePage expense={page} ids={ids.includes(page.id) ? ids : [page.id]} />
   }
   return (
     <Sections>
@@ -83,7 +83,7 @@ export function Receipts() {
         const cities = [...new Set(list.filter((r) => r.at !== NO_PLACE).map((r) => cityName(r.at)))].join(', ')
         return (
           <Section key={d || 'none'} title={<>{d ? dayDate(d) : 'No day'}{cities && <span className="font-normal text-muted"> · {cities}</span>}</>} aside={<span className="shrink-0 text-[12px] font-medium">{fmt(totalEur(list))}</span>}>
-            <ul className="flex flex-col">{list.map((r) => <ReceiptRow key={r.id} receipt={r} onOpen={() => setRecord('receipts', r.id)} />)}</ul>
+            <ul className="flex flex-col">{list.map((r) => <ExpenseRow key={r.id} expense={r} onOpen={() => setRecord('spending', r.id)} />)}</ul>
           </Section>
         )
       })}
@@ -91,32 +91,32 @@ export function Receipts() {
   )
 }
 
-/** A receipt in My trip's list: what for and how much (and the booking it paid for), opening its page. */
-function ReceiptRow({ receipt: r, onOpen }: { receipt: TripItem; onOpen: () => void }) {
+/** An expense in My trip's list: what for and how much (and the booking it paid for), opening its page. */
+function ExpenseRow({ expense: r, onOpen }: { expense: TripItem; onOpen: () => void }) {
   return (
     <RecordRow
-      title={r.title || 'An expense'} mark={<AiMark on={r.ai} />} sub={r.bookings?.length ? <ReceiptFor bookings={r.bookings} /> : undefined} isPublic={r.public} onOpen={onOpen}
+      title={r.title || 'An expense'} mark={<AiMark on={r.ai} />} sub={r.bookings?.length ? <ExpenseFor bookings={r.bookings} /> : undefined} isPublic={r.public} onOpen={onOpen}
       aside={r.amount !== undefined && <span className="font-medium tabular-nums">{paid(r.amount, r.currency)}</span>}
     />
   )
 }
 
-/** A receipt on its page in My trip: its day and city, all of it, and Edit (changed there); `ids`: the list's, for
- *  the receipts before and after it. */
-function ReceiptPage({ receipt: r, ids }: { receipt: TripItem; ids: string[] }) {
+/** An expense on its page in My trip: its day and city, all of it, and Edit (changed there); `ids`: the list's, for
+ *  the expenses before and after it. */
+function ExpensePage({ expense: r, ids }: { expense: TripItem; ids: string[] }) {
   const setRecord = useRightPanel((s) => s.setRecord)
   const [editing, setEditing] = useState(false)
   const i = ids.indexOf(r.id)
   const where = [r.from && dayDate(r.from), r.at !== NO_PLACE && cityName(r.at)].filter(Boolean).join(' · ')
   return (
     <Sections>
-      <RecordNav back="All spending" onBack={() => setRecord('receipts', null)} prev={ids[i - 1]} next={ids[i + 1]} onGo={(id) => setRecord('receipts', id)} prevLabel="Expense before" nextLabel="Expense after" at={r.id} />
+      <RecordNav back="All spending" onBack={() => setRecord('spending', null)} prev={ids[i - 1]} next={ids[i + 1]} onGo={(id) => setRecord('spending', id)} prevLabel="Expense before" nextLabel="Expense after" at={r.id} />
       <RecordCard title={where || 'Expense'} isPublic={r.public} editing={editing} onEdit={() => setEditing(true)}>
-        {editing ? <ReceiptEditor key={r.id} id={r.id} onDone={() => setEditing(false)} autoFocus /> : (
+        {editing ? <ExpenseEditor key={r.id} id={r.id} onDone={() => setEditing(false)} autoFocus /> : (
           <div className="flex flex-col gap-1.5 text-[13px]">
             <RecordTitle mark={<AiMark on={r.ai} />}>{r.title || 'An expense'}</RecordTitle>
             {r.amount !== undefined && <div className="text-[20px] font-semibold tabular-nums">{paid(r.amount, r.currency)}</div>}
-            <ReceiptFor bookings={r.bookings} />
+            <ExpenseFor bookings={r.bookings} />
             {r.text && <p className="whitespace-pre-wrap">{r.text}</p>}
           </div>
         )}
@@ -125,15 +125,15 @@ function ReceiptPage({ receipt: r, ids }: { receipt: TripItem; ids: string[] }) 
   )
 }
 
-/** A receipt as it's written: saved as it's typed; a new one is on today, at the stop of that day, in its money (or
+/** An expense as it's written: saved as it's typed; a new one is on today, at the stop of that day, in its money (or
  *  at no city, in the display currency). It may be for a stay or ticket kept. One left with nothing in it is removed
  *  on Done. */
-function ReceiptEditor({ id, onDone, autoFocus }: { id: string; onDone: () => void; autoFocus?: boolean }) {
-  const receipt = useAllItems()[id] as TripItem | undefined
+function ExpenseEditor({ id, onDone, autoFocus }: { id: string; onDone: () => void; autoFocus?: boolean }) {
+  const expense = useAllItems()[id] as TripItem | undefined
   const stops = useTrip((s) => s.plan?.stops ?? [])
   const display = useMoney().currency
   const { put, remove } = useItems.getState()
-  const live = receipt && !receipt.deleted ? receipt : undefined
+  const live = expense && !expense.deleted ? expense : undefined
   // (A new one's day, city and money until it's saved.)
   const [fresh] = useState(() => {
     const day = localToday()
@@ -143,9 +143,9 @@ function ReceiptEditor({ id, onDone, autoFocus }: { id: string; onDone: () => vo
   const items = useAllItems()
   const now = live ?? fresh
   const [typed, setTyped] = useState(live?.amount !== undefined ? String(live.amount) : '')
-  const save = (patch: Partial<TripItem>) => put({ ...(receipt ? {} : { kind: 'receipt', ...fresh }), id, ...patch })
+  const save = (patch: Partial<TripItem>) => put({ ...(expense ? {} : { kind: 'receipt', ...fresh }), id, ...patch })
   const done = () => {
-    if (receipt && isEmptyItem(receipt)) remove(id)
+    if (expense && isEmptyItem(expense)) remove(id)
     onDone()
   }
   // The trip's cities (and this one's), and the money of each with the display currency, EUR and USD.
