@@ -80,10 +80,14 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
       const d = costOf(ds, cityId, costKind, { ...input, prices: seenPrices })
       // No rental price where that rental isn't usual in the city; for other costs, no data.
       if (!d) return { color: NO_DATA, lines: [costKind === 'car' || costKind === 'scooter' ? `No ${COST_LABELS[costKind].label.toLowerCase()} here` : 'No data'] }
-      // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day"); a * where the cost
-      // is the user's (explained once, in the legend).
-      const amount = `~${money(roundTo2(d, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`
-      return { color: costs.color(d), lines: [`${amount}${ownCost(cityId, costKind, input, seenPrices) ? '*' : ''}`] }
+      // Small amounts to two digits with their cents ("~€6.60/meal"), others whole ("~€62/day").
+      const amount = (eur: number) => `~${money(roundTo2(eur, currency), currency, costKind !== 'day')}${COST_LABELS[costKind].per}`
+      if (!ownCost(cityId, costKind, input, seenPrices)) return { color: costs.color(d), lines: [amount(d)] }
+      // The user's cost with a * (explained once, in the legend), then below it the cost without what's theirs for
+      // the city, where that shows as another amount: a day on their preferences, other costs at the usual price.
+      const app = costOf(ds, cityId, costKind, { ...input, cityCosts: undefined })
+      const was = `${costKind === 'day' ? 'With your preferences' : 'Usually'} ${amount(app)}`
+      return { color: costs.color(d), lines: [`${amount(d)}*`, ...(app && amount(app) !== amount(d) ? [was] : [])] }
     }
     return {}
   }

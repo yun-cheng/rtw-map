@@ -14,10 +14,10 @@ const line = (over?: object) => cityMetrics(state(over))(id).lines?.join(' | ')
 describe("the Cost view's * on a city's cost", () => {
   it("marks a cost that is the user's", () => {
     expect(line()).not.toContain('*')
-    expect(line({ seenPrices: { [id]: { day: 99 } } })).toBe('~€99/day*')
-    expect(line({ seenPrices: { [id]: { coffee: 50 } } })).toMatch(/\*$/)
-    expect(line({ input: { ...input, cityCosts: { [id]: { coffees: 2 } } } })).toMatch(/\*$/)
-    expect(line({ costKind: 'dorm', seenPrices: { [id]: { dormBed: 7 } } })).toBe('~€7.00/night*')
+    expect(line({ seenPrices: { [id]: { day: 99 } } })).toBe(`~€99/day* | With your preferences ${line()}`)
+    expect(line({ seenPrices: { [id]: { coffee: 50 } } })).toContain(`* | With your preferences ${line()}`)
+    expect(line({ input: { ...input, cityCosts: { [id]: { coffees: 2 } } } })).toContain("* | With your preferences ")
+    expect(line({ costKind: 'dorm', seenPrices: { [id]: { dormBed: 7 } } })).toBe(`~€7.00/night* | Usually ${line({ costKind: 'dorm' })}`)
   })
 
   it("leaves a cost unmarked when the price seen isn't part of it", () => {
