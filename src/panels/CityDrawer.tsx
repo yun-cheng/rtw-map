@@ -7,6 +7,7 @@ import { MODE_ICON, VISA_TEXT, compact, duration, flag, dateRange, rateText, sho
 import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { HoverTip, type Tip } from '../ui/HoverTip'
+import { cityTimezone, localTime, useMinute } from '../ui/localTime'
 import { SwipeTabs } from '../ui/SwipeTabs'
 import { usePhone } from '../ui/usePhone'
 import { useSideScroll } from '../ui/useSideScroll'
@@ -98,6 +99,10 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const mobile = mobileInternet(ds, cityId)
   const water = tapWater(ds, cityId)
   const air = ds.air.byCity[cityId]
+  // The time there now, kept current.
+  const now = useMinute()
+  const timezone = cityTimezone(ds, cityId)
+  const clock = timezone && localTime(timezone, now)
   const services = nearby(ds, cityId)
   const shopping = ds.shopping[city.iso2]
   const pay = ds.payments.countries[city.iso2]
@@ -724,6 +729,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         <h2 className="text-[18px] font-semibold">{city.name}</h2>
         {/* The country, then the region it's in (not where they're one name, e.g. Russia) and whether it's Schengen. */}
         <p className="text-[13px] text-muted">{flag(city.iso2)} {country.name}{REGION_OF[city.iso2] && REGION_OF[city.iso2] !== country.name && ` · ${REGION_OF[city.iso2]}`}{country.schengen && ' · Schengen area'}</p>
+        {/* Its time now, its time zone and how far that is from this device's. */}
+        {clock && <p className="text-[13px] text-muted" title={timezone!}>🕐 <b className="text-ink">{clock.time}</b> · {clock.utc}{clock.name && ` (${clock.name})`} · {clock.diff}</p>}
         {stop && <p className="text-[13px] text-muted"><b className="text-ink">Stop {stopIndex + 1}</b> · {dateRange(stop.arrive, stop.depart)} · {stop.nights} nights</p>}
         {/* The panel's actions, one row of pills: the stop's or the city's own first, then Ask AI. */}
         {(action || !SHARED_TOKEN) && (
