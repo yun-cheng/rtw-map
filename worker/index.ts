@@ -93,7 +93,8 @@ async function currentUser(request: Request, env: Env): Promise<User | null> {
 /** Only the site itself may call the API (browsers send Origin on POST). */
 function sameSite(request: Request): boolean {
   const origin = request.headers.get('Origin')
-  return !origin || new URL(origin).host === new URL(request.url).host
+  // ("null": a page that keeps its address private, or a sandboxed one: not this site's.)
+  return !origin || URL.parse(origin)?.host === new URL(request.url).host
 }
 
 async function session(request: Request, env: Env, user: User | null = null) {
@@ -121,6 +122,16 @@ async function chat(request: Request, env: Env): Promise<Response> {
   return answer(request, env, user)
 }
 
+/** Today's allowance (DAILY_USD, or the account's own): a new message needs some of it left, and any call must fit
+ *  in what's left (judged by its request's size). The account's daily limit, or the answer refusing the call. */
+async function allowance(env: Env, user: Pick<User, 'sub' | 'email'>, day: string, message: boolean, requestChars: number): Promise<{ daily: number } | Response> {
+  const daily = await dailyUsd(env, user)
+  const allowed = await account(env, user).allowed(day, message, requestChars, daily)
+  if (allowed.ok) return { daily }
+  const error = daily > 0 ? 'You have used today\'s assistant allowance.' : 'The assistant is turned off for this account.'
+  return json({ error, usage: usageOf(allowed.count, daily) }, 429)
+}
+
 /** One model call for this user (from the browser, or from the runner for a run of theirs): checks the request and
  *  the allowance, calls Gemini and counts what it cost. */
 async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'email'>): Promise<Response> {
@@ -143,15 +154,11 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
     return json({ error: 'An attachment couldn\'t be sent: attach it again.' }, 400)
   }
 
-  // Today's allowance (DAILY_USD): a new message needs some of it left; any call must fit in what's left.
   const day = today()
-  const daily = await dailyUsd(env, user)
   const body = JSON.stringify(geminiRequest(req, day))
-  const allowed = await account(env, user).allowed(day, isNewMessage(req.contents), body.length, daily)
-  if (!allowed.ok) {
-    const error = daily > 0 ? 'You have used today\'s assistant allowance.' : 'The assistant is turned off for this account.'
-    return json({ error, usage: usageOf(allowed.count, daily) }, 429)
-  }
+  const allowed = await allowance(env, user, day, isNewMessage(req.contents), body.length)
+  if (allowed instanceof Response) return allowed
+  const { daily } = allowed
 
   // Gemini sometimes returns a broken reply (a garbled tool call: finishReason MALFORMED_…, or no parts) that a
   // second try answers fine; retry those here. Every attempt's cost counts.
@@ -183,13 +190,15 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
 }
 
 const signInFirst = () => json({ error: 'Please sign in with Google.', signIn: true }, 401)
+/** Whether the account is saving more often than SAVE_LIMIT allows, and the answer then. */
+const savingTooOften = async (env: Env, user: Pick<User, 'sub'>) => !(await env.SAVE_LIMIT.limit({ key: user.sub })).success
+const slowDown = () => json({ error: 'Saving too often: wait a moment.' }, 429)
 
 /** A file attached to a message (the request's body, its type as Content-Type and its name in X-File-Name), uploaded
  *  to Gemini: the attachment to send with the message, with its token. */
 async function media(request: Request, env: Env): Promise<Response> {
   const user = await currentUser(request, env)
   if (!user) return signInFirst()
-  if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
   if (!env.GEMINI_API_KEY || !env.SESSION_SECRET) return json({ error: 'The assistant is not set up yet (no Gemini API key).' }, 503)
   if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Too many files at once: wait a moment.' }, 429)
   const size = Number(request.headers.get('Content-Length') ?? NaN)
@@ -244,7 +253,7 @@ async function trips(request: Request, env: Env, id: string | undefined): Promis
     return deleted ? json({ ok: true }) : json({ error: 'Trip not found' }, 404)
   }
   if ((method === 'POST' && !id) || (method === 'PUT' && id)) {
-    if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+    if (await savingTooOften(env, user)) return slowDown()
     const text = await request.text()
     let raw: unknown
     try {
@@ -273,7 +282,7 @@ async function journal(request: Request, env: Env, id: string): Promise<Response
   const user = await currentUser(request, env)
   if (!user) return signInFirst()
   if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const entries = parseEntries(await request.json().catch(() => null))
   if (typeof entries === 'string') return json({ error: entries }, 400)
   const saved = await account(env, user).saveJournal(id, entries)
@@ -286,7 +295,7 @@ async function items(request: Request, env: Env, id: string): Promise<Response> 
   const user = await currentUser(request, env)
   if (!user) return signInFirst()
   if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const entries = parseItems(await request.json().catch(() => null))
   if (typeof entries === 'string') return json({ error: entries }, 400)
   const saved = await account(env, user).saveItems(id, entries)
@@ -302,7 +311,7 @@ async function phrases(request: Request, env: Env): Promise<Response> {
   const store = account(env, user)
   if (request.method === 'GET') return json({ phrases: await store.getPhrases() })
   if (request.method !== 'PUT') return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const entries = parseItems(await request.json().catch(() => null))
   if (typeof entries === 'string') return json({ error: entries }, 400)
   const saved = await store.savePhrases(entries)
@@ -321,7 +330,7 @@ async function tripChanges(request: Request, env: Env, id: string, change: strin
     return list ? json(list) : json({ error: 'Trip not found' }, 404)
   }
   if (request.method !== 'POST' || !change) return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const out = await store.undoChange(id, { id: change }, { who: 'you' })
   if (!out) return json({ error: 'Trip not found' }, 404)
   return typeof out === 'string' ? json({ error: out }, 409) : json(out)
@@ -339,7 +348,7 @@ async function tripVersions(request: Request, env: Env, id: string, version: str
     return list ? new Response(list, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }) : json({ error: 'Trip not found' }, 404)
   }
   if (request.method !== 'POST' || !version) return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const out = await store.restoreVersion(id, version)
   if (!out) return json({ error: 'Trip not found' }, 404)
   if (out === BUSY) return json({ error: out, busy: true }, 409)
@@ -358,7 +367,7 @@ async function tripChats(request: Request, env: Env, id: string): Promise<Respon
     return list ? json({ chats: list }) : json({ error: 'Trip not found' }, 404)
   }
   if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
-  if (!(await env.SAVE_LIMIT.limit({ key: user.sub })).success) return json({ error: 'Saving too often: wait a moment.' }, 429)
+  if (await savingTooOften(env, user)) return slowDown()
   const body = (await request.json().catch(() => null)) as { chat?: unknown; open?: unknown } | null
   const open = body?.open ?? null
   if (open !== null && (typeof open !== 'string' || !/^[\w-]{1,64}$/.test(open))) return json({ error: 'Invalid request' }, 400)
@@ -381,13 +390,8 @@ async function startRun(request: Request, env: Env, user: User): Promise<Respons
   const patch = parseTripPatch({ data: start.data, chat: start.chat })
   if (typeof patch === 'string') return json({ error: patch }, 400)
   // A new message needs some of today's allowance left (as on /api/chat).
-  const day = today()
-  const daily = await dailyUsd(env, user)
-  const allowed = await account(env, user).allowed(day, true, 0, daily)
-  if (!allowed.ok) {
-    const error = daily > 0 ? 'You have used today\'s assistant allowance.' : 'The assistant is turned off for this account.'
-    return json({ error, usage: usageOf(allowed.count, daily) }, 429)
-  }
+  const allowed = await allowance(env, user, today(), true, 0)
+  if (allowed instanceof Response) return allowed
   const run = await account(env, user).startRun(start.tripId, patch, start.request, user.email, start.rev)
   if (!run) return json({ error: 'Trip not found' }, 404)
   if (run === CHANGED_ELSEWHERE) return json({ error: run, changed: true }, 409)
@@ -619,77 +623,44 @@ async function connections(request: Request, env: Env, id: string | undefined): 
   return json({ error: 'Not found' }, 404)
 }
 
+const notFound = () => json({ error: 'Not found' }, 404)
+/** A route that only answers POST. */
+const post = (handle: (request: Request, env: Env) => Promise<Response>) => (request: Request, env: Env) =>
+  request.method === 'POST' ? handle(request, env) : Promise.resolve(notFound())
+const ID = '([\\w-]{1,64})'
+const path = (pattern: string) => new RegExp(`^/api/${pattern.replaceAll(':id', ID)}$`)
+
+/** The API's addresses (see the top of this file), each with what answers it; `m`: the address's parts (ids). */
+const ROUTES: [RegExp, (request: Request, env: Env, m: RegExpMatchArray) => Promise<Response>][] = [
+  [path('session'), async (r, env) => (r.method === 'GET' ? json(await session(r, env)) : notFound())],
+  [path('auth/google'), post(signIn)],
+  [path('auth/logout'), post(async (r) => json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(null, new URL(r.url).protocol === 'https:') }))],
+  [path('trips(?:/:id)?'), (r, env, m) => trips(r, env, m[1])],
+  [path('trips/:id/share'), (r, env, m) => share(r, env, m[1])],
+  [path('trips/:id/journal'), (r, env, m) => journal(r, env, m[1])],
+  [path('trips/:id/items'), (r, env, m) => items(r, env, m[1])],
+  [path('trips/:id/changes(?:/:id/undo)?'), (r, env, m) => tripChanges(r, env, m[1], m[2])],
+  [path('trips/:id/versions(?:/:id/restore)?'), (r, env, m) => tripVersions(r, env, m[1], m[2])],
+  [path('trips/:id/chats'), (r, env, m) => tripChats(r, env, m[1])],
+  [path('shared/:id'), (r, env, m) => (r.method === 'GET' ? shared(r, env, m[1]) : Promise.resolve(notFound()))],
+  [path('chat'), post(chat)],
+  [path('media'), post(media)],
+  [path('speech'), post(readAloud)],
+  [path('phrases'), (r, env) => phrases(r, env)],
+  [path('runs(?:/:id(?:/(stop))?)?'), (r, env, m) => runs(r, env, m[1], m[2])],
+  [path('push'), (r, env) => push(r, env)],
+  [path('admin/limits'), (r, env) => adminLimits(r, env)],
+  [path('connections(?:/:id)?'), (r, env, m) => connections(r, env, m[1])],
+]
+
 async function api(request: Request, env: Env, pathname: string): Promise<Response> {
-  const sharedPath = pathname.match(/^\/api\/shared\/([\w-]{1,64})$/)
-  if (sharedPath && request.method === 'GET') return shared(request, env, sharedPath[1])
-  const sharePath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/share$/)
-  if (sharePath) {
-    if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return share(request, env, sharePath[1])
+  // Only the site itself may change anything.
+  if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
+  for (const [pattern, handle] of ROUTES) {
+    const m = pathname.match(pattern)
+    if (m) return handle(request, env, m)
   }
-  const journalPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/journal$/)
-  if (journalPath) {
-    if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return journal(request, env, journalPath[1])
-  }
-  const changesPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/changes(?:\/([\w-]{1,64})\/undo)?$/)
-  if (changesPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return tripChanges(request, env, changesPath[1], changesPath[2])
-  }
-  const versionsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/versions(?:\/([\w-]{1,64})\/restore)?$/)
-  if (versionsPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return tripVersions(request, env, versionsPath[1], versionsPath[2])
-  }
-  const chatsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/chats$/)
-  if (chatsPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return tripChats(request, env, chatsPath[1])
-  }
-  const itemsPath = pathname.match(/^\/api\/trips\/([\w-]{1,64})\/items$/)
-  if (itemsPath) {
-    if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return items(request, env, itemsPath[1])
-  }
-  const connectionPath = pathname.match(/^\/api\/connections(?:\/([\w-]{1,64}))?$/)
-  if (connectionPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return connections(request, env, connectionPath[1])
-  }
-  if (pathname === '/api/admin/limits') {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return adminLimits(request, env)
-  }
-  const tripPath = pathname.match(/^\/api\/trips(?:\/([\w-]{1,64}))?$/)
-  if (tripPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return trips(request, env, tripPath[1])
-  }
-  const runPath = pathname.match(/^\/api\/runs(?:\/([\w-]{1,64})(?:\/(stop))?)?$/)
-  if (runPath) {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return runs(request, env, runPath[1], runPath[2])
-  }
-  if (pathname === '/api/push') {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return push(request, env)
-  }
-  if (pathname === '/api/phrases') {
-    if (request.method !== 'GET' && !sameSite(request)) return json({ error: 'Not allowed' }, 403)
-    return phrases(request, env)
-  }
-  if (request.method === 'GET' && pathname === '/api/session') return json(await session(request, env))
-  if (request.method !== 'POST') return json({ error: 'Not found' }, 404)
-  if (!sameSite(request)) return json({ error: 'Not allowed' }, 403)
-  if (pathname === '/api/auth/google') return signIn(request, env)
-  if (pathname === '/api/auth/logout') {
-    return json({ ok: true }, 200, { 'Set-Cookie': sessionCookie(null, new URL(request.url).protocol === 'https:') })
-  }
-  if (pathname === '/api/chat') return chat(request, env)
-  if (pathname === '/api/media') return media(request, env)
-  if (pathname === '/api/speech') return readAloud(request, env)
-  return json({ error: 'Not found' }, 404)
+  return notFound()
 }
 
 export default {
