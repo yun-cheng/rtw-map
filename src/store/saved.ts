@@ -109,6 +109,11 @@ const unsaved = () => {
   }
 }
 
+/** The most a save sent as the page closes may be (keepalive requests share 64 KB; the rest is for the journal's,
+ *  items' and phrases' own). */
+const CLOSING_BYTES = 48_000
+const bytes = (s: string) => new TextEncoder().encode(s).length
+
 /** True while a trip is being put on screen, so that isn't mistaken for an edit to save. */
 let applying = false
 let timer: ReturnType<typeof setTimeout> | undefined
@@ -384,6 +389,14 @@ if (typeof window !== 'undefined') {
     void itemsSync.send()
     void phrasesSync.send()
   })
+  // Hidden (another tab or app, the phone locked, often before closing): saved now, while the page can still do so.
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'hidden') return
+    void flush()
+    void journalSync.send()
+    void itemsSync.send()
+    void phrasesSync.send()
+  })
   window.addEventListener('pagehide', () => {
     // The journal's and items' last changes, if not sent yet.
     journalSync.last()
@@ -391,10 +404,12 @@ if (typeof window !== 'undefined') {
     phrasesSync.last()
     const id = useSaved.getState().activeId
     if (!id || !dirty) return
-    void fetch(`/api/trips/${id}`, {
-      method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data: tripData(), chat: chatData() }),
-    })
+    // With the version on screen, so it can't overwrite another app's change. A browser sends at most 64 KB as the
+    // page closes: the chat goes too if that fits, and a larger trip stays marked unsaved, sent on the next visit.
+    const withChat = JSON.stringify({ data: tripData(), chat: chatData(), rev })
+    const body = bytes(withChat) <= CLOSING_BYTES ? withChat : JSON.stringify({ data: tripData(), rev })
+    if (bytes(body) > CLOSING_BYTES) return
+    void fetch(`/api/trips/${id}`, { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body }).catch(() => {})
   })
 }
 
