@@ -8,7 +8,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, itemsUndo, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView, type ItemsChange } from './changes'
 import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
-import { fillTripSummaries, renameItemKinds } from './migrations'
+import { addColumns, fillTripSummaries, renameItemKinds } from './migrations'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, publicItems, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, publicJournal, type DayEntry, type Journal } from '../src/store/journalCore'
@@ -45,62 +45,44 @@ const BUSY_OUTSIDE = 'The app\'s own assistant is working on this trip right now
 export class Account extends DurableObject {
   constructor(ctx: DurableObjectState, env: Cloudflare.Env) {
     super(ctx, env)
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS trips (
+    const sql = ctx.storage.sql
+    sql.exec(`CREATE TABLE IF NOT EXISTS trips (
       id TEXT PRIMARY KEY, name TEXT NOT NULL, data TEXT, chat TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL)`)
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS runs (
+    sql.exec(`CREATE TABLE IF NOT EXISTS runs (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, status TEXT NOT NULL, request TEXT NOT NULL, email TEXT, reply TEXT,
       version INTEGER NOT NULL DEFAULT 0, stop INTEGER NOT NULL DEFAULT 0, error TEXT, created INTEGER NOT NULL, updated INTEGER NOT NULL)`)
-    // A trip's public link (its token), added after the table: older accounts get the column now.
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'share')) {
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN share TEXT')
-    }
-    // The trip's journal (src/store/journalCore.ts), apart from its data: merged day by day, never touched by a run.
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'journal')) {
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN journal TEXT')
-    }
-    // The cities' items (stays, albums, links, notes; src/store/itemsCore.ts), the same way: merged item by item.
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'items')) {
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN items TEXT')
-    }
-    // Each save counts the trip's `rev` up; `outside`: its rev when another app last changed it (changes.ts), so the
-    // browser's save from before that is refused instead of overwriting the change.
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'rev')) {
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN rev INTEGER NOT NULL DEFAULT 0')
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN outside INTEGER')
-    }
+    // Columns added after the table: older accounts get them now.
+    // A trip's public link (its token). The trip's journal (src/store/journalCore.ts) and its cities' items (stays,
+    // albums, links, notes; src/store/itemsCore.ts), apart from its data: merged day by day and item by item, never
+    // touched by a run. Each save counts the trip's `rev` up; `outside`: its rev when another app last changed it
+    // (changes.ts), so the browser's save from before that is refused instead of overwriting the change.
+    addColumns(sql, 'trips', ['share TEXT', 'journal TEXT', 'items TEXT', 'rev INTEGER NOT NULL DEFAULT 0', 'outside INTEGER'])
     // The trip list's summary of each trip (its dates and number of stops), kept as its data is saved.
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'stops')) {
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN start_date TEXT')
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN end_date TEXT')
-      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN stops INTEGER NOT NULL DEFAULT 0')
-      fillTripSummaries(ctx.storage.sql)
-    }
+    if (addColumns(sql, 'trips', ['start_date TEXT', 'end_date TEXT', 'stops INTEGER NOT NULL DEFAULT 0'])) fillTripSummaries(sql)
     // Other apps' changes to the trips, with each trip as it was before, for undo (changes.ts).
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS changes (
+    sql.exec(`CREATE TABLE IF NOT EXISTS changes (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, grant_id TEXT, app TEXT NOT NULL, tool TEXT NOT NULL, summary TEXT NOT NULL,
       before TEXT, rev_before INTEGER NOT NULL, rev_after INTEGER NOT NULL, created INTEGER NOT NULL, undone INTEGER NOT NULL DEFAULT 0)`)
     // A change to My visit instead keeps the items it changed, as they were (ItemsChange; null for a trip's change).
-    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(changes)').toArray().some((c) => c.name === 'items')) {
-      ctx.storage.sql.exec('ALTER TABLE changes ADD COLUMN items TEXT')
-    }
+    addColumns(sql, 'changes', ['items TEXT'])
     // Items kept with a kind since renamed (receipts are expenses), as they are now.
-    renameItemKinds(ctx.storage.sql)
+    renameItemKinds(sql)
     // Each trip's versions (versions.ts): the trip after each spell of changes, by whom, kept for good.
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS versions (
+    sql.exec(`CREATE TABLE IF NOT EXISTS versions (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, by TEXT NOT NULL, data TEXT, rev INTEGER NOT NULL, started INTEGER NOT NULL, updated INTEGER NOT NULL)`)
-    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS versions_trip ON versions (trip_id, started)')
+    sql.exec('CREATE INDEX IF NOT EXISTS versions_trip ON versions (trip_id, started)')
     // Each trip's past chats (chats.ts), apart from the open one (the trip's `chat`).
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS chats (
+    sql.exec(`CREATE TABLE IF NOT EXISTS chats (
       id TEXT PRIMARY KEY, trip_id TEXT NOT NULL, title TEXT NOT NULL, updated INTEGER NOT NULL, messages INTEGER NOT NULL, chat TEXT NOT NULL)`)
-    ctx.storage.sql.exec('CREATE INDEX IF NOT EXISTS chats_trip ON chats (trip_id, updated)')
+    sql.exec('CREATE INDEX IF NOT EXISTS chats_trip ON chats (trip_id, updated)')
     // Apps allowed to read the trips (oauth.ts): pending from the user's yes until the app takes its first tokens.
-    ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS grants (
+    sql.exec(`CREATE TABLE IF NOT EXISTS grants (
       id TEXT PRIMARY KEY, client TEXT NOT NULL, redirect TEXT NOT NULL, scope TEXT NOT NULL, status TEXT NOT NULL,
       gen INTEGER NOT NULL DEFAULT 0, created INTEGER NOT NULL, used INTEGER NOT NULL)`)
     // The browsers that get a notification when a run ends (push.ts): their push subscriptions.
-    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS push (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL)')
+    sql.exec('CREATE TABLE IF NOT EXISTS push (endpoint TEXT PRIMARY KEY, p256dh TEXT NOT NULL, auth TEXT NOT NULL, created INTEGER NOT NULL)')
     // On the settings instance only: which account and trip each public link opens.
-    ctx.storage.sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
+    sql.exec('CREATE TABLE IF NOT EXISTS shares (token TEXT PRIMARY KEY, sub TEXT NOT NULL, trip_id TEXT NOT NULL)')
   }
 
   // ---------------------------------------------------------------- assistant usage

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { fillTripSummaries, renameItemKinds, type Sql } from './migrations'
+import { addColumns, fillTripSummaries, renameItemKinds, type Sql } from './migrations'
 
 /** Node's own SQLite, what the tests use of it (the Worker's types have no Node). */
 type Statement = { all(...b: unknown[]): unknown[]; get(...b: unknown[]): unknown; run(...b: unknown[]): unknown }
@@ -13,7 +13,7 @@ function account() {
   const sql: Sql = {
     exec: (query, ...bindings) => {
       const q = db.prepare(query)
-      const rows = query.startsWith('SELECT') ? q.all(...bindings) : (q.run(...bindings), [])
+      const rows = /^(SELECT|PRAGMA)/.test(query) ? q.all(...bindings) : (q.run(...bindings), [])
       return { toArray: () => rows as Record<string, unknown>[] }
     },
   }
@@ -58,5 +58,13 @@ describe('migrations', () => {
     expect(row('t1')).toEqual({ start_date: '2027-05-01', end_date: '2027-06-01', stops: 3 })
     expect(row('t2')).toEqual({ start_date: null, end_date: null, stops: 0 })
     expect(row('t3')).toEqual({ start_date: null, end_date: null, stops: 0 })
+  })
+
+  it('adds the columns a table lacks, once, and says whether it added any', () => {
+    const { db, sql } = account()
+    expect(addColumns(sql, 'trips', ['items TEXT', 'rev INTEGER NOT NULL DEFAULT 0', 'outside INTEGER'])).toBe(true)
+    expect(addColumns(sql, 'trips', ['items TEXT', 'rev INTEGER NOT NULL DEFAULT 0', 'outside INTEGER'])).toBe(false)
+    const columns = (db.prepare('PRAGMA table_info(trips)').all() as { name: string; dflt_value: string | null }[]).map((c) => [c.name, c.dflt_value])
+    expect(columns).toEqual([['id', null], ['items', null], ['rev', '0'], ['outside', null]])
   })
 })

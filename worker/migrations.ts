@@ -7,6 +7,15 @@ import { summarize } from './trips'
 /** What a migration needs of the account's SQL storage (`ctx.storage.sql`). */
 export type Sql = { exec(query: string, ...bindings: unknown[]): { toArray(): Record<string, unknown>[] } }
 
+/** Adds the columns a table doesn't have yet (each "name TYPE…", added after the table was made): whether it added
+ *  any. */
+export function addColumns(sql: Sql, table: string, columns: string[]): boolean {
+  const has = new Set(sql.exec(`PRAGMA table_info(${table})`).toArray().map((c) => c.name))
+  const missing = columns.filter((c) => !has.has(c.split(' ')[0]))
+  for (const c of missing) sql.exec(`ALTER TABLE ${table} ADD COLUMN ${c}`)
+  return missing.length > 0
+}
+
 /** Items kept with a kind since renamed (receipts are expenses), in the trips and in the changes kept for undo, as
  *  they are now. */
 export function renameItemKinds(sql: Sql) {
