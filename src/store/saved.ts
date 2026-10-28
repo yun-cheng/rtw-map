@@ -16,7 +16,7 @@ import { useAccount } from '../agent/account'
 import { NO_SPENT, setAside, setServerRuns, useChat, type ChatMessage, type SavedChat, type Spent } from '../agent/chat'
 import type { ChatSummary } from '../../worker/chats'
 import type { TripInput } from '../planner'
-import type { Book, BookState } from './book'
+import type { BookState } from './book'
 import { setItemsSync, useItems, type Items } from './items'
 import { setJournalSync, useJournal, type Journal } from './journal'
 import { ACCOUNT, setPhrasesSync, usePhrases } from './phrases'
@@ -265,26 +265,30 @@ function changed() {
   timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
 }
 
-/** Sends what a book (book.ts: the journal, the items) has changed on this device for the open trip, a moment after a
- *  change: the server answers with all of the trip's, merged. */
-function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journal' | 'items') {
+/** Sends what a book (book.ts: a trip's journal or items, the account's phrases) has changed on this device, a moment
+ *  after a change: the server answers with all of its entries, merged. `to`: the book and where it's sent (none: not
+ *  now, e.g. no trip open or signed out). */
+function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, to: () => { key: string; url: string; field: string } | null) {
   const DELAY_MS = 1500
   let timer: ReturnType<typeof setTimeout> | undefined
   let sending = false
-  const changed = (book: Book<T>) => book.pending.map((k) => book.entries[k]).filter(Boolean)
+  /** The book's entries changed here and not sent yet (none unless it's the one open). */
+  const pending = (key: string) => {
+    const book = store.getState().books[key]
+    return store.getState().key === key && book ? book.pending.map((k) => book.entries[k]).filter(Boolean) : []
+  }
   async function send() {
     clearTimeout(timer)
     timer = undefined
-    const id = useSaved.getState().activeId
-    const book = store.getState().books[id ?? '']
-    if (!id || store.getState().key !== id || !book?.pending.length || sending) return
+    const target = to()
     // (Offline: sent once the account is reached again.)
-    if (useAccount.getState().offline) return
-    const entries = changed(book)
+    if (!target || sending || useAccount.getState().offline) return
+    const entries = pending(target.key)
+    if (!entries.length) return
     sending = true
     try {
-      const answer = (await call('PUT', `/api/trips/${id}/${path}`, { entries })) as Record<typeof path, Record<string, T>>
-      store.getState().sent(id, entries, answer[path])
+      const answer = (await call('PUT', target.url, { entries })) as Record<string, Record<string, T>>
+      store.getState().sent(target.key, entries, answer[target.field])
     } catch (e) {
       if (!(e instanceof Offline)) store.setState({ problem: (e as Error).message })
       return
@@ -292,7 +296,7 @@ function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journa
       sending = false
     }
     // Changed again meanwhile.
-    if (store.getState().books[id]?.pending.length) timer = setTimeout(() => void send(), DELAY_MS)
+    if (pending(target.key).length) timer = setTimeout(() => void send(), DELAY_MS)
   }
   return {
     send,
@@ -302,72 +306,38 @@ function bookSync<T>(store: UseBoundStore<StoreApi<BookState<T>>>, path: 'journa
     },
     /** The page is closing: what's waiting, sent anyway. */
     last: () => {
-      const id = useSaved.getState().activeId
-      const book = store.getState().books[id ?? '']
-      if (!id || !timer || !book?.pending.length) return
-      void fetch(`/api/trips/${id}/${path}`, {
-        method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: changed(book) }),
-      })
+      const target = to()
+      const entries = target && timer ? pending(target.key) : []
+      if (!target || !entries.length) return
+      void fetch(target.url, { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }) }).catch(() => {})
     },
   }
 }
-const journalSync = bookSync(useJournal, 'journal')
-const itemsSync = bookSync(useItems, 'items')
+/** The open trip's journal or items. */
+const ofTrip = (field: 'journal' | 'items') => () => {
+  const id = useSaved.getState().activeId
+  return id ? { key: id, url: `/api/trips/${id}/${field}`, field } : null
+}
+const journalSync = bookSync(useJournal, ofTrip('journal'))
+const itemsSync = bookSync(useItems, ofTrip('items'))
 setJournalSync(journalSync.soon)
 setItemsSync(itemsSync.soon)
 
-/** Sends the user's phrases changed on this device (the account's, for every trip), a moment after a change: the
- *  server answers with all of them, merged. */
-const phrasesSync = (() => {
-  const DELAY_MS = 1500
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let sending = false
-  const pending = () => {
-    const book = usePhrases.getState().books[ACCOUNT]
-    return usePhrases.getState().key === ACCOUNT && book ? book.pending.map((k) => book.entries[k]).filter(Boolean) : []
-  }
-  async function send() {
-    clearTimeout(timer)
-    timer = undefined
-    const entries = pending()
-    if (!entries.length || sending || !useAccount.getState().user || useAccount.getState().offline) return
-    sending = true
+/** The user's own phrases (the account's, for every trip), sent as the journal and items are. */
+const phrasesSync = {
+  ...bookSync(usePhrases, () => (useAccount.getState().user ? { key: ACCOUNT, url: '/api/phrases', field: 'phrases' } : null)),
+  /** Signed in: the phrases kept on this browser signed out go to the account, and the account's are fetched. */
+  load: async () => {
+    if (usePhrases.getState().key !== ACCOUNT) usePhrases.getState().adopt(ACCOUNT)
     try {
-      const answer = (await call('PUT', '/api/phrases', { entries })) as { phrases: Items }
-      usePhrases.getState().sent(ACCOUNT, entries, answer.phrases)
+      const { phrases } = (await call('GET', '/api/phrases')) as { phrases: Items }
+      usePhrases.getState().open(ACCOUNT, phrases)
+      await phrasesSync.send()
     } catch (e) {
       if (!(e instanceof Offline)) usePhrases.setState({ problem: (e as Error).message })
-      return
-    } finally {
-      sending = false
     }
-    if (pending().length) timer = setTimeout(() => void send(), DELAY_MS)
-  }
-  return {
-    send,
-    soon: () => {
-      clearTimeout(timer)
-      timer = setTimeout(() => void send(), DELAY_MS)
-    },
-    /** Signed in: the phrases kept on this browser signed out go to the account, and the account's are fetched. */
-    load: async () => {
-      if (usePhrases.getState().key !== ACCOUNT) usePhrases.getState().adopt(ACCOUNT)
-      try {
-        const { phrases } = (await call('GET', '/api/phrases')) as { phrases: Items }
-        usePhrases.getState().open(ACCOUNT, phrases)
-        await send()
-      } catch (e) {
-        if (!(e instanceof Offline)) usePhrases.setState({ problem: (e as Error).message })
-      }
-    },
-    /** The page is closing: what's waiting, sent anyway. */
-    last: () => {
-      const entries = pending()
-      if (!timer || !entries.length) return
-      void fetch('/api/phrases', { method: 'PUT', keepalive: true, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries }) })
-    },
-  }
-})()
+  },
+}
 setPhrasesSync(phrasesSync.soon)
 // Notes this browser kept with its trip before items: into the trip's items.
 if (!SHARED_TOKEN) useItems.getState().takeNotes(localNotes)
