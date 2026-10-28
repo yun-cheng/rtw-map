@@ -500,10 +500,13 @@ export class Account extends DurableObject {
     return { stop: r.stop === 1 }
   }
 
-  /** From the runner, at the end: the trip and its chat with the reply, the My visit items changed, and how it ended. */
-  async finishRun(id: string, patch: TripPatch, reply: string, status: Exclude<RunStatus, 'running'>, error: string | null, items: TripItem[] = []): Promise<boolean> {
+  /** From the runner, at the end: the trip and its chat with the reply, the My visit items changed, and how it ended.
+   *  Null: no such run. False: it had ended already (gone quiet and given up on, which also lets the user change the
+   *  trip again), so the trip is left as it is. (As kept, not judged stale now: a late end no one saw fail still saves.) */
+  async finishRun(id: string, patch: TripPatch, reply: string, status: Exclude<RunStatus, 'running'>, error: string | null, items: TripItem[] = []): Promise<boolean | null> {
     const r = this.ctx.storage.sql.exec<RunRow>('SELECT * FROM runs WHERE id = ?', id).toArray()[0]
-    if (!r) return false
+    if (!r) return null
+    if (r.status !== 'running') return false
     this.write(r.trip_id, patch, this.runBy(r))
     if (items.length) await this.saveItems(r.trip_id, items)
     this.ctx.storage.sql.exec('UPDATE runs SET status = ?, reply = ?, error = ?, version = version + 1, updated = ? WHERE id = ?', status, reply, error, Date.now(), id)

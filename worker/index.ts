@@ -464,9 +464,10 @@ async function internal(request: Request, env: Env, ctx: ExecutionContext, sub: 
   if (action === 'finish') {
     const end = parseRunEnd(body)
     if (typeof end === 'string') return json({ error: end }, 400)
-    if (!(await store.finishRun(id, patch, reply ?? 'null', end.status, end.error, items))) return json({ error: 'Run not found' }, 404)
-    // (Stopped: the user is there.)
-    if (end.status !== 'stopped') ctx.waitUntil(notifyDone(env, store, id, body?.reply, new URL(request.url).origin))
+    const saved = await store.finishRun(id, patch, reply ?? 'null', end.status, end.error, items)
+    if (saved === null) return json({ error: 'Run not found' }, 404)
+    // (Stopped: the user is there. Ended already: they were told then.)
+    if (saved && end.status !== 'stopped') ctx.waitUntil(notifyDone(env, store, id, body?.reply, new URL(request.url).origin))
     return json({ ok: true })
   }
   return json({ error: 'Not found' }, 404)
