@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A run of the places prompt: the places to see in each city, and its day trips",
+  "type": "object",
+  "required": ["cities"],
+  "properties": {
+    "cities": {
+      "type": "object",
+      "description": "By the city's id in the list asked about.",
+      "propertyNames": { "pattern": "^[a-z0-9-]+$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["city", "places"],
+        "properties": {
+          "city": { "type": "string" },
+          "places": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["name", "rank", "tier", "kind", "minutes", "dayTrip", "wikipedia", "why", "sure"],
+              "properties": {
+                "name": { "type": "string" },
+                "local": { "type": "string" },
+                "rank": { "type": "integer", "minimum": 1, "description": "The city's places and its day trips each ranked from 1." },
+                "tier": { "enum": ["must", "worth", "extra"] },
+                "kind": { "enum": ["museum", "palace", "religious", "monument", "area", "landmark", "market", "park", "nature", "beach", "theme park", "activity", "evening"] },
+                "minutes": { "type": "number", "minimum": 0 },
+                "dayTrip": { "type": "boolean" },
+                "km": { "type": "number", "minimum": 0 },
+                "getThere": { "type": "string", "description": "Day trips only." },
+                "wikipedia": { "type": ["string", "null"], "description": "The English Wikipedia article's title." },
+                "why": { "type": "string" },
+                "sure": { "enum": ["high", "medium", "low"] },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

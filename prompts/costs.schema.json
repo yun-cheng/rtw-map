@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "A run of the costs prompt: prices per city, each with its source",
+  "type": "object",
+  "required": ["cities"],
+  "properties": {
+    "cities": {
+      "type": "object",
+      "description": "By the city's id in the list asked about. The national prices (rentals, the supermarket) only for the city marked national.",
+      "propertyNames": { "pattern": "^[a-z0-9-]+$" },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["city", "currency", "values"],
+        "properties": {
+          "city": { "type": "string" },
+          "currency": { "type": "string", "pattern": "^[A-Z]{3}$" },
+          "values": {
+            "type": "object",
+            "propertyNames": {
+              "enum": ["dormBed", "privateRoom", "hotelMid", "hotelUpscale", "apartment", "mealLocal", "mealDinner", "coffee", "beerBar", "localTransportDay", "taxiStart", "taxiPerKm", "carDay", "scooterDay", "water15", "coke05", "beer05", "bread", "eggs10", "milk1l", "pasta500g", "bananas1kg", "tomatoes1kg", "chicken500g"]
+            },
+            "additionalProperties": {
+              "type": "object",
+              "required": ["value", "source", "seen", "confidence"],
+              "properties": {
+                "value": { "type": ["number", "null"], "minimum": 0 },
+                "currency": { "type": "string", "pattern": "^[A-Z]{3}$", "description": "Only where the source gives another currency than the country's." },
+                "source": { "type": ["string", "null"] },
+                "seen": { "type": ["string", "null"], "pattern": "^\\d{4}-\\d{2}$" },
+                "confidence": { "enum": ["high", "medium", "low"] },
+                "estimated": { "const": true, "description": "Worked out from this city's own prices, not found on a page; then basis says how." },
+                "none": { "const": true, "description": "The city has no such thing (no metered taxis…); value is then null." },
+                "basis": { "type": "string" },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
