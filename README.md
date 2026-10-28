@@ -170,7 +170,7 @@ runner/        the assistant's runner on Google Cloud Run: answers a message on 
 
 ## Data
 
-Hand-curated files are in `data/seed/`; scripts enrich them from open sources into `data/gen/`. Neither is in git: see "Data storage" below.
+Hand-curated files are in `data/seed/`; scripts enrich them from open sources into `data/gen/`. Neither is in git: see "Data storage" below. How each dataset is made, and the prompts an AI service runs each month to collect the seed data with a source per value (run by agents on any computer from the private prompts repo, `rtw-map-prompts`; kept as runs in `data/runs/`, compared on the review page), are in [prompts/README.md](prompts/README.md).
 
 | Script | Source | Output |
 |---|---|---|
