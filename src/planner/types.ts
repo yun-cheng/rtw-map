@@ -40,6 +40,8 @@ export type City = {
   costFactor: number
   longStay: boolean
   blurb: string
+  /** Its country's capital (GeoNames), whose prices a city's are compared with. */
+  capital?: true
   /** A country's capital added from open data only (build-capitals.ts): no tags, plain defaults for the rest. */
   auto?: true
 }

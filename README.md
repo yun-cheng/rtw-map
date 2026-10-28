@@ -175,7 +175,7 @@ Hand-curated files are in `data/seed/`; scripts enrich them from open sources in
 | Script | Source | Output |
 |---|---|---|
 | `build-capitals.ts` | GeoNames country info and cities500 (CC-BY); Wikidata (CC0) | `capitals.json`: the capital of every country on the map with no curated cities, its description, and the country's currency, languages, plugs, voltage and emergency numbers |
-| `build-cities.ts` | GeoNames cities500 (CC-BY) | `cities.json`: coordinates, population, timezone; plus the capitals above, marked `auto` |
+| `build-cities.ts` | GeoNames cities500 (CC-BY) | `cities.json`: coordinates, population, timezone, and `capital` for each country's capital (GeoNames' `PPLC`); plus the capitals above, marked `auto` |
 | `build-boundaries.ts` | Natural Earth 1:50m (public domain) | `boundaries.json`: every country's outline (simplified), name and population |
 | `build-seed.ts` | `data/seed/*` | `countries` (plus the capitals' countries, marked `auto`), `costs`, `connections`, `notices`, `local-transport`, `health`, `shopping`, `payments`, `phrases` (validated: every curated city/country needs an entry; every language needs every phrase) |
 | `build-roads.ts` | OSRM demo server (OpenStreetMap, ODbL) | `roads.json`: driving times for estimated legs (queried in batches of nearby cities) |

@@ -1,4 +1,5 @@
-// Enriches data/seed/cities.csv with coordinates, population and timezone from GeoNames (CC-BY 4.0), and adds the
+// Enriches data/seed/cities.csv with coordinates, population, timezone and whether it's its country's capital (GeoNames'
+// PPLC) from GeoNames (CC-BY 4.0), and adds the
 // capital of every country with none of those (build-capitals.ts), marked `auto`: open data only, with the same plain
 // defaults for what only a curated profile says (popularity, days, cost factor; no tags).
 import { existsSync } from 'node:fs'
@@ -29,6 +30,8 @@ const cities = seed.map((s) => {
     population: g ? Number(g[14]) : null,
     timezone: g?.[17] ?? null,
     geonameId: g ? Number(g[0]) : null,
+    // (The prices a city is compared with: its country's capital's.)
+    ...(g?.[7] === 'PPLC' && { capital: true }),
     tags: s.tags.split(';').filter(Boolean),
     popularity: Number(s.popularity),
     days: { min: Number(s.daysMin), ideal: Number(s.daysIdeal), max: Number(s.daysMax) },
@@ -55,6 +58,7 @@ const auto = capitals.filter((c) => !curated.has(c.iso2)).map((c) => ({
   costFactor: 1,
   longStay: false,
   blurb: c.blurb && c.blurb[0].toUpperCase() + c.blurb.slice(1),
+  capital: true,
   auto: true,
 }))
 
