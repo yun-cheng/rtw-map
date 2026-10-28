@@ -659,10 +659,11 @@ describe('price levels and estimated costs', () => {
     const noPoland = { ...ds, costs }
     expect(costProfile(noPoland, 'PL')).toBeNull()
     expect(dailyCost(noPoland, 'krakow', { prefs: stylePrefs('backpacker') })).toBe(0)
-    // The price level still checks our hand-entered prices: Poland's land near what it suggests.
+    // The price level still checks our hand-entered prices: Poland's land near what it suggests (within 40%: the price
+    // levels and exchange rates are refreshed weekly, and move it).
     const est = estimatedCosts(ds, 'PL')!
-    expect(est.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.7)
-    expect(est.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.3)
+    expect(est.dormBed).toBeGreaterThan(ds.costs.PL.dormBed * 0.6)
+    expect(est.dormBed).toBeLessThan(ds.costs.PL.dormBed * 1.4)
   })
 
   it('converts costs from local money at the current exchange rate', () => {
