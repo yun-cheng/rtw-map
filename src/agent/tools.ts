@@ -7,7 +7,7 @@ import { REGIONS } from '../data/regions'
 import { SPEECH_CHARS } from '../data/speech'
 import {
   CARD_LABELS, ENGLISH_LABELS, TAP_WATER_LABELS, TRANSIT_LABELS, addDays, airBand, cardLevel, costOf, costProfile, dailyCost, dayRangeText, englishLevel,
-  groceryDay, isTravelling, prefsDay, PRICE_LABELS, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
+  allowedStay, groceryDay, isTravelling, prefsDay, PRICE_LABELS, type VisaRule, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
 import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, RENAMED_KINDS, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
@@ -116,6 +116,21 @@ function stopIndex(ref: unknown): number {
   const i = trip().stops.findIndex((s) => s.cityId === id)
   if (i < 0) throw new ToolError(`${cityName(id)} is not in the itinerary.`)
   return i
+}
+
+/** The stay a visa rule allows, how it counts and the article's notes (fees, extensions), for the model. */
+function visaStay(rule: VisaRule) {
+  const allowed = allowedStay(rule)
+  const stay = rule.stay
+  return {
+    ...(allowed && { stay_allowed_days: allowed.days }),
+    ...(allowed?.differs && { sources_differ: `Passport Index ${allowed.differs[0]} days, Wikipedia ${allowed.differs[1]} days` }),
+    ...(stay?.window && { limit: `${stay.window.days} days in any ${stay.window.in}` }),
+    ...(stay?.perEntry && { per_entry: true }),
+    ...(stay?.extend !== undefined && { extendable: stay.extend }),
+    ...(stay?.notes.length && { notes: stay.notes }),
+    ...(stay?.apply && { official_site: stay.apply }),
+  }
 }
 
 const monthName = (m: number) => new Date(2000, m - 1).toLocaleString('en', { month: 'short' })
@@ -597,7 +612,7 @@ function cityInfo(args: Args): ToolResult {
     air_quality: air && { month: monthName(month), pm25: air.pm25, level: airBand(air.pm25).short },
     daily_cost_eur: dailyCosts(input, id),
     prices_eur: cost && { dorm_bed: cost.profile.dormBed, private_room: cost.profile.privateRoom, local_meal: cost.profile.mealLocal, estimated: cost.estimated },
-    visa: visa ? { passport: input.passport, requirement: visa.req, days: visa.days } : 'unknown',
+    visa: visa ? { passport: input.passport, requirement: visa.req, ...visaStay(visa) } : 'unknown',
     travel_advice: adv && {
       uk_level: adv.level, do_not_travel: adv.excludedByDefault, us: adv.us?.title, uk_url: adv.url,
       summary: adv.safety?.slice(0, 3).map((s) => `${s.heading}: ${s.text.slice(0, 200)}`),
@@ -868,7 +883,7 @@ function viewDetails(ref: ViewRef): ToolResult {
       case 'schengen': return { schengen_area: !!ds.countries[iso2]?.schengen }
       case 'visa': {
         const rule = ds.visa.rules[input.passport]?.[iso2]
-        return rule ? { visa: rule.req, ...(rule.days && { visa_free_days: rule.days }) } : { visa: 'unknown' }
+        return rule ? { visa: rule.req, ...visaStay(rule) } : { visa: 'unknown' }
       }
     }
   }

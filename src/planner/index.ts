@@ -7,11 +7,13 @@ import { ENGLISH_LABELS, englishLevel } from './language'
 import { CARD_LABELS, cardLevel } from './payments'
 import { orderRoute } from './route'
 import { SCHENGEN_LIMIT, schengenApplies, schengenSummary } from './schengen'
+import { overStay } from './visaStay'
 import type { Dataset, Leg, Pace, Plan, PlanWarning, ScheduledStop, Stop, TripInput } from './types'
 
 export * from './types'
 export { COST_HINTS, COST_KINDS, MEAL_HINTS, GROCERY_KEYS, cityPrices, comparePrices, costOf, costProfile, costSanity, costsInEur, dailyCost, dayChoices, dayCost, estimatedCosts, groceryDay, groceryMeal, prefsDay, PRICE_LABELS, type CityPrices, type CostInput, type CostItem, type CostKind, type PriceKey, type SeenPrices } from './cost'
 export { SCHENGEN_LIMIT, schengenApplies, schengenUsed } from './schengen'
+export { allowedStay, overStay } from './visaStay'
 export { isTravelling, localToday, pastChanges, stopTime, travelDay, tripPhase, type PastChange } from './travel'
 export { ENGLISH_LABELS, englishLevel } from './language'
 export { RENTAL_INFO, TRANSIT_LABELS, taxiEstimate } from './transport'
@@ -686,7 +688,6 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
   for (const iso2 of countries) {
     const country = ds.countries[iso2]
     const rule = ds.visa.rules[input.passport]?.[iso2]
-    const days = sched.filter((s) => ds.cities[s.cityId].iso2 === iso2).reduce((t, s) => t + s.nights + 1, 0)
     const reqText: Record<string, string> = {
       e_visa: 'needs an e-visa', eta: 'needs an electronic travel authorisation (ETA)',
       visa_on_arrival: 'visa on arrival', visa_required: 'needs a visa arranged in advance',
@@ -699,8 +700,18 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
         detail: 'Check the official government website for current rules and processing times.',
       })
     }
-    if (rule?.req === 'visa_free' && rule.days && !country.schengen && days > rule.days) {
-      warnings.push({ kind: 'visa', severity: 'error', iso2, title: `${country.name}: ${days} days planned, visa-free stay is ${rule.days}` })
+    // The days there against the stay allowed (visa-free, e-visa, on arrival or ETA), as the limit counts.
+    const over = overStay(ds, sched, iso2, rule)
+    if (over) {
+      warnings.push({
+        kind: 'visa', severity: 'error', iso2,
+        title: over.window
+          ? `${country.name}: ${over.planned} days in ${over.window} planned, the limit is ${over.allowed}`
+          : `${country.name}: ${over.planned} days planned, the stay allowed is ${over.allowed}`,
+        detail: over.differs
+          ? `Sources differ on the stay allowed (${over.differs[0]} or ${over.differs[1]} days): check the official site.`
+          : 'Plan fewer days there, or check whether the stay can be extended.',
+      })
     }
     const adv = ds.advisories[iso2]
     if (adv?.excludedByDefault) {

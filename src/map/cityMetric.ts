@@ -1,7 +1,7 @@
 // What a city looks like in the current map view: its colour, hover box and the value on its circle. Shared by the
 // map and the timeline, so a stop has the same colour and hover box in both.
 import { dataset as ds } from '../data/dataset'
-import { airBand, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type CostInput, type CostKind, type ScheduledStop, type SeenPrices } from '../planner'
+import { airBand, allowedStay, costOf, likelyMonth, mobileInternet, nearby, nearbyLevel, roughCount, tripDay, type CostInput, type CostKind, type ScheduledStop, type SeenPrices } from '../planner'
 import type { useTrip } from '../store/trip'
 import { VISA_TEXT, WEATHER_STYLE, levelColor, money, rainShare, shownTemps, tempKind, tempRange, tempValue } from '../ui/format'
 import { COST_LABELS, NEARBY_LABELS, costScale, nearbyColor, visaOf } from './scales'
@@ -62,7 +62,10 @@ export function cityMetrics(s: MetricState): (cityId: string) => Metric {
     if (layer === 'visa') {
       const v = visaOf(input.passport, ds.cities[cityId]?.iso2)
       if (!v) return { color: NO_DATA, lines: ['No data'] }
-      return { color: v.band.color, lines: [VISA_TEXT[v.rule.req].label, ...(v.rule.days ? [`Up to ${v.rule.days} days`] : [])] }
+      // The stay allowed (the shorter where the sources differ), and how the limit counts where that's known.
+      const stay = allowedStay(v.rule)
+      const w = v.rule.stay?.window
+      return { color: v.band.color, lines: [VISA_TEXT[v.rule.req].label, ...(stay ? [`Up to ${stay.days} days${w ? ` (${w.days} in ${w.in === 365 ? 'a year' : w.in})` : ''}`] : [])] }
     }
     if (layer === 'mobile') {
       const m = mobileInternet(ds, cityId)

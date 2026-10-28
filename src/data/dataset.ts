@@ -22,10 +22,19 @@ import priceLevelsJson from '../../data/gen/price-levels.json'
 import roadsJson from '../../data/gen/roads.json'
 import shoppingJson from '../../data/gen/shopping.json'
 import visaJson from '../../data/gen/visa.json'
+import visaStaysJson from '../../data/gen/visa-stays.json'
 import { costsInEur } from '../planner/cost'
-import type { City, Country, Dataset, LocalCostProfile } from '../planner/types'
+import type { City, Country, Dataset, LocalCostProfile, VisaStay } from '../planner/types'
 
 const byKey = <T, K extends keyof T>(xs: T[], k: K) => Object.fromEntries(xs.map((x) => [x[k] as string, x]))
+
+/** The visa rules (Passport Index) with each destination's allowed stay and notes (Wikipedia) where it has one. */
+function withStays(visa: Dataset['visa'], stays: Record<string, Record<string, VisaStay>>): Dataset['visa'] {
+  const rules = Object.fromEntries(Object.entries(visa.rules).map(([passport, byIso]) => [
+    passport, Object.fromEntries(Object.entries(byIso).map(([iso2, rule]) => [iso2, stays[passport]?.[iso2] ? { ...rule, stay: stays[passport][iso2] } : rule])),
+  ]))
+  return { ...visa, rules }
+}
 
 export const dataset: Dataset = {
   countries: byKey(countriesJson.countries as Country[], 'iso2'),
@@ -36,7 +45,7 @@ export const dataset: Dataset = {
   costs: costsInEur(costsJson.costs as Record<string, LocalCostProfile>, fxJson.rates),
   connections: connectionsJson.connections as Dataset['connections'],
   roads: roadsJson.roads,
-  visa: visaJson as unknown as Dataset['visa'],
+  visa: withStays(visaJson as unknown as Dataset['visa'], visaStaysJson.stays as Record<string, Record<string, VisaStay>>),
   advisories: advisoriesJson.advisories as Dataset['advisories'],
   fx: fxJson,
   notices: noticesJson.notices,
@@ -61,6 +70,7 @@ export const dataset: Dataset = {
     connections: connectionsJson._meta,
     roads: roadsJson._meta,
     visa: visaJson._meta,
+    visaStays: visaStaysJson._meta,
     advisories: advisoriesJson._meta,
     fx: fxJson._meta,
     countries: countriesJson._meta,

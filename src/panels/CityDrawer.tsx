@@ -1,8 +1,9 @@
 import { Pencil, Plus } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
-import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
+import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, allowedStay, overStay, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
 import { useTrip, type CityTab } from '../store/trip'
+import { articleTitle, articleUrl } from '../data/visaWiki'
 import { MODE_ICON, VISA_TEXT, compact, duration, flag, dateRange, rateText, shownTemps } from '../ui/format'
 import { CurrencyToggle } from '../ui/CurrencyToggle'
 import { FeelsToggle } from '../ui/FeelsToggle'
@@ -86,6 +87,9 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const climate = ds.climate[cityId]
   const adv = ds.advisories[city.iso2]
   const visa = ds.visa.rules[input.passport]?.[city.iso2]
+  // The stay allowed there (the shorter where the sources differ) and its details.
+  const allowed = allowedStay(visa)
+  const stay = visa?.stay
   const passportName = ds.visa.passports.find((p) => p.code === input.passport)?.name
   const pop = ds.population[city.iso2]
   const english = englishLevel(ds, cityId)
@@ -119,6 +123,8 @@ export function CityDrawer({ cityId }: { cityId: string }) {
     : []
   const stopIndex = plan?.stops.findIndex((s) => s.cityId === cityId) ?? -1
   const stop = stopIndex >= 0 ? plan!.stops[stopIndex] : null
+  // The plan's days in the country over the stay allowed there.
+  const overStayed = stop ? overStay(ds, plan!.stops, city.iso2, visa) : null
 
   // The months the weather and air shown are for: a month picked on the map's Weather or Air view; else the stay
   // (for a stop) or when the trip would pass by.
@@ -496,7 +502,35 @@ export function CityDrawer({ cityId }: { cityId: string }) {
         {visa && (
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={VISA_TEXT[visa.req].tone}>{VISA_TEXT[visa.req].label}</Badge>
-            {visa.days && <span className="text-[13px]">up to {visa.days} days</span>}
+            {allowed && <span className="text-[13px]">up to {allowed.days} days</span>}
+          </div>
+        )}
+        {/* The plan's days in the country over that. */}
+        {overStayed && (
+          <p className="mt-2 rounded-md bg-danger-soft px-2 py-1.5 text-[13px] text-danger">
+            Your plan has {overStayed.planned} days in {country.name}{overStayed.window ? ` in ${overStayed.window} days` : ''}, over the {overStayed.allowed} allowed.
+          </p>
+        )}
+        {/* The stay allowed, how it counts and extending it, and the article's notes (fees among them; Wikipedia). */}
+        {stay && (
+          <div className="mt-2">
+            {/* (Where it says more than the days above: two stays, months, or sources that differ.) */}
+            {(allowed?.differs || (stay.text && stay.text !== `${allowed?.days} days`)) && (
+              <Row label="Stay allowed">
+                {allowed?.differs ? `${allowed.differs[0]} days (Passport Index) or ${allowed.differs[1]} (Wikipedia)` : stay.text}
+              </Row>
+            )}
+            {(stay.window || stay.perEntry) && (
+              <Row label="How it counts">
+                {[stay.perEntry && 'Per entry', stay.window && `at most ${stay.window.days} days in ${stay.window.in === 365 ? 'a year' : `any ${stay.window.in} days`}`].filter(Boolean).join(', ').replace(/^a/, 'A')}
+              </Row>
+            )}
+            {stay.extend !== undefined && <Row label="Extending it">{stay.extend ? 'Possible (see notes)' : 'Not possible'}</Row>}
+            {stay.notes.length > 0 && (
+              <ul className="mt-1.5 list-disc pl-4 text-[13px]">
+                {stay.notes.map((n) => <li key={n}>{n}</li>)}
+              </ul>
+            )}
           </div>
         )}
         {country.schengen && visa?.req !== 'free_movement' && (
@@ -509,6 +543,13 @@ export function CityDrawer({ cityId }: { cityId: string }) {
             <a className="text-[12px] text-accent hover:underline" href={n.url} target="_blank" rel="noreferrer">Official site ↗</a>
           </div>
         ))}
+        {stay && (
+          <Links>
+            {stay.apply && <><a className="text-accent hover:underline" href={stay.apply} target="_blank" rel="noreferrer">Official site: {new URL(stay.apply).hostname.replace(/^www\./, '')} ↗</a> · </>}
+            <a className="text-accent hover:underline" href={articleUrl(input.passport)} target="_blank" rel="noreferrer">Wikipedia: {articleTitle(input.passport)} ↗</a>
+            {' '}(CC BY-SA). Rules change: check the official site before you go.
+          </Links>
+        )}
       </Section>
     ),
     phrases: phrases && (
@@ -557,7 +598,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   }
 
   // Problems that need attention before going: shown first on the Overview and as a dot on their tab.
-  const visaProblem = !!visa && ['visa_required', 'e_visa', 'eta', 'no_admission'].includes(visa.req)
+  const visaProblem = (!!visa && ['visa_required', 'e_visa', 'eta', 'no_admission'].includes(visa.req)) || !!overStayed
   const safetyProblem = !!adv && (adv.excludedByDefault || adv.level >= 3)
   const moneyProblem = !!pay && !pay.foreignCardsWork
   const problemTabs = new Set<CityTab>([...(visaProblem ? ['entry' as const] : []), ...(safetyProblem ? ['safety' as const] : []), ...(moneyProblem ? ['costs' as const] : [])])
@@ -600,7 +641,7 @@ export function CityDrawer({ cityId }: { cityId: string }) {
   const dayNote = overWhat.length ? `over ${overWhat.join(' and ')} budget` : dayChecks.length ? 'expensive for this trip' : input.cityCosts?.[cityId] ? 'changed here' : 'your preferences'
   // `warn`: one of the stop's warnings, said in the value; the line is tinted for it.
   const glance: { icon: string; label: string; value: string; tab: CityTab; part?: string; problem?: boolean; warn?: boolean }[] = [
-    ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${visa.days ? ` (up to ${visa.days} days)` : ''}`, tab: 'entry' as const, problem: visaProblem }] : []),
+    ...(visa ? [{ icon: '🛂', label: 'Visa', value: `${VISA_TEXT[visa.req].label}${overStayed ? ` (${overStayed.planned} days planned, ${overStayed.allowed} allowed)` : allowed ? ` (up to ${allowed.days} days)` : ''}`, tab: 'entry' as const, problem: visaProblem }] : []),
     ...(adv ? [{
       icon: '🛡', label: 'Safety', tab: 'safety' as const, problem: safetyProblem,
       value: adv.excludedByDefault ? 'Do-not-travel advice' : adv.level >= 3 ? 'Avoid parts of the country' : adv.us && adv.us.level >= 2 ? adv.us.title.split(': ')[1] ?? 'Increased caution' : 'No travel restrictions',

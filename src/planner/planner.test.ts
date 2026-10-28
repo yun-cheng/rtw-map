@@ -137,6 +137,18 @@ describe('edits', () => {
   })
 })
 
+describe('the stay allowed', () => {
+  const stop = (cityId: string, nights: number) => ({ cityId, nights, locked: false, groupId: '' })
+  const over = (passport: string, cityId: string, nights: number) =>
+    evaluatePlan(ds, testTrip(passport), [stop(cityId, nights)]).warnings.filter((w) => w.kind === 'visa' && w.severity === 'error')
+
+  it('flags more days in a country than a visa on arrival allows, arrival and departure days counted', () => {
+    expect(ds.visa.rules.EU.ID).toMatchObject({ req: 'visa_on_arrival', stay: { days: 30 } })
+    expect(over('EU', 'jakarta', 29)).toEqual([])
+    expect(over('EU', 'jakarta', 40).map((w) => w.title)).toEqual(['Indonesia: 41 days planned, the stay allowed is 30'])
+  })
+})
+
 describe('english level', () => {
   it('is easier in big cities and harder in small towns than the country estimate', () => {
     const ru = ds.countries.RU.english!.level
