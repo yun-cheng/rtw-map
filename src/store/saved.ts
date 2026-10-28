@@ -203,16 +203,22 @@ export const useSaved = create<SavedState>()((set, get) => {
     },
 
     remove: async (id) => {
+      // (The open trip's edits waiting to be saved: not to a trip being deleted.)
+      const open = get().activeId === id
+      if (open) clearTimeout(timer)
       try {
         await call('DELETE', `/api/trips/${id}`)
         const trips = get().trips.filter((t) => t.id !== id)
         set({ trips })
-        if (get().activeId === id) {
+        if (open && get().activeId === id) {
+          setDirty(false)
           if (trips.length) await get().open(trips[0].id)
           else await get().create('My trip')
         }
       } catch (e) {
         set({ status: 'error', error: (e as Error).message })
+        // Not deleted: its edits are saved after all.
+        if (open && dirty) timer = setTimeout(() => void flush(), SAVE_DELAY_MS)
       }
     },
   }
@@ -523,6 +529,8 @@ async function signedIn() {
     if (local && unsaved() === local && trips.some((t) => t.id === local)) {
       useSaved.setState({ activeId: local })
       dirty = true
+      // (Sent with the version they were made on, so they can't overwrite another app's change since.)
+      rev = lastSeen(local)
     }
     if (local && trips.some((t) => t.id === local)) {
       // This browser already shows a saved trip: keep it on screen (it may have unsaved edits) and refresh from the server.
@@ -568,6 +576,7 @@ useAccount.subscribe((s, prev) => {
   if (s.offline && !prev.offline && !s.user && remembered()) {
     useSaved.setState({ activeId: remembered(), status: unsaved() === remembered() ? 'offline' : 'idle' })
     dirty = unsaved() === remembered()
+    rev = lastSeen(remembered()!)
     useJournal.getState().open(remembered()!)
     useItems.getState().open(remembered()!)
   }
