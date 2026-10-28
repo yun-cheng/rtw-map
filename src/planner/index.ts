@@ -436,21 +436,24 @@ function enforceSchengen(ctx: Ctx, input: Stop[], sc: (id: string) => number, ca
       receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId) && canTake(ctx, stops, s))
       if (!receivers.length) receivers = stops.filter((s) => !s.locked && !inSchengen(ctx, s.cityId))
       if (!receivers.length) break
-      for (let k = 0; k < freed; k++) pickReceiver(ctx, receivers, legs, sc).nights++
+      // (The journeys as they are without it.)
+      const now = legsFor(ctx, stops)
+      for (let k = 0; k < freed; k++) pickReceiver(ctx, stops, now, receivers, sc).nights++
       continue
     }
     // Take a night from the fullest, lowest-scoring Schengen stop.
     const give = (d: (typeof donors)[number]) => d.s.nights / d.item.hi / sc(d.s.cityId)
     donors.sort((a, b) => give(b) - give(a))
     donors[0].s.nights--
-    pickReceiver(ctx, receivers, legs, sc).nights++
+    pickReceiver(ctx, stops, legs, receivers, sc).nights++
   }
   return stops
 }
 
-function pickReceiver(ctx: Ctx, receivers: Stop[], legs: Leg[], sc: (id: string) => number): Stop {
+/** The receiver with the most room for another night (its longest stay, with the journey to it, `legs` between `stops`). */
+function pickReceiver(ctx: Ctx, stops: Stop[], legs: Leg[], receivers: Stop[], sc: (id: string) => number): Stop {
   return receivers.reduce((best, s) => {
-    const fill = (x: Stop) => x.nights / (allocItem(ctx, x, legs[0], sc(x.cityId)).hi * (ctx.ds.cities[x.cityId].longStay ? 1.5 : 1))
+    const fill = (x: Stop) => x.nights / (allocItem(ctx, x, legs[stops.indexOf(x) - 1], sc(x.cityId)).hi * (ctx.ds.cities[x.cityId].longStay ? 1.5 : 1))
     return fill(s) < fill(best) ? s : best
   })
 }
@@ -816,23 +819,27 @@ function evaluate(ctx: Ctx, stops: Stop[], dropped: string[], options: EvalOptio
     }
   }
 
-  // Borders: Kosovo → Serbia when Kosovo was entered from elsewhere
-  legs.forEach((leg, i) => {
-    const path = [leg.from, ...leg.hops.map((h) => h.to)].map((id) => ds.cities[id].iso2)
-    for (let k = 1; k < path.length; k++) {
-      if (path[k - 1] === 'XK' && path[k] === 'RS') {
-        const prevLeg = legs[i - 1]
-        const enteredFrom = prevLeg ? ds.cities[prevLeg.from].iso2 : null
-        if (enteredFrom !== 'RS') {
-          warnings.push({
-            kind: 'border', severity: 'warn', cityId: leg.to,
-            title: 'Kosovo → Serbia crossing may be refused',
-            detail: 'Serbia does not recognise entry into Kosovo from other countries. Go via North Macedonia or Montenegro instead.',
-          })
-        }
-      }
+  // Borders: Kosovo → Serbia when Kosovo was entered from elsewhere (or the trip starts there), following the trip
+  // country by country through every hop (a journey with no known route as one crossing).
+  let at = sched[0] ? ds.cities[sched[0].cityId].iso2 : null
+  let kosovoFrom: string | null = null
+  for (const leg of legs) {
+    let refused = false
+    for (const id of leg.hops.length ? leg.hops.map((h) => h.to) : [leg.to]) {
+      const next = ds.cities[id].iso2
+      if (next === at) continue
+      if (next === 'XK') kosovoFrom = at
+      if (at === 'XK' && next === 'RS' && kosovoFrom !== 'RS') refused = true
+      at = next
     }
-  })
+    if (refused) {
+      warnings.push({
+        kind: 'border', severity: 'warn', cityId: leg.to,
+        title: 'Kosovo → Serbia crossing may be refused',
+        detail: 'Serbia does not recognise entry into Kosovo from other countries. Go via North Macedonia or Montenegro instead.',
+      })
+    }
+  }
 
   // Reachability and estimated legs
   legs.forEach((l) => {

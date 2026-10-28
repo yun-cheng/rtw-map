@@ -137,6 +137,21 @@ describe('edits', () => {
   })
 })
 
+describe('the Kosovo border', () => {
+  const kosovo = (...cities: string[]) =>
+    evaluatePlan(ds, testTrip('US'), cities.map((cityId) => ({ cityId, nights: 2, locked: false, groupId: '' })))
+      .warnings.filter((w) => w.kind === 'border').map((w) => w.cityId)
+
+  it('warns of Serbia refusing entry from Kosovo only when Kosovo was entered from elsewhere, across stops there', () => {
+    expect(kosovo('belgrade', 'pristina', 'belgrade')).toEqual([])
+    expect(kosovo('belgrade', 'pristina', 'prizren', 'belgrade')).toEqual([])
+    expect(kosovo('tirana', 'pristina', 'belgrade')).toEqual(['belgrade'])
+    expect(kosovo('skopje', 'prizren', 'pristina', 'nis')).toEqual(['nis'])
+    // (Starting there: flown in, not from Serbia.)
+    expect(kosovo('pristina', 'belgrade')).toEqual(['belgrade'])
+  })
+})
+
 describe('the stay allowed', () => {
   const stop = (cityId: string, nights: number) => ({ cityId, nights, locked: false, groupId: '' })
   const over = (passport: string, cityId: string, nights: number) =>
