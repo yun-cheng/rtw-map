@@ -26,12 +26,12 @@ const fx = readJson<{ rates: Record<string, number> }>(join(GEN, 'fx.json'))
 const wanted = [...countries.map((c) => ({ iso2: c.iso2, currency: c.currency })), ...COMPARE]
 
 // ISO2 ↔ ISO3 from the World Bank country list (Taiwan isn't a World Bank member, so add it by hand).
-const wbCountries = (await (await fetch('https://api.worldbank.org/v2/country?format=json&per_page=400')).json())[1] as { id: string; iso2Code: string }[]
+const wbCountries = ((await (await fetch('https://api.worldbank.org/v2/country?format=json&per_page=400')).json()) as [unknown, { id: string; iso2Code: string }[]])[1]
 const iso3 = Object.fromEntries(wbCountries.map((c) => [c.iso2Code, c.id]))
 iso3.TW = 'TWN'
 
-const wb = (await (await fetch('https://api.worldbank.org/v2/country/all/indicator/PA.NUS.PPP?format=json&mrv=1&per_page=400')).json())[1] as
-  { countryiso3code: string; country: { id: string }; date: string; value: number | null }[]
+const wb = ((await (await fetch('https://api.worldbank.org/v2/country/all/indicator/PA.NUS.PPP?format=json&mrv=1&per_page=400')).json()) as
+  [unknown, { countryiso3code: string; country: { id: string }; date: string; value: number | null }[]])[1]
 const wbPpp = new Map(wb.filter((r) => r.value).map((r) => [r.country.id, { value: r.value!, year: Number(r.date) }]))
 
 const imf = await fetchImf('PPPEX')
@@ -51,8 +51,8 @@ for (const { iso2, currency } of wanted) {
   if (!ppp && !imf && previous[iso2]) { levels[iso2] = previous[iso2]; continue } // IMF unreachable: keep last year's figure
   const level = ppp && lcuPerUsd ? Math.round((ppp.value / lcuPerUsd) * 100) / 100 : 0
   // (A level that rounds to 0 is a gap in the source, as for Liberia: no level rather than a wrong one.)
-  if (!(level > 0)) { console.error(`no price level for ${iso2}`); continue }
-  levels[iso2] = { level, year: ppp!.year, source: ppp!.source }
+  if (!ppp || !(level > 0)) { console.error(`no price level for ${iso2}`); continue }
+  levels[iso2] = { level, year: ppp.year, source: ppp.source }
   console.log(`${iso2} ${levels[iso2].level} (${ppp.source} ${ppp.year})`)
 }
 

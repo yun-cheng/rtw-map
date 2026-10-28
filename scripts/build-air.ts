@@ -29,7 +29,7 @@ async function fetchCity(c: City): Promise<Hourly> {
       continue
     }
     if (!res.ok) throw new Error(`${res.status} for ${c.id}: ${await res.text()}`)
-    const hourly = (await res.json()).hourly as Hourly
+    const hourly = ((await res.json()) as { hourly: Hourly }).hourly
     writeFileSync(path, JSON.stringify(hourly))
     await sleep(5000)
     return hourly

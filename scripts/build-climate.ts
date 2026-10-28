@@ -50,7 +50,7 @@ async function fetchCity<T>(c: City, vars: string, suffix = ''): Promise<T | nul
       return null
     }
     if (!res.ok) throw new Error(`${res.status} for ${c.id}: ${await res.text()}`)
-    const daily = (await res.json()).daily as T
+    const daily = ((await res.json()) as { daily: T }).daily
     writeFileSync(path, JSON.stringify(daily))
     await sleep(8000)
     return daily

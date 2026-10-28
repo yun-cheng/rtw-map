@@ -51,7 +51,7 @@ async function query(q: string): Promise<Element[]> {
       signal: AbortSignal.timeout(90_000),
     }).catch(() => null)
     // Some servers answer a busy moment with an HTML page instead of an error status.
-    const data = res?.ok ? await res.json().catch(() => null) : null
+    const data = res?.ok ? ((await res.json().catch(() => null)) as { elements: Element[] } | null) : null
     if (data) return data.elements
     if (attempt >= 4 * ENDPOINTS.length) throw new Error(`Overpass: no server answered (last: ${res?.status ?? 'no response'})`)
     console.log(`  ${new URL(url).host} ${res ? `busy (${res.status})` : 'not answering'}; trying the next server`)

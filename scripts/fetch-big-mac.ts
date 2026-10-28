@@ -14,7 +14,7 @@ const rows = readCsv(path)
 const latest = rows.reduce((d, r) => (r.date > d ? r.date : d), '')
 const current = rows.filter((r) => r.date === latest)
 
-const wbCountries = (await (await fetch('https://api.worldbank.org/v2/country?format=json&per_page=400')).json())[1] as { id: string; iso2Code: string }[]
+const wbCountries = ((await (await fetch('https://api.worldbank.org/v2/country?format=json&per_page=400')).json()) as [unknown, { id: string; iso2Code: string }[]])[1]
 const iso2Of = Object.fromEntries(wbCountries.map((c) => [c.id, c.iso2Code]))
 iso2Of.TWN = 'TW'
 

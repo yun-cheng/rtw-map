@@ -22,7 +22,7 @@ const fcdoIndex = new Map<string, string>()
 {
   const res = await fetch('https://www.gov.uk/api/content/foreign-travel-advice')
   if (!res.ok) throw new Error(`FCDO index: ${res.status}`)
-  const children = ((await res.json()).links?.children ?? []) as { base_path: string; details?: { country?: { name?: string } } }[]
+  const children = (((await res.json()) as { links?: { children?: unknown } }).links?.children ?? []) as { base_path: string; details?: { country?: { name?: string } } }[]
   for (const c of children) if (c.details?.country?.name) fcdoIndex.set(key(c.details.country.name), c.base_path.split('/').pop()!)
 }
 const slugOf = (c: Country) => c.fcdoSlug ?? fcdoIndex.get(key(FCDO_NAMES[c.iso2] ?? c.name))
@@ -46,7 +46,7 @@ const US_ALIASES: Record<string, string[]> = {
 }
 type UsAdvisory = { Title: string; Link: string; Updated: string; Published: string }
 const usRes = await fetch('https://cadataapi.state.gov/api/TravelAdvisories')
-const usList: UsAdvisory[] = usRes.ok ? await usRes.json() : []
+const usList = usRes.ok ? ((await usRes.json()) as UsAdvisory[]) : []
 if (!usRes.ok) console.error(`US advisories: ${usRes.status}`)
 function usFor(c: Country) {
   const names = US_ALIASES[c.iso2] ?? [c.name]
@@ -64,10 +64,13 @@ for (const c of countries) {
   if (!slug) { console.error(`No FCDO advice for ${c.name}`); continue }
   const res = await fetch(`https://www.gov.uk/api/content/foreign-travel-advice/${slug}`)
   if (!res.ok) { console.error(`FCDO ${slug}: ${res.status}`); continue }
-  const d = await res.json()
-  const status: string[] = d.details?.alert_status ?? []
+  const d = (await res.json()) as {
+    description?: string; public_updated_at: string
+    details?: { alert_status?: string[]; parts?: { title: string; slug: string; body: string }[] }
+  }
+  const status = d.details?.alert_status ?? []
   const level = Math.max(1, ...status.map((s) => LEVELS[s] ?? 1))
-  const parts = (d.details?.parts ?? []) as { title: string; slug: string; body: string }[]
+  const parts = d.details?.parts ?? []
   const body = (slug: string) => parts.find((x) => x.slug === slug)?.body ?? ''
   // Split a part into its <h2>/<h3> sections, e.g. "Crime", "Protests", "Scams".
   const sections = (html: string) =>

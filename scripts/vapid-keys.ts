@@ -11,7 +11,7 @@ if (existsSync(FILE) && /^VAPID_PRIVATE_KEY=/m.test(readFileSync(FILE, 'utf8')))
   console.error(`${FILE} has a VAPID_PRIVATE_KEY already: remove it first to make a new pair.`)
   process.exit(1)
 }
-const pair = (await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])) as CryptoKeyPair
+const pair = (await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])) as import('node:crypto').webcrypto.CryptoKeyPair
 const jwk = await crypto.subtle.exportKey('jwk', pair.privateKey)
 const publicKey = b64url(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)))
 appendFileSync(FILE, `\n# Notifications (worker/push.ts): the private half; the public one is VAPID_PUBLIC_KEY in wrangler.jsonc.\nVAPID_PRIVATE_KEY=${jwk.d}\n`)

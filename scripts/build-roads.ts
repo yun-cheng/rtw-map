@@ -33,8 +33,9 @@ async function table(sources: City[], destinations: City[]) {
   const dst = destinations.map((_, i) => sources.length + i).join(';')
   for (let attempt = 0; ; attempt++) {
     const res = await fetch(`https://router.project-osrm.org/table/v1/driving/${coords}?sources=${src}&destinations=${dst}&annotations=duration,distance`)
-    const d = await res.json().catch(() => ({ code: `HTTP ${res.status}` }))
-    if (d.code === 'Ok') return d as { durations: (number | null)[][]; distances: (number | null)[][] }
+    type Table = { durations: (number | null)[][]; distances: (number | null)[][] }
+    const d = (await res.json().catch(() => ({ code: `HTTP ${res.status}` }))) as Partial<Table> & { code: string; message?: string }
+    if (d.code === 'Ok') return d as Table
     if (attempt >= 3) throw new Error(`OSRM: ${d.code} ${d.message ?? ''}`)
     await sleep(5000)
   }
