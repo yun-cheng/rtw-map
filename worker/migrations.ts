@@ -2,6 +2,7 @@
 // still to change. Apart from the Account so it can be tested on a plain SQLite database (migrations.test.ts).
 import { itemsNow, type Items } from '../src/store/itemsCore'
 import type { ItemsChange } from './changes'
+import { summarize } from './trips'
 
 /** What a migration needs of the account's SQL storage (`ctx.storage.sql`). */
 export type Sql = { exec(query: string, ...bindings: unknown[]): { toArray(): Record<string, unknown>[] } }
@@ -16,5 +17,15 @@ export function renameItemKinds(sql: Sql) {
       const now = table === 'trips' ? itemsNow(kept as Items) : { ...(kept as ItemsChange), before: itemsNow((kept as ItemsChange).before) }
       sql.exec(`UPDATE ${table} SET items = ? WHERE id = ?`, JSON.stringify(now), r.id)
     }
+  }
+}
+
+/** Each trip's summary for the trip list (its dates and number of stops), in columns of their own from its data, so
+ *  listing the trips doesn't read every trip whole: filled in once, for the trips kept before the columns. */
+export function fillTripSummaries(sql: Sql) {
+  const rows = sql.exec('SELECT id, data FROM trips WHERE data IS NOT NULL').toArray() as { id: string; data: string }[]
+  for (const r of rows) {
+    const s = summarize(r.data)
+    sql.exec('UPDATE trips SET start_date = ?, end_date = ?, stops = ? WHERE id = ?', s.startDate, s.endDate, s.stops, r.id)
   }
 }

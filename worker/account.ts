@@ -8,7 +8,7 @@ import { DurableObject } from 'cloudflare:workers'
 import { CHANGE_KEEP, CHANGE_KEEP_MS, CHANGED_ELSEWHERE, changeView, itemsUndo, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ChangeView, type ItemsChange } from './changes'
 import { CHAT_LIMITS, chatSummary, hasMessages, type ChatSummary } from './chats'
 import { canCall, current, spend, takeSpeech, type AccountLimits, type Count, type SpeechCount } from './limits'
-import { renameItemKinds } from './migrations'
+import { fillTripSummaries, renameItemKinds } from './migrations'
 import { isStale, RUN_KEEP_MS, type RunRecord, type RunRequest, type RunStatus } from './runs'
 import { isPhrase, ITEM_LIMITS, mergeItems, phraseCount, phrasesOf, publicItems, withoutPhrases, type Items, type TripItem } from '../src/store/itemsCore'
 import { JOURNAL_LIMITS, mergeJournal, publicJournal, type DayEntry, type Journal } from '../src/store/journalCore'
@@ -17,7 +17,11 @@ import { PUSH_LIMITS, type PushTarget } from './push'
 import { publicTripData, shareToken, summarize, TRIP_LIMITS, type TripPatch, type TripSummary } from './trips'
 import { ASKED_CHARS, joinsLatest, RESTORE_SAME, VERSION_PAGE, type VersionBy } from './versions'
 
-type Row = { id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null; rev: number; outside: number | null }
+type Row = {
+  id: string; name: string; data: string | null; chat: string | null; updated: number; share: string | null; rev: number; outside: number | null
+  start_date: string | null; end_date: string | null; stops: number
+}
+const ROW = 'id, name, data, chat, updated, share, rev, outside, start_date, end_date, stops'
 type GrantRow = Grant & { status: 'pending' | 'active'; gen: number }
 type ChangeRow = {
   id: string; trip_id: string; grant_id: string | null; app: string; tool: string; summary: string
@@ -63,6 +67,13 @@ export class Account extends DurableObject {
     if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'rev')) {
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN rev INTEGER NOT NULL DEFAULT 0')
       ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN outside INTEGER')
+    }
+    // The trip list's summary of each trip (its dates and number of stops), kept as its data is saved.
+    if (!ctx.storage.sql.exec<{ name: string }>('PRAGMA table_info(trips)').toArray().some((c) => c.name === 'stops')) {
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN start_date TEXT')
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN end_date TEXT')
+      ctx.storage.sql.exec('ALTER TABLE trips ADD COLUMN stops INTEGER NOT NULL DEFAULT 0')
+      fillTripSummaries(ctx.storage.sql)
     }
     // Other apps' changes to the trips, with each trip as it was before, for undo (changes.ts).
     ctx.storage.sql.exec(`CREATE TABLE IF NOT EXISTS changes (
@@ -158,16 +169,17 @@ export class Account extends DurableObject {
   // ---------------------------------------------------------------- trips
 
   private row(id: string): Row | null {
-    return this.ctx.storage.sql.exec<Row>('SELECT id, name, data, chat, updated, share, rev, outside FROM trips WHERE id = ?', id).toArray()[0] ?? null
+    return this.ctx.storage.sql.exec<Row>(`SELECT ${ROW} FROM trips WHERE id = ?`, id).toArray()[0] ?? null
   }
 
-  private summary(r: Row): TripSummary {
-    return { id: r.id, name: r.name, updated: r.updated, share: r.share ?? null, rev: r.rev, ...summarize(r.data) }
+  private summary(r: Pick<Row, 'id' | 'name' | 'updated' | 'share' | 'rev' | 'start_date' | 'end_date' | 'stops'>): TripSummary {
+    return { id: r.id, name: r.name, updated: r.updated, share: r.share ?? null, rev: r.rev, startDate: r.start_date, endDate: r.end_date, stops: r.stops }
   }
 
-  /** All trips, most recently changed first, and the one opened last (to open again on any device). */
+  /** All trips, most recently changed first, and the one opened last (to open again on any device): their summaries,
+   *  without reading the trips themselves. */
   async listTrips(): Promise<{ trips: TripSummary[]; lastId: string | null }> {
-    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, data, NULL AS chat, updated, share, rev, outside FROM trips ORDER BY updated DESC').toArray()
+    const rows = this.ctx.storage.sql.exec<Row>('SELECT id, name, updated, share, rev, start_date, end_date, stops FROM trips ORDER BY updated DESC').toArray()
     return { trips: rows.map((r) => this.summary(r)), lastId: (await this.ctx.storage.get<string>('lastTripId')) ?? null }
   }
 
@@ -271,8 +283,9 @@ export class Account extends DurableObject {
     if (n >= TRIP_LIMITS.trips) return `You can keep up to ${TRIP_LIMITS.trips} trips: delete one first`
     const id = crypto.randomUUID()
     const now = Date.now()
-    this.ctx.storage.sql.exec('INSERT INTO trips (id, name, data, chat, created, updated) VALUES (?, ?, ?, ?, ?, ?)',
-      id, patch.name ?? 'My trip', patch.data ?? null, patch.chat ?? null, now, now)
+    const s = summarize(patch.data ?? null)
+    this.ctx.storage.sql.exec('INSERT INTO trips (id, name, data, chat, created, updated, start_date, end_date, stops) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      id, patch.name ?? 'My trip', patch.data ?? null, patch.chat ?? null, now, now, s.startDate, s.endDate, s.stops)
     if (patch.data) this.addVersion(id, { who: 'you' }, patch.data, 0, now)
     await this.ctx.storage.put('lastTripId', id)
     return this.summary(this.row(id)!)
@@ -293,7 +306,11 @@ export class Account extends DurableObject {
    *  another app's change. */
   private write(id: string, patch: TripPatch, by: VersionBy, outside = false): TripSummary {
     const before = this.row(id)
-    const sets = Object.entries(patch).filter(([, v]) => v !== undefined)
+    const summary = patch.data === undefined ? null : summarize(patch.data)
+    // (The trip list's summary with its data.)
+    const sets = Object.entries({
+      ...patch, ...(summary && { start_date: summary.startDate, end_date: summary.endDate, stops: summary.stops }),
+    }).filter(([, v]) => v !== undefined)
     const changed = patch.data !== undefined && patch.data !== before?.data
     const bump = outside || changed
     const revs = bump ? ['rev = rev + 1', ...(outside ? ['outside = rev + 1'] : [])] : []

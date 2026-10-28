@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { renameItemKinds, type Sql } from './migrations'
+import { fillTripSummaries, renameItemKinds, type Sql } from './migrations'
 
 /** Node's own SQLite, what the tests use of it (the Worker's types have no Node). */
 type Statement = { all(...b: unknown[]): unknown[]; get(...b: unknown[]): unknown; run(...b: unknown[]): unknown }
@@ -39,5 +39,24 @@ describe('migrations', () => {
     const writes: string[] = []
     renameItemKinds({ exec: (q, ...b) => (q.startsWith('UPDATE') && writes.push(q), sql.exec(q, ...b)) })
     expect(writes).toEqual([])
+  })
+
+  it("fills in the trip list's summary of each trip kept before it had one: its dates and number of stops", () => {
+    const db = new DatabaseSync(':memory:')
+    db.exec('CREATE TABLE trips (id TEXT PRIMARY KEY, data TEXT, start_date TEXT, end_date TEXT, stops INTEGER NOT NULL DEFAULT 0)')
+    const sql: Sql = {
+      exec: (q, ...b) => {
+        const rows = q.startsWith('SELECT') ? db.prepare(q).all(...b) : (db.prepare(q).run(...b), [])
+        return { toArray: () => rows as Record<string, unknown>[] }
+      },
+    }
+    db.prepare('INSERT INTO trips (id, data) VALUES (?, ?)').run('t1', JSON.stringify({ input: { startDate: '2027-05-01', endDate: '2027-06-01' }, stops: [{}, {}, {}] }))
+    db.prepare('INSERT INTO trips (id, data) VALUES (?, ?)').run('t2', null)
+    db.prepare('INSERT INTO trips (id, data) VALUES (?, ?)').run('t3', 'not json')
+    fillTripSummaries(sql)
+    const row = (id: string) => db.prepare('SELECT start_date, end_date, stops FROM trips WHERE id = ?').get(id)
+    expect(row('t1')).toEqual({ start_date: '2027-05-01', end_date: '2027-06-01', stops: 3 })
+    expect(row('t2')).toEqual({ start_date: null, end_date: null, stops: 0 })
+    expect(row('t3')).toEqual({ start_date: null, end_date: null, stops: 0 })
   })
 })
