@@ -91,6 +91,8 @@ async function tile(req: Request) {
     if (kept) return kept
     throw err
   }
+  // (A tile the server can't give now: the kept one, of another version.)
+  if (!res.ok && kept) return kept
   if (res.ok) {
     const cache = await caches.open(TILES)
     const headers = new Headers(res.headers)

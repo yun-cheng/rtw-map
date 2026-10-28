@@ -89,6 +89,7 @@ const PLACE_KINDS = ['museum', 'palace', 'religious', 'monument', 'area', 'landm
 
 /** Problems in one place of a city's list. */
 function checkPlace(p: Record<string, unknown>, at: string): string[] {
+  if (!p || typeof p !== 'object') return [`${at}: not a place`]
   const out: string[] = []
   const text = (k: string, needed = true) => (typeof p[k] === 'string' && p[k] ? null : !needed && (p[k] === undefined || p[k] === null) ? null : `${at}: ${k} ${JSON.stringify(p[k])}`)
   out.push(...[text('name'), text('local', false), text('why'), text('note', false), text('getThere', false)].filter((x): x is string => !!x))
@@ -110,6 +111,7 @@ const countryList = readJson<{ countries: Country[] }>(join(GEN, 'countries.json
 
 /** Problems in one place to stay of a country's list. */
 function checkDestination(p: Record<string, unknown>, at: string, version: number): string[] {
+  if (!p || typeof p !== 'object') return [`${at}: not a place`]
   const out: string[] = []
   for (const k of ['name', 'why']) if (typeof p[k] !== 'string' || !p[k]) out.push(`${at}: ${k} ${JSON.stringify(p[k])}`)
   for (const k of ['local', 'note']) if (p[k] !== undefined && p[k] !== null && (typeof p[k] !== 'string' || !p[k])) out.push(`${at}: ${k} ${JSON.stringify(p[k])}`)
@@ -144,7 +146,7 @@ const DATASETS: Record<string, Dataset> = {
       if (!Array.isArray(a?.places) || !a.places.length) return ['no places']
       const places = a.places as Record<string, unknown>[]
       const out = places.flatMap((p, i) => checkDestination(p, `place ${i + 1} (${String(p?.name ?? '?')})`, version))
-      const ranks = places.map((p) => p.rank).sort((x, y) => Number(x) - Number(y))
+      const ranks = places.map((p) => p?.rank).sort((x, y) => Number(x) - Number(y))
       if (ranks.some((r, i) => r !== i + 1)) out.push(`ranked ${ranks.join(', ')}, not 1, 2, 3…`)
       if (places.length > 25) out.push(`${places.length} places, more than 25`)
       return out
@@ -165,7 +167,7 @@ const DATASETS: Record<string, Dataset> = {
       const out = places.flatMap((p, i) => checkPlace(p, `place ${i + 1} (${String(p?.name ?? '?')})`))
       // Each list (the city's, its day trips') ranked 1, 2, 3… with no gaps or repeats; not over the numbers asked.
       for (const [trips, most, what] of [[false, 15, 'places in the city'], [true, 5, 'day trips']] as const) {
-        const ranks = places.filter((p) => p?.dayTrip === trips).map((p) => p.rank).sort((x, y) => Number(x) - Number(y))
+        const ranks = places.filter((p) => p?.dayTrip === trips).map((p) => p?.rank).sort((x, y) => Number(x) - Number(y))
         if (ranks.some((r, i) => r !== i + 1)) out.push(`${what} ranked ${ranks.join(', ')}, not 1, 2, 3…`)
         if (ranks.length > most) out.push(`${ranks.length} ${what}, more than ${most}`)
       }
@@ -191,6 +193,7 @@ const DATASETS: Record<string, Dataset> = {
       for (const key of keys) {
         const v = a?.values?.[key]
         if (!v) out.push(`${key} missing`)
+        else if (typeof v !== 'object') out.push(`${key}: ${JSON.stringify(v)} isn't a value with its source`)
         else out.push(...checkValue(key, v))
       }
       const extra = Object.keys(a?.values ?? {}).filter((k) => !keys.includes(k))
