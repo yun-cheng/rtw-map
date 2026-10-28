@@ -41,6 +41,12 @@ export type TripItem = {
   mode?: TicketMode
   fromPlace?: string
   toPlace?: string
+  /** A ticket's seat ("20D"), car or coach on a train ("2"), gate or platform ("A7"), and boarding time (HH:MM, the
+   *  departure's local time). */
+  seat?: string
+  car?: string
+  gate?: string
+  boards?: string
   /** A stay's or a ticket's booking reference. */
   ref?: string
   /** A stay's or a ticket's price, as written ("€84, paid"). */
@@ -73,7 +79,7 @@ export const phrasesOf = (trips: Items[]): Items =>
   trips.reduce<Items>((all, items) => mergeItems(all, Object.values(items).filter((i) => isPhrase(i.id))), {})
 /** The trip's items without phrases (trips kept them before phrases were the account's: those are left out). */
 export const withoutPhrases = (items: Items): Items => Object.fromEntries(Object.entries(items).filter(([id]) => !isPhrase(id)))
-const SHORT = ['title', 'address', 'fromPlace', 'toPlace', 'ref', 'price', 'say', 'tip'] as const
+const SHORT = ['title', 'address', 'fromPlace', 'toPlace', 'seat', 'car', 'gate', 'ref', 'price', 'say', 'tip'] as const
 const KINDS: ItemKind[] = ['note', 'stay', 'ticket', 'album', 'link', 'price', 'expense', 'phrase']
 /** Kinds since renamed, as items kept or sent before still have them (in the browser, on the server, in its undo
  *  history, from another app's assistant): read as the kind they are now. */
@@ -87,6 +93,8 @@ export function itemsNow<T extends { kind: string } | null>(items: Record<string
 /** A day; a ticket's times may have the time of day too. */
 const DAY = /^\d{4}-\d{2}-\d{2}$/
 const DAY_TIME = /^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/
+/** A time of day (a ticket's boarding). */
+export const TIME = /^([01]\d|2[0-3]):[0-5]\d$/
 /** A currency's code ("PLN"). */
 const CURRENCY = /^[A-Z]{3}$/
 /** A language tag, as the phrases data has them ("mk", "zh-TW"). */
@@ -131,7 +139,7 @@ export const phraseId = (tag: string, english: string) =>
 export const isEmptyItem = (i: TripItem | undefined) =>
   !i || i.deleted || (i.kind === 'price' ? i.amount === undefined : i.kind === 'phrase' ? !i.text?.trim()
     : i.kind === 'expense' ? i.amount === undefined && ![i.title, i.text].some((v) => v?.trim())
-    : ![i.title, i.url, i.text, i.address, i.fromPlace, i.toPlace, i.ref, i.price].some((v) => v?.trim()))
+    : ![i.title, i.url, i.text, i.address, i.fromPlace, i.toPlace, i.seat, i.car, i.gate, i.ref, i.price].some((v) => v?.trim()))
 
 /** The prices seen in each city, in EUR at these rates (units per EUR); one in money without a rate is left out. */
 export function seenPrices(items: Items, rates: Record<string, number>): SeenPrices {
@@ -187,6 +195,8 @@ export function parseItems(raw: unknown, now = Date.now()): TripItem[] | string 
       if (!item.at.includes('>') && item.at !== NO_PLACE) return 'Invalid ticket'
       if (x.mode !== undefined && !TICKET_MODES.includes(x.mode as TicketMode)) return 'Invalid ticket'
       if (x.mode) item.mode = x.mode as TicketMode
+      if (x.boards !== undefined && x.boards !== '' && (typeof x.boards !== 'string' || !TIME.test(x.boards))) return 'Invalid ticket'
+      if (x.boards) item.boards = x.boards as string
     }
     // (A price seen has its amount and money; an expense, a city's too, may get them after its name, as it's typed.)
     if (item.kind === 'price' || item.kind === 'expense') {

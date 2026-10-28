@@ -276,6 +276,14 @@ describe('My visit tools', () => {
     expect(items.get()['note:krakow>warsaw'].text).toBe('Seat 42')
   })
 
+  it('keeps a ticket\'s seat, car, gate and boarding time', () => {
+    const { items, run } = visit()
+    const { summary } = run('save_visit_item', { kind: 'ticket', city: 'Kraków', journey_to: 'Warsaw', mode: 'train', title: 'IC 3510', departs: '2026-05-07T08:10', seat: '55', car: '2', gate: '3', boarding: '08:00' })
+    const id = summary.match(/id (ticket:\d+)/)![1]
+    expect(items.get()[id]).toMatchObject({ seat: '55', car: '2', gate: '3', boards: '08:00' })
+    expect(run('get_visit', { city: 'krakow' }).result.items).toMatchObject([{ id, seat: '55', car: '2', gate: '3', boarding: '08:00' }])
+  })
+
   it('refuses what My visit can\'t keep', () => {
     const { run } = visit()
     const error = (args: Record<string, unknown>) => run('save_visit_item', args).result.error
@@ -286,6 +294,8 @@ describe('My visit tools', () => {
     expect(error({ kind: 'album', city: 'Kraków' })).toMatch(/Nothing to keep/)
     expect(error({ kind: 'stay', city: 'Atlantis', title: 'X' })).toMatch(/not a city/)
     expect(error({ id: 'stay:nope', price: '€1' })).toMatch(/get_visit/)
+    expect(error({ kind: 'ticket', city: 'Kraków', journey_to: 'Warsaw', title: 'IC 1', boarding: '5pm' })).toMatch(/boarding must be a time/)
+    expect(error({ kind: 'stay', city: 'Kraków', title: 'X', seat: '20D' })).toMatch(/seat isn't for a stay/)
     expect(run('remove_visit_item', { id: 'stay:nope' }).ok).toBe(false)
     // Without My visit (as in the tests above), the tools say so.
     expect(runTool('get_visit').result.error).toMatch(/isn't available/)

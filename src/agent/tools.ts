@@ -10,7 +10,7 @@ import {
   allowedStay, groceryDay, isTravelling, prefsDay, PRICE_LABELS, type VisaRule, type DayChoices, type PriceKey, likelyMonth, localToday, pastChanges, travelDay, type PastChange, MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, mobileInternet, PHRASES, phrasesFor, STYLES, stylePrefs, nearby, routeBetween, schengenApplies, suggestedDays, tapWater, vaccinesFor, withDates, type Budget, type CountryMode, type TempBreaks, type TravelPrefs, type TripCountry, type Leg, type Pace, type Stop, type TripInput,
 } from '../planner'
 import type { CityTab } from '../store/trip'
-import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, RENAMED_KINDS, webUrl, TICKET_MODES, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
+import { changedItem, isEmptyItem, ITEM_LIMITS, newItemId, NO_PLACE, noteId, parseItems, phraseCount, phraseId, priceId, removedItem, RENAMED_KINDS, webUrl, TICKET_MODES, TIME, type ItemKind, type Items, type TicketMode, type TripItem } from '../store/itemsCore'
 import { MAX_PLANS, tripPlans, type TripCore, type TripData, type TripPlan } from '../store/tripCore'
 import { dateRange, rainShare, warningTitle } from '../ui/format'
 import { ITEM_TOOLS, PRICE_ARGS, WRITE_TOOLS } from './schema'
@@ -316,7 +316,7 @@ function visit(args: Args): ToolResult {
     items: list.map((i) => ({
       id: i.id, where: placeOf(i), kind: i.kind, title: i.title, address: i.address,
       ...(i.kind === 'ticket'
-        ? { mode: i.mode, departs: i.from, arrives: i.to, from_place: i.fromPlace, to_place: i.toPlace }
+        ? { mode: i.mode, departs: i.from, arrives: i.to, from_place: i.fromPlace, to_place: i.toPlace, seat: i.seat, car: i.car, gate: i.gate, boarding: i.boards }
         : i.kind === 'expense' ? { day: i.from, amount: i.amount, currency: i.currency, bookings: i.bookings }
         : { check_in: i.from, check_out: i.to }),
       url: i.url, reference: i.ref, price: i.price, text: i.text,
@@ -330,20 +330,21 @@ function visit(args: Args): ToolResult {
 
 /** The tool's arguments and the item's fields they set (a ticket's times are `from` and `to` too, and an expense's
  *  day `from`). */
-const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'fromPlace' | 'toPlace' | 'ref' | 'price' | 'text'][] = [
+const ITEM_FIELDS: [string, 'title' | 'url' | 'address' | 'from' | 'to' | 'fromPlace' | 'toPlace' | 'seat' | 'car' | 'gate' | 'boards' | 'ref' | 'price' | 'text'][] = [
   ['title', 'title'], ['url', 'url'], ['address', 'address'], ['check_in', 'from'], ['check_out', 'to'], ['departs', 'from'], ['arrives', 'to'],
-  ['day', 'from'], ['from_place', 'fromPlace'], ['to_place', 'toPlace'], ['reference', 'ref'], ['price', 'price'], ['text', 'text'],
+  ['day', 'from'], ['from_place', 'fromPlace'], ['to_place', 'toPlace'], ['seat', 'seat'], ['car', 'car'], ['gate', 'gate'], ['boarding', 'boards'],
+  ['reference', 'ref'], ['price', 'price'], ['text', 'text'],
 ]
 /** The arguments each kind takes besides id, kind, city, journey_to, title, text and append. */
 const KIND_ARGS: Partial<Record<ItemKind, string[]>> = {
   stay: ['url', 'address', 'check_in', 'check_out', 'reference', 'price'],
-  ticket: ['url', 'mode', 'departs', 'arrives', 'from_place', 'to_place', 'reference', 'price'],
+  ticket: ['url', 'mode', 'departs', 'arrives', 'from_place', 'to_place', 'seat', 'car', 'gate', 'boarding', 'reference', 'price'],
   expense: ['day', 'amount', 'currency', 'bookings'],
   album: ['url'],
   link: ['url'],
   note: [],
 }
-const KIND_ONLY = ['url', 'address', 'check_in', 'check_out', 'mode', 'departs', 'arrives', 'day', 'from_place', 'to_place', 'reference', 'price', 'amount', 'currency', 'bookings']
+const KIND_ONLY = ['url', 'address', 'check_in', 'check_out', 'mode', 'departs', 'arrives', 'day', 'from_place', 'to_place', 'seat', 'car', 'gate', 'boarding', 'reference', 'price', 'amount', 'currency', 'bookings']
 /** A ticket's departure or arrival: a day, with its time or not. */
 const isDayTime = (v: string) => /^\d{4}-\d{2}-\d{2}(T([01]\d|2[0-3]):[0-5]\d)?$/.test(v) && !Number.isNaN(Date.parse(v.slice(0, 10)))
 
@@ -409,6 +410,7 @@ function saveItem(args: Args): string {
   for (const key of ['from', 'to'] as const) {
     if (patch[key] && !(ticket ? isDayTime(patch[key]) : isDate(patch[key]))) throw new ToolError(`${key === 'from' ? fromArg : toArg} must be ${ticket ? 'a day and time, YYYY-MM-DDTHH:MM (or the day alone)' : 'a day, YYYY-MM-DD'}.`)
   }
+  if (patch.boards && !TIME.test(patch.boards)) throw new ToolError('boarding must be a time, HH:MM.')
   if (kind === 'expense') {
     if (args.amount !== undefined) {
       const amount = roundAmount(args.amount)

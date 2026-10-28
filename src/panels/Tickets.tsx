@@ -1,6 +1,6 @@
 // The user's tickets for a journey (the trip's items, store/items.ts): each flight, train, bus or ferry booked, with
-// its times (each in its place's own time, as the booking gives them), where it leaves from and arrives, the booking
-// reference, price and link, and a note (the seat, the baggage). In the journey's panel, on Today, all of them in My
+// its times (each in its place's own time, as the booking gives them), where it leaves from and arrives, the seat (and
+// a train's car), the gate or platform and boarding time, the booking reference, price and link, and a note (the baggage). In the journey's panel, on Today, all of them in My
 // trip (MyTrip.tsx), and marked by the journey in the itinerary. Added here, by the app's assistant, or by another app's (an AI app reading the user's
 // email: worker/mcp.ts). Private, like the rest of My visit.
 import { Bus, ExternalLink, Pencil, Plane, Plus, Ship, Ticket, TrainFront } from 'lucide-react'
@@ -98,12 +98,17 @@ function TicketCard({ ticket: t, onEdit }: { ticket: TripItem; onEdit: () => voi
   )
 }
 
-/** What's kept of a ticket besides its name and times: from and to where, its booking, link, what was paid, note. */
+/** What's kept of a ticket besides its name and times: from and to where, its seat, gate and boarding, its booking,
+ *  link, what was paid, note. */
 function TicketFacts({ ticket: t, className }: { ticket: TripItem; className: string }) {
   const places = [t.fromPlace, t.toPlace].some(Boolean) && `${t.fromPlace || '…'} → ${t.toPlace || '…'}`
+  const boarding = ([['Car', t.car], ['Seat', t.seat], [t.mode === 'train' ? 'Platform' : 'Gate', t.gate], ['Boarding', t.boards]] as const).filter(([, v]) => v)
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
       {places && <div>{places}</div>}
+      {boarding.length > 0 && (
+        <div className="flex flex-wrap gap-x-3">{boarding.map(([label, v]) => <span key={label}><span className="text-muted">{label} </span><span className="font-medium">{v}</span></span>)}</div>
+      )}
       {t.ref && <div><span className="text-muted">Booking ref </span><span className="font-mono select-all">{t.ref}</span></div>}
       {t.price && <div><span className="text-muted">Price </span>{t.price}</div>}
       {t.url && <a href={t.url} {...external} className="flex items-center gap-1 text-accent hover:underline">{host(t.url)}<ExternalLink size={11} /></a>}
@@ -155,7 +160,8 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
     if (ticket && isEmptyItem(ticket)) remove(id)
     onDone()
   }
-  const input = (k: 'title' | 'fromPlace' | 'toPlace' | 'ref' | 'price', label: string, placeholder: string) => (
+  const train = live?.mode === 'train'
+  const input = (k: 'title' | 'fromPlace' | 'toPlace' | 'seat' | 'car' | 'gate' | 'ref' | 'price', label: string, placeholder: string) => (
     <label className="flex flex-col gap-0.5">
       <span className="text-[11px] text-muted">{label}</span>
       <input value={live?.[k] ?? ''} onChange={(e) => save({ [k]: e.target.value })} maxLength={ITEM_LIMITS.shortChars} placeholder={placeholder} className={field} autoFocus={autoFocus && k === 'title'} />
@@ -201,6 +207,16 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
         {input('fromPlace', 'From', 'Airport, station, port')}
         {input('toPlace', 'To', 'Airport, station, port')}
       </div>
+      {/* (A train's car and platform; a flight's, bus's or ferry's gate.) */}
+      <div className="grid grid-cols-2 gap-2">
+        {train && input('car', 'Car', '2')}
+        {input('seat', 'Seat', train ? '55' : '20D')}
+        {input('gate', train ? 'Platform' : 'Gate', train ? '3' : 'A7')}
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[11px] text-muted">Boarding (local time)</span>
+          <input type="time" value={live?.boards ?? ''} onChange={(e) => save({ boards: e.target.value })} className={`${field} min-w-0`} />
+        </label>
+      </div>
       <div className="grid grid-cols-2 gap-2">
         {input('ref', 'Booking ref', 'ABC123')}
         {input('price', 'Price', '€84, paid')}
@@ -208,7 +224,7 @@ function TicketEditor({ id, at, date, onDone, autoFocus }: { id: string; at: str
       <UrlInput value={live?.url ?? ''} onChange={(url) => save({ url })} label="Booking link" />
       <label className="flex flex-col gap-0.5">
         <span className="text-[11px] text-muted">Note</span>
-        <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="Seat, baggage, terminal, check-in closes…" className={`${field} resize-y`} />
+        <textarea value={live?.text ?? ''} onChange={(e) => save({ text: e.target.value })} maxLength={ITEM_LIMITS.textChars} rows={2} placeholder="Baggage, terminal, check-in closes…" className={`${field} resize-y`} />
       </label>
       <EditorButtons
         onDone={done} onRemove={live ? () => { remove(id); onDone() } : undefined} what="ticket"

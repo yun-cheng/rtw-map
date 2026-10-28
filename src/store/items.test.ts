@@ -34,6 +34,11 @@ describe('items', () => {
     expect(parseItems({ entries: [{ ...ticket, from: '2027-05-04T25:00' }] })).toBeTypeOf('string')
     expect(parseItems({ entries: [{ ...ticket, kind: 'stay', at: 'krakow' }] })).toBeTypeOf('string')
     expect(isEmptyItem({ id: 'x', kind: 'ticket', at: 'a>b', fromPlace: 'KRK', updatedAt: 1 })).toBe(false)
+    // Its seat, car, gate and boarding time (a time of day).
+    const boarding = { ...ticket, seat: '20D', car: '2', gate: 'A7', boards: '17:35' }
+    expect(parseItems({ entries: [boarding] })).toEqual([boarding])
+    expect(parseItems({ entries: [{ ...ticket, boards: '5:35pm' }] })).toBeTypeOf('string')
+    expect(isEmptyItem({ id: 'x', kind: 'ticket', at: 'a>b', seat: '20D', updatedAt: 1 })).toBe(false)
     // An expense: a city's, its amount and money once typed (checked), its day.
     const expense = { id: 'expense:1', kind: 'expense', at: 'krakow', title: 'Dinner', amount: 120.5, currency: 'PLN', from: '2027-05-04', updatedAt: 1 }
     expect(parseItems({ entries: [expense] })).toEqual([expense])

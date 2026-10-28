@@ -67,8 +67,8 @@ How to work:
 - My visit, in each city's panel, is the user's own: where they stay (with check-in and check-out days, address,
   booking reference, price, link and a note such as the door code), photo albums, links (tours, tickets, restaurants)
   and a note per city or journey; and in each journey's panel, their tickets (a flight, train, bus or ferry: carrier
-  and number, departure and arrival times, where from and to, booking reference, price, link, a note such as the
-  seat); and their spending, each expense at its city (what, amount and currency, day), all in the My trip panel
+  and number, departure and arrival times, where from and to, seat, car, gate or platform, boarding time, booking
+  reference, price, link, a note such as the baggage); and their spending, each expense at its city (what, amount and currency, day), all in the My trip panel
   too (its Spending tab).
   get_visit reads it. Change it (save_visit_item, remove_visit_item) only when the user asks, e.g. "save this booking", "log this expense" or "add a note"; also on a read-only trip, which keeps only the itinerary as it
   is. Keep what's there: change the fields asked for, and add to a note rather than replacing it unless asked.
@@ -195,7 +195,7 @@ export const TOOLS: FunctionDeclaration[] = [
   // ---- My visit
   {
     name: 'get_visit',
-    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), their tickets for the journeys between two cities (flight, train, bus or ferry: carrier and number, departure and arrival, from and to where, reference, price), photo albums, links and notes, for each city or journey between two, expenses, what they spent (what, day, amount, currency), prices the user saw, and their own phrases (by language), each with its id.',
+    description: 'What the user keeps for the trip\'s cities ("My visit" in a city\'s panel): where they stay (name, address, check-in and check-out days, booking link, reference and price, a note such as the door code), their tickets for the journeys between two cities (flight, train, bus or ferry: carrier and number, departure and arrival, from and to where, seat, car, gate, boarding time, reference, price), photo albums, links and notes, for each city or journey between two, expenses, what they spent (what, day, amount, currency), prices the user saw, and their own phrases (by language), each with its id.',
     parametersJsonSchema: obj({ city: str('Only this city and the journeys to and from it (name or id); default: all') }),
   },
   {
@@ -216,13 +216,17 @@ export const TOOLS: FunctionDeclaration[] = [
       arrives: str('A ticket\'s arrival, in the local time where it arrives, YYYY-MM-DDTHH:MM (or YYYY-MM-DD without a time)'),
       from_place: str('Where a ticket leaves from: the airport (with its code and terminal), station or port, e.g. "Kraków Airport (KRK), T1"'),
       to_place: str('Where a ticket arrives: the airport, station or port'),
+      seat: str('A ticket\'s seat, e.g. "20D" or "55"'),
+      car: str('A train ticket\'s car or coach, e.g. "2"'),
+      gate: str('A ticket\'s gate (a flight) or platform (a train), e.g. "A7"'),
+      boarding: str('A ticket\'s boarding time, in the local time where it leaves, HH:MM'),
       day: str('An expense\'s day, YYYY-MM-DD'),
       amount: { type: 'number', description: 'What an expense came to, as paid (in currency)' },
       currency: str('An expense\'s currency, its three-letter code, e.g. "PLN"; default: the city\'s own'),
       bookings: { type: 'array', items: { type: 'string' }, description: 'An expense\'s stays and tickets, by their ids (from get_visit, or given when each was saved): what it paid for, one or several (a package of flights and a hotel paid together: all of them); [] unlinks it' },
       reference: str('A stay\'s or ticket\'s booking reference'),
       price: str('A stay\'s or ticket\'s price as the user would write it, e.g. "€84, paid" or "NT$3,200, pay at the hotel"'),
-      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s, ticket\'s or expense\'s own note (door code, wifi, how to get in; seat, baggage; what was in it)'),
+      text: str('A note (Markdown: headings, lists, - [ ] to-dos, links), or a stay\'s, ticket\'s or expense\'s own note (door code, wifi, how to get in; baggage, fare; what was in it)'),
       append: { type: 'boolean', description: 'Add text to the end of the note instead of replacing it' },
     }),
   },
