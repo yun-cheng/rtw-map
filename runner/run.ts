@@ -124,7 +124,8 @@ async function answer(api: ReturnType<typeof workerApi>, runId: string): Promise
   }
 
   // After each step: the reply so far, and the trip when it changed; the Worker answers whether to stop.
-  let saved = JSON.stringify(input.data)
+  // (As the trip store has it, so the first step sends the trip only if it changed it.)
+  let saved = JSON.stringify(tripData(trip.getState()))
   const onStep = async (reply: ChatMessage) => {
     const now = JSON.stringify(tripData(trip.getState()))
     const sent = unsent()

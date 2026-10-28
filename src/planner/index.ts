@@ -93,9 +93,10 @@ function makeContext(ds: Dataset, input: TripInput, extraCities: string[] = [], 
   for (const id of [...input.mustCities, input.startCityId, input.endCityId]) {
     if (id && candidates.includes(id)) required.add(id)
   }
-  const daily = candidates.map((id) => dailyCost(ds, id, { ...input, prices })).filter((d) => d > 0).sort((a, b) => a - b)
+  const costs = candidates.map((id) => dailyCost(ds, id, { ...input, prices }))
+  const daily = costs.filter((d) => d > 0).sort((a, b) => a - b)
   const median = daily[daily.length >> 1] || 1
-  const costRatio = new Map(candidates.map((id) => [id, (dailyCost(ds, id, { ...input, prices }) || median) / median]))
+  const costRatio = new Map(candidates.map((id, i) => [id, (costs[i] || median) / median]))
   const ctx: Ctx = { ds, input, graph, totalNights, groupIndex, candidates, required, blocked, prices, costRatio, areas }
   const requireBestIn = (countries: string[]) => {
     if ([...required].some((id) => countries.includes(ds.cities[id].iso2))) return
