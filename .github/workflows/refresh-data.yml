@@ -41,5 +41,9 @@ jobs:
 
   deploy:
     needs: refresh
+    # (deploy.yml's runner job signs in to Google Cloud with an ID token: a called workflow gets no more than this.)
+    permissions:
+      contents: read
+      id-token: write
     uses: ./.github/workflows/deploy.yml
     secrets: inherit
