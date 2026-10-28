@@ -162,7 +162,8 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
 
   // Gemini sometimes returns a broken reply (a garbled tool call: finishReason MALFORMED_…, or no parts) that a
   // second try answers fine; retry those here. Every attempt's cost counts.
-  let res: Response
+  // (No answer at all, Gemini not reached: null. What earlier attempts cost still counts.)
+  let res: Response | null
   let data: GeminiResponse | null
   let spent: Spent = { input: 0, cached: 0, output: 0, usd: 0 }
   for (let attempt = 1; ; attempt++) {
@@ -170,17 +171,20 @@ async function answer(request: Request, env: Env, user: Pick<User, 'sub' | 'emai
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.GEMINI_API_KEY },
       body,
+    }).catch((e: Error) => {
+      console.error('Gemini unreachable', e.message)
+      return null
     })
-    data = (await res.json().catch(() => null)) as GeminiResponse | null
+    data = (await res?.json().catch(() => null) ?? null) as GeminiResponse | null
     spent = addSpent(spent, spentOf(data?.usageMetadata, day))
-    if (!res.ok || attempt >= GEMINI_TRIES || !isBrokenReply(data)) break
+    if (!res?.ok || attempt >= GEMINI_TRIES || !isBrokenReply(data)) break
     console.warn('Gemini broken reply, retrying', data?.candidates?.[0]?.finishReason)
   }
   const count = await account(env, user).spend(day, spent.usd)
   const candidate = data?.candidates?.[0]
-  if (!res.ok || !candidate?.content?.parts?.length || candidate.finishReason?.startsWith('MALFORMED')) {
-    console.error('Gemini error', res.status, data?.error?.status, data?.error?.message, candidate?.finishReason)
-    const busy = res.status === 429 || res.status === 503
+  if (!res?.ok || !candidate?.content?.parts?.length || candidate.finishReason?.startsWith('MALFORMED')) {
+    console.error('Gemini error', res?.status, data?.error?.status, data?.error?.message, candidate?.finishReason)
+    const busy = !res || res.status === 429 || res.status === 503
     const error = busy ? 'The assistant is busy right now: try again in a minute.'
       : candidate?.finishReason === 'SAFETY' ? 'The assistant declined to answer that.'
         : 'The assistant failed to answer: try again.'
