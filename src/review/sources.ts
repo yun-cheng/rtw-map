@@ -14,6 +14,8 @@ import shoppingJson from '../../data/seed/shopping.json'
 import fxJson from '../../data/gen/fx.json'
 import priceLevelsJson from '../../data/gen/price-levels.json'
 import { parseCsv } from '../data/csv'
+import { CITY_KEYS, CITY_SCALED, COST_KEYS, nameKey, capitalOf, type RunDestination, type RunFile, type RunPlace } from '../data/promptRuns'
+import genCitiesJson from '../../data/gen/cities.json'
 import { COST_HINTS, GROCERY_KEYS, costSanity, costsInEur, groceryDay } from '../planner/cost'
 import type { Dataset, LocalCostProfile } from '../planner/types'
 
@@ -251,6 +253,197 @@ export const SOURCES: Source[] = [
     }
   })(),
 ]
+
+// ---------------------------------------------------------------- prompt runs
+
+/** The runs of the data prompts kept so far (scripts/prompts.ts: data/runs/<dataset>/v<version>/<month>/<model>/), by
+ *  dataset and then "model month version", newest first: each answer by city id (or country code). */
+const runFiles = import.meta.glob<RunFile>('../../data/runs/*/*/*/*/*.json', { eager: true, import: 'default' })
+const runsBy = (dataset: string) => {
+  const out = new Map<string, RunFile['cities']>()
+  for (const [path, run] of Object.entries(runFiles)) {
+    const [name, version, month, model] = path.split('/').slice(-5, -1)
+    // (Each answer under "cities", or "countries" for a prompt per country.)
+    const entries = run.cities ?? (run as unknown as { countries?: RunFile['cities'] }).countries
+    if (name !== dataset || !entries) continue
+    const label = `${model} ${month} ${version}`
+    out.set(label, { ...out.get(label), ...entries })
+  }
+  return new Map([...out].sort(([a], [b]) => b.split(' ')[1].localeCompare(a.split(' ')[1]) || a.localeCompare(b)))
+}
+
+/**
+ * Costs from every source side by side: one row per city and price (the national prices once, in the capital they're
+ * asked in), ours and each run's, with how far it is from ours, its source, when it's from, how sure, and how it was
+ * worked out where it's an estimate. Ours for a city is the app's: the country's price (costs.csv; taxis and rentals
+ * from local-transport.json), times the city's cost factor where the app scales it. More than a third off is marked,
+ * and so is an estimate.
+ */
+function costRuns(): Source | null {
+  const runs = runsBy('costs')
+  if (!runs.size) return null
+  type GenCity = Parameters<typeof capitalOf>[0][number]
+  const genCities = (genCitiesJson as { cities: GenCity[] }).cities
+  const rates = fxJson.rates as Record<string, number>
+  /** An amount in another currency, in `to`, at the current rates (null without a rate for either). */
+  const convert = (v: number, from: string, to: string) => (rates[from] && rates[to] ? (v / rates[from]) * rates[to] : null)
+  // Our taxis and rentals (local-transport.json, in EUR; a rental as the middle of its range), in the row's money.
+  type Transport = { taxi?: { flagFall?: number; perKm?: number }; rentals?: { carDay?: number[]; motoDay?: number[] } }
+  const middle = (r?: number[]) => (r?.length ? (r[0] + r[r.length - 1]) / 2 : null)
+  const ourTransport = (iso2: string, key: string, currency: string): number | null => {
+    const t = (localTransportJson as { countries: Record<string, Transport> }).countries[iso2]
+    const eur = { taxiStart: t?.taxi?.flagFall, taxiPerKm: t?.taxi?.perKm, carDay: middle(t?.rentals?.carDay), scooterDay: middle(t?.rentals?.motoDay) }[key]
+    return typeof eur === 'number' ? convert(eur, 'EUR', currency) : null
+  }
+  const rows: Row[] = []
+  const issues: Record<string, string>[] = []
+  for (const seed of costs.rows) {
+    const iso2 = String(seed.iso2)
+    const currency = String(seed.currency)
+    const national = capitalOf(genCities, iso2)
+    for (const city of genCities.filter((c) => c.iso2 === iso2)) {
+      const keys: readonly string[] = city.id === national?.id ? COST_KEYS : CITY_KEYS
+      for (const key of keys) {
+        const country = key in seed ? seed[key] : ourTransport(iso2, key, currency)
+        const ours = typeof country === 'number' ? tidy(CITY_SCALED.includes(key) ? country * city.costFactor : country) : null
+        const row: Row = { city: city.id, iso2, price: key, currency, factor: city.costFactor, ours }
+        const issue: Record<string, string> = {}
+        for (const [name, answers] of runs) {
+          const answer = answers[city.id]
+          const v = answer?.values[key]
+          // (A price the source gave in another currency is converted here, at the current rates.)
+          const local = v?.value != null ? (v.currency && v.currency !== currency ? convert(v.value, v.currency, currency) : v.value) : null
+          const value = local !== null ? tidy(local) : null
+          row[name] = value
+          row[`${name} vs ours`] = value !== null && ours ? tidy(value / ours) : null
+          row[`${name} source`] = v?.source ?? null
+          row[`${name} seen`] = v?.seen ?? null
+          row[`${name} confidence`] = v?.confidence ?? null
+          row[`${name} estimated`] = v?.estimated ? v.basis ?? 'yes' : null
+          row[`${name} note`] = [v?.none && "Doesn't exist here.", v?.currency && v.currency !== currency && v.value != null && `${v.value} ${v.currency} on the source.`, v?.note].filter(Boolean).join(' ') || null
+          if (answer && answer.currency !== currency) issue[name] = `In ${answer.currency}, not ${currency}`
+          else if (answer && value === null && !v?.none) issue[name] = v?.note ?? 'No value'
+          else if (v?.estimated) issue[name] = `Estimated: ${v.basis ?? 'no basis given'}`
+          const r = row[`${name} vs ours`]
+          if (typeof r === 'number' && (r < 0.75 || r > 1.33)) issue[`${name} vs ours`] = `${Math.round(Math.abs(r - 1) * 100)}% ${r > 1 ? 'above' : 'below'} ours`
+        }
+        rows.push(row)
+        issues.push(issue)
+      }
+    }
+  }
+  const t = table('Costs: all sources', { rows, where: rows.map((r) => `${r.city} ${r.price}`) }, {
+    links: { city: 'city', iso2: 'country' }, pinned: ['city', 'price'],
+    money: Object.fromEntries(['ours', ...runs.keys()].map((c) => [c, 'row' as const])),
+  })
+  return {
+    id: 'runs-costs', label: 'Costs: all sources', file: 'data/runs/costs',
+    about: `Each city's prices from every source, in its country's money: ours as the app works them out (the country's price in costs.csv, or local-transport.json for taxis and rentals, times the city's cost factor for rooms, meals, coffee and beer), and each prompt run's (prompts/costs.md), asked in the city itself; the supermarket and rentals once per country, in its capital. "vs ours" is the run over ours: more than a third off is marked, and so is an estimate (its basis in "estimated"). The meals asked for are the dish alone, ours include a drink.`,
+    tables: { all: { ...t, issues } },
+  }
+}
+
+/**
+ * The places to see from every run (prompts/places.md), one row per run, city and place, the city's places and then
+ * its day trips, each in rank order; "also in" names the other runs that list the same place (by its Wikipedia
+ * article, else its name), the surest sign it belongs. A place its run is unsure of is marked.
+ */
+function placeRuns(): Source | null {
+  const runs = runsBy('places') as unknown as Map<string, Record<string, { city: string; places: RunPlace[] }>>
+  if (!runs.size) return null
+  const same = (p: RunPlace) => (p.wikipedia ?? p.name).toLowerCase()
+  const rows: Row[] = []
+  const issues: Record<string, string>[] = []
+  for (const [name, answers] of runs) {
+    for (const [city, answer] of Object.entries(answers)) {
+      const places = [...(answer.places ?? [])].sort((a, b) => Number(a.dayTrip) - Number(b.dayTrip) || a.rank - b.rank)
+      for (const p of places) {
+        const also = [...runs].filter(([other, a]) => other !== name && a[city]?.places?.some((q) => same(q) === same(p))).map(([other]) => other)
+        rows.push({
+          run: name, city, trip: p.dayTrip, rank: p.rank, name: p.name, local: p.local ?? null, tier: p.tier, kind: p.kind,
+          minutes: p.minutes, km: p.km ?? null, getThere: p.getThere ?? null,
+          wikipedia: p.wikipedia ? `https://en.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.replace(/ /g, '_'))}` : null,
+          why: p.why, sure: p.sure, note: p.note ?? null, 'also in': also,
+        })
+        issues.push(p.sure === 'low' ? { sure: 'The run is unsure of this place' } : {})
+      }
+    }
+  }
+  const t = table('Places: all sources', { rows, where: rows.map((r) => `${r.run} ${r.city} ${r.trip ? 'trip ' : ''}${r.rank}`) }, {
+    links: { city: 'city' }, pinned: ['city', 'rank', 'name'],
+  })
+  return {
+    id: 'runs-places', label: 'Places: all sources', file: 'data/runs/places',
+    about: 'The places to see in each city from every run of prompts/places.md: one row per run, city and place (trip: a day trip), in rank order. "also in" is the other runs that list the same place (by its Wikipedia article, else its name). A place the run was unsure of is marked.',
+    tables: { all: { ...t, issues } },
+  }
+}
+
+/**
+ * Each country's places to stay from every run (prompts/destinations.md) against our cities (cities.csv), matched by
+ * name (accents, case and punctuation aside; the local name too): one row per run and place, in rank order, then our
+ * cities that run doesn't list. "status" says which: in both, only the run's (one to consider adding) or only ours
+ * (one to consider dropping), both marked; our days, tags and popularity sit beside the run's, and a "world" score
+ * (v3 on) 2 or more from our popularity is marked. "also in" names the other runs that list the place.
+ */
+function destinationRuns(): Source | null {
+  const runs = runsBy('destinations') as unknown as Map<string, Record<string, { country: string; places: RunDestination[] }>>
+  if (!runs.size) return null
+  const ours = (iso2: string) => cities.rows.filter((r) => r.iso2 === iso2)
+  /** Our city a run's place is, if any: the same name, or one that starts with the other's (5 letters or more:
+   *  "Hạ Long Bay" is our Ha Long). */
+  const alike = (a: string, b: string) => a === b || (Math.min(a.length, b.length) >= 5 && (a.startsWith(b) || b.startsWith(a)))
+  const match = (iso2: string, p: RunDestination) => {
+    const keys = [p.name, p.local, p.wikipedia, p.base?.name, p.base?.local, p.base?.wikipedia].filter((x): x is string => !!x).map(nameKey).filter(Boolean)
+    return ours(iso2).find((r) => [String(r.id), String(r.name), String(r.geoname ?? '')].map(nameKey).some((k) => keys.some((key) => alike(k, key))))
+  }
+  const rows: Row[] = []
+  const issues: Record<string, string>[] = []
+  const days = (r: Row) => (r.daysMin === null ? null : `${r.daysMin}–${r.daysIdeal}–${r.daysMax}`)
+  for (const [name, answers] of runs) {
+    for (const [iso2, answer] of Object.entries(answers)) {
+      const places = [...(answer.places ?? [])].sort((a, b) => a.rank - b.rank)
+      const matched = new Set<string>()
+      for (const p of places) {
+        const city = match(iso2, p)
+        if (city) matched.add(String(city.id))
+        const also = [...runs].filter(([other, a]) => other !== name && a[iso2]?.places?.some((q) => nameKey(q.name) === nameKey(p.name))).map(([other]) => other)
+        rows.push({
+          run: name, iso2, status: city ? 'both' : 'run only', rank: p.rank, name: p.name, local: p.local ?? null, world: p.world ?? null, tier: p.tier ?? null, kind: p.kind,
+          base: p.base ? [p.base.name, p.base.local].filter(Boolean).join(' / ') : null,
+          days: `${p.days?.min}–${p.days?.ideal}–${p.days?.max}`, tags: p.tags ?? [], ours: city ? String(city.id) : null,
+          'our days': city ? days(city) : null, 'our tags': city ? city.tags : null, 'our popularity': city ? city.popularity : null,
+          wikipedia: p.wikipedia ? `https://en.wikipedia.org/wiki/${encodeURIComponent(p.wikipedia.replace(/ /g, '_'))}` : null,
+          why: p.why, sure: p.sure, note: p.note ?? null, 'also in': also,
+        })
+        issues.push({
+          ...(!city && { status: 'Not one of our cities: one to consider adding' }),
+          ...(p.sure === 'low' && { sure: 'The run is unsure of this place' }),
+          ...(city && p.world !== undefined && Math.abs(p.world - Number(city.popularity)) >= 2 && { world: `${p.world} worldwide, our popularity ${city.popularity}` }),
+        })
+      }
+      for (const city of ours(iso2).filter((r) => !matched.has(String(r.id)))) {
+        rows.push({
+          run: name, iso2, status: 'ours only', rank: null, name: city.name, local: null, world: null, tier: null, kind: null, base: null, days: null, tags: [],
+          ours: String(city.id), 'our days': days(city), 'our tags': city.tags, 'our popularity': city.popularity,
+          wikipedia: null, why: city.blurb, sure: null, note: null, 'also in': [],
+        })
+        issues.push({ status: "Not in this run's list: one to consider dropping (or the names differ)" })
+      }
+    }
+  }
+  const t = table('Destinations: all sources', { rows, where: rows.map((r) => `${r.run} ${r.iso2} ${r.rank ?? r.ours}`) }, {
+    links: { iso2: 'country', ours: 'city' }, pinned: ['iso2', 'status', 'name'],
+  })
+  return {
+    id: 'runs-destinations', label: 'Destinations: all sources', file: 'data/runs/destinations',
+    about: "Each country's places to stay from every run of prompts/destinations.md, against our cities (cities.csv), matched by name: one row per run and place in rank order, then our cities the run doesn't list. \"status\": both, run only (one to consider adding) or ours only (one to consider dropping, or the names differ). Days are min–ideal–max; ours sit beside the run's.",
+    tables: { all: { ...t, issues } },
+  }
+}
+
+const runSources = [costRuns(), placeRuns(), destinationRuns()].filter((s): s is Source => !!s)
+SOURCES.push(...runSources)
 
 /** The table with its money columns in one currency (`to`), at the current exchange rates; null when it has none. */
 export function inCurrency(t: Table, to: string): Table | null {
