@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { isTravelling, localToday, stopTime, tripDay, type Leg } from '../planner'
 import { SHARED_TOKEN } from '../store/shareLink'
-import { legKey, useTrip } from '../store/trip'
+import { legKey, useTripState } from '../store/trip'
 import { confirm } from '../ui/dialog'
 import { MODE_ICON, STOP_COLOR, cityName, dateRange, duration, flag, shortDate } from '../ui/format'
 import { Badge, Named } from '../ui/kit'
@@ -16,7 +16,7 @@ import { TripStatus, TripSummary } from './Travel'
 import { UpdatePlanBar } from './UpdatePlan'
 
 export function Itinerary() {
-  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, readOnly } = useTrip()
+  const { plan, input, selected, select, setNights, toggleLock, removeStop, moveStop, readOnly } = useTripState('plan', 'input', 'selected', 'select', 'setNights', 'toggleLock', 'removeStop', 'moveStop', 'readOnly')
   const [drag, setDrag] = useState<number | null>(null)
   const [over, setOver] = useState<number | null>(null)
   const { fmt } = useMoney()

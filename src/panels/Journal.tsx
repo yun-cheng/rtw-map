@@ -11,7 +11,7 @@ import { SHARED_TOKEN } from '../store/shareLink'
 import { PublicMark, PublicToggle } from '../ui/PublicToggle'
 import { cleanEmojis, cleanTag, cleanTags, dayEmojis, dayKeys, entryDate, JOURNAL_LIMITS, newEntryKey, writtenKeys } from '../store/journalCore'
 import { useSaved } from '../store/saved'
-import { useTrip } from '../store/trip'
+import { useTrip, useTripState } from '../store/trip'
 import { cityName, dateRange, dayDate, dayMonth, flag, weekday } from '../ui/format'
 import { Section, Sections } from '../ui/kit'
 import { AlbumLinks } from './Visit'
@@ -195,7 +195,7 @@ export function TodayEntry({ today }: { today: string }) {
 /** The journal, My trip's Journal tab: the entries for the trip's days so far (or those with a tag), newest first,
  *  under the stop where their night was, each opening on a page of its own; and one to add (today first). */
 export function JournalView() {
-  const { plan, input, select } = useTrip()
+  const { plan, input, select } = useTripState('plan', 'input', 'select')
   const entries = useJournalEntries()
   const { view, setView } = useJournal()
   const write = useJournal((s) => s.write)
@@ -359,7 +359,7 @@ function DayRow({ id, day, first, onOpen, onTag }: { id: string; day: number; fi
 /** An entry on a page of its own: all of it as it reads (a to-do can be ticked there), with Edit to change it (not on
  *  a shared trip's page), and the way back to the list and to the newer and older entries in it (`keys`, newest first). */
 function DayPage({ id, keys, onGo, onBack, onTag }: { id: string; keys: string[]; onGo: (id: string) => void; onBack: () => void; onTag: (tag: string) => void }) {
-  const { plan, input, select } = useTrip()
+  const { plan, input, select } = useTripState('plan', 'input', 'select')
   const e = useDayEntry(id)
   const date = entryDate(id)
   const write = useJournal((s) => s.write)

@@ -2,7 +2,7 @@ import { Minus, Plus, RotateCcw } from 'lucide-react'
 import { Fragment } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { MEAL_HINTS, cityPrices, costProfile, dayChoices, dayCost, prefsDay, taxiEstimate, type DayChoices, type GroceryKey, type PriceKey } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { Badge, Named, Section, Segmented } from '../ui/kit'
 import { useMoney } from '../ui/useMoney'
 import { AiHelp } from './AiHelp'
@@ -92,7 +92,7 @@ function Budget({ eur, over }: { eur: number | null; over: boolean }) {
 const OVER = 'text-danger'
 
 export function CostDay({ cityId }: { cityId: string }) {
-  const { input, setInput, plan, seenPrices } = useTrip()
+  const { input, setInput, plan, seenPrices } = useTripState('input', 'setInput', 'plan', 'seenPrices')
   const { fmt } = useMoney()
   const choices = dayChoices(input, cityId)
   const day = dayCost(ds, cityId, choices, seenPrices)

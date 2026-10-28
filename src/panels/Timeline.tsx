@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type MouseEvent } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, monthOf, stopTime } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { cityMetrics, stopTip, tipText, type TipContent } from '../map/cityMetric'
 import { MONTHS, STOP_COLOR } from '../ui/format'
 import { HoverTip, type Tip } from '../ui/HoverTip'
@@ -15,7 +15,7 @@ const barTip = (t: TipContent): TipContent => ({ lines: t.lines ?? (t.sub ? [t.s
 const PX_PER_DAY = 12
 
 export function Timeline() {
-  const { plan, input, selected, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices } = useTrip()
+  const { plan, input, selected, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices } = useTripState('plan', 'input', 'selected', 'layer', 'layerMonth', 'nearbyKind', 'costKind', 'weatherBy', 'currency', 'tempUnit', 'tempFeels', 'seenPrices')
   // Each stop in the map's colour for the current view, with the map's hover text.
   const metric = useMemo(
     () => cityMetrics({ plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices }),

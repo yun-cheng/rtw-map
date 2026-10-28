@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { addDays, daysBetween, isTravelling, localToday, SCHENGEN_LIMIT, schengenApplies, schengenUsed, travelDay, type Leg } from '../planner'
 import { useNote } from '../store/items'
-import { legKey, useTrip } from '../store/trip'
+import { legKey, useTrip, useTripState } from '../store/trip'
 import { MODE_ICON, cityName, dayDate, duration, flag } from '../ui/format'
 import { Named, Section, Sections } from '../ui/kit'
 import { openRecord } from '../ui/rightPanel'
@@ -31,7 +31,7 @@ function fromToday(today: string, iso: string) {
 type Journey = { leg: Leg; date: string; index?: number; home?: boolean }
 
 export function Today() {
-  const { plan, input, select } = useTrip()
+  const { plan, input, select } = useTripState('plan', 'input', 'select')
   const today = localToday()
   if (!plan || !isTravelling(input, today)) return null
   const { day, of, at } = travelDay(input, plan.stops, today)
@@ -124,7 +124,7 @@ function JourneyNote({ at }: { at: string }) {
 /** The journey: when, how, how long and for how much, the timetable's tips and its checks; on its day or the day
  *  before, the arrival city's essentials. */
 function JourneyCard({ journey: { leg, date, index, home }, today }: { journey: Journey; today: string }) {
-  const { plan, select } = useTrip()
+  const { plan, select } = useTripState('plan', 'select')
   const { fmt } = useMoney()
   const soon = daysBetween(today, date) <= 1
   const when = fromToday(today, date)
@@ -174,7 +174,7 @@ function JourneyCard({ journey: { leg, date, index, home }, today }: { journey: 
 
 /** Opens a city's panel at the tab with `section`. */
 function OpenTab({ cityId, section, label, chip }: { cityId: string; section: SectionKey; label: string; chip?: boolean }) {
-  const { select, setCityTab } = useTrip()
+  const { select, setCityTab } = useTripState('select', 'setCityTab')
   const open = () => {
     setCityTab(...tabOf(section))
     select({ type: 'city', id: cityId })
@@ -225,7 +225,7 @@ function DayWeather({ cityId, date, label }: { cityId: string; date: string; lab
 /** The nights left here and in the trip, and the Schengen days used by today (when the rule applies and the trip goes
  *  there). */
 function DaysLeft({ today }: { today: string }) {
-  const { plan, input } = useTrip()
+  const { plan, input } = useTripState('plan', 'input')
   if (!plan) return null
   const stop = plan.stops.find((s) => s.arrive <= today && today < s.depart)
   const here = stop ? daysBetween(today, stop.depart) : 0

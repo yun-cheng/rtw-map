@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { INTERESTS } from '../data/presets'
 import { prefsDay, type DayChoices, type Pace, type TravelPrefs } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { money, tempBand } from '../ui/format'
 import { Fold, Named, Segmented } from '../ui/kit'
 import { Counter, DAY_FIELDS, DaySwitch } from './CostDay'
@@ -30,7 +30,7 @@ const listed = (words: string[]) => (words.length > 1 ? `${words.slice(0, -1).jo
  * with the trip; a new trip starts from these.
  */
 export function PrefsCards() {
-  const { input, setInput, setPrefs, currency, tempUnit, readOnly } = useTrip()
+  const { input, setInput, setPrefs, currency, tempUnit, readOnly } = useTripState('input', 'setInput', 'setPrefs', 'currency', 'tempUnit', 'readOnly')
   const p = input.prefs
   const day = prefsDay(p)
   // A segmented control for one preference.

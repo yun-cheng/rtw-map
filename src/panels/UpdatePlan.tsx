@@ -8,7 +8,7 @@ import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
 import { CHANGE_GROUPS, planChangeList } from '../agent/tools'
 import { isTravelling, localToday } from '../planner'
-import { MAX_PLANS, tripPlans, useTrip } from '../store/trip'
+import { MAX_PLANS, tripPlans, useTripState } from '../store/trip'
 import { openAssistant } from '../ui/assistantPanel'
 import { ask, type Answer } from '../ui/dialog'
 import { Button } from '../ui/kit'
@@ -17,7 +17,7 @@ import { Button } from '../ui/kit'
  *  for them, or plan the trip again (`copy`: in a copy of the plan, which keeps this one), and what replanning
  *  replaces (`replanning`: the question before it). */
 export function usePlanUpdate() {
-  const s = useTrip()
+  const s = useTripState('input', 'stops', 'plan', 'addPlan', 'plans', 'activePlanId')
   const { input, stops, plan, addPlan } = s
   const changes = planChangeList({ input, stops, plan })
   const travelling = stops.length > 0 && isTravelling(input, localToday())

@@ -2,7 +2,7 @@ import { Check, ChevronDown, Columns2, CopyPlus, Pencil, Trash2 } from 'lucide-r
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { evaluatePlan, type Plan } from '../planner'
-import { MAX_PLANS, tripPlans, useTrip, type TripPlan } from '../store/trip'
+import { MAX_PLANS, tripPlans, useTripState, type TripPlan } from '../store/trip'
 import { cityName, duration } from '../ui/format'
 import { confirm } from '../ui/dialog'
 import { usePhone } from '../ui/usePhone'
@@ -18,7 +18,7 @@ import { UndoRedo } from './UndoRedo'
  * plans can still be switched and compared, not added, renamed or deleted, and the switch is all there is at the right).
  */
 export function PlanBar() {
-  const s = useTrip()
+  const s = useTripState('activePlanId', 'switchPlan', 'addPlan', 'deletePlan', 'readOnly', 'plans', 'input', 'stops')
   const { activePlanId, switchPlan, addPlan, deletePlan, readOnly } = s
   const plans = tripPlans(s)
   const plan = plans.find((p) => p.id === activePlanId)!
@@ -106,7 +106,7 @@ export function PlanBar() {
 
 /** Rename the active plan. */
 function RenamePlan({ plan, onClose }: { plan: TripPlan; onClose: () => void }) {
-  const { renamePlan } = useTrip()
+  const { renamePlan } = useTripState('renamePlan')
   const [name, setName] = useState(plan.name)
   const box = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -136,7 +136,7 @@ function RenamePlan({ plan, onClose }: { plan: TripPlan; onClose: () => void }) 
 
 /** The plans side by side: size, cost, travel and problems, and which cities each has that the active one doesn't. */
 function Compare({ plans, onClose }: { plans: TripPlan[]; onClose: () => void }) {
-  const { activePlanId, switchPlan, tempFeels, seenPrices } = useTrip()
+  const { activePlanId, switchPlan, tempFeels, seenPrices } = useTripState('activePlanId', 'switchPlan', 'tempFeels', 'seenPrices')
   const { fmt } = useMoney()
   const evaluated = useMemo(
     () => plans.map((p) => {

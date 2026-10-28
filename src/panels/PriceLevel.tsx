@@ -1,6 +1,6 @@
 import { dataset as ds } from '../data/dataset'
 import { comparePrices, costSanity } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { money } from '../ui/format'
 import { Row } from '../ui/kit'
 
@@ -24,7 +24,7 @@ function bigMacFor(iso2: string) {
 const toEur = (amount: number, currency: string) => (currency === 'EUR' ? amount : amount / (ds.fx.rates[currency] ?? NaN))
 
 export function PriceLevel({ iso2, countryName }: { iso2: string; countryName: string }) {
-  const { currency, priceCompare, setPriceCompare } = useTrip()
+  const { currency, priceCompare, setPriceCompare } = useTripState('currency', 'priceCompare', 'setPriceCompare')
   const here = ds.priceLevels.levels[iso2]
   const compareIso = priceCompare ?? HOME_BY_CURRENCY[currency] ?? 'US'
   const other = ds.priceLevels.compare.find((c) => c.iso2 === compareIso) ?? ds.priceLevels.compare[0]

@@ -2,7 +2,7 @@ import { Pencil, Plus } from 'lucide-react'
 import { Fragment, lazy, Suspense, useEffect, useRef, useState, type ReactNode } from 'react'
 import { dataset as ds } from '../data/dataset'
 import { CARD_LABELS, ENGLISH_LABELS, RENTAL_INFO, TAP_WATER_LABELS, TRANSIT_LABELS, airBand, tapWater, vaccinesFor, mobileInternet, nearby, roughCount, roughKm, addDays, cityPrices, dailyCost, cardLevel, COST_HINTS, costProfile, englishLevel, PHRASES, phraseAs, phrasesFor, likelyMonth, allowedStay, overStay, schengenApplies, suggestedDays, monthOf, taxiEstimate, type GroceryKey, type Pace, type PriceKey } from '../planner'
-import { useTrip, type CityTab } from '../store/trip'
+import { useTrip, useTripState, type CityTab } from '../store/trip'
 import { articleTitle, articleUrl } from '../data/visaWiki'
 import { MODE_ICON, VISA_TEXT, compact, duration, flag, dateRange, rateText, shownTemps } from '../ui/format'
 import { CurrencyToggle } from '../ui/CurrencyToggle'
@@ -63,7 +63,7 @@ const GROCERIES: [GroceryKey, string][] = [
 ]
 
 export function CityDrawer({ cityId }: { cityId: string }) {
-  const { plan, input, select, addCity, editInItinerary, cityTab, cityPart, setCityTab, layer, layerMonth, readOnly } = useTrip()
+  const { plan, input, select, addCity, editInItinerary, cityTab, cityPart, setCityTab, layer, layerMonth, readOnly } = useTripState('plan', 'input', 'select', 'addCity', 'editInItinerary', 'cityTab', 'cityPart', 'setCityTab', 'layer', 'layerMonth', 'readOnly')
   const { currency, fmt } = useMoney()
   const { range } = useTemp()
   // Temperatures as they feel or as measured: one setting for the whole app.

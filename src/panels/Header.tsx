@@ -1,5 +1,5 @@
 import { Settings, Sparkles } from 'lucide-react'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { dateRange } from '../ui/format'
 import { OfflinePill } from '../ui/OfflinePill'
 import { useAssistantPanel } from '../ui/assistantPanel'
@@ -13,7 +13,7 @@ import { TripSwitcher } from './TripSwitcher'
  *  and closed), the theme (currency and °C/°F are in the settings), the account, and the gear for all the settings
  *  (`onSettings`: the settings panel, as on a phone, with the offline map); "Offline" with no connection. */
 export function Header({ onSettings }: { onSettings: () => void }) {
-  const { plan, input } = useTrip()
+  const { plan, input } = useTripState('plan', 'input')
   const ai = useAssistantPanel()
 
   return (

@@ -3,7 +3,7 @@
 import { useChat } from '../agent/chat'
 import { pastText } from '../agent/tools'
 import { daysBetween, localToday, travelDay, tripPhase } from '../planner'
-import { onPastEdit, useTrip } from '../store/trip'
+import { onPastEdit, useTripState } from '../store/trip'
 import { confirm } from '../ui/dialog'
 import { cityName } from '../ui/format'
 
@@ -14,7 +14,7 @@ onPastEdit((changes) =>
 
 /** The trip's dates, nights and stops: "2026/09/01 – 2027/01/30 · 151 nights · 25 stops" (the Trip and Itinerary tabs). */
 export function TripSummary() {
-  const { input, plan } = useTrip()
+  const { input, plan } = useTripState('input', 'plan')
   if (!plan) return null
   const slash = (iso: string) => iso.replaceAll('-', '/')
   return (
@@ -29,7 +29,7 @@ export function TripSummary() {
  * day 23 of 60 · Tirana" or "Finished"; nothing without dates.
  */
 export function TripStatus() {
-  const { input, plan } = useTrip()
+  const { input, plan } = useTripState('input', 'plan')
   const today = localToday()
   const phase = tripPhase(input, today)
   if (!phase) return null

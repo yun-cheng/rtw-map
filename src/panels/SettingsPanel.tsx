@@ -2,7 +2,7 @@ import { X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useAccount } from '../agent/account'
 import { dataset as ds } from '../data/dataset'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { dateRange } from '../ui/format'
 import { Section, Sections, Segmented } from '../ui/kit'
 import { useButtonSide, useButtonsLeft } from '../ui/buttonSide'
@@ -26,7 +26,7 @@ const THEMES: { value: ThemeChoice; label: string }[] = [{ value: 'light', label
  * top bar (which has the display settings at hand too).
  */
 export function SettingsPanel({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { plan, input, setCurrency, tempUnit, setTempUnit, localNames, setLocalNames } = useTrip()
+  const { plan, input, setCurrency, tempUnit, setTempUnit, localNames, setLocalNames } = useTripState('plan', 'input', 'setCurrency', 'tempUnit', 'setTempUnit', 'localNames', 'setLocalNames')
   const { currency } = useMoney()
   const { choice, setChoice } = useTheme()
   const user = useAccount((s) => s.user)

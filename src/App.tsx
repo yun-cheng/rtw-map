@@ -20,7 +20,7 @@ import { OutsideNotice } from './panels/OutsideNotice'
 import { Notices, UpdateNotice } from './panels/UpdateNotice'
 import { useUndoKeys } from './store/history'
 import { SHARED_TOKEN } from './store/shareLink'
-import { planMark, useTrip, type Selection } from './store/trip'
+import { planMark, useTrip, useTripState, type Selection } from './store/trip'
 import { BottomSheet, type Snap } from './ui/BottomSheet'
 import { DialogHost } from './ui/DialogHost'
 import { HoverTip, type Tip } from './ui/HoverTip'
@@ -127,7 +127,7 @@ function AssistantSide({ peek }: { peek?: boolean }) {
 /** The left panel's tabs and the open one: beside the map, or in a bottom sheet on a phone (`peek`: its tab bar is
  *  the sheet's header). `onHide` folds it away (closes the sheet, on a phone). */
 function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: () => void }) {
-  const { plan, selected, setPanel } = useTrip()
+  const { plan, selected, setPanel } = useTripState('plan', 'selected', 'setPanel')
   const buttonsLeft = useButtonsLeft()
   // (A city's panel scrolls its own tabs on a phone.)
   const ownScroll = (t: Tab) => t === 'city' && peek && selected?.type === 'city'
@@ -171,7 +171,7 @@ function LeftPanel({ tab, peek, onHide }: { tab: Tab; peek?: boolean; onHide?: (
 }
 
 export default function App() {
-  const { panel, panelBefore, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTrip()
+  const { panel, panelBefore, setPanel, plan, selected, select, plans, activePlanId, switchPlan } = useTripState('panel', 'panelBefore', 'setPanel', 'plan', 'selected', 'select', 'plans', 'activePlanId', 'switchPlan')
   // (The City tab only with a city or journey open; the Trip tab before there's a plan.)
   const on = panel === 'city' && !selected ? panelBefore : panel
   const tab: Tab = on === 'city' ? 'city' : SHARED_TOKEN ? 'itinerary' : !plan ? 'setup' : on

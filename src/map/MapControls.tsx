@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { type CostKind, type SchengenSummary, type TempBreaks } from '../planner'
-import { NEARBY_KINDS, useTrip, type MapLayer } from '../store/trip'
+import { NEARBY_KINDS, useTrip, useTripState, type MapLayer } from '../store/trip'
 import { MODE_COLOR, MONTHS, STOP_COLOR, TEMP_KINDS, WEATHER_STYLE, tempBand, type TempUnit } from '../ui/format'
 import { FeelsToggle } from '../ui/FeelsToggle'
 import { useButtonSide } from '../ui/buttonSide'
@@ -60,7 +60,7 @@ const COST_ABOUT: Record<CostKind, string> = {
 
 /** `editing`: the trip's setup is open, and the map shows its countries (see MapView) instead of a map view. */
 export function MapControls({ editing = false }: { editing?: boolean }) {
-  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy, seenPrices } = useTrip()
+  const { picking, layer, setLayer, layerMonth, setLayerMonth, nearbyKind, setNearbyKind, costKind, setCostKind, weatherBy, setWeatherBy, plan, tempUnit, input, currency, tempFeels, setTempFeels, routeBy, setRouteBy, seenPrices } = useTripState('picking', 'layer', 'setLayer', 'layerMonth', 'setLayerMonth', 'nearbyKind', 'setNearbyKind', 'costKind', 'setCostKind', 'weatherBy', 'setWeatherBy', 'plan', 'tempUnit', 'input', 'currency', 'tempFeels', 'setTempFeels', 'routeBy', 'setRouteBy', 'seenPrices')
   const phone = usePhone()
   const left = useButtonSide((s) => s.side) === 'left'
   // The kind last picked in each cost group, so going back to a group returns to it.

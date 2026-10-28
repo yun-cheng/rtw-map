@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
+import { useShallow } from 'zustand/react/shallow'
 import { dataset as ds } from '../data/dataset'
 import { makeGroup } from '../data/presets'
 import { REGIONS } from '../data/regions'
@@ -290,6 +291,11 @@ export const useTrip = create<State>()(
     },
   ),
 )
+
+/** Some of the trip's state, for a component: it re-renders when one of these changes, not on every change to the
+ *  store (a country pointed at, the map asked to fit…). */
+export const useTripState = <K extends keyof State>(...keys: K[]): Pick<State, K> =>
+  useTrip(useShallow((s) => Object.fromEntries(keys.map((k) => [k, s[k]])) as Pick<State, K>))
 
 // Prices the user saw in cities (My visit) replace ours in the plan's costs and budget checks: the plan is checked
 // again when they change (and once now, with the items kept in this browser).

@@ -8,7 +8,7 @@ import { SCHENGEN } from '../data/areas'
 import { dataset as ds } from '../data/dataset'
 import { REGIONS, REGION_OF } from '../data/regions'
 import { plannedIn, isTravelling, localToday, stopTime, tripDay, type TripInput } from '../planner'
-import { useTrip } from '../store/trip'
+import { useTrip, useTripState } from '../store/trip'
 import { MODE_COLOR, STOP_COLOR } from '../ui/format'
 import { isPhone } from '../ui/usePhone'
 import { useTheme, type Theme } from '../ui/theme'
@@ -125,7 +125,9 @@ export function MapView({ editing = false }: { editing?: boolean }) {
   const [node, setNode] = useState<CityNode | null>(null)
   const loaded = useRef(false)
   const refresh = useRef<(() => void) | null>(null)
-  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, seenPrices, picking, localNames } = useTrip()
+  /** What the cities' dots were last drawn from (see the data effect). */
+  const citiesFrom = useRef<unknown[]>([])
+  const { plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, routeBy, selected, fitRequest, currency, tempUnit, tempFeels, seenPrices, picking, localNames } = useTripState('plan', 'input', 'layer', 'layerMonth', 'nearbyKind', 'costKind', 'weatherBy', 'routeBy', 'selected', 'fitRequest', 'currency', 'tempUnit', 'tempFeels', 'seenPrices', 'picking', 'localNames')
   const theme = useTheme((s) => s.theme)
   const shownTheme = useRef(theme)
 
@@ -350,13 +352,20 @@ export function MapView({ editing = false }: { editing?: boolean }) {
       const tripCountries = new Set(input.groups.flatMap((g) => g.countries.filter((c) => c.mode !== 'excluded').map((c) => c.iso2)))
 
       // While editing the trip, the stops aren't shown, so every city is a dot, in plain colour (no map view's legend).
-      const cityFeatures = Object.values(ds.cities)
-        .filter((c) => editing || !inPlan.has(c.id))
-        .map((c) => {
-          const m = metric(c.id)
-          return point([c.lon, c.lat], { id: c.id, name: c.name, tip: JSON.stringify(cityTip(c.id, m)), ...(m.color && !editing ? { color: m.color } : {}) })
-        })
-      ;(map.getSource('cities') as GeoJSONSource).setData({ type: 'FeatureCollection', features: cityFeatures })
+      // Every city in the app: drawn again only when what they show changes, not when a city is opened or the Route
+      // view's numbers change (a reloaded base map has new sources, so they're sent again then too).
+      const cities = map.getSource('cities') as GeoJSONSource
+      const from = [cities, plan, input, layer, layerMonth, nearbyKind, costKind, weatherBy, currency, tempUnit, tempFeels, seenPrices, editing, shownTheme.current]
+      if (from.some((x, i) => x !== citiesFrom.current[i])) {
+        citiesFrom.current = from
+        const cityFeatures = Object.values(ds.cities)
+          .filter((c) => editing || !inPlan.has(c.id))
+          .map((c) => {
+            const m = metric(c.id)
+            return point([c.lon, c.lat], { id: c.id, name: c.name, tip: JSON.stringify(cityTip(c.id, m)), ...(m.color && !editing ? { color: m.color } : {}) })
+          })
+        cities.setData({ type: 'FeatureCollection', features: cityFeatures })
+      }
 
       // The Route view numbers the stops by the day you arrive (day 1 = start date) or by the nights there (the
       // legend's switch), and sizes them by the nights; the weather, air and mobile views show their value; the

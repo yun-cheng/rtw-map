@@ -5,7 +5,7 @@ import { REGIONS, REGION_OF } from '../data/regions'
 import { MAX_COUNTRY_DAYS, MAX_FLEX_DAYS, MAX_STOPS, plannedIn, dayRangeText, daysBetween, isTravelling, localToday, withDates, type CountryMode, type TripCountry, type TripGroup } from '../planner'
 import { useAccount } from '../agent/account'
 import { useChat } from '../agent/chat'
-import { useTrip } from '../store/trip'
+import { useTripState } from '../store/trip'
 import { openAssistant } from '../ui/assistantPanel'
 import { PrefsCards } from './PrefsCards'
 import { SHARED_TOKEN } from '../store/shareLink'
@@ -28,8 +28,7 @@ const countryName = (iso2: string) => ds.countries[iso2]?.name ?? ds.world[iso2]
 const planned = (iso2: string) => plannedIn(ds).has(iso2)
 
 export function SetupPanel() {
-  const s = useTrip()
-  const { input, setInput, stops, plan, picking, setPicking, setHovered, readOnly } = s
+  const { input, setInput, stops, plan, picking, setPicking, setHovered, readOnly } = useTripState('input', 'setInput', 'stops', 'plan', 'picking', 'setPicking', 'setHovered', 'readOnly')
   // Nothing stays highlighted on the map once the tab closes.
   useEffect(() => () => setHovered([]), [setHovered])
   const { user, loaded } = useAccount()
@@ -307,7 +306,7 @@ function GiveOrTake({ unit, children }: { unit: string; children: React.ReactNod
  * cities yet, just the capital from open data) say so.
  */
 function Picker() {
-  const { input, picking, setPicking, toggleRegion, toggleCountry, addAs, setAddAs, setHovered } = useTrip()
+  const { input, picking, setPicking, toggleRegion, toggleCountry, addAs, setAddAs, setHovered } = useTripState('input', 'picking', 'setPicking', 'toggleRegion', 'toggleCountry', 'addAs', 'setAddAs', 'setHovered')
   const [query, setQuery] = useState('')
   const q = query.trim().toLowerCase()
   const inTrip = new Map(input.groups.flatMap((g) => g.countries.map((c) => [c.iso2, c.mode] as const)))
