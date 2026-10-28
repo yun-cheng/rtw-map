@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { b64url, doneNotice, encryptPush, parsePushTarget, plainLine, vapidAuth } from './push'
+import { b64url, fromB64url } from './base64url'
+import { doneNotice, encryptPush, parsePushTarget, plainLine, vapidAuth } from './push'
 
 const enc = new TextEncoder()
 const raw = async (key: CryptoKey) => new Uint8Array((await crypto.subtle.exportKey('raw', key)) as ArrayBuffer)
@@ -10,7 +11,7 @@ const hkdf = async (salt: Uint8Array, ikm: Uint8Array, info: string | Uint8Array
 async function browser() {
   const keys = (await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair
   const auth = crypto.getRandomValues(new Uint8Array(16))
-  return { keys, auth, target: { p256dh: b64url.encode(await raw(keys.publicKey)), auth: b64url.encode(auth) } }
+  return { keys, auth, target: { p256dh: b64url(await raw(keys.publicKey)), auth: b64url(auth) } }
 }
 
 /** What the browser does with a push (RFC 8291), written apart from push.ts. */
@@ -39,15 +40,15 @@ describe('notifications (Web Push)', () => {
 
   it('signs for the push service with the site key', async () => {
     const pair = (await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])) as CryptoKeyPair
-    const publicKey = b64url.encode(await raw(pair.publicKey))
+    const publicKey = b64url(await raw(pair.publicKey))
     const privateKey = ((await crypto.subtle.exportKey('jwk', pair.privateKey)) as JsonWebKey).d!
     const now = Date.UTC(2026, 9, 15)
     const header = await vapidAuth('https://fcm.googleapis.com/fcm/send/abc', { publicKey, privateKey, subject: 'https://rtw.example' }, now)
     const [, token, k] = header.match(/^vapid t=([^,]+), k=(.+)$/)!
     expect(k).toBe(publicKey)
     const [h, c, s] = token.split('.')
-    expect(JSON.parse(new TextDecoder().decode(b64url.decode(c)))).toEqual({ aud: 'https://fcm.googleapis.com', exp: now / 1000 + 12 * 3600, sub: 'https://rtw.example' })
-    const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey, b64url.decode(s), enc.encode(`${h}.${c}`))
+    expect(JSON.parse(new TextDecoder().decode(fromB64url(c)))).toEqual({ aud: 'https://fcm.googleapis.com', exp: now / 1000 + 12 * 3600, sub: 'https://rtw.example' })
+    const ok = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, pair.publicKey, fromB64url(s), enc.encode(`${h}.${c}`))
     expect(ok).toBe(true)
   })
 

@@ -11,7 +11,8 @@
 // Each app a user allows is a grant in their Account (account.ts), to read the trips and, if the user ticks it, to
 // change them: the app lists them (Account, AI apps) and a grant removed there stops its tokens at once. A code or refresh token used twice removes its grant (someone else may have
 // it). Tokens are signed with a key of their own, not the session's, so one can't pass for the other.
-import { b64url, fromB64url, type User } from './auth'
+import { hmacKey, type User } from './auth'
+import { b64url, fromB64url } from './base64url'
 
 /** What an app may be allowed: reading the trips, and changing them (which includes reading). */
 export const SCOPES = ['trips:read', 'trips:write'] as const
@@ -54,12 +55,8 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
 
 // ---------------------------------------------------------------- signed tokens
 
-const keys = new Map<string, Promise<CryptoKey>>()
-const keyFor = (secret: string) => {
-  let key = keys.get(secret)
-  if (!key) keys.set(secret, key = crypto.subtle.importKey('raw', enc.encode(`oauth:${secret}`), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify']))
-  return key
-}
+/** Tokens' key: one of their own, not the session's. */
+const keyFor = (secret: string) => hmacKey(`oauth:${secret}`)
 
 /** A signed token of this type (client, code, access, refresh) with the payload; `exp` (ms), if any, is checked. */
 export async function seal(typ: string, payload: Record<string, unknown>, secret: string): Promise<string> {

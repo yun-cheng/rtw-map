@@ -4,7 +4,7 @@
 //   grep '^VAPID_PRIVATE_KEY=' .env.local | cut -d= -f2- | npx wrangler secret put VAPID_PRIVATE_KEY
 // A new pair signs the browsers up again as they open the app (src/agent/notify.ts); until then they get none.
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'
-import { b64url } from '../worker/push.ts'
+import { b64url } from '../worker/base64url.ts'
 
 const FILE = '.env.local'
 if (existsSync(FILE) && /^VAPID_PRIVATE_KEY=/m.test(readFileSync(FILE, 'utf8'))) {
@@ -13,6 +13,6 @@ if (existsSync(FILE) && /^VAPID_PRIVATE_KEY=/m.test(readFileSync(FILE, 'utf8')))
 }
 const pair = (await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify'])) as CryptoKeyPair
 const jwk = await crypto.subtle.exportKey('jwk', pair.privateKey)
-const publicKey = b64url.encode(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)))
+const publicKey = b64url(new Uint8Array(await crypto.subtle.exportKey('raw', pair.publicKey)))
 appendFileSync(FILE, `\n# Notifications (worker/push.ts): the private half; the public one is VAPID_PUBLIC_KEY in wrangler.jsonc.\nVAPID_PRIVATE_KEY=${jwk.d}\n`)
 console.log(`VAPID_PRIVATE_KEY added to ${FILE}. Public key, for "VAPID_PUBLIC_KEY" in wrangler.jsonc:\n${publicKey}`)

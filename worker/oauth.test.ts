@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { b64url, signSession, verifySession, type User } from './auth'
+import { signSession, verifySession, type User } from './auth'
+import { b64url } from './base64url'
 import type { ChangeView } from './changes'
 import { handleMcp, type McpContext } from './mcp'
 import { bearer, oauth, parseRegistration, redirectAllowed, redirectMatches, seal, unseal, type GrantStore, type OAuthContext } from './oauth'

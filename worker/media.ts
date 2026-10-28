@@ -2,10 +2,10 @@
 // them after 48 hours), each answered with a token signed for the account, which a model call must carry for every
 // file it sends, so no one can send a file another account uploaded.
 import { MEDIA_LIMITS, MEDIA_TYPES, type Attachment } from '../src/agent/media'
-import { b64url, fromB64url } from './auth'
+import { hmacKey as key } from './auth'
+import { b64url, fromB64url } from './base64url'
 
 const enc = new TextEncoder()
-const key = (secret: string) => crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify'])
 const payload = (sub: string, uri: string) => enc.encode(`media|${sub}|${uri}`)
 
 /** The token for a file uploaded by this account. */

@@ -6,6 +6,7 @@
 // replaces the other).
 //
 // Keys: VAPID_PUBLIC_KEY (wrangler.jsonc) and VAPID_PRIVATE_KEY (a secret), made by scripts/vapid-keys.ts.
+import { b64url, fromB64url } from './base64url'
 
 export const PUSH_LIMITS = {
   /** Subscriptions kept per account (its browsers and phones): the oldest go first. */
@@ -24,13 +25,9 @@ const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /(^|\.)push\.services\.mozilla\.co
 
 export type PushTarget = { endpoint: string; p256dh: string; auth: string }
 
-export const b64url = {
-  encode: (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''),
-  decode: (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), (c) => c.charCodeAt(0)),
-}
 const bytesOf = (s: string) => {
   try {
-    return b64url.decode(s)
+    return fromB64url(s)
   } catch {
     return null
   }
@@ -100,12 +97,12 @@ const ecdh = (key: CryptoKey) => ({ name: 'ECDH', public: key }) as unknown as P
 /** The payload encrypted for a browser's subscription (RFC 8291: aes128gcm, one record). `fixed`: the server's key
  *  pair and salt, for tests. */
 export async function encryptPush(payload: Uint8Array, target: Pick<PushTarget, 'p256dh' | 'auth'>, fixed?: { keys: CryptoKeyPair; salt: Uint8Array }) {
-  const uaPublic = b64url.decode(target.p256dh)
+  const uaPublic = fromB64url(target.p256dh)
   const keys = fixed?.keys ?? ((await crypto.subtle.generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits'])) as CryptoKeyPair)
   const asPublic = new Uint8Array((await crypto.subtle.exportKey('raw', keys.publicKey)) as ArrayBuffer)
   const ua = await crypto.subtle.importKey('raw', uaPublic, { name: 'ECDH', namedCurve: 'P-256' }, false, [])
   const shared = new Uint8Array(await crypto.subtle.deriveBits(ecdh(ua), keys.privateKey, 256))
-  const ikm = await hkdf(b64url.decode(target.auth), shared, concat(enc.encode('WebPush: info\0'), uaPublic, asPublic), 32)
+  const ikm = await hkdf(fromB64url(target.auth), shared, concat(enc.encode('WebPush: info\0'), uaPublic, asPublic), 32)
   const salt = fixed?.salt ?? crypto.getRandomValues(new Uint8Array(16))
   const cek = await hkdf(salt, ikm, enc.encode('Content-Encoding: aes128gcm\0'), 16)
   const nonce = await hkdf(salt, ikm, enc.encode('Content-Encoding: nonce\0'), 12)
@@ -123,16 +120,16 @@ export type Vapid = { publicKey: string; privateKey: string; subject: string }
 
 /** The signing key, from the public key (65 bytes, base64url) and the private one (its 32 bytes). */
 const signingKey = (v: Vapid) => {
-  const pub = b64url.decode(v.publicKey)
-  return crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: b64url.encode(pub.slice(1, 33)), y: b64url.encode(pub.slice(33, 65)), d: v.privateKey }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'])
+  const pub = fromB64url(v.publicKey)
+  return crypto.subtle.importKey('jwk', { kty: 'EC', crv: 'P-256', x: b64url(pub.slice(1, 33)), y: b64url(pub.slice(33, 65)), d: v.privateKey }, { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign'])
 }
 
 /** The Authorization header for a push service (RFC 8292): a token signed with the site's key, for 12 hours. */
 export async function vapidAuth(endpoint: string, v: Vapid, now = Date.now()): Promise<string> {
-  const part = (o: unknown) => b64url.encode(enc.encode(JSON.stringify(o)))
+  const part = (o: unknown) => b64url(enc.encode(JSON.stringify(o)))
   const unsigned = `${part({ typ: 'JWT', alg: 'ES256' })}.${part({ aud: new URL(endpoint).origin, exp: Math.floor(now / 1000) + 12 * 3600, sub: v.subject })}`
   const signature = new Uint8Array(await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, await signingKey(v), enc.encode(unsigned)))
-  return `vapid t=${unsigned}.${b64url.encode(signature)}, k=${v.publicKey}`
+  return `vapid t=${unsigned}.${b64url(signature)}, k=${v.publicKey}`
 }
 
 /** Sends one notice: 'gone' when the browser no longer has the subscription (to forget it). */

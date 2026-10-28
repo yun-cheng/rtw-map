@@ -1,5 +1,6 @@
 // Sign-in for the trip assistant: verifies the ID token from "Sign in with Google" and keeps the user signed in with
 // our own signed session cookie (HMAC-SHA256), so Google is only asked once per 30 days.
+import { b64url, fromB64url } from './base64url'
 
 /** `email`: only when Google says it's verified; kept in the session cookie (not stored) to look up the account's
  *  daily limit and admin rights. */
@@ -11,8 +12,6 @@ const GOOGLE_ISSUERS = new Set(['accounts.google.com', 'https://accounts.google.
 const GOOGLE_KEYS = 'https://www.googleapis.com/oauth2/v3/certs'
 
 const enc = new TextEncoder()
-export const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-export const fromB64url = (s: string) => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (s.length % 4)) % 4)), (c) => c.charCodeAt(0))
 const decodeJson = (s: string) => JSON.parse(new TextDecoder().decode(fromB64url(s)))
 
 // ---------------------------------------------------------------- Google ID token
@@ -54,7 +53,14 @@ export async function verifyGoogleIdToken(token: string, clientId: string, fetch
 
 // ---------------------------------------------------------------- our session
 
-const hmacKey = (secret: string) => crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify'])
+const keys = new Map<string, Promise<CryptoKey>>()
+/** The HMAC-SHA256 key for a secret, imported once (the session's; media.ts and oauth.ts sign with it too, oauth.ts
+ *  with a secret of its own made from it). */
+export function hmacKey(secret: string): Promise<CryptoKey> {
+  let key = keys.get(secret)
+  if (!key) keys.set(secret, (key = crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify'])))
+  return key
+}
 
 export async function signSession(user: User, secret: string, now = Date.now()): Promise<string> {
   const payload = b64url(enc.encode(JSON.stringify({ ...user, exp: now + SESSION_DAYS * 86_400_000 })))

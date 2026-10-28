@@ -4,7 +4,8 @@
 // worker/push.ts; in the built app, which has the service worker), so it comes with the app closed, else shown by the
 // page while it's open. A click on it brings the app to the front, at that trip's chat (pwa/sw.ts).
 import { create } from 'zustand'
-import { b64url, doneNotice } from '../../worker/push'
+import { b64url, fromB64url } from '../../worker/base64url'
+import { doneNotice } from '../../worker/push'
 import { useSaved } from '../store/saved'
 import { openAssistant } from '../ui/assistantPanel'
 import { useAccount } from './account'
@@ -42,11 +43,11 @@ async function signUp() {
     let sub = await reg.pushManager.getSubscription()
     // (Signed up with an older key of the site's: again with this one.)
     const old = sub?.options.applicationServerKey
-    if (sub && old && b64url.encode(new Uint8Array(old)) !== key) {
+    if (sub && old && b64url(new Uint8Array(old)) !== key) {
       await sub.unsubscribe()
       sub = null
     }
-    sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64url.decode(key) })
+    sub ??= await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: fromB64url(key) })
     const res = await fetch('/api/push', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON() }) })
     useNotify.setState({ push: res.ok })
   } catch {

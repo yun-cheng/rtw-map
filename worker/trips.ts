@@ -1,5 +1,6 @@
 // Saved trips: checks what the browser sends and builds the short summary shown in the trip list.
 // Plain functions, used by the Account Durable Object (account.ts) and tested in worker.test.ts.
+import { b64url } from './base64url'
 
 export const TRIP_LIMITS = { trips: 50, plans: 8, nameChars: 80, dataBytes: 400_000, chatBytes: 600_000, noteChars: 2000 }
 
@@ -54,7 +55,7 @@ function notesOf(raw: unknown): { notes?: Record<'cities' | 'legs', Record<strin
 /** A new public link's token: 128 random bits, URL-safe. */
 export function shareToken(): string {
   const bytes = crypto.getRandomValues(new Uint8Array(16))
-  return btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  return b64url(bytes)
 }
 export const isShareToken = (s: string) => /^[\w-]{22}$/.test(s)
 

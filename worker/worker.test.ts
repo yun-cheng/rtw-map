@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { readSessionCookie, sessionCookie, signSession, verifyGoogleIdToken, verifySession } from './auth'
+import { b64url } from './base64url'
 import { itemsUndo, joinedBefore, latestOf, overwrites, undoSet, type ChangeRecord, type ItemsChange } from './changes'
 import { isNewMessage } from './chat'
 import { CHAT_LIMITS, chatSummary, hasMessages } from './chats'
@@ -11,7 +12,6 @@ import { isShareToken, parseTripPatch, publicTripData, shareToken, summarize, TR
 import { joinsLatest, SESSION_MS, type VersionBy } from './versions'
 import { clipName, SPEECH_CHARS, spokenText, ssml } from '../src/data/speech'
 
-const b64url = (bytes: Uint8Array) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 const enc = (o: unknown) => b64url(new TextEncoder().encode(JSON.stringify(o)))
 
 /** A fake Google: an RSA key pair, its public key as a JWKS response, and a way to issue ID tokens. */
