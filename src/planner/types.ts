@@ -96,7 +96,24 @@ export type VisaReq =
   | 'free_movement' | 'visa_free' | 'eta' | 'e_visa' | 'visa_on_arrival'
   | 'visa_required' | 'no_admission' | 'own_country' | 'unknown'
 
-export type VisaRule = { req: VisaReq; days?: number; raw?: string }
+/** A destination's allowed stay for a passport and what goes with it, from the passport's Wikipedia article. */
+export type VisaStay = {
+  /** The allowed stay as written ("3 months", "30 days / 60 days") and the longest it allows, in days. */
+  text?: string
+  days?: number
+  /** How the limit counts: at most `window.days` in any `window.in` days (90 in 180), and whether the stay is per
+   *  entry; neither where the article doesn't say. */
+  window?: { days: number; in: number }
+  perEntry?: true
+  /** Whether the notes say it can be extended. */
+  extend?: boolean
+  /** The article's notes: fees, extensions, what to carry. */
+  notes: string[]
+  /** The official site to apply on (the destination's own). */
+  apply?: string
+}
+
+export type VisaRule = { req: VisaReq; days?: number; raw?: string; stay?: VisaStay }
 
 export type Advisory = {
   issuer: string
